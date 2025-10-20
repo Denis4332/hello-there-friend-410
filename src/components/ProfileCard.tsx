@@ -37,9 +37,24 @@ export const ProfileCard = ({ profile }: ProfileCardProps) => {
                 Profil ansehen
               </button>
             </Link>
-            <button className="border border-input px-4 py-1.5 rounded text-sm hover:bg-accent">
-              Kontakt
-            </button>
+            {profile.contact_phone && (
+              <a href={`tel:${profile.contact_phone}`}>
+                <button className="border border-input px-4 py-1.5 rounded text-sm hover:bg-accent">
+                  Anrufen
+                </button>
+              </a>
+            )}
+            {profile.contact_whatsapp && (
+              <a 
+                href={`https://wa.me/${profile.contact_whatsapp.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <button className="border border-input px-4 py-1.5 rounded text-sm hover:bg-accent">
+                  WhatsApp
+                </button>
+              </a>
+            )}
           </div>
         </div>
       </div>

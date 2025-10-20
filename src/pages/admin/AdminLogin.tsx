@@ -13,7 +13,11 @@ const AdminLogin = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO auth: echte JWT/Session-Implementierung
+    // SECURITY WARNING: localStorage ist NICHT sicher für Produktion!
+    // In Produktion: JWT via HTTP-Only Cookies + Supabase Auth verwenden
     if (email && password) {
+      localStorage.setItem('escoria_authed', 'true');
+      localStorage.setItem('escoria_admin_email', email);
       toast({
         title: 'Login erfolgreich',
         description: 'Weiterleitung zum Dashboard...',

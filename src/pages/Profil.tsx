@@ -100,14 +100,23 @@ const Profil = () => {
 
               <div className="flex gap-3 flex-wrap">
                 {profile.contact_whatsapp && (
-                  <Button className="flex-1">
-                    Nachricht per WhatsApp
-                  </Button>
+                  <a 
+                    href={`https://wa.me/${profile.contact_whatsapp.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1"
+                  >
+                    <Button className="w-full">
+                      Nachricht per WhatsApp
+                    </Button>
+                  </a>
                 )}
                 {profile.contact_phone && (
-                  <Button variant="outline" className="flex-1">
-                    Anrufen
-                  </Button>
+                  <a href={`tel:${profile.contact_phone}`} className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      Anrufen
+                    </Button>
+                  </a>
                 )}
               </div>
 

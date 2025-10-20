@@ -1,6 +1,15 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 export const AdminHeader = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('escoria_authed');
+    localStorage.removeItem('escoria_admin_email');
+    navigate('/admin/login');
+  };
+
   return (
     <header className="bg-card border-b">
       <div className="container mx-auto px-4">
@@ -30,9 +39,14 @@ export const AdminHeader = () => {
               </Link>
             </nav>
           </div>
-          <Link to="/" className="text-sm hover:text-primary">
-            Zur Webseite
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-sm hover:text-primary">
+              Zur Webseite
+            </Link>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Abmelden
+            </Button>
+          </div>
         </div>
       </div>
     </header>

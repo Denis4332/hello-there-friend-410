@@ -3,27 +3,22 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 
-const NotFound = () => {
+const ServerError = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">404</h1>
+          <h1 className="text-4xl font-bold mb-4">500</h1>
           <p className="text-xl text-muted-foreground mb-6">
-            Seite nicht gefunden
+            Unerwarteter Fehler aufgetreten
           </p>
           <p className="text-muted-foreground mb-6">
-            Die angeforderte Seite existiert nicht oder wurde verschoben.
+            Bitte versuchen Sie es später erneut.
           </p>
-          <div className="flex gap-3 justify-center">
-            <Link to="/">
-              <Button>Zurück zur Startseite</Button>
-            </Link>
-            <Link to="/staedte">
-              <Button variant="outline">Städte durchsuchen</Button>
-            </Link>
-          </div>
+          <Link to="/">
+            <Button>Zurück zur Startseite</Button>
+          </Link>
         </div>
       </main>
       <Footer />
@@ -31,4 +26,4 @@ const NotFound = () => {
   );
 };
 
-export default NotFound;
+export default ServerError;

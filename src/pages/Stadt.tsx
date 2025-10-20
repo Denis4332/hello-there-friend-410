@@ -1,7 +1,10 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
+import { Pagination } from '@/components/Pagination';
+import { Button } from '@/components/ui/button';
 import { mockProfiles, mockCities } from '@/data/mockData';
 
 const cityData: Record<string, { name: string; intro: string }> = {
@@ -25,6 +28,7 @@ const cityData: Record<string, { name: string; intro: string }> = {
 
 const Stadt = () => {
   const { slug } = useParams();
+  const [currentPage, setCurrentPage] = useState(1);
   const data = slug ? cityData[slug] : null;
 
   if (!data) {
@@ -32,7 +36,12 @@ const Stadt = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p>Stadt nicht gefunden</p>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Stadt nicht gefunden</h1>
+            <Link to="/staedte">
+              <Button>Alle Städte anzeigen</Button>
+            </Link>
+          </div>
         </main>
         <Footer />
       </div>
@@ -41,6 +50,14 @@ const Stadt = () => {
 
   const cityProfiles = mockProfiles.filter(
     (p) => p.city.toLowerCase() === data.name.toLowerCase()
+  );
+
+  // Pagination (24 items per page)
+  const ITEMS_PER_PAGE = 24;
+  const totalPages = Math.ceil(cityProfiles.length / ITEMS_PER_PAGE);
+  const paginatedProfiles = cityProfiles.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   return (
@@ -53,12 +70,19 @@ const Stadt = () => {
           </h1>
           <p className="text-muted-foreground mb-8 max-w-3xl">{data.intro}</p>
 
-          {cityProfiles.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-4">
-              {cityProfiles.map((profile) => (
-                <ProfileCard key={profile.id} profile={profile} />
-              ))}
-            </div>
+          {paginatedProfiles.length > 0 ? (
+            <>
+              <div className="grid md:grid-cols-2 gap-4">
+                {paginatedProfiles.map((profile) => (
+                  <ProfileCard key={profile.id} profile={profile} />
+                ))}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
           ) : (
             <p className="text-center text-muted-foreground py-12">
               Derzeit keine Profile in {data.name} verfügbar.

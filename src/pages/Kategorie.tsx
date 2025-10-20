@@ -1,7 +1,10 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
+import { Pagination } from '@/components/Pagination';
+import { Button } from '@/components/ui/button';
 import { mockProfiles } from '@/data/mockData';
 
 const categoryData: Record<string, { name: string; intro: string }> = {
@@ -33,6 +36,7 @@ const categoryData: Record<string, { name: string; intro: string }> = {
 
 const Kategorie = () => {
   const { slug } = useParams();
+  const [currentPage, setCurrentPage] = useState(1);
   const data = slug ? categoryData[slug] : null;
 
   if (!data) {
@@ -40,7 +44,12 @@ const Kategorie = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p>Kategorie nicht gefunden</p>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Kategorie nicht gefunden</h1>
+            <Link to="/kategorien">
+              <Button>Alle Kategorien anzeigen</Button>
+            </Link>
+          </div>
         </main>
         <Footer />
       </div>
@@ -49,6 +58,14 @@ const Kategorie = () => {
 
   const categoryProfiles = mockProfiles.filter((p) =>
     p.categories.some((c) => c.toLowerCase() === data.name.toLowerCase())
+  );
+
+  // Pagination (24 items per page)
+  const ITEMS_PER_PAGE = 24;
+  const totalPages = Math.ceil(categoryProfiles.length / ITEMS_PER_PAGE);
+  const paginatedProfiles = categoryProfiles.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   return (
@@ -61,12 +78,19 @@ const Kategorie = () => {
           </h1>
           <p className="text-muted-foreground mb-8 max-w-3xl">{data.intro}</p>
 
-          {categoryProfiles.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-4">
-              {categoryProfiles.map((profile) => (
-                <ProfileCard key={profile.id} profile={profile} />
-              ))}
-            </div>
+          {paginatedProfiles.length > 0 ? (
+            <>
+              <div className="grid md:grid-cols-2 gap-4">
+                {paginatedProfiles.map((profile) => (
+                  <ProfileCard key={profile.id} profile={profile} />
+                ))}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
           ) : (
             <p className="text-center text-muted-foreground py-12">
               Derzeit keine Profile in dieser Kategorie verfügbar.

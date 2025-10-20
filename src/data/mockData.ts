@@ -1,4 +1,65 @@
-import { Profile, Category, City } from '@/types/escoria';
+/**
+ * ESCORIA Datenmodell (Frontend-Seed)
+ * 
+ * TODO Backend: Diese Daten werden später via REST/GraphQL API geladen
+ * 
+ * Profile Schema:
+ * - id: UUID (Primary Key)
+ * - slug: string (Unique, URL-friendly)
+ * - display_name: string (Öffentlicher Name)
+ * - age: number
+ * - gender?: string (optional)
+ * - city: string
+ * - canton: string
+ * - postal_code?: string
+ * - lat?: number (Geocoding via Google Places)
+ * - lng?: number (Geocoding via Google Places)
+ * - categories: string[] (Foreign Keys zu Category)
+ * - languages: string[] (ISO 639-1 Codes)
+ * - verified: boolean (Admin-Verifizierung)
+ * - vip: boolean (Premium-Status)
+ * - price_range?: string (z.B. "200-400 CHF")
+ * - short_bio: string (Max 500 Zeichen)
+ * - contact_phone?: string (Format: +41 XX XXX XX XX)
+ * - contact_whatsapp?: string (Format: +41 XX XXX XX XX)
+ * - contact_website?: string
+ * - status: 'draft' | 'pending_review' | 'approved' | 'rejected' | 'suspended'
+ * - owner_user_id?: UUID (Foreign Key zu User)
+ * - created_at: ISO 8601 Timestamp
+ * - updated_at: ISO 8601 Timestamp
+ * 
+ * User Schema:
+ * - id: UUID
+ * - email: string (Unique)
+ * - role: 'admin' | 'agency' | 'individual'
+ * - status: 'active' | 'suspended'
+ * - display_name: string
+ * 
+ * Category Schema:
+ * - id: UUID
+ * - name: string
+ * - slug: string (Unique)
+ * - active: boolean
+ * - sort_order: number
+ * 
+ * City Schema:
+ * - id: UUID
+ * - name: string
+ * - canton: string
+ * - postal_code?: string
+ * - lat?: number
+ * - lng?: number
+ * 
+ * Report Schema:
+ * - id: UUID
+ * - profile_id: UUID (Foreign Key)
+ * - reason: string
+ * - message: string
+ * - created_at: ISO 8601 Timestamp
+ * - status: 'open' | 'closed'
+ */
+
+import { Profile, Category, City, User, Report } from '@/types/escoria';
 
 export const mockProfiles: Profile[] = [
   {
@@ -85,4 +146,46 @@ export const mockCities: City[] = [
   { id: '2', name: 'Basel', canton: 'Basel-Stadt', postal_code: '4000' },
   { id: '3', name: 'Bern', canton: 'Bern', postal_code: '3000' },
   { id: '4', name: 'Genf', canton: 'Genf', postal_code: '1200' },
+];
+
+export const mockUsers: User[] = [
+  { 
+    id: '1', 
+    email: 'admin@escoria.ch', 
+    role: 'admin', 
+    status: 'active', 
+    display_name: 'Admin' 
+  },
+  { 
+    id: '2', 
+    email: 'lara@example.com', 
+    role: 'individual', 
+    status: 'active', 
+    display_name: 'Lara' 
+  },
+  { 
+    id: '3', 
+    email: 'anna@example.com', 
+    role: 'individual', 
+    status: 'active', 
+    display_name: 'Anna' 
+  },
+  { 
+    id: '4', 
+    email: 'agency@example.com', 
+    role: 'agency', 
+    status: 'active', 
+    display_name: 'Agentur XY' 
+  },
+];
+
+export const mockReports: Report[] = [
+  {
+    id: '1',
+    profile_id: '3',
+    reason: 'Verdacht auf Fake-Profil',
+    message: 'Kontaktdaten stimmen nicht, Bilder stammen vermutlich aus dem Internet.',
+    created_at: '2025-01-18T14:30:00Z',
+    status: 'open',
+  },
 ];

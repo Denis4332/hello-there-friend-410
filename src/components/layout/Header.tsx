@@ -21,9 +21,6 @@ export const Header = () => {
             <Link to="/kontakt" className="hover:underline">
               Kontakt
             </Link>
-            <Link to="/admin/login" className="hover:underline">
-              Login
-            </Link>
           </nav>
           <button className="md:hidden text-primary-foreground">
             ☰
