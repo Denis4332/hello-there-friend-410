@@ -16,6 +16,10 @@ export const Footer = () => {
           ·{' '}
           <Link to="/kontakt" className="hover:underline">
             Kontakt
+          </Link>{' '}
+          ·{' '}
+          <Link to="/admin/login" className="hover:underline">
+            Admin
           </Link>
         </p>
       </div>
