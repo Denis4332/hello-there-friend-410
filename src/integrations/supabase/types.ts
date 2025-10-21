@@ -14,6 +14,235 @@ export type Database = {
   }
   public: {
     Tables: {
+      cantons: {
+        Row: {
+          abbreviation: string
+          id: string
+          name: string
+        }
+        Insert: {
+          abbreviation: string
+          id?: string
+          name: string
+        }
+        Update: {
+          abbreviation?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+          sort_order: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      contact_messages: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          message: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          message: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      photos: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          profile_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          profile_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          profile_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photos_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_categories: {
+        Row: {
+          category_id: string
+          profile_id: string
+        }
+        Insert: {
+          category_id: string
+          profile_id: string
+        }
+        Update: {
+          category_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_categories_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          about_me: string | null
+          age: number
+          canton: string
+          city: string
+          created_at: string | null
+          display_name: string
+          gender: string | null
+          id: string
+          is_premium: boolean | null
+          languages: string[] | null
+          lat: number | null
+          lng: number | null
+          postal_code: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          about_me?: string | null
+          age: number
+          canton: string
+          city: string
+          created_at?: string | null
+          display_name: string
+          gender?: string | null
+          id?: string
+          is_premium?: boolean | null
+          languages?: string[] | null
+          lat?: number | null
+          lng?: number | null
+          postal_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          about_me?: string | null
+          age?: number
+          canton?: string
+          city?: string
+          created_at?: string | null
+          display_name?: string
+          gender?: string | null
+          id?: string
+          is_premium?: boolean | null
+          languages?: string[] | null
+          lat?: number | null
+          lng?: number | null
+          postal_code?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          profile_id: string
+          reason: string
+          reporter_user_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          profile_id: string
+          reason: string
+          reporter_user_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          profile_id?: string
+          reason?: string
+          reporter_user_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
