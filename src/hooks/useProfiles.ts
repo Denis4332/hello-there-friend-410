@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Explicit types to avoid "Type instantiation is excessively deep" error
+type ProfileWithRelations = any;
+
 export const useFeaturedProfiles = (limit: number = 8) => {
-  return useQuery({
+  return useQuery<ProfileWithRelations[]>({
     queryKey: ['featured-profiles', limit],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const result = await (supabase as any)
         .from('profiles')
         .select(`
           *,
@@ -17,8 +20,8 @@ export const useFeaturedProfiles = (limit: number = 8) => {
         .order('created_at', { ascending: false })
         .limit(limit);
       
-      if (error) throw error;
-      return data || [];
+      if (result.error) throw result.error;
+      return (result.data || []) as ProfileWithRelations[];
     },
   });
 };
@@ -28,10 +31,10 @@ export const useSearchProfiles = (filters: {
   categoryId?: string;
   keyword?: string;
 }) => {
-  return useQuery({
+  return useQuery<ProfileWithRelations[]>({
     queryKey: ['search-profiles', filters],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('profiles')
         .select(`
           *,
@@ -52,40 +55,40 @@ export const useSearchProfiles = (filters: {
         query = query.or(`display_name.ilike.%${filters.keyword}%,about_me.ilike.%${filters.keyword}%`);
       }
       
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      const result = await query;
+      if (result.error) throw result.error;
+      return (result.data || []) as ProfileWithRelations[];
     },
   });
 };
 
 export const useProfileBySlug = (slug: string | undefined) => {
-  return useQuery({
+  return useQuery<ProfileWithRelations | null>({
     queryKey: ['profile', slug],
     queryFn: async () => {
       if (!slug) return null;
       
-      const { data, error } = await supabase
+      const result = await (supabase as any)
         .from('profiles')
         .select('*, photos(storage_path, is_primary), profile_categories(category_id)')
         .eq('slug', slug)
         .eq('status', 'active')
         .maybeSingle();
       
-      if (error) throw error;
-      return data;
+      if (result.error) throw result.error;
+      return result.data as ProfileWithRelations | null;
     },
     enabled: !!slug,
   });
 };
 
 export const useCityProfiles = (cityName: string | undefined) => {
-  return useQuery({
+  return useQuery<ProfileWithRelations[]>({
     queryKey: ['city-profiles', cityName],
     queryFn: async () => {
       if (!cityName) return [];
       
-      const { data, error } = await supabase
+      const result = await (supabase as any)
         .from('profiles')
         .select(`
           *,
@@ -95,20 +98,20 @@ export const useCityProfiles = (cityName: string | undefined) => {
         .eq('status', 'active')
         .ilike('city', cityName);
       
-      if (error) throw error;
-      return data || [];
+      if (result.error) throw result.error;
+      return (result.data || []) as ProfileWithRelations[];
     },
     enabled: !!cityName,
   });
 };
 
 export const useCategoryProfiles = (categoryId: string | undefined) => {
-  return useQuery({
+  return useQuery<ProfileWithRelations[]>({
     queryKey: ['category-profiles', categoryId],
     queryFn: async () => {
       if (!categoryId) return [];
       
-      const { data: profiles, error } = await supabase
+      const result = await (supabase as any)
         .from('profile_categories')
         .select(`
           profile_id,
@@ -120,11 +123,11 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
         .eq('category_id', categoryId)
         .eq('profiles.status', 'active');
       
-      if (error) throw error;
-      return profiles?.map(p => ({
+      if (result.error) throw result.error;
+      return (result.data?.map((p: any) => ({
         ...p.profiles,
         profile_categories: [{ category_id: categoryId }]
-      })) || [];
+      })) || []) as ProfileWithRelations[];
     },
     enabled: !!categoryId,
   });
