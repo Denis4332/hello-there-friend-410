@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
-import { mockProfiles, mockCities } from '@/data/mockData';
+import { useCityProfiles } from '@/hooks/useProfiles';
 
 const cityData: Record<string, { name: string; intro: string }> = {
   zuerich: {
@@ -29,7 +29,12 @@ const cityData: Record<string, { name: string; intro: string }> = {
 const Stadt = () => {
   const { slug } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Convert slug to city name (e.g., "zuerich" -> "Zürich")
   const data = slug ? cityData[slug] : null;
+  const cityName = data?.name;
+  
+  const { data: cityProfiles = [], isLoading } = useCityProfiles(cityName);
 
   if (!data) {
     return (
@@ -47,10 +52,6 @@ const Stadt = () => {
       </div>
     );
   }
-
-  const cityProfiles = mockProfiles.filter(
-    (p) => p.city.toLowerCase() === data.name.toLowerCase()
-  );
 
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;
@@ -70,7 +71,9 @@ const Stadt = () => {
           </h1>
           <p className="text-muted-foreground mb-8 max-w-3xl">{data.intro}</p>
 
-          {paginatedProfiles.length > 0 ? (
+          {isLoading ? (
+            <p className="text-center text-muted-foreground py-12">Lade Profile...</p>
+          ) : paginatedProfiles.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 gap-4">
                 {paginatedProfiles.map((profile) => (

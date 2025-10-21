@@ -1,18 +1,65 @@
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { mockProfiles } from '@/data/mockData';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
+import { useProfileBySlug } from '@/hooks/useProfiles';
+import { useCreateReport } from '@/hooks/useReports';
+import { supabase } from '@/integrations/supabase/client';
+import { useCategories } from '@/hooks/useCategories';
 
 const Profil = () => {
   const { slug } = useParams();
-  const profile = mockProfiles.find((p) => p.slug === slug);
+  const { data: profile, isLoading } = useProfileBySlug(slug);
+  const { data: allCategories = [] } = useCategories();
+  const createReport = useCreateReport();
+  
   const [reportReason, setReportReason] = useState('');
   const [reportMessage, setReportMessage] = useState('');
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  
+  // Get primary photo
+  const primaryPhoto = profile?.photos?.find((p: any) => p.is_primary) || profile?.photos?.[0];
+  const photoUrl = primaryPhoto 
+    ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
+    : null;
+  
+  // Get category names
+  const categoryNames = profile?.profile_categories
+    ?.map((pc: any) => {
+      const cat = allCategories.find((c) => c.id === pc.category_id);
+      return cat?.name;
+    })
+    .filter(Boolean) || [];
+  
+  const handleReportSubmit = async () => {
+    if (!profile?.id || !reportReason) return;
+    
+    await createReport.mutateAsync({
+      profileId: profile.id,
+      reason: reportReason,
+      message: reportMessage,
+    });
+    
+    setReportDialogOpen(false);
+    setReportReason('');
+    setReportMessage('');
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Lade Profil...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
@@ -38,18 +85,26 @@ const Profil = () => {
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="bg-card border rounded-lg p-6 mb-6">
             <div className="flex items-start gap-6 mb-6">
-              <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-3xl font-bold flex-shrink-0">
-                {profile.display_name.charAt(0)}
-              </div>
+              {photoUrl ? (
+                <img 
+                  src={photoUrl} 
+                  alt={profile.display_name}
+                  className="w-24 h-24 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-3xl font-bold flex-shrink-0">
+                  {profile.display_name.charAt(0)}
+                </div>
+              )}
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <h1 className="text-3xl font-bold">{profile.display_name}, {profile.age}</h1>
-                  {profile.verified && (
+                  {profile.verified_at && (
                     <Badge className="bg-success text-success-foreground">
                       Verifiziert
                     </Badge>
                   )}
-                  {profile.vip && (
+                  {profile.is_premium && (
                     <Badge className="bg-primary text-primary-foreground">
                       VIP
                     </Badge>
@@ -64,33 +119,37 @@ const Profil = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="font-bold text-lg mb-2">Über mich</h2>
-                <p>{profile.short_bio}</p>
+                <p>{profile.about_me || 'Keine Beschreibung verfügbar'}</p>
               </div>
 
-              <div>
-                <h2 className="font-bold text-lg mb-2">Leistungen</h2>
-                <div className="flex gap-2 flex-wrap">
-                  {profile.categories.map((cat) => (
-                    <Badge key={cat} variant="outline">{cat}</Badge>
-                  ))}
+              {categoryNames.length > 0 && (
+                <div>
+                  <h2 className="font-bold text-lg mb-2">Leistungen</h2>
+                  <div className="flex gap-2 flex-wrap">
+                    {categoryNames.map((cat) => (
+                      <Badge key={cat} variant="outline">{cat}</Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div>
-                <h2 className="font-bold text-lg mb-2">Sprachen</h2>
-                <div className="flex gap-2">
-                  {profile.languages.map((lang) => (
-                    <Badge key={lang} variant="secondary">{lang.toUpperCase()}</Badge>
-                  ))}
+              {profile.languages && profile.languages.length > 0 && (
+                <div>
+                  <h2 className="font-bold text-lg mb-2">Sprachen</h2>
+                  <div className="flex gap-2">
+                    {profile.languages.map((lang) => (
+                      <Badge key={lang} variant="secondary">{lang.toUpperCase()}</Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <h2 className="font-bold text-lg mb-2">Einsatzgebiet</h2>
                 <p>{profile.city} und Umgebung</p>
               </div>
 
-              {profile.verified && (
+              {profile.verified_at && (
                 <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                   <p className="text-sm">
                     <strong>Verifiziert:</strong> Identität und Kontaktdaten wurden durch ESCORIA geprüft.
@@ -98,29 +157,7 @@ const Profil = () => {
                 </div>
               )}
 
-              <div className="flex gap-3 flex-wrap">
-                {profile.contact_whatsapp && (
-                  <a 
-                    href={`https://wa.me/${profile.contact_whatsapp.replace(/[^0-9]/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1"
-                  >
-                    <Button className="w-full">
-                      Nachricht per WhatsApp
-                    </Button>
-                  </a>
-                )}
-                {profile.contact_phone && (
-                  <a href={`tel:${profile.contact_phone}`} className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      Anrufen
-                    </Button>
-                  </a>
-                )}
-              </div>
-
-              <Dialog>
+              <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="destructive" size="sm">
                     Profil melden
@@ -154,7 +191,13 @@ const Profil = () => {
                         rows={4}
                       />
                     </div>
-                    <Button className="w-full">Meldung absenden</Button>
+                    <Button 
+                      className="w-full" 
+                      onClick={handleReportSubmit}
+                      disabled={!reportReason || createReport.isPending}
+                    >
+                      {createReport.isPending ? 'Wird gesendet...' : 'Meldung absenden'}
+                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>

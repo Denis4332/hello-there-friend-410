@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
-import { mockProfiles } from '@/data/mockData';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useSearchProfiles } from '@/hooks/useProfiles';
+import { useCategories } from '@/hooks/useCategories';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,53 +17,28 @@ const Suche = () => {
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
   const [sort, setSort] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
+  
+  const { data: categories = [] } = useCategories();
+  const { data: profiles = [], isLoading } = useSearchProfiles({
+    location: searchParams.get('ort') || undefined,
+    categoryId: searchParams.get('kategorie') || undefined,
+    keyword: searchParams.get('stichwort') || undefined,
+  });
 
-  // TODO backend: Filter-Parameter an API übergeben und Ergebnisse rendern
-  // TODO distance: Haversine oder Google Places Integration
-  // TODO sort: serverseitig unterstützen
-
-  // Filter profiles
-  const filteredProfiles = mockProfiles.filter((profile) => {
-    // Stadt-Filter (case-insensitive)
-    if (location && !profile.city.toLowerCase().includes(location.toLowerCase())) {
-      return false;
-    }
-    
-    // Kategorie-Filter
-    if (category && !profile.categories.some(c => 
-      c.toLowerCase() === category.toLowerCase()
-    )) {
-      return false;
-    }
-    
-    // Stichwort-Filter (Name + Bio)
-    if (keyword) {
-      const kw = keyword.toLowerCase();
-      if (!profile.display_name.toLowerCase().includes(kw) &&
-          !profile.short_bio.toLowerCase().includes(kw)) {
-        return false;
+  // Sort profiles (client-side for now)
+  const sortedProfiles = useMemo(() => {
+    return [...profiles].sort((a, b) => {
+      switch (sort) {
+        case 'verified':
+          const aVerified = a.verified_at ? 1 : 0;
+          const bVerified = b.verified_at ? 1 : 0;
+          return bVerified - aVerified;
+        case 'newest':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
-    }
-    
-    return true;
-  });
-
-  // Sort profiles
-  const sortedProfiles = [...filteredProfiles].sort((a, b) => {
-    switch (sort) {
-      case 'verified':
-        return (b.verified ? 1 : 0) - (a.verified ? 1 : 0);
-      case 'price-asc':
-        // TODO: price_range parsing
-        return 0;
-      case 'price-desc':
-        // TODO: price_range parsing
-        return 0;
-      case 'newest':
-      default:
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    }
-  });
+    });
+  }, [profiles, sort]);
 
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;
@@ -130,12 +106,11 @@ const Suche = () => {
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="">Alle Kategorien</option>
-                  <option value="freelancer">Freelancer</option>
-                  <option value="agenturen">Agenturen</option>
-                  <option value="studios">Studios</option>
-                  <option value="lifestyle">Lifestyle</option>
-                  <option value="events">Events</option>
-                  <option value="service">Service</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -180,7 +155,9 @@ const Suche = () => {
             </div>
           </div>
 
-          {paginatedProfiles.length > 0 ? (
+          {isLoading ? (
+            <p className="text-center text-muted-foreground py-12">Lade Ergebnisse...</p>
+          ) : paginatedProfiles.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 gap-4">
                 {paginatedProfiles.map((profile) => (

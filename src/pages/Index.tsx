@@ -4,9 +4,10 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
 import { CityCard } from '@/components/CityCard';
-import { mockProfiles } from '@/data/mockData';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useFeaturedProfiles, useTopCities } from '@/hooks/useProfiles';
+import { useCategories } from '@/hooks/useCategories';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -14,6 +15,10 @@ const Index = () => {
   const [radius, setRadius] = useState('25');
   const [category, setCategory] = useState('');
   const [keyword, setKeyword] = useState('');
+  
+  const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
+  const { data: topCities = [], isLoading: loadingCities } = useTopCities(4);
+  const { data: categories = [] } = useCategories();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,12 +80,11 @@ const Index = () => {
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">Alle Kategorien</option>
-                    <option value="freelancer">Freelancer</option>
-                    <option value="agenturen">Agenturen</option>
-                    <option value="studios">Studios</option>
-                    <option value="lifestyle">Lifestyle</option>
-                    <option value="events">Events</option>
-                    <option value="service">Service</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -108,23 +112,34 @@ const Index = () => {
         <section className="py-12">
           <div className="container mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6">Top-Städte</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <CityCard name="Zürich" slug="zuerich" />
-              <CityCard name="Basel" slug="basel" />
-              <CityCard name="Bern" slug="bern" />
-              <CityCard name="Genf" slug="genf" />
-            </div>
+            {loadingCities ? (
+              <p className="text-muted-foreground">Lade Städte...</p>
+            ) : topCities.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {topCities.map((city) => (
+                  <CityCard key={city.slug} name={city.city} slug={city.slug} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Keine Städte verfügbar</p>
+            )}
           </div>
         </section>
 
         <section className="py-12 bg-muted">
           <div className="container mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6">Aktuelle Profile</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              {mockProfiles.map((profile) => (
-                <ProfileCard key={profile.id} profile={profile} />
-              ))}
-            </div>
+            {loadingProfiles ? (
+              <p className="text-muted-foreground">Lade Profile...</p>
+            ) : featuredProfiles.length > 0 ? (
+              <div className="grid md:grid-cols-2 gap-4">
+                {featuredProfiles.map((profile) => (
+                  <ProfileCard key={profile.id} profile={profile} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Keine Profile verfügbar</p>
+            )}
           </div>
         </section>
       </main>

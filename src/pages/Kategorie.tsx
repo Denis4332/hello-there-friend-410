@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
-import { mockProfiles } from '@/data/mockData';
+import { useCategoryProfiles } from '@/hooks/useProfiles';
+import { useCategoryBySlug } from '@/hooks/useCategories';
 
 const categoryData: Record<string, { name: string; intro: string }> = {
   freelancer: {
@@ -37,9 +38,14 @@ const categoryData: Record<string, { name: string; intro: string }> = {
 const Kategorie = () => {
   const { slug } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
-  const data = slug ? categoryData[slug] : null;
+  
+  const { data: category, isLoading: loadingCategory } = useCategoryBySlug(slug);
+  const { data: categoryProfiles = [], isLoading: loadingProfiles } = useCategoryProfiles(category?.id);
+  
+  // Fallback to hardcoded intro texts
+  const data = slug && categoryData[slug] ? categoryData[slug] : null;
 
-  if (!data) {
+  if (!category && !loadingCategory) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -56,10 +62,6 @@ const Kategorie = () => {
     );
   }
 
-  const categoryProfiles = mockProfiles.filter((p) =>
-    p.categories.some((c) => c.toLowerCase() === data.name.toLowerCase())
-  );
-
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;
   const totalPages = Math.ceil(categoryProfiles.length / ITEMS_PER_PAGE);
@@ -74,11 +76,13 @@ const Kategorie = () => {
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-4">
-            Kategorie: {data.name} – verifizierte Profile
+            Kategorie: {category?.name || data?.name} – verifizierte Profile
           </h1>
-          <p className="text-muted-foreground mb-8 max-w-3xl">{data.intro}</p>
+          <p className="text-muted-foreground mb-8 max-w-3xl">{data?.intro}</p>
 
-          {paginatedProfiles.length > 0 ? (
+          {loadingProfiles ? (
+            <p className="text-center text-muted-foreground py-12">Lade Profile...</p>
+          ) : paginatedProfiles.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 gap-4">
                 {paginatedProfiles.map((profile) => (

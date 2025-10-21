@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { mockCities } from '@/data/mockData';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAllCities } from '@/hooks/useProfiles';
 
 const Cities = () => {
+  const { data: cities = [], isLoading } = useAllCities();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -15,18 +17,25 @@ const Cities = () => {
             Finden Sie verifizierte Anbieter in Ihrer Region. Wählen Sie eine Stadt aus, um alle verfügbaren Profile anzuzeigen.
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {mockCities.map((city) => (
-              <Link key={city.id} to={`/stadt/${city.name.toLowerCase()}`}>
-                <Card className="hover:border-primary transition-colors">
-                  <CardContent className="p-6 text-center">
-                    <h3 className="font-bold text-lg">{city.name}</h3>
-                    <p className="text-sm text-muted-foreground">{city.canton}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+          {isLoading ? (
+            <p className="text-muted-foreground">Lade Städte...</p>
+          ) : cities.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {cities.map((city) => (
+                <Link key={city.slug} to={`/stadt/${city.slug}`}>
+                  <Card className="hover:border-primary transition-colors">
+                    <CardContent className="p-6 text-center">
+                      <h3 className="font-bold text-lg">{city.city}</h3>
+                      <p className="text-sm text-muted-foreground">{city.canton}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{city.count} Profile</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Keine Städte verfügbar</p>
+          )}
         </div>
       </main>
       <Footer />

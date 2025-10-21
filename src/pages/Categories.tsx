@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { mockCategories } from '@/data/mockData';
 import { Card, CardContent } from '@/components/ui/card';
+import { useCategories } from '@/hooks/useCategories';
 
 const Categories = () => {
+  const { data: categories = [], isLoading } = useCategories();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -15,11 +17,11 @@ const Categories = () => {
             Entdecken Sie verifizierte Profile nach Kategorie. Jedes Profil wird vor der Freischaltung geprüft.
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {mockCategories
-              .filter((cat) => cat.active)
-              .sort((a, b) => a.sort_order - b.sort_order)
-              .map((category) => (
+          {isLoading ? (
+            <p className="text-muted-foreground">Lade Kategorien...</p>
+          ) : categories.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {categories.map((category) => (
                 <Link key={category.id} to={`/kategorie/${category.slug}`}>
                   <Card className="hover:border-primary transition-colors">
                     <CardContent className="p-6 text-center">
@@ -28,7 +30,10 @@ const Categories = () => {
                   </Card>
                 </Link>
               ))}
-          </div>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Keine Kategorien verfügbar</p>
+          )}
         </div>
       </main>
       <Footer />
