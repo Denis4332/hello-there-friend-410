@@ -281,20 +281,26 @@ export type Database = {
       user_roles: {
         Row: {
           created_at: string | null
+          display_name: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["user_status"]
           user_id: string
         }
         Insert: {
           created_at?: string | null
+          display_name?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["user_status"]
           user_id: string
         }
         Update: {
           created_at?: string | null
+          display_name?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["user_status"]
           user_id?: string
         }
         Relationships: []
@@ -304,6 +310,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_all_users_for_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          profile_count: number
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["user_status"]
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -314,6 +332,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      user_status: "active" | "suspended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -442,6 +461,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      user_status: ["active", "suspended"],
     },
   },
 } as const
