@@ -95,6 +95,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Verify profile ownership - CRITICAL SECURITY CHECK
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('user_id')
+      .eq('id', profileId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Profile not found:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Profile not found' }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (profile.user_id !== user.id) {
+      console.error(`Unauthorized upload attempt: user ${user.id} tried to upload to profile ${profileId}`);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: You can only upload photos to your own profile' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log(`Profile ownership verified for user ${user.id}`);
     console.log(`Validating image upload for profile ${profileId}: ${fileName}`);
 
     // Validate file size (5MB max)

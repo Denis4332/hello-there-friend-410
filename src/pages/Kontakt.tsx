@@ -5,23 +5,78 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
+
+const contactSchema = z.object({
+  name: z.string().min(1, 'Name ist erforderlich').max(100, 'Name zu lang'),
+  email: z.string().email('Ungültige E-Mail-Adresse').max(255, 'E-Mail zu lang'),
+  message: z.string().min(10, 'Nachricht muss mindestens 10 Zeichen haben').max(1000, 'Nachricht zu lang')
+});
 
 const Kontakt = () => {
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO backend: Kontaktformular-Daten an API senden
-    toast({
-      title: 'Nachricht gesendet',
-      description: 'Wir melden uns in der Regel innerhalb von 24-48h.',
-    });
-    setName('');
-    setEmail('');
-    setMessage('');
+    
+    // Client-side validation
+    const validation = contactSchema.safeParse({ name, email, message });
+    if (!validation.success) {
+      toast({
+        title: 'Ungültige Eingabe',
+        description: validation.error.errors[0].message,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Save to database
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert({ 
+          name: name.trim(), 
+          email: email.trim(), 
+          message: message.trim() 
+        });
+
+      if (error) {
+        console.error('Contact form submission error:', error);
+        toast({
+          title: 'Fehler',
+          description: 'Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Success
+      toast({
+        title: 'Nachricht gesendet',
+        description: 'Wir melden uns in der Regel innerhalb von 24-48h.',
+      });
+
+      // Clear form
+      setName('');
+      setEmail('');
+      setMessage('');
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Ein unerwarteter Fehler ist aufgetreten.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -67,8 +122,8 @@ const Kontakt = () => {
                   onChange={(e) => setMessage(e.target.value)}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Senden
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Wird gesendet...' : 'Senden'}
               </Button>
             </form>
             <p className="text-sm text-muted-foreground mt-4">
