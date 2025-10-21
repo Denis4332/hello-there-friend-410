@@ -1,12 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('escoria_authed');
-    localStorage.removeItem('escoria_admin_email');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/admin/login');
   };
 
