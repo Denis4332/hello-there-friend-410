@@ -31,43 +31,59 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
     setUploading(true);
 
     try {
+      // Get session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Nicht authentifiziert');
+      }
+
       const uploadPromises = Array.from(files).map(async (file, index) => {
-        // Validate file size (max 5MB)
+        // Client-side validation (for UX)
         if (file.size > 5 * 1024 * 1024) {
           throw new Error(`${file.name} ist zu groß (max. 5MB)`);
         }
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
           throw new Error(`${file.name} ist kein Bild`);
         }
 
-        // Generate unique filename
+        // Generate cryptographically random filename
         const fileExt = file.name.split('.').pop();
-        const fileName = `${profileId}/${Date.now()}-${index}.${fileExt}`;
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        const randomName = Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        const fileName = `${randomName}.${fileExt}`;
 
-        // Upload to Supabase Storage
-        const { error: uploadError, data } = await supabase.storage
-          .from('profile-photos')
-          .upload(fileName, file);
+        // Upload via edge function for server-side validation
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('profileId', profileId);
+        formData.append('fileName', fileName);
 
-        if (uploadError) throw uploadError;
+        const { data, error } = await supabase.functions.invoke('validate-image', {
+          body: formData,
+        });
+
+        if (error) {
+          throw new Error(error.message || 'Upload fehlgeschlagen');
+        }
+
+        if (!data.success) {
+          throw new Error(data.error || 'Validierung fehlgeschlagen');
+        }
 
         // Insert photo record into database
         const { error: dbError } = await supabase.from('photos').insert({
           profile_id: profileId,
-          storage_path: fileName,
-          is_primary: previews.length === 0 && index === 0, // First photo is primary
+          storage_path: data.path,
+          is_primary: previews.length === 0 && index === 0,
         });
 
         if (dbError) throw dbError;
 
-        // Get public URL for preview
-        const { data: urlData } = supabase.storage
-          .from('profile-photos')
-          .getPublicUrl(fileName);
-
-        return urlData.publicUrl;
+        return data.url;
       });
 
       const urls = await Promise.all(uploadPromises);
