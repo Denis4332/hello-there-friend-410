@@ -30,7 +30,7 @@ export interface Profile {
   status: ProfileStatus;
   created_at: string;
   updated_at: string;
-  // Relations (joined data)
+  // Relations (populated via joins)
   categories?: Category[];
   photos?: Photo[];
 }
@@ -41,7 +41,13 @@ export interface Category {
   slug: string;
   active: boolean;
   sort_order: number;
-  created_at: string;
+  created_at?: string;
+}
+
+export interface Canton {
+  id: string;
+  name: string;
+  abbreviation: string;
 }
 
 export interface ProfileCategory {
@@ -75,32 +81,27 @@ export interface ContactMessage {
   created_at: string;
 }
 
-export interface Canton {
-  id: string;
-  name: string;
-  abbreviation: string;
+// Form validation schemas (for use with react-hook-form + zod)
+export interface ProfileFormData {
+  display_name: string;
+  age: number;
+  gender?: Gender;
+  city: string;
+  canton: string;
+  postal_code?: string;
+  about_me?: string;
+  languages: string[];
+  category_ids: string[];
 }
 
-// Search/Filter types
-export interface ProfileFilters {
+export interface SearchFilters {
   city?: string;
   canton?: string;
   postal_code?: string;
   radius_km?: number;
-  min_age?: number;
-  max_age?: number;
+  category_ids?: string[];
+  age_min?: number;
+  age_max?: number;
   gender?: Gender;
-  categories?: string[];
   languages?: string[];
-  is_premium?: boolean;
-  verified_only?: boolean;
-}
-
-// Pagination types
-export interface PaginatedResponse<T> {
-  data: T[];
-  count: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
 }
