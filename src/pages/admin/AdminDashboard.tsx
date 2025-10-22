@@ -31,10 +31,17 @@ const AdminDashboard = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'open');
       
+      // Count unread messages
+      const { count: unreadMessages } = await supabase
+        .from('contact_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'unread');
+      
       return [
         { label: 'Zu prüfen (Pending)', value: pendingCount || 0, link: '/admin/profile?status=pending' },
         { label: 'Verifiziert', value: verifiedCount || 0, link: '/admin/profile?verified=true' },
         { label: 'Live (Active)', value: activeCount || 0, link: '/admin/profile?status=active' },
+        { label: 'Neue Nachrichten', value: unreadMessages || 0, link: '/admin/messages' },
         { label: 'Gemeldet', value: reportsCount || 0, link: '/admin/reports' },
       ];
     }
@@ -48,8 +55,8 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
           
           {isLoading ? (
-            <div className="grid md:grid-cols-4 gap-4 mb-8">
-              {[1, 2, 3, 4].map((i) => (
+            <div className="grid md:grid-cols-5 gap-4 mb-8">
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="bg-card border rounded-lg p-6">
                   <div className="h-4 bg-muted rounded w-24 mb-2 animate-pulse" />
                   <div className="h-8 bg-muted rounded w-12 animate-pulse" />
@@ -57,7 +64,7 @@ const AdminDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="grid md:grid-cols-4 gap-4 mb-8">
+            <div className="grid md:grid-cols-5 gap-4 mb-8">
               {stats?.map((stat) => (
                 <Link key={stat.label} to={stat.link}>
                   <div className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
@@ -95,6 +102,11 @@ const AdminDashboard = () => {
               <Link to="/admin/reports">
                 <div className="border rounded p-4 hover:border-primary transition-colors">
                   Meldungen bearbeiten
+                </div>
+              </Link>
+              <Link to="/admin/messages">
+                <div className="border rounded p-4 hover:border-primary transition-colors">
+                  Kontaktanfragen
                 </div>
               </Link>
             </div>

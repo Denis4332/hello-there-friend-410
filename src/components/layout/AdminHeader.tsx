@@ -1,10 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadCount } from '@/hooks/useContactMessages';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { data: unreadCount } = useUnreadCount();
 
   const handleLogout = async () => {
     await signOut();
@@ -37,6 +40,14 @@ export const AdminHeader = () => {
               </Link>
               <Link to="/admin/reports" className="hover:text-primary">
                 Meldungen
+              </Link>
+              <Link to="/admin/messages" className="hover:text-primary flex items-center gap-2">
+                Nachrichten
+                {unreadCount && unreadCount > 0 && (
+                  <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                    {unreadCount}
+                  </Badge>
+                )}
               </Link>
             </nav>
           </div>
