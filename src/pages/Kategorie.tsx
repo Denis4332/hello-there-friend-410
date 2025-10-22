@@ -7,6 +7,7 @@ import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCategoryProfiles } from '@/hooks/useProfiles';
 import { useCategoryBySlug } from '@/hooks/useCategories';
+import { SEO } from '@/components/SEO';
 
 const categoryData: Record<string, { name: string; intro: string }> = {
   freelancer: {
@@ -72,6 +73,11 @@ const Kategorie = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={`${category?.name || data?.name} - Verifizierte Profile in der Schweiz`}
+        description={data?.intro || `Finde verifizierte ${category?.name || data?.name} Profile in der Schweiz`}
+        url={`https://escoria.ch/kategorie/${slug}`}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">

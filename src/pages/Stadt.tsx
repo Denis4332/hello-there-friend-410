@@ -6,6 +6,7 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCityProfiles } from '@/hooks/useProfiles';
+import { SEO } from '@/components/SEO';
 
 const cityData: Record<string, { name: string; intro: string }> = {
   zuerich: {
@@ -63,6 +64,11 @@ const Stadt = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={`Escort ${data.name} - Verifizierte Profile & Agenturen`}
+        description={data.intro}
+        url={`https://escoria.ch/stadt/${slug}`}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useFeaturedProfiles, useTopCities } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
+import { SEO } from '@/components/SEO';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -32,6 +33,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title="Verifizierte Anbieter in der Schweiz"
+        description="Finde verifizierte Begleitservice-Anbieter in deiner Nähe. Escort Services in Zürich, Bern, Basel und weiteren Schweizer Städten."
+        url="https://escoria.ch"
+      />
       <Header />
       <main className="flex-1">
         <section className="bg-muted py-16">

@@ -195,6 +195,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           postal_code: string | null
+          slug: string | null
           status: string | null
           updated_at: string | null
           user_id: string
@@ -214,6 +215,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           postal_code?: string | null
+          slug?: string | null
           status?: string | null
           updated_at?: string | null
           user_id: string
@@ -233,6 +235,7 @@ export type Database = {
           lat?: number | null
           lng?: number | null
           postal_code?: string | null
+          slug?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string
@@ -311,7 +314,7 @@ export type Database = {
     }
     Functions: {
       get_all_users_for_admin: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           display_name: string

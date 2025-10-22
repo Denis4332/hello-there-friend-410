@@ -10,6 +10,7 @@ import { useProfileBySlug } from '@/hooks/useProfiles';
 import { useCreateReport } from '@/hooks/useReports';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories } from '@/hooks/useCategories';
+import { SEO } from '@/components/SEO';
 
 const Profil = () => {
   const { slug } = useParams();
@@ -80,6 +81,13 @@ const Profil = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={`${profile.display_name}, ${profile.age} aus ${profile.city}`}
+        description={profile.about_me?.slice(0, 160) || `${profile.display_name}, ${profile.age} Jahre, aus ${profile.city}, ${profile.canton}`}
+        image={photoUrl || undefined}
+        url={`https://escoria.ch/profil/${profile.slug}`}
+        type="profile"
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-4xl">
