@@ -18,6 +18,8 @@ import NotFound from "./pages/NotFound";
 import ServerError from "./pages/ServerError";
 import Auth from "./pages/Auth";
 import ProfileCreate from "./pages/ProfileCreate";
+import UserDashboard from "./pages/UserDashboard";
+import ProfileEdit from "./pages/ProfileEdit";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProfile from "./pages/admin/AdminProfile";
@@ -55,6 +57,22 @@ const App = () => (
               element={
                 <UserProtectedRoute>
                   <ProfileCreate />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/mein-profil"
+              element={
+                <UserProtectedRoute>
+                  <UserDashboard />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/profil/bearbeiten"
+              element={
+                <UserProtectedRoute>
+                  <ProfileEdit />
                 </UserProtectedRoute>
               }
             />

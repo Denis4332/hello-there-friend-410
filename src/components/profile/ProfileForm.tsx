@@ -27,12 +27,14 @@ interface ProfileFormProps {
   cantons: Array<{ id: string; name: string; abbreviation: string }>;
   categories: Array<{ id: string; name: string; slug: string }>;
   isSubmitting?: boolean;
+  defaultValues?: Partial<ProfileFormData>;
+  submitButtonText?: string;
 }
 
 const LANGUAGES = ['Deutsch', 'Français', 'Italiano', 'English', 'Español'];
 const GENDERS = ['Männlich', 'Weiblich', 'Divers'];
 
-export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting }: ProfileFormProps) => {
+export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
   const {
     register,
     handleSubmit,
@@ -41,7 +43,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting }: Pro
     watch,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
+    defaultValues: defaultValues || {
       languages: [],
       category_ids: [],
     },
@@ -199,7 +201,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting }: Pro
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? 'Wird gespeichert...' : 'Profil erstellen'}
+        {isSubmitting ? 'Wird gespeichert...' : submitButtonText}
       </Button>
     </form>
   );
