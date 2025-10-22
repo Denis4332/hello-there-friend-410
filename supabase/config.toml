@@ -2,3 +2,6 @@ project_id = "fwatgrgbwgtueunihbwv"
 
 [functions.validate-image]
 verify_jwt = true
+
+[functions.generate-sitemap]
+verify_jwt = false

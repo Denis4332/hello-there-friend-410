@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /mein-profil/
+Disallow: /auth/
 
-Sitemap: https://escoria.ch/sitemap.xml
+Sitemap: https://fwatgrgbwgtueunihbwv.supabase.co/functions/v1/generate-sitemap
