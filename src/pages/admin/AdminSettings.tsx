@@ -13,6 +13,10 @@ import { SEO } from '@/components/SEO';
 export default function AdminSettings() {
   const { data: contentSettings, isLoading: contentLoading } = useSiteSettings('content');
   const { data: seoSettings, isLoading: seoLoading } = useSiteSettings('seo');
+  const { data: navigationSettings, isLoading: navigationLoading } = useSiteSettings('navigation');
+  const { data: searchSettings, isLoading: searchLoading } = useSiteSettings('search');
+  const { data: profileSettings, isLoading: profileLoading } = useSiteSettings('profile');
+  const { data: listingsSettings, isLoading: listingsLoading } = useSiteSettings('listings');
   const updateMutation = useUpdateSiteSetting();
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
 
@@ -102,8 +106,12 @@ export default function AdminSettings() {
           </div>
 
           <Tabs defaultValue="content" className="space-y-6">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="content">Inhalte</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+              <TabsTrigger value="content">Startseite</TabsTrigger>
+              <TabsTrigger value="navigation">Navigation</TabsTrigger>
+              <TabsTrigger value="search">Suche</TabsTrigger>
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="listings">Listen</TabsTrigger>
               <TabsTrigger value="seo">SEO</TabsTrigger>
             </TabsList>
 
@@ -122,6 +130,86 @@ export default function AdminSettings() {
                     </div>
                   ) : (
                     contentSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="navigation" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Navigation & Footer</CardTitle>
+                  <CardDescription>
+                    Passe Header und Footer-Texte an
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {navigationLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    navigationSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="search" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Suchseite</CardTitle>
+                  <CardDescription>
+                    Passe alle Texte der Suchseite an
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {searchLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    searchSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="profile" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profil-Seiten</CardTitle>
+                  <CardDescription>
+                    Passe alle Texte der Profil-Ansicht an
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {profileLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    profileSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="listings" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Listen (Kategorien & Städte)</CardTitle>
+                  <CardDescription>
+                    Passe Texte für Kategorien und Städte-Übersichten an
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {listingsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    listingsSettings?.map(renderSettingField)
                   )}
                 </CardContent>
               </Card>
