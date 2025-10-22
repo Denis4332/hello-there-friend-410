@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useFeaturedProfiles, useTopCities } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { SEO } from '@/components/SEO';
 
 const Index = () => {
@@ -20,6 +21,13 @@ const Index = () => {
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
   const { data: topCities = [], isLoading: loadingCities } = useTopCities(4);
   const { data: categories = [] } = useCategories();
+  
+  const { data: siteTitle } = useSiteSetting('site_title');
+  const { data: heroSubtitle } = useSiteSetting('hero_subtitle');
+  const { data: searchLocationPlaceholder } = useSiteSetting('search_location_placeholder');
+  const { data: searchKeywordPlaceholder } = useSiteSetting('search_keyword_placeholder');
+  const { data: searchButtonText } = useSiteSetting('search_button_text');
+  const { data: metaDescription } = useSiteSetting('meta_description');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +42,8 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title="Verifizierte Anbieter in der Schweiz"
-        description="Finde verifizierte Begleitservice-Anbieter in deiner Nähe. Escort Services in Zürich, Bern, Basel und weiteren Schweizer Städten."
+        title={siteTitle || "Verifizierte Anbieter in der Schweiz"}
+        description={metaDescription || "Finde verifizierte Begleitservice-Anbieter in deiner Nähe. Escort Services in Zürich, Bern, Basel und weiteren Schweizer Städten."}
         url="https://escoria.ch"
       />
       <Header />
@@ -43,8 +51,13 @@ const Index = () => {
         <section className="bg-muted py-16">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl md:text-4xl font-bold text-center mb-8">
-              Verifizierte Anbieter in der Schweiz
+              {siteTitle || "Verifizierte Anbieter in der Schweiz"}
             </h1>
+            {heroSubtitle && (
+              <p className="text-center text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
+                {heroSubtitle}
+              </p>
+            )}
             <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -53,7 +66,7 @@ const Index = () => {
                   </label>
                   <Input
                     id="q_location"
-                    placeholder="PLZ oder Ort"
+                    placeholder={searchLocationPlaceholder || "PLZ oder Ort"}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                   />
@@ -99,14 +112,14 @@ const Index = () => {
                   </label>
                   <Input
                     id="q_keyword"
-                    placeholder="Name, Service..."
+                    placeholder={searchKeywordPlaceholder || "Stichwort (optional)"}
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                   />
                 </div>
               </div>
               <Button type="submit" className="w-full">
-                Suchen
+                {searchButtonText || "Suchen"}
               </Button>
               <p className="text-xs text-muted-foreground mt-2">
                 Umkreissuche benötigt Standortfreigabe oder Google Places API (folgt).

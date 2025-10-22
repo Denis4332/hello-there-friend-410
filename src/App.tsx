@@ -29,6 +29,7 @@ import AdminCategories from "./pages/admin/AdminCategories";
 import AdminCities from "./pages/admin/AdminCities";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminSettings from "./pages/admin/AdminSettings";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 
@@ -87,6 +88,7 @@ const App = () => (
             <Route path="/admin/cities" element={<ProtectedRoute><AdminCities /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
             <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -49,6 +49,9 @@ export const AdminHeader = () => {
                   </Badge>
                 )}
               </Link>
+              <Link to="/admin/settings" className="hover:text-primary">
+                Einstellungen
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">
