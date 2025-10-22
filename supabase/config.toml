@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.generate-sitemap]
 verify_jwt = false
+
+[functions.log-error]
+verify_jwt = false

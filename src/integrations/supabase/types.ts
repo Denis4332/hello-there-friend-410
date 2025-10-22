@@ -89,6 +89,39 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          browser_info: string | null
+          component_stack: string | null
+          created_at: string
+          error_message: string
+          error_stack: string | null
+          id: string
+          url: string
+          user_id: string | null
+        }
+        Insert: {
+          browser_info?: string | null
+          component_stack?: string | null
+          created_at?: string
+          error_message: string
+          error_stack?: string | null
+          id?: string
+          url: string
+          user_id?: string | null
+        }
+        Update: {
+          browser_info?: string | null
+          component_stack?: string | null
+          created_at?: string
+          error_message?: string
+          error_stack?: string | null
+          id?: string
+          url?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       photos: {
         Row: {
           created_at: string | null
