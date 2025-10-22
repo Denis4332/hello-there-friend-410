@@ -329,6 +329,8 @@ const ProfileEdit = () => {
                             src={getPublicUrl(photo.storage_path)}
                             alt="Profil Foto"
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                           />
                         </div>
                         {photo.is_primary && (

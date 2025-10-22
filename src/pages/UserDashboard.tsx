@@ -244,6 +244,8 @@ const UserDashboard = () => {
                             src={getPublicUrl(photo.storage_path)}
                             alt="Profil Foto"
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                           />
                           {photo.is_primary && (
                             <div className="absolute top-2 right-2">

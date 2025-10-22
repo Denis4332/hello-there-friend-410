@@ -98,6 +98,8 @@ const Profil = () => {
                   src={photoUrl} 
                   alt={profile.display_name}
                   className="w-24 h-24 rounded-full object-cover flex-shrink-0"
+                  loading="lazy"
+                  decoding="async"
                 />
               ) : (
                 <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-3xl font-bold flex-shrink-0">

@@ -21,6 +21,8 @@ export const ProfileCard = ({ profile }: ProfileCardProps) => {
             src={photoUrl} 
             alt={profile.display_name}
             className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">
