@@ -16,7 +16,7 @@ export const useDropdownOptions = (category: string) => {
   return useQuery({
     queryKey: ['dropdown-options', category],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('dropdown_options')
         .select('*')
         .eq('category', category)
@@ -33,7 +33,7 @@ export const useAllDropdownOptions = () => {
   return useQuery({
     queryKey: ['dropdown-options-all'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('dropdown_options')
         .select('*')
         .order('category')
@@ -50,7 +50,7 @@ export const useCreateDropdownOption = () => {
 
   return useMutation({
     mutationFn: async (option: Omit<DropdownOption, 'id' | 'created_at'>) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('dropdown_options')
         .insert(option);
 
@@ -72,7 +72,7 @@ export const useUpdateDropdownOption = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<DropdownOption> & { id: string }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('dropdown_options')
         .update(updates)
         .eq('id', id);
@@ -95,7 +95,7 @@ export const useDeleteDropdownOption = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('dropdown_options')
         .delete()
         .eq('id', id);

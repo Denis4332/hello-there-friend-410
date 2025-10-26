@@ -7,23 +7,23 @@ import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const Cities = () => {
   const { data: cities = [], isLoading } = useCities();
-  const { data: citiesTitle } = useSiteSetting('cities_title');
-  const { data: citiesDescription } = useSiteSetting('cities_description');
-  const { data: citiesLoading } = useSiteSetting('cities_loading');
-  const { data: citiesEmpty } = useSiteSetting('cities_empty');
+  const { data: pageTitle } = useSiteSetting('cities_page_title');
+  const { data: pageDescription } = useSiteSetting('cities_page_subtitle');
+  const { data: loadingText } = useSiteSetting('cities_loading_text');
+  const { data: emptyText } = useSiteSetting('cities_empty_text');
   
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-4">{citiesTitle || 'Alle Städte'}</h1>
+          <h1 className="text-3xl font-bold mb-4">{pageTitle || 'Alle Städte'}</h1>
           <p className="text-muted-foreground mb-8 max-w-3xl">
-            {citiesDescription || 'Finden Sie verifizierte Anbieter in Ihrer Region. Wählen Sie eine Stadt aus, um alle verfügbaren Profile anzuzeigen.'}
+            {pageDescription || 'Finden Sie verifizierte Anbieter in Ihrer Region. Wählen Sie eine Stadt aus, um alle verfügbaren Profile anzuzeigen.'}
           </p>
 
           {isLoading ? (
-            <p className="text-muted-foreground">{citiesLoading || 'Lade Städte...'}</p>
+            <p className="text-muted-foreground">{loadingText || 'Lade Städte...'}</p>
           ) : cities.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {cities.map((city) => (
@@ -39,7 +39,7 @@ const Cities = () => {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">{citiesEmpty || 'Keine Städte verfügbar'}</p>
+            <p className="text-muted-foreground">{emptyText || 'Keine Städte verfügbar'}</p>
           )}
         </div>
       </main>
