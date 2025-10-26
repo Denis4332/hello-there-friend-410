@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 interface SEOProps {
   title: string;
@@ -15,7 +16,8 @@ export const SEO = ({
   url,
   type = 'website' 
 }: SEOProps) => {
-  const fullTitle = `${title} | ESCORIA`;
+  const { data: siteName } = useSiteSetting('site_name');
+  const fullTitle = `${title} | ${siteName || 'ESCORIA'}`;
   const currentUrl = url || window.location.href;
   
   return (

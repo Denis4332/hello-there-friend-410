@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Loader2, ExternalLink, Edit, Trash2, Star } from 'lucide-react';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +18,10 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [photos, setPhotos] = useState<any[]>([]);
+
+  const { data: dashboardWelcome } = useSiteSetting('dashboard_welcome_text');
+  const { data: createProfileButton } = useSiteSetting('dashboard_create_profile_button');
+  const { data: editProfileButton } = useSiteSetting('dashboard_edit_profile_button');
 
   useEffect(() => {
     loadProfile();
@@ -118,12 +123,12 @@ const UserDashboard = () => {
         <Header />
         <div className="min-h-screen bg-background">
           <div className="container mx-auto px-4 py-16 text-center">
-            <h1 className="text-3xl font-bold mb-4">Kein Profil vorhanden</h1>
+            <h1 className="text-3xl font-bold mb-4">{dashboardWelcome || 'Kein Profil vorhanden'}</h1>
             <p className="text-muted-foreground mb-8">
               Du hast noch kein Profil erstellt. Erstelle jetzt dein erstes Profil.
             </p>
             <Button onClick={() => navigate('/profil/erstellen')}>
-              Profil erstellen
+              {createProfileButton || 'Profil erstellen'}
             </Button>
           </div>
         </div>
@@ -270,7 +275,7 @@ const UserDashboard = () => {
             <div className="flex gap-4 mt-8">
               <Button onClick={() => navigate('/profil/bearbeiten')} className="flex-1">
                 <Edit className="h-4 w-4 mr-2" />
-                Profil bearbeiten
+                {editProfileButton || 'Profil bearbeiten'}
               </Button>
 
               <AlertDialog>

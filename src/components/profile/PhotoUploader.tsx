@@ -3,6 +3,7 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 interface PhotoUploaderProps {
   profileId: string;
@@ -13,16 +14,24 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
   const { toast } = useToast();
+  
+  const { data: maxFileSize } = useSiteSetting('upload_max_file_size_mb');
+  const { data: maxPhotos } = useSiteSetting('upload_max_photos_per_profile');
+  const { data: allowedFormats } = useSiteSetting('upload_allowed_formats');
+
+  const maxSizeMB = parseInt(maxFileSize || '5');
+  const maxPhotosCount = parseInt(maxPhotos || '5');
+  const allowedFormatsList = allowedFormats?.split(',') || ['image/jpeg', 'image/png', 'image/webp'];
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     // Validation
-    if (previews.length + files.length > 5) {
+    if (previews.length + files.length > maxPhotosCount) {
       toast({
         title: 'Zu viele Fotos',
-        description: 'Maximal 5 Fotos erlaubt',
+        description: `Maximal ${maxPhotosCount} Fotos erlaubt`,
         variant: 'destructive',
       });
       return;
@@ -39,12 +48,12 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
 
       const uploadPromises = Array.from(files).map(async (file, index) => {
         // Client-side validation (for UX)
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} ist zu groß (max. 5MB)`);
+        if (file.size > maxSizeMB * 1024 * 1024) {
+          throw new Error(`${file.name} ist zu groß (max. ${maxSizeMB}MB)`);
         }
 
-        if (!file.type.startsWith('image/')) {
-          throw new Error(`${file.name} ist kein Bild`);
+        if (!allowedFormatsList.includes(file.type)) {
+          throw new Error(`${file.name} ist kein erlaubtes Bildformat`);
         }
 
         // Generate cryptographically random filename
@@ -123,7 +132,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
               {uploading ? 'Wird hochgeladen...' : 'Klicken zum Hochladen'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Max. 5 Fotos, je max. 5MB
+              Max. {maxPhotosCount} Fotos, je max. {maxSizeMB}MB
             </p>
           </div>
           <input
@@ -133,7 +142,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
             accept="image/*"
             multiple
             onChange={handleFileSelect}
-            disabled={uploading || previews.length >= 5}
+            disabled={uploading || previews.length >= maxPhotosCount}
           />
         </label>
       </div>

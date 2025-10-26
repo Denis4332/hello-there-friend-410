@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const authSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
@@ -21,6 +22,13 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: loginTitle } = useSiteSetting('auth_login_title');
+  const { data: registerTitle } = useSiteSetting('auth_register_title');
+  const { data: emailLabel } = useSiteSetting('auth_email_label');
+  const { data: passwordLabel } = useSiteSetting('auth_password_label');
+  const { data: loginButton } = useSiteSetting('auth_login_button');
+  const { data: registerButton } = useSiteSetting('auth_register_button');
 
   useEffect(() => {
     if (user) {
@@ -84,14 +92,14 @@ const Auth = () => {
 
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Anmelden</TabsTrigger>
-                <TabsTrigger value="signup">Registrieren</TabsTrigger>
+                <TabsTrigger value="login">{loginTitle || 'Anmelden'}</TabsTrigger>
+                <TabsTrigger value="signup">{registerTitle || 'Registrieren'}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="login-email">E-Mail</Label>
+                    <Label htmlFor="login-email">{emailLabel || 'E-Mail'}</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -105,7 +113,7 @@ const Auth = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="login-password">Passwort</Label>
+                    <Label htmlFor="login-password">{passwordLabel || 'Passwort'}</Label>
                     <Input
                       id="login-password"
                       type="password"
@@ -119,7 +127,7 @@ const Auth = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? 'Wird angemeldet...' : 'Anmelden'}
+                    {isSubmitting ? 'Wird angemeldet...' : (loginButton || 'Anmelden')}
                   </Button>
                 </form>
               </TabsContent>
@@ -127,7 +135,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div>
-                    <Label htmlFor="signup-email">E-Mail</Label>
+                    <Label htmlFor="signup-email">{emailLabel || 'E-Mail'}</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -141,7 +149,7 @@ const Auth = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="signup-password">Passwort</Label>
+                    <Label htmlFor="signup-password">{passwordLabel || 'Passwort'}</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -158,7 +166,7 @@ const Auth = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? 'Wird registriert...' : 'Registrieren'}
+                    {isSubmitting ? 'Wird registriert...' : (registerButton || 'Registrieren')}
                   </Button>
                 </form>
               </TabsContent>

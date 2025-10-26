@@ -26,23 +26,15 @@ const Suche = () => {
     keyword: searchParams.get('stichwort') || undefined,
   });
 
-  const { data: searchTitle } = useSiteSetting('search_title');
-  const { data: searchLocationLabel } = useSiteSetting('search_location_label');
-  const { data: searchLocationPlaceholder } = useSiteSetting('search_location_placeholder');
-  const { data: searchRadiusLabel } = useSiteSetting('search_radius_label');
-  const { data: searchCategoryLabel } = useSiteSetting('search_category_label');
-  const { data: searchCategoryAll } = useSiteSetting('search_category_all');
-  const { data: searchKeywordLabel } = useSiteSetting('search_keyword_label');
-  const { data: searchKeywordPlaceholder } = useSiteSetting('search_keyword_placeholder');
-  const { data: searchButton } = useSiteSetting('search_button');
-  const { data: searchResultsSingle } = useSiteSetting('search_results_single');
-  const { data: searchResultsPlural } = useSiteSetting('search_results_plural');
-  const { data: searchSortLabel } = useSiteSetting('search_sort_label');
-  const { data: searchSortNewest } = useSiteSetting('search_sort_newest');
-  const { data: searchSortVerified } = useSiteSetting('search_sort_verified');
-  const { data: searchNoResults } = useSiteSetting('search_no_results');
-  const { data: searchResetButton } = useSiteSetting('search_reset_button');
-  const { data: searchLoading } = useSiteSetting('search_loading');
+  const { data: searchTitle } = useSiteSetting('search_page_title');
+  const { data: searchSubtitle } = useSiteSetting('search_page_subtitle');
+  const { data: searchLocationLabel } = useSiteSetting('search_filter_label_location');
+  const { data: searchRadiusLabel } = useSiteSetting('search_filter_label_radius');
+  const { data: searchCategoryLabel } = useSiteSetting('search_filter_label_category');
+  const { data: searchKeywordLabel } = useSiteSetting('search_filter_label_keyword');
+  const { data: searchButton } = useSiteSetting('search_button_text');
+  const { data: searchResetButton } = useSiteSetting('search_button_reset');
+  const { data: searchNoResults } = useSiteSetting('search_no_results_text');
 
   // Sort profiles (client-side for now)
   const sortedProfiles = useMemo(() => {
@@ -82,17 +74,18 @@ const Suche = () => {
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-6">{searchTitle || 'Suche'}</h1>
+          <h1 className="text-3xl font-bold mb-2">{searchTitle || 'Profile durchsuchen'}</h1>
+          {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           
           <form onSubmit={handleSearch} className="bg-card border rounded-lg p-6 mb-6">
             <div className="grid md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label htmlFor="q_location" className="block text-sm font-medium mb-1">
-                  {searchLocationLabel || 'Ort/PLZ'}
+                  {searchLocationLabel || 'Standort'}
                 </label>
                 <Input
                   id="q_location"
-                  placeholder={searchLocationPlaceholder || 'PLZ oder Ort'}
+                  placeholder="Stadt oder PLZ"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
@@ -124,7 +117,7 @@ const Suche = () => {
                   onChange={(e) => setCategory(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">{searchCategoryAll || 'Alle Kategorien'}</option>
+                  <option value="">Alle Kategorien</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
@@ -138,7 +131,7 @@ const Suche = () => {
                 </label>
                 <Input
                   id="q_keyword"
-                  placeholder={searchKeywordPlaceholder || 'Name, Service...'}
+                  placeholder="Name, Service..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />
@@ -151,31 +144,12 @@ const Suche = () => {
 
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
-              {sortedProfiles.length} {sortedProfiles.length === 1 ? (searchResultsSingle || 'Ergebnis') : (searchResultsPlural || 'Ergebnisse')}
+              {sortedProfiles.length} {sortedProfiles.length === 1 ? 'Ergebnis' : 'Ergebnisse'}
             </p>
-            <div className="flex items-center gap-2">
-              <label htmlFor="q_sort" className="text-sm">
-                {searchSortLabel || 'Sortierung:'}
-              </label>
-              <select
-                id="q_sort"
-                value={sort}
-                onChange={(e) => {
-                  setSort(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="newest">{searchSortNewest || 'Neueste'}</option>
-                <option value="verified">{searchSortVerified || 'Verifiziert'}</option>
-                <option value="price-asc">Preis ↑</option>
-                <option value="price-desc">Preis ↓</option>
-              </select>
-            </div>
           </div>
 
           {isLoading ? (
-            <p className="text-center text-muted-foreground py-12">{searchLoading || 'Lade Ergebnisse...'}</p>
+            <p className="text-center text-muted-foreground py-12">Lade Ergebnisse...</p>
           ) : paginatedProfiles.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 gap-4">
@@ -191,7 +165,7 @@ const Suche = () => {
             </>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">{searchNoResults || 'Keine Treffer gefunden'}</p>
+              <p className="text-muted-foreground mb-4">{searchNoResults || 'Keine Profile gefunden. Versuche es mit anderen Suchkriterien.'}</p>
               <Button variant="outline" onClick={() => {
                 setLocation('');
                 setCategory('');

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useCities } from '@/hooks/useCities';
 import { detectLocation } from '@/lib/geolocation';
 import { useToast } from '@/hooks/use-toast';
+import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 
 const profileSchema = z.object({
   display_name: z.string().min(2, 'Name muss mindestens 2 Zeichen lang sein').max(50),
@@ -39,14 +40,14 @@ interface ProfileFormProps {
   submitButtonText?: string;
 }
 
-const LANGUAGES = ['Deutsch', 'Français', 'Italiano', 'English', 'Español'];
-const GENDERS = ['Männlich', 'Weiblich', 'Divers'];
-
 export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
   const { toast } = useToast();
   const { data: cities, isLoading: citiesLoading } = useCities();
   const [citySearchOpen, setCitySearchOpen] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  
+  const { data: languages = [] } = useDropdownOptions('languages');
+  const { data: genders = [] } = useDropdownOptions('genders');
 
   const {
     register,
@@ -178,9 +179,9 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
             <SelectValue placeholder="Wähle dein Geschlecht" />
           </SelectTrigger>
           <SelectContent>
-            {GENDERS.map((gender) => (
-              <SelectItem key={gender} value={gender}>
-                {gender}
+            {genders.map((gender) => (
+              <SelectItem key={gender.value} value={gender.value}>
+                {gender.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -310,15 +311,15 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
       <div>
         <Label>Sprachen *</Label>
         <div className="grid grid-cols-2 gap-2 mt-2">
-          {LANGUAGES.map((lang) => (
-            <div key={lang} className="flex items-center space-x-2">
+          {languages.map((lang) => (
+            <div key={lang.value} className="flex items-center space-x-2">
               <Checkbox
-                id={`lang-${lang}`}
-                checked={selectedLanguages.includes(lang)}
-                onCheckedChange={() => toggleLanguage(lang)}
+                id={`lang-${lang.value}`}
+                checked={selectedLanguages.includes(lang.value)}
+                onCheckedChange={() => toggleLanguage(lang.value)}
               />
-              <label htmlFor={`lang-${lang}`} className="text-sm cursor-pointer">
-                {lang}
+              <label htmlFor={`lang-${lang.value}`} className="text-sm cursor-pointer">
+                {lang.label}
               </label>
             </div>
           ))}

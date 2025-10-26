@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich').max(100, 'Name zu lang'),
@@ -20,6 +21,13 @@ const Kontakt = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: pageTitle } = useSiteSetting('contact_page_title');
+  const { data: pageSubtitle } = useSiteSetting('contact_page_subtitle');
+  const { data: nameLabel } = useSiteSetting('contact_form_name_label');
+  const { data: emailLabel } = useSiteSetting('contact_form_email_label');
+  const { data: messageLabel } = useSiteSetting('contact_form_message_label');
+  const { data: submitButton } = useSiteSetting('contact_submit_button');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,12 +92,13 @@ const Kontakt = () => {
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
-          <h1 className="text-3xl font-bold mb-6">Kontakt</h1>
+          <h1 className="text-3xl font-bold mb-2">{pageTitle || 'Kontakt'}</h1>
+          {pageSubtitle && <p className="text-muted-foreground mb-6">{pageSubtitle}</p>}
           <div className="bg-card border rounded-lg p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium mb-1">
-                  Name <span className="text-destructive">*</span>
+                  {nameLabel || 'Name'} <span className="text-destructive">*</span>
                 </label>
                 <Input
                   id="name"
@@ -100,7 +109,7 @@ const Kontakt = () => {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-1">
-                  E-Mail <span className="text-destructive">*</span>
+                  {emailLabel || 'E-Mail'} <span className="text-destructive">*</span>
                 </label>
                 <Input
                   id="email"
@@ -112,7 +121,7 @@ const Kontakt = () => {
               </div>
               <div>
                 <label htmlFor="message" className="block text-sm font-medium mb-1">
-                  Nachricht <span className="text-destructive">*</span>
+                  {messageLabel || 'Nachricht'} <span className="text-destructive">*</span>
                 </label>
                 <Textarea
                   id="message"
@@ -123,7 +132,7 @@ const Kontakt = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Wird gesendet...' : 'Senden'}
+                {isSubmitting ? 'Wird gesendet...' : (submitButton || 'Nachricht senden')}
               </Button>
             </form>
             <p className="text-sm text-muted-foreground mt-4">

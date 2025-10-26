@@ -23,20 +23,9 @@ const Profil = () => {
   const [reportMessage, setReportMessage] = useState('');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
-  const { data: profileAboutTitle } = useSiteSetting('profile_about_title');
-  const { data: profileServicesTitle } = useSiteSetting('profile_services_title');
-  const { data: profileLanguagesTitle } = useSiteSetting('profile_languages_title');
-  const { data: profileAreaTitle } = useSiteSetting('profile_area_title');
-  const { data: profileVerifiedLabel } = useSiteSetting('profile_verified_label');
-  const { data: profileVipLabel } = useSiteSetting('profile_vip_label');
-  const { data: profileVerifiedText } = useSiteSetting('profile_verified_text');
-  const { data: profileReportButton } = useSiteSetting('profile_report_button');
-  const { data: profileReportTitle } = useSiteSetting('profile_report_title');
-  const { data: profileReportReasonLabel } = useSiteSetting('profile_report_reason_label');
-  const { data: profileReportMessageLabel } = useSiteSetting('profile_report_message_label');
-  const { data: profileReportSubmit } = useSiteSetting('profile_report_submit');
-  const { data: profileLoading } = useSiteSetting('profile_loading');
-  const { data: profileNotFound } = useSiteSetting('profile_not_found');
+  const { data: contactButton } = useSiteSetting('profile_contact_button');
+  const { data: reportButton } = useSiteSetting('profile_report_button');
+  const { data: reportDialogTitle } = useSiteSetting('profile_report_dialog_title');
   
   // Get primary photo
   const primaryPhoto = profile?.photos?.find((p: any) => p.is_primary) || profile?.photos?.[0];
@@ -71,7 +60,7 @@ const Profil = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">{profileLoading || 'Lade Profil...'}</p>
+          <p className="text-muted-foreground">Lade Profil...</p>
         </main>
         <Footer />
       </div>
@@ -84,7 +73,7 @@ const Profil = () => {
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">{profileNotFound || 'Profil nicht gefunden'}</h1>
+            <h1 className="text-2xl font-bold mb-4">Profil nicht gefunden</h1>
             <Link to="/">
               <Button>Zurück zur Startseite</Button>
             </Link>
@@ -127,12 +116,12 @@ const Profil = () => {
                   <h1 className="text-3xl font-bold">{profile.display_name}, {profile.age}</h1>
                   {profile.verified_at && (
                     <Badge className="bg-success text-success-foreground">
-                      {profileVerifiedLabel || 'Verifiziert'}
+                      Verifiziert
                     </Badge>
                   )}
                   {profile.is_premium && (
                     <Badge className="bg-primary text-primary-foreground">
-                      {profileVipLabel || 'VIP'}
+                      VIP
                     </Badge>
                   )}
                 </div>
@@ -144,13 +133,13 @@ const Profil = () => {
 
             <div className="space-y-6">
               <div>
-                <h2 className="font-bold text-lg mb-2">{profileAboutTitle || 'Über mich'}</h2>
+                <h2 className="font-bold text-lg mb-2">Über mich</h2>
                 <p>{profile.about_me || 'Keine Beschreibung verfügbar'}</p>
               </div>
 
               {categoryNames.length > 0 && (
                 <div>
-                  <h2 className="font-bold text-lg mb-2">{profileServicesTitle || 'Leistungen'}</h2>
+                  <h2 className="font-bold text-lg mb-2">Leistungen</h2>
                   <div className="flex gap-2 flex-wrap">
                     {categoryNames.map((cat) => (
                       <Badge key={cat} variant="outline">{cat}</Badge>
@@ -161,7 +150,7 @@ const Profil = () => {
 
               {profile.languages && profile.languages.length > 0 && (
                 <div>
-                  <h2 className="font-bold text-lg mb-2">{profileLanguagesTitle || 'Sprachen'}</h2>
+                  <h2 className="font-bold text-lg mb-2">Sprachen</h2>
                   <div className="flex gap-2">
                     {profile.languages.map((lang) => (
                       <Badge key={lang} variant="secondary">{lang.toUpperCase()}</Badge>
@@ -171,14 +160,14 @@ const Profil = () => {
               )}
 
               <div>
-                <h2 className="font-bold text-lg mb-2">{profileAreaTitle || 'Einsatzgebiet'}</h2>
+                <h2 className="font-bold text-lg mb-2">Einsatzgebiet</h2>
                 <p>{profile.city} und Umgebung</p>
               </div>
 
               {profile.verified_at && (
                 <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                   <p className="text-sm">
-                    <strong>{profileVerifiedLabel || 'Verifiziert'}:</strong> {profileVerifiedText || 'Identität und Kontaktdaten wurden durch ESCORIA geprüft.'}
+                    <strong>Verifiziert:</strong> Identität und Kontaktdaten wurden durch ESCORIA geprüft.
                   </p>
                 </div>
               )}
@@ -186,16 +175,16 @@ const Profil = () => {
               <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="destructive" size="sm">
-                    {profileReportButton || 'Profil melden'}
+                    {reportButton || 'Melden'}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>{profileReportTitle || 'Profil melden'}</DialogTitle>
+                    <DialogTitle>{reportDialogTitle || 'Profil melden'}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">{profileReportReasonLabel || 'Grund'}</label>
+                      <label className="block text-sm font-medium mb-1">Grund</label>
                       <select
                         value={reportReason}
                         onChange={(e) => setReportReason(e.target.value)}
@@ -209,7 +198,7 @@ const Profil = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">{profileReportMessageLabel || 'Nachricht'}</label>
+                      <label className="block text-sm font-medium mb-1">Nachricht</label>
                       <Textarea
                         value={reportMessage}
                         onChange={(e) => setReportMessage(e.target.value)}
@@ -222,7 +211,7 @@ const Profil = () => {
                       onClick={handleReportSubmit}
                       disabled={!reportReason || createReport.isPending}
                     >
-                      {createReport.isPending ? 'Wird gesendet...' : (profileReportSubmit || 'Meldung absenden')}
+                      {createReport.isPending ? 'Wird gesendet...' : 'Meldung absenden'}
                     </Button>
                   </div>
                 </DialogContent>
