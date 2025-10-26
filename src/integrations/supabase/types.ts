@@ -37,6 +37,7 @@ export type Database = {
           active: boolean | null
           created_at: string | null
           id: string
+          intro_text: string | null
           name: string
           slug: string
           sort_order: number | null
@@ -45,6 +46,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           id?: string
+          intro_text?: string | null
           name: string
           slug: string
           sort_order?: number | null
@@ -53,6 +55,7 @@ export type Database = {
           active?: boolean | null
           created_at?: string | null
           id?: string
+          intro_text?: string | null
           name?: string
           slug?: string
           sort_order?: number | null
@@ -64,6 +67,7 @@ export type Database = {
           canton_id: string
           created_at: string
           id: string
+          intro_text: string | null
           lat: number | null
           lng: number | null
           name: string
@@ -75,6 +79,7 @@ export type Database = {
           canton_id: string
           created_at?: string
           id?: string
+          intro_text?: string | null
           lat?: number | null
           lng?: number | null
           name: string
@@ -86,6 +91,7 @@ export type Database = {
           canton_id?: string
           created_at?: string
           id?: string
+          intro_text?: string | null
           lat?: number | null
           lng?: number | null
           name?: string

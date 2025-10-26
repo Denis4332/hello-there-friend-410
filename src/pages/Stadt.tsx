@@ -6,38 +6,17 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCityProfiles } from '@/hooks/useProfiles';
+import { useCityBySlug } from '@/hooks/useCities';
 import { SEO } from '@/components/SEO';
-
-const cityData: Record<string, { name: string; intro: string }> = {
-  zuerich: {
-    name: 'Zürich',
-    intro: 'Finden Sie verifizierte Anbieter und Profile in Zürich. Alle Kontaktdaten werden vor der Freischaltung geprüft, um höchste Qualität und Seriosität zu gewährleisten. Diskrete und professionelle Kontaktaufnahme direkt über die Plattform.',
-  },
-  basel: {
-    name: 'Basel',
-    intro: 'Entdecken Sie geprüfte Profile und Agenturen in Basel. Jedes Profil durchläuft einen Verifizierungsprozess, der Identität und Erreichbarkeit sicherstellt. Transparente Darstellung und sichere Kontaktmöglichkeiten für alle Nutzer.',
-  },
-  bern: {
-    name: 'Bern',
-    intro: 'Verifizierte Anbieter in Bern mit geprüften Kontaktdaten. Qualität steht bei ESCORIA an erster Stelle – alle Profile werden manuell überprüft. Seriöse Plattform für diskrete und zuverlässige Kontakte in der Bundesstadt.',
-  },
-  genf: {
-    name: 'Genf',
-    intro: 'Profile und Agenturen in Genf mit Verifizierung. ESCORIA garantiert echte und aktuelle Kontaktdaten durch sorgfältige Prüfung. Professionelle Abwicklung und höchste Standards für alle Nutzer in der Genferseeregion.',
-  },
-};
 
 const Stadt = () => {
   const { slug } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Convert slug to city name (e.g., "zuerich" -> "Zürich")
-  const data = slug ? cityData[slug] : null;
-  const cityName = data?.name;
-  
-  const { data: cityProfiles = [], isLoading } = useCityProfiles(cityName);
+  const { data: city, isLoading: loadingCity } = useCityBySlug(slug || '');
+  const { data: cityProfiles = [], isLoading: loadingProfiles } = useCityProfiles(city?.name);
 
-  if (!data) {
+  if (!city && !loadingCity) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -65,19 +44,21 @@ const Stadt = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title={`Escort ${data.name} - Verifizierte Profile & Agenturen`}
-        description={data.intro}
+        title={`Escort ${city.name} - Verifizierte Profile & Agenturen`}
+        description={city.intro_text || `Finde verifizierte Profile in ${city.name}`}
         url={`https://escoria.ch/stadt/${slug}`}
       />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-4">
-            Anbieter in {data.name} – verifizierte Profile & Agenturen
+            Anbieter in {city.name} – verifizierte Profile & Agenturen
           </h1>
-          <p className="text-muted-foreground mb-8 max-w-3xl">{data.intro}</p>
+          {city.intro_text && (
+            <p className="text-muted-foreground mb-8 max-w-3xl">{city.intro_text}</p>
+          )}
 
-          {isLoading ? (
+          {loadingProfiles ? (
             <p className="text-center text-muted-foreground py-12">Lade Profile...</p>
           ) : paginatedProfiles.length > 0 ? (
             <>
@@ -94,7 +75,7 @@ const Stadt = () => {
             </>
           ) : (
             <p className="text-center text-muted-foreground py-12">
-              Derzeit keine Profile in {data.name} verfügbar.
+              Derzeit keine Profile in {city.name} verfügbar.
             </p>
           )}
         </div>

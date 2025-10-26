@@ -2,11 +2,11 @@ import { Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAllCities } from '@/hooks/useProfiles';
+import { useCities } from '@/hooks/useCities';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const Cities = () => {
-  const { data: cities = [], isLoading } = useAllCities();
+  const { data: cities = [], isLoading } = useCities();
   const { data: citiesTitle } = useSiteSetting('cities_title');
   const { data: citiesDescription } = useSiteSetting('cities_description');
   const { data: citiesLoading } = useSiteSetting('cities_loading');
@@ -30,9 +30,9 @@ const Cities = () => {
                 <Link key={city.slug} to={`/stadt/${city.slug}`}>
                   <Card className="hover:border-primary transition-colors">
                     <CardContent className="p-6 text-center">
-                      <h3 className="font-bold text-lg">{city.city}</h3>
-                      <p className="text-sm text-muted-foreground">{city.canton}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{city.count} Profile</p>
+                      <h3 className="font-bold text-lg">{city.name}</h3>
+                      <p className="text-sm text-muted-foreground">{city.canton?.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{city.postal_code || '-'}</p>
                     </CardContent>
                   </Card>
                 </Link>

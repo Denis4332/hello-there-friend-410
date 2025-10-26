@@ -3,6 +3,7 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -18,6 +19,7 @@ interface Category {
   slug: string;
   active: boolean;
   sort_order: number;
+  intro_text: string | null;
 }
 
 const validateSlug = (slug: string): string | null => {
@@ -30,7 +32,13 @@ const validateSlug = (slug: string): string | null => {
 
 const AdminCategories = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [newCategory, setNewCategory] = useState({ name: '', slug: '', active: true, sort_order: 0 });
+  const [newCategory, setNewCategory] = useState({ 
+    name: '', 
+    slug: '', 
+    active: true, 
+    sort_order: 0,
+    intro_text: '',
+  });
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -60,6 +68,7 @@ const AdminCategories = () => {
           slug: category.slug,
           active: category.active,
           sort_order: category.sort_order,
+          intro_text: category.intro_text || null,
         })
         .eq('id', category.id);
       
@@ -88,6 +97,7 @@ const AdminCategories = () => {
           slug: category.slug.trim(),
           active: category.active,
           sort_order: category.sort_order,
+          intro_text: category.intro_text || null,
         });
       
       if (error) throw error;
@@ -95,7 +105,7 @@ const AdminCategories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       toast({ title: 'Kategorie erstellt', description: 'Die neue Kategorie wurde hinzugefügt.' });
-      setNewCategory({ name: '', slug: '', active: true, sort_order: 0 });
+      setNewCategory({ name: '', slug: '', active: true, sort_order: 0, intro_text: '' });
       setCreateDialogOpen(false);
     },
     onError: (error: Error) => {
@@ -159,7 +169,7 @@ const AdminCategories = () => {
               <DialogTrigger asChild>
                 <Button>Neue Kategorie</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Neue Kategorie erstellen</DialogTitle>
                   <DialogDescription>
@@ -197,6 +207,16 @@ const AdminCategories = () => {
                       onChange={(e) => setNewCategory({ ...newCategory, sort_order: parseInt(e.target.value) || 0 })}
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-intro">Intro-Text (SEO)</Label>
+                    <Textarea
+                      id="new-intro"
+                      value={newCategory.intro_text}
+                      onChange={(e) => setNewCategory({ ...newCategory, intro_text: e.target.value })}
+                      placeholder="SEO-optimierter Intro-Text für die Kategorie-Seite..."
+                      rows={4}
+                    />
+                  </div>
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="new-active"
@@ -231,6 +251,7 @@ const AdminCategories = () => {
                     <tr>
                       <th className="text-left p-3 text-sm font-medium">Name</th>
                       <th className="text-left p-3 text-sm font-medium">Slug</th>
+                      <th className="text-left p-3 text-sm font-medium">Intro-Text</th>
                       <th className="text-left p-3 text-sm font-medium">Aktiv</th>
                       <th className="text-left p-3 text-sm font-medium">Sortierung</th>
                       <th className="text-left p-3 text-sm font-medium">Aktionen</th>
@@ -251,6 +272,15 @@ const AdminCategories = () => {
                             value={getCurrentValue(category, 'slug') as string}
                             onChange={(e) => handleFieldChange(category.id, 'slug', e.target.value.toLowerCase())}
                             className="h-8"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <Textarea
+                            value={getCurrentValue(category, 'intro_text') as string || ''}
+                            onChange={(e) => handleFieldChange(category.id, 'intro_text', e.target.value)}
+                            className="min-w-[200px]"
+                            rows={2}
+                            placeholder="SEO-optimierter Intro-Text..."
                           />
                         </td>
                         <td className="p-3">

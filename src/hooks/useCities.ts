@@ -9,6 +9,7 @@ export interface City {
   postal_code?: string;
   lat?: number;
   lng?: number;
+  intro_text?: string | null;
   canton?: {
     id: string;
     name: string;
