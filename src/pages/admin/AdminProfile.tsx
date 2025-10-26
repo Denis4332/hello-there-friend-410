@@ -188,8 +188,8 @@ const AdminProfile = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {profiles?.map((profile) => (
-                    <tr key={profile.id} className="border-t">
+                    {profiles?.map((profile, index) => (
+                    <tr key={profile.id} className={`border-t hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-muted/20' : ''}`}>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm font-bold">

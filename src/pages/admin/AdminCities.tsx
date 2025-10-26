@@ -258,7 +258,7 @@ const AdminCities = () => {
                       </thead>
                       <tbody>
                         {cities?.map((city, idx) => (
-                          <tr key={`${city.city}-${city.canton}-${idx}`} className="border-t">
+                          <tr key={`${city.city}-${city.canton}-${idx}`} className={`border-t hover:bg-muted/50 transition-colors ${idx % 2 === 0 ? 'bg-muted/20' : ''}`}>
                             <td className="p-3">{city.city}</td>
                             <td className="p-3">{city.canton}</td>
                             <td className="p-3">{city.postal_code || '-'}</td>
@@ -347,8 +347,8 @@ const AdminCities = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {cantons?.map((canton) => (
-                          <tr key={canton.id} className="border-t">
+                        {cantons?.map((canton, index) => (
+                          <tr key={canton.id} className={`border-t hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-muted/20' : ''}`}>
                             {editingId === canton.id ? (
                               <>
                                 <td className="p-3">

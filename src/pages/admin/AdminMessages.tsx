@@ -96,8 +96,8 @@ export default function AdminMessages() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {messages.map((message) => (
-                  <TableRow key={message.id}>
+                {messages.map((message, index) => (
+                  <TableRow key={message.id} className={`${index % 2 === 0 ? 'bg-muted/20' : ''} hover:bg-muted/50 transition-colors`}>
                     <TableCell>
                       <Badge variant={message.status === 'unread' ? 'destructive' : 'secondary'}>
                         {message.status === 'unread' ? '🔴 Neu' : '✅ Gelesen'}

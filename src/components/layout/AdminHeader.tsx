@@ -1,13 +1,26 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/hooks/useContactMessages';
+import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const location = useLocation();
+  const { user, signOut } = useAuth();
   const { data: unreadCount } = useUnreadCount();
+
+  const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = async () => {
     await signOut();
@@ -23,33 +36,81 @@ export const AdminHeader = () => {
               ESCORIA Admin
             </Link>
             <nav className="hidden md:flex items-center gap-4 text-sm">
-              <Link to="/admin" className="hover:text-primary">
+              <Link 
+                to="/admin" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Dashboard
               </Link>
-              <Link to="/admin/profile" className="hover:text-primary">
+              <Link 
+                to="/admin/profile" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/profile") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Profile
               </Link>
-              <Link to="/admin/users" className="hover:text-primary">
+              <Link 
+                to="/admin/users" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/users") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Nutzer
               </Link>
-              <Link to="/admin/categories" className="hover:text-primary">
+              <Link 
+                to="/admin/categories" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/categories") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Kategorien
               </Link>
-              <Link to="/admin/cities" className="hover:text-primary">
+              <Link 
+                to="/admin/cities" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/cities") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Städte
               </Link>
-              <Link to="/admin/reports" className="hover:text-primary">
+              <Link 
+                to="/admin/reports" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/reports") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Meldungen
               </Link>
-              <Link to="/admin/messages" className="hover:text-primary flex items-center gap-2">
+              <Link 
+                to="/admin/messages" 
+                className={cn(
+                  "hover:text-primary transition-colors flex items-center gap-2",
+                  isActive("/admin/messages") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Nachrichten
                 {unreadCount && unreadCount > 0 && (
-                  <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                  <Badge variant="destructive" className="h-5 px-1.5 text-xs animate-pulse">
                     {unreadCount}
                   </Badge>
                 )}
               </Link>
-              <Link to="/admin/settings" className="hover:text-primary">
+              <Link 
+                to="/admin/settings" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/settings") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
                 Einstellungen
               </Link>
             </nav>
@@ -58,9 +119,32 @@ export const AdminHeader = () => {
             <Link to="/" className="text-sm hover:text-primary">
               Zur Webseite
             </Link>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              Abmelden
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="hidden lg:inline">{user?.email?.split('@')[0]}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Admin Account</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/admin/account')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Account-Einstellungen
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Abmelden
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

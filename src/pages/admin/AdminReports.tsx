@@ -189,8 +189,8 @@ const AdminReports = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {reports.map((report) => (
-                      <tr key={report.id} className="border-t">
+                    {reports.map((report, index) => (
+                      <tr key={report.id} className={`border-t hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-muted/20' : ''}`}>
                         <td className="p-3">
                           <div className="font-medium">{report.profile.display_name}</div>
                           <div className="text-xs text-muted-foreground">

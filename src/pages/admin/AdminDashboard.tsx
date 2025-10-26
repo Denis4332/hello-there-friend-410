@@ -2,6 +2,17 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  AlertCircle, 
+  CheckCircle, 
+  Users, 
+  Mail, 
+  Flag, 
+  Shield, 
+  FolderKanban, 
+  MapPin,
+  User
+} from 'lucide-react';
 
 const AdminDashboard = () => {
   const { data: stats, isLoading } = useQuery({
@@ -38,11 +49,46 @@ const AdminDashboard = () => {
         .eq('status', 'unread');
       
       return [
-        { label: 'Zu prüfen (Pending)', value: pendingCount || 0, link: '/admin/profile?status=pending' },
-        { label: 'Verifiziert', value: verifiedCount || 0, link: '/admin/profile?verified=true' },
-        { label: 'Live (Active)', value: activeCount || 0, link: '/admin/profile?status=active' },
-        { label: 'Neue Nachrichten', value: unreadMessages || 0, link: '/admin/messages' },
-        { label: 'Gemeldet', value: reportsCount || 0, link: '/admin/reports' },
+        { 
+          label: 'Zu prüfen', 
+          value: pendingCount || 0, 
+          link: '/admin/profile?status=pending',
+          icon: AlertCircle,
+          color: 'text-orange-500',
+          bgColor: 'bg-orange-50 dark:bg-orange-950'
+        },
+        { 
+          label: 'Verifiziert', 
+          value: verifiedCount || 0, 
+          link: '/admin/profile?verified=true',
+          icon: CheckCircle,
+          color: 'text-green-500',
+          bgColor: 'bg-green-50 dark:bg-green-950'
+        },
+        { 
+          label: 'Live (Active)', 
+          value: activeCount || 0, 
+          link: '/admin/profile?status=active',
+          icon: Users,
+          color: 'text-blue-500',
+          bgColor: 'bg-blue-50 dark:bg-blue-950'
+        },
+        { 
+          label: 'Nachrichten', 
+          value: unreadMessages || 0, 
+          link: '/admin/messages',
+          icon: Mail,
+          color: 'text-purple-500',
+          bgColor: 'bg-purple-50 dark:bg-purple-950'
+        },
+        { 
+          label: 'Meldungen', 
+          value: reportsCount || 0, 
+          link: '/admin/reports',
+          icon: Flag,
+          color: 'text-red-500',
+          bgColor: 'bg-red-50 dark:bg-red-950'
+        },
       ];
     }
   });
@@ -65,48 +111,78 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="grid md:grid-cols-5 gap-4 mb-8">
-              {stats?.map((stat) => (
-                <Link key={stat.label} to={stat.link}>
-                  <div className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
-                    <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                    <p className="text-3xl font-bold">{stat.value}</p>
-                  </div>
-                </Link>
-              ))}
+              {stats?.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <Link key={stat.label} to={stat.link}>
+                    <div className={`${stat.bgColor} border-2 rounded-lg p-6 hover:border-primary transition-all hover:shadow-lg`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                        <Icon className={`h-5 w-5 ${stat.color}`} />
+                      </div>
+                      <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
 
           <div className="bg-card border rounded-lg p-6">
             <h2 className="text-xl font-bold mb-4">Schnelllinks</h2>
-            <div className="grid md:grid-cols-3 gap-3">
+            <div className="grid md:grid-cols-3 gap-4">
               <Link to="/admin/profile">
-                <div className="border rounded p-4 hover:border-primary transition-colors">
-                  Profile prüfen
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Shield className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Profile prüfen</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Profile moderieren und freigeben</p>
                 </div>
               </Link>
               <Link to="/admin/categories">
-                <div className="border rounded p-4 hover:border-primary transition-colors">
-                  Kategorien verwalten
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <FolderKanban className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Kategorien</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Kategorien verwalten</p>
                 </div>
               </Link>
               <Link to="/admin/cities">
-                <div className="border rounded p-4 hover:border-primary transition-colors">
-                  Städte verwalten
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <MapPin className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Städte</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Städte & Kantone verwalten</p>
                 </div>
               </Link>
               <Link to="/admin/users">
-                <div className="border rounded p-4 hover:border-primary transition-colors">
-                  Nutzer verwalten
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <User className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Nutzer</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Nutzer und Rollen verwalten</p>
                 </div>
               </Link>
               <Link to="/admin/reports">
-                <div className="border rounded p-4 hover:border-primary transition-colors">
-                  Meldungen bearbeiten
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Flag className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Meldungen</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Gemeldete Profile bearbeiten</p>
                 </div>
               </Link>
               <Link to="/admin/messages">
-                <div className="border rounded p-4 hover:border-primary transition-colors">
-                  Kontaktanfragen
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Mail className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Nachrichten</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Kontaktanfragen beantworten</p>
                 </div>
               </Link>
             </div>

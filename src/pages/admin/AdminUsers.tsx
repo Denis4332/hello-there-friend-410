@@ -184,8 +184,8 @@ const AdminUsers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users?.map((user) => (
-                    <tr key={user.id} className="border-t hover:bg-muted/50">
+                  {users?.map((user, index) => (
+                    <tr key={user.id} className={`border-t hover:bg-muted/70 transition-colors ${index % 2 === 0 ? 'bg-muted/20' : ''}`}>
                       <td className="p-3 text-sm">{user.email}</td>
                       <td className="p-3 text-sm">{user.display_name || '-'}</td>
                       <td className="p-3">

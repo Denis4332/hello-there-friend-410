@@ -237,8 +237,8 @@ const AdminCategories = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {categories?.map((category) => (
-                      <tr key={category.id} className="border-t">
+                    {categories?.map((category, index) => (
+                      <tr key={category.id} className={`border-t hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-muted/20' : ''}`}>
                         <td className="p-3">
                           <Input
                             value={getCurrentValue(category, 'name') as string}

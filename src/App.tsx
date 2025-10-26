@@ -24,6 +24,7 @@ import ProfileEdit from "./pages/ProfileEdit";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProfile from "./pages/admin/AdminProfile";
+import AdminAccount from "./pages/admin/AdminAccount";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminCities from "./pages/admin/AdminCities";
@@ -83,6 +84,7 @@ const App = () => (
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
+            <Route path="/admin/account" element={<ProtectedRoute><AdminAccount /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/categories" element={<ProtectedRoute><AdminCategories /></ProtectedRoute>} />
             <Route path="/admin/cities" element={<ProtectedRoute><AdminCities /></ProtectedRoute>} />
