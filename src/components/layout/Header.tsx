@@ -3,9 +3,12 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { User } from 'lucide-react';
 
 export const Header = () => {
+  useDesignSettings(); // Apply design colors
+  
   const navigate = useNavigate();
   const { user, role, signOut } = useAuth();
   
@@ -17,13 +20,19 @@ export const Header = () => {
   const { data: navMyAccount } = useSiteSetting('nav_my_account');
   const { data: navMyProfile } = useSiteSetting('nav_my_profile');
   const { data: navLogout } = useSiteSetting('nav_logout');
+  const { data: logoUrl } = useSiteSetting('design_logo_url');
+  const { data: logoText } = useSiteSetting('design_logo_text');
 
   return (
     <header className="bg-primary text-primary-foreground">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14">
-          <Link to="/" className="text-xl font-bold">
-            ESCORIA
+          <Link to="/" className="flex items-center gap-2">
+            {logoUrl ? (
+              <img src={logoUrl} alt={logoText || 'Logo'} className="h-8 object-contain" />
+            ) : (
+              <span className="text-xl font-bold">{logoText || 'ESCORIA'}</span>
+            )}
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/" className="hover:underline">

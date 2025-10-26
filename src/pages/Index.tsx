@@ -9,9 +9,12 @@ import { Button } from '@/components/ui/button';
 import { useFeaturedProfiles, useTopCities } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { SEO } from '@/components/SEO';
 
 const Index = () => {
+  useDesignSettings(); // Apply design settings
+  
   const navigate = useNavigate();
   const [location, setLocation] = useState('');
   const [radius, setRadius] = useState('25');
@@ -28,6 +31,8 @@ const Index = () => {
   const { data: searchKeywordPlaceholder } = useSiteSetting('search_keyword_placeholder');
   const { data: searchButtonText } = useSiteSetting('search_button_text');
   const { data: metaDescription } = useSiteSetting('meta_description');
+  const { data: heroImageUrl } = useSiteSetting('design_hero_image_url');
+  const { data: heroOverlayOpacity } = useSiteSetting('design_hero_overlay_opacity');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +53,22 @@ const Index = () => {
       />
       <Header />
       <main className="flex-1">
-        <section className="bg-muted py-16">
-          <div className="container mx-auto px-4">
+        <section 
+          className="relative py-16"
+          style={{
+            backgroundImage: heroImageUrl ? `url(${heroImageUrl})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundColor: heroImageUrl ? undefined : 'hsl(var(--muted))',
+          }}
+        >
+          {heroImageUrl && (
+            <div 
+              className="absolute inset-0 bg-background"
+              style={{ opacity: heroOverlayOpacity || '0.7' }}
+            />
+          )}
+          <div className="container mx-auto px-4 relative z-10">
             <h1 className="text-3xl md:text-4xl font-bold text-center mb-8">
               {siteTitle || "Verifizierte Anbieter in der Schweiz"}
             </h1>

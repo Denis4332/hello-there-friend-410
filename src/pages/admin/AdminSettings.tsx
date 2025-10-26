@@ -17,6 +17,7 @@ export default function AdminSettings() {
   const { data: searchSettings, isLoading: searchLoading } = useSiteSettings('search');
   const { data: profileSettings, isLoading: profileLoading } = useSiteSettings('profile');
   const { data: listingsSettings, isLoading: listingsLoading } = useSiteSettings('listings');
+  const { data: designSettings, isLoading: designLoading } = useSiteSettings('design');
   const updateMutation = useUpdateSiteSetting();
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
 
@@ -106,8 +107,9 @@ export default function AdminSettings() {
           </div>
 
           <Tabs defaultValue="content" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
               <TabsTrigger value="content">Startseite</TabsTrigger>
+              <TabsTrigger value="design">Design</TabsTrigger>
               <TabsTrigger value="navigation">Navigation</TabsTrigger>
               <TabsTrigger value="search">Suche</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -130,6 +132,26 @@ export default function AdminSettings() {
                     </div>
                   ) : (
                     contentSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="design" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Design-Einstellungen</CardTitle>
+                  <CardDescription>
+                    Logo, Farben und Hero-Image anpassen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {designLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    designSettings?.map(renderSettingField)
                   )}
                 </CardContent>
               </Card>
