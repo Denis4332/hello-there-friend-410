@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MapPin, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useCities } from '@/hooks/useCities';
+import { detectLocation } from '@/lib/geolocation';
+import { useToast } from '@/hooks/use-toast';
 
 const profileSchema = z.object({
   display_name: z.string().min(2, 'Name muss mindestens 2 Zeichen lang sein').max(50),
@@ -35,6 +43,11 @@ const LANGUAGES = ['Deutsch', 'Français', 'Italiano', 'English', 'Español'];
 const GENDERS = ['Männlich', 'Weiblich', 'Divers'];
 
 export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
+  const { toast } = useToast();
+  const { data: cities, isLoading: citiesLoading } = useCities();
+  const [citySearchOpen, setCitySearchOpen] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -51,6 +64,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
 
   const selectedLanguages = watch('languages') || [];
   const selectedCategories = watch('category_ids') || [];
+  const selectedCity = watch('city') || '';
 
   const toggleLanguage = (lang: string) => {
     const current = selectedLanguages;
@@ -67,6 +81,66 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
       setValue('category_ids', current.filter((c) => c !== catId));
     } else {
       setValue('category_ids', [...current, catId]);
+    }
+  };
+
+  const handleCitySelect = (cityName: string) => {
+    const city = cities?.find((c) => c.name === cityName);
+    if (city) {
+      setValue('city', city.name);
+      if (city.canton?.abbreviation) {
+        setValue('canton', city.canton.abbreviation);
+      }
+      if (city.postal_code) {
+        setValue('postal_code', city.postal_code);
+      }
+      setCitySearchOpen(false);
+    }
+  };
+
+  const handleDetectLocation = async () => {
+    setDetectingLocation(true);
+    try {
+      const location = await detectLocation();
+      
+      // Find matching city in database
+      const matchingCity = cities?.find((c) => 
+        c.name.toLowerCase() === location.city.toLowerCase()
+      );
+
+      if (matchingCity) {
+        handleCitySelect(matchingCity.name);
+        toast({
+          title: 'Standort erkannt',
+          description: `${matchingCity.name} wurde automatisch ausgewählt`,
+        });
+      } else {
+        // If city not in database, use free text
+        setValue('city', location.city);
+        setValue('postal_code', location.postalCode);
+        
+        // Try to match canton
+        const matchingCanton = cantons.find((c) =>
+          c.name.toLowerCase().includes(location.canton.toLowerCase()) ||
+          location.canton.toLowerCase().includes(c.name.toLowerCase())
+        );
+        if (matchingCanton) {
+          setValue('canton', matchingCanton.abbreviation);
+        }
+        
+        toast({
+          title: 'Standort erkannt',
+          description: `${location.city} wurde eingetragen`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Standort konnte nicht ermittelt werden',
+        variant: 'destructive',
+      });
+    } finally {
+      setDetectingLocation(false);
     }
   };
 
@@ -114,8 +188,83 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
       </div>
 
       <div>
-        <Label htmlFor="city">Stadt *</Label>
-        <Input id="city" {...register('city')} placeholder="Zürich" />
+        <div className="flex items-center justify-between mb-2">
+          <Label htmlFor="city">Stadt *</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleDetectLocation}
+            disabled={detectingLocation || citiesLoading}
+            className="h-8"
+          >
+            {detectingLocation ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                Wird erkannt...
+              </>
+            ) : (
+              <>
+                <MapPin className="h-4 w-4 mr-1" />
+                Mein Standort
+              </>
+            )}
+          </Button>
+        </div>
+        <Popover open={citySearchOpen} onOpenChange={setCitySearchOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={citySearchOpen}
+              className="w-full justify-between"
+            >
+              {selectedCity || 'Stadt auswählen...'}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Stadt suchen..." />
+              <CommandList>
+                <CommandEmpty>
+                  {citiesLoading ? 'Lädt Städte...' : 'Keine Stadt gefunden'}
+                </CommandEmpty>
+                <CommandGroup>
+                  {cities?.map((city) => (
+                    <CommandItem
+                      key={city.id}
+                      value={city.name}
+                      onSelect={handleCitySelect}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          selectedCity === city.name ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                      {city.name}
+                      {city.canton && (
+                        <span className="ml-auto text-muted-foreground text-xs">
+                          {city.canton.abbreviation}
+                        </span>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <p className="text-xs text-muted-foreground mt-1">
+          Oder gib eine Stadt manuell ein:
+        </p>
+        <Input
+          id="city"
+          {...register('city')}
+          placeholder="Zürich"
+          className="mt-1"
+        />
         {errors.city && (
           <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
         )}

@@ -59,6 +59,50 @@ export type Database = {
         }
         Relationships: []
       }
+      cities: {
+        Row: {
+          canton_id: string
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          postal_code: string | null
+          slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          canton_id: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          postal_code?: string | null
+          slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canton_id?: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          postal_code?: string | null
+          slug?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_canton_id_fkey"
+            columns: ["canton_id"]
+            isOneToOne: false
+            referencedRelation: "cantons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_messages: {
         Row: {
           created_at: string | null
@@ -407,6 +451,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"
