@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/Header';
 import { ProfileForm, ProfileFormData } from '@/components/profile/ProfileForm';
+import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Trash2, Star } from 'lucide-react';
@@ -20,7 +21,6 @@ const ProfileEdit = () => {
   const [photos, setPhotos] = useState<any[]>([]);
   const [cantons, setCantons] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -124,47 +124,6 @@ const ProfileEdit = () => {
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !profile) return;
-
-    setUploadingPhoto(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { error: insertError } = await supabase
-        .from('photos')
-        .insert({
-          profile_id: profile.id,
-          storage_path: fileName,
-          is_primary: photos.length === 0,
-        });
-
-      if (insertError) throw insertError;
-
-      toast({
-        title: 'Foto hochgeladen',
-        description: 'Dein Foto wurde erfolgreich hochgeladen',
-      });
-
-      loadData();
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
 
   const handleDeletePhoto = async (photoId: string, storagePath: string) => {
     try {
@@ -266,7 +225,7 @@ const ProfileEdit = () => {
               Aktualisiere deine Profildaten und Fotos
             </p>
 
-            <div className="grid gap-8 md:grid-cols-2">
+            <div className="space-y-8">
               <Card>
                 <CardHeader>
                   <CardTitle>Profildaten</CardTitle>
@@ -286,44 +245,21 @@ const ProfileEdit = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Fotos ({photos.length}/5)</CardTitle>
-                  <CardDescription>Verwalte deine Profilfotos</CardDescription>
+                  <CardTitle>Foto-Verwaltung</CardTitle>
+                  <CardDescription>Lade neue Fotos hoch und verwalte bestehende</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {photos.length < 5 && (
-                    <div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        disabled={uploadingPhoto}
-                        className="hidden"
-                        id="photo-upload"
-                      />
-                      <label htmlFor="photo-upload">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full"
-                          disabled={uploadingPhoto}
-                          onClick={() => document.getElementById('photo-upload')?.click()}
-                        >
-                          {uploadingPhoto ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Wird hochgeladen...
-                            </>
-                          ) : (
-                            'Neues Foto hochladen'
-                          )}
-                        </Button>
-                      </label>
-                    </div>
-                  )}
+                <CardContent className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Neue Fotos hochladen</h3>
+                    <PhotoUploader profileId={profile.id} onUploadComplete={loadData} />
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    {photos.map((photo) => (
-                      <div key={photo.id} className="relative group">
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Deine Fotos ({photos.length}/5)</h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {photos.map((photo) => (
+                        <div key={photo.id} className="relative group">
                         <div className="aspect-square rounded-md overflow-hidden border">
                           <img
                             src={getPublicUrl(photo.storage_path)}
@@ -375,13 +311,14 @@ const ProfileEdit = () => {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
 
-                  {photos.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      Noch keine Fotos hochgeladen
-                    </p>
-                  )}
+                    {photos.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        Noch keine Fotos hochgeladen
+                      </p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
