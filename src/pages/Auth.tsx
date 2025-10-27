@@ -32,7 +32,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/profil/erstellen');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
@@ -76,7 +76,7 @@ const Auth = () => {
     setIsSubmitting(false);
 
     if (!error) {
-      navigate('/profil/erstellen');
+      navigate('/dashboard');
     }
   };
 
