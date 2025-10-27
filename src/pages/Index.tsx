@@ -25,7 +25,7 @@ const Index = () => {
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
   const { data: topCities = [], isLoading: loadingCities } = useTopCities(4);
   const { data: categories = [] } = useCategories();
-  const { data: radiusOptions = [] } = useDropdownOptions('radius_options');
+  const { data: radiusOptions = [] } = useDropdownOptions('radius');
   
   const { data: siteTitle } = useSiteSetting('site_title');
   const { data: heroSubtitle } = useSiteSetting('hero_subtitle');

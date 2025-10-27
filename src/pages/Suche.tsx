@@ -21,7 +21,7 @@ const Suche = () => {
   const [currentPage, setCurrentPage] = useState(1);
   
   const { data: categories = [] } = useCategories();
-  const { data: radiusOptions = [] } = useDropdownOptions('radius_options');
+  const { data: radiusOptions = [] } = useDropdownOptions('radius');
   const { data: profiles = [], isLoading } = useSearchProfiles({
     location: searchParams.get('ort') || undefined,
     categoryId: searchParams.get('kategorie') || undefined,
