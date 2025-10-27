@@ -33,6 +33,12 @@ const Index = () => {
   const { data: metaDescription } = useSiteSetting('meta_description');
   const { data: heroImageUrl } = useSiteSetting('design_hero_image_url');
   const { data: heroOverlayOpacity } = useSiteSetting('design_hero_overlay_opacity');
+  const { data: topCitiesTitle } = useSiteSetting('home_top_cities_title');
+  const { data: featuredProfilesTitle } = useSiteSetting('home_featured_profiles_title');
+  const { data: loadingCitiesText } = useSiteSetting('home_loading_cities_text');
+  const { data: loadingProfilesText } = useSiteSetting('home_loading_profiles_text');
+  const { data: noCitiesText } = useSiteSetting('home_no_cities_text');
+  const { data: noProfilesText } = useSiteSetting('home_no_profiles_text');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,9 +155,9 @@ const Index = () => {
 
         <section className="py-12">
           <div className="container mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-6">Top-Städte</h2>
+            <h2 className="text-2xl font-bold mb-6">{topCitiesTitle || 'Top-Städte'}</h2>
             {loadingCities ? (
-              <p className="text-muted-foreground">Lade Städte...</p>
+              <p className="text-muted-foreground">{loadingCitiesText || 'Lade Städte...'}</p>
             ) : topCities.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {topCities.map((city) => (
@@ -159,16 +165,16 @@ const Index = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">Keine Städte verfügbar</p>
+              <p className="text-muted-foreground">{noCitiesText || 'Keine Städte verfügbar'}</p>
             )}
           </div>
         </section>
 
         <section className="py-12 bg-muted">
           <div className="container mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-6">Aktuelle Profile</h2>
+            <h2 className="text-2xl font-bold mb-6">{featuredProfilesTitle || 'Aktuelle Profile'}</h2>
             {loadingProfiles ? (
-              <p className="text-muted-foreground">Lade Profile...</p>
+              <p className="text-muted-foreground">{loadingProfilesText || 'Lade Profile...'}</p>
             ) : featuredProfiles.length > 0 ? (
               <div className="grid md:grid-cols-2 gap-4">
                 {featuredProfiles.map((profile) => (
@@ -176,7 +182,7 @@ const Index = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">Keine Profile verfügbar</p>
+              <p className="text-muted-foreground">{noProfilesText || 'Keine Profile verfügbar'}</p>
             )}
           </div>
         </section>

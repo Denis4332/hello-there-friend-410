@@ -18,6 +18,11 @@ export default function AdminSettings() {
   const { data: profileSettings, isLoading: profileLoading } = useSiteSettings('profile');
   const { data: listingsSettings, isLoading: listingsLoading } = useSiteSettings('listings');
   const { data: designSettings, isLoading: designLoading } = useSiteSettings('design');
+  const { data: authSettings, isLoading: authLoading } = useSiteSettings('auth');
+  const { data: dashboardSettings, isLoading: dashboardLoading } = useSiteSettings('dashboard');
+  const { data: contactSettings, isLoading: contactLoading } = useSiteSettings('contact');
+  const { data: configSettings, isLoading: configLoading } = useSiteSettings('config');
+  const { data: advancedSettings, isLoading: advancedLoading } = useSiteSettings('advanced');
   const updateMutation = useUpdateSiteSetting();
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
 
@@ -107,13 +112,18 @@ export default function AdminSettings() {
           </div>
 
           <Tabs defaultValue="content" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1">
               <TabsTrigger value="content">Startseite</TabsTrigger>
               <TabsTrigger value="design">Design</TabsTrigger>
               <TabsTrigger value="navigation">Navigation</TabsTrigger>
               <TabsTrigger value="search">Suche</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="listings">Listen</TabsTrigger>
+              <TabsTrigger value="auth">Auth</TabsTrigger>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="contact">Kontakt</TabsTrigger>
+              <TabsTrigger value="config">Konfiguration</TabsTrigger>
+              <TabsTrigger value="advanced">Erweitert</TabsTrigger>
               <TabsTrigger value="seo">SEO</TabsTrigger>
             </TabsList>
 
@@ -232,6 +242,106 @@ export default function AdminSettings() {
                     </div>
                   ) : (
                     listingsSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="auth" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Authentifizierung</CardTitle>
+                  <CardDescription>
+                    Passe Login- und Registrierungs-Texte an
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {authLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    authSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="dashboard" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dashboard</CardTitle>
+                  <CardDescription>
+                    Passe Texte im User-Dashboard an
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {dashboardLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    dashboardSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="contact" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Kontaktseite</CardTitle>
+                  <CardDescription>
+                    Passe Texte der Kontaktseite an
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {contactLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    contactSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="config" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Konfiguration</CardTitle>
+                  <CardDescription>
+                    Upload-Limits und technische Einstellungen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {configLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    configSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="advanced" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Erweiterte Einstellungen</CardTitle>
+                  <CardDescription className="text-destructive">
+                    ⚠️ Achtung: Diese Einstellungen können die Website-Funktion beeinträchtigen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {advancedLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    advancedSettings?.map(renderSettingField)
                   )}
                 </CardContent>
               </Card>
