@@ -1,16 +1,20 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
-import { User } from 'lucide-react';
+import { User, Menu } from 'lucide-react';
 
 export const Header = () => {
   useDesignSettings(); // Apply design colors
   
   const navigate = useNavigate();
   const { user, role, signOut } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const { data: navHome } = useSiteSetting('nav_home');
   const { data: navCities } = useSiteSetting('nav_cities');
@@ -91,9 +95,60 @@ export const Header = () => {
               </DropdownMenu>
             )}
           </nav>
-          <button className="md:hidden text-primary-foreground">
-            ☰
-          </button>
+          
+          {/* Mobile Navigation */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="md:hidden text-primary-foreground hover:text-primary-foreground/80">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] bg-background">
+              <nav className="flex flex-col gap-4 mt-8">
+                <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary">
+                  {navHome || 'Start'}
+                </Link>
+                <Link to="/staedte" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary">
+                  {navCities || 'Städte'}
+                </Link>
+                <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary">
+                  {navCategories || 'Kategorien'}
+                </Link>
+                <Link to="/kontakt" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary">
+                  {navContact || 'Kontakt'}
+                </Link>
+                
+                {!user && (
+                  <>
+                    <Separator />
+                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                      <Button className="w-full">
+                        {navLogin || 'Anmelden'}
+                      </Button>
+                    </Link>
+                  </>
+                )}
+                
+                {user && (
+                  <>
+                    <Separator />
+                    <Link to="/mein-profil" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary">
+                      {navMyProfile || 'Mein Profil'}
+                    </Link>
+                    <Button variant="ghost" className="justify-start" onClick={() => { signOut(); setMobileMenuOpen(false); }}>
+                      {navLogout || 'Abmelden'}
+                    </Button>
+                  </>
+                )}
+                
+                {user && role === 'admin' && (
+                  <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="text-lg hover:text-primary">
+                    Admin Dashboard
+                  </Link>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
