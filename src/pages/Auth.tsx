@@ -76,7 +76,7 @@ const Auth = () => {
     setIsSubmitting(false);
 
     if (!error) {
-      navigate('/dashboard');
+      navigate('/profil/bearbeiten');
     }
   };
 

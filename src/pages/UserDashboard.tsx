@@ -118,22 +118,7 @@ const UserDashboard = () => {
   }
 
   if (!profile) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-background">
-          <div className="container mx-auto px-4 py-16 text-center">
-            <h1 className="text-3xl font-bold mb-4">{dashboardWelcome || 'Kein Profil vorhanden'}</h1>
-            <p className="text-muted-foreground mb-8">
-              Du hast noch kein Profil erstellt. Erstelle jetzt dein erstes Profil.
-            </p>
-            <Button onClick={() => navigate('/profil/erstellen')}>
-              {createProfileButton || 'Profil erstellen'}
-            </Button>
-          </div>
-        </div>
-      </>
-    );
+    return null;
   }
 
   return (

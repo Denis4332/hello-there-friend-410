@@ -225,6 +225,16 @@ const ProfileEdit = () => {
               Aktualisiere deine Profildaten und Fotos
             </p>
 
+            {profile.display_name === 'Neuer Nutzer' && (
+              <Card className="border-blue-500/50 bg-blue-500/5 mb-6">
+                <CardContent className="pt-6">
+                  <p className="text-sm">
+                    Vervollständige dein Profil, um es zu aktivieren. Füge deine Daten und mindestens 1 Foto hinzu.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="space-y-8">
               <Card>
                 <CardHeader>
