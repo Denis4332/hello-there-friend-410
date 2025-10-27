@@ -11,12 +11,14 @@ import { useCreateReport } from '@/hooks/useReports';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { SEO } from '@/components/SEO';
 
 const Profil = () => {
   const { slug } = useParams();
   const { data: profile, isLoading } = useProfileBySlug(slug);
   const { data: allCategories = [] } = useCategories();
+  const { data: reportReasons = [] } = useDropdownOptions('report_reasons');
   const createReport = useCreateReport();
   
   const [reportReason, setReportReason] = useState('');
@@ -191,10 +193,11 @@ const Profil = () => {
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       >
                         <option value="">Bitte wählen</option>
-                        <option value="fake">Gefälschtes Profil</option>
-                        <option value="inappropriate">Unangemessene Inhalte</option>
-                        <option value="scam">Betrug</option>
-                        <option value="other">Sonstiges</option>
+                        {reportReasons.map((reason) => (
+                          <option key={reason.value} value={reason.value}>
+                            {reason.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div>

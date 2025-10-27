@@ -29,7 +29,7 @@ const AdminDropdowns = () => {
   const categories = [
     { key: 'languages', label: 'Sprachen', description: 'Sprachen die in Profilen ausgewählt werden können' },
     { key: 'genders', label: 'Geschlechter', description: 'Geschlechtsoptionen für Profile' },
-    { key: 'radius_options', label: 'Umkreis-Optionen', description: 'Umkreisoptionen für die Suche (in km)' },
+    { key: 'radius', label: 'Umkreis-Optionen', description: 'Umkreisoptionen für die Suche (in km)' },
     { key: 'report_reasons', label: 'Meldegründe', description: 'Gründe für Profil-Meldungen' },
   ];
 
