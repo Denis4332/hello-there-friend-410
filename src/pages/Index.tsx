@@ -10,6 +10,7 @@ import { useFeaturedProfiles, useTopCities } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
+import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { SEO } from '@/components/SEO';
 
 const Index = () => {
@@ -24,6 +25,7 @@ const Index = () => {
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
   const { data: topCities = [], isLoading: loadingCities } = useTopCities(4);
   const { data: categories = [] } = useCategories();
+  const { data: radiusOptions = [] } = useDropdownOptions('radius_options');
   
   const { data: siteTitle } = useSiteSetting('site_title');
   const { data: heroSubtitle } = useSiteSetting('hero_subtitle');
@@ -106,11 +108,11 @@ const Index = () => {
                     onChange={(e) => setRadius(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    <option value="5">5 km</option>
-                    <option value="10">10 km</option>
-                    <option value="25">25 km</option>
-                    <option value="50">50 km</option>
-                    <option value="100">100 km</option>
+                    {radiusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
