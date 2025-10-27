@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useSiteSettings, useUpdateSiteSetting } from '@/hooks/useSiteSettings';
-import { Loader2, Save, Settings } from 'lucide-react';
+import { Loader2, Save, Settings, Upload, X } from 'lucide-react';
 import { SEO } from '@/components/SEO';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminSettings() {
   const { data: contentSettings, isLoading: contentLoading } = useSiteSettings('content');
@@ -25,6 +27,8 @@ export default function AdminSettings() {
   const { data: advancedSettings, isLoading: advancedLoading } = useSiteSettings('advanced');
   const updateMutation = useUpdateSiteSetting();
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
+  const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
+  const { toast } = useToast();
 
   const handleSave = (id: string, key: string) => {
     const value = editedValues[key];
@@ -37,10 +41,154 @@ export default function AdminSettings() {
     setEditedValues(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleImageUpload = async (setting: any, file: File) => {
+    setUploadingImages(prev => ({ ...prev, [setting.key]: true }));
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${setting.key}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(filePath);
+
+      handleChange(setting.key, urlData.publicUrl);
+      await handleSave(setting.id, setting.key);
+
+      toast({
+        title: 'Bild hochgeladen',
+        description: 'Das Bild wurde erfolgreich gespeichert',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Upload-Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingImages(prev => ({ ...prev, [setting.key]: false }));
+    }
+  };
+
+  const handleImageDelete = async (setting: any) => {
+    handleChange(setting.key, '');
+    await handleSave(setting.id, setting.key);
+    toast({
+      title: 'Bild entfernt',
+      description: 'Das Bild wurde aus den Einstellungen entfernt',
+    });
+  };
+
   const renderSettingField = (setting: any) => {
     const currentValue = editedValues[setting.key] ?? setting.value;
     const hasChanged = editedValues[setting.key] !== undefined && editedValues[setting.key] !== setting.value;
+    const isUploading = uploadingImages[setting.key];
 
+    // Image upload field
+    if (setting.type === 'image') {
+      return (
+        <div key={setting.id} className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor={setting.key} className="text-sm font-medium">
+              {setting.label}
+            </Label>
+            {setting.description && (
+              <p className="text-xs text-muted-foreground">{setting.description}</p>
+            )}
+          </div>
+
+          {currentValue && (
+            <div className="relative inline-block">
+              <img
+                src={currentValue}
+                alt={setting.label}
+                className="max-w-xs max-h-32 rounded-md border object-contain"
+              />
+              <Button
+                size="sm"
+                variant="destructive"
+                className="absolute -top-2 -right-2"
+                onClick={() => handleImageDelete(setting)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageUpload(setting, file);
+              }}
+              disabled={isUploading}
+              className="hidden"
+              id={`file-${setting.key}`}
+            />
+            <label htmlFor={`file-${setting.key}`}>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isUploading}
+                onClick={() => document.getElementById(`file-${setting.key}`)?.click()}
+                asChild
+              >
+                <span>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Wird hochgeladen...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {currentValue ? 'Bild ersetzen' : 'Bild hochladen'}
+                    </>
+                  )}
+                </span>
+              </Button>
+            </label>
+          </div>
+
+          {!currentValue && (
+            <Input
+              id={setting.key}
+              type="text"
+              value={currentValue}
+              onChange={(e) => handleChange(setting.key, e.target.value)}
+              placeholder="Oder URL direkt eingeben..."
+            />
+          )}
+
+          {hasChanged && !currentValue && (
+            <Button
+              size="sm"
+              onClick={() => handleSave(setting.id, setting.key)}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-1" />
+                  Speichern
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    // Regular text/textarea/color fields
     return (
       <div key={setting.id} className="space-y-3">
         <div className="flex items-start justify-between gap-4">

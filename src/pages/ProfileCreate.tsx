@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { ProfileForm, ProfileFormData } from '@/components/profile/ProfileForm';
 import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const ProfileCreate = () => {
   const navigate = useNavigate();
@@ -17,6 +18,11 @@ const ProfileCreate = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<'form' | 'photos'>('form');
+
+  const { data: createTitle } = useSiteSetting('profile_create_title');
+  const { data: createSubtitle } = useSiteSetting('profile_create_subtitle');
+  const { data: photosTitle } = useSiteSetting('profile_photos_title');
+  const { data: photosSubtitle } = useSiteSetting('profile_photos_subtitle');
 
   useEffect(() => {
     loadData();
@@ -109,9 +115,9 @@ const ProfileCreate = () => {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-2">Profil erstellen</h1>
+            <h1 className="text-3xl font-bold mb-2">{createTitle || 'Profil erstellen'}</h1>
             <p className="text-muted-foreground mb-6">
-              Erstelle dein Profil in 2 Schritten: Zuerst die Basisdaten, dann deine Fotos
+              {createSubtitle || 'Erstelle dein Profil in 2 Schritten: Zuerst die Basisdaten, dann deine Fotos'}
             </p>
 
             <Tabs value={currentStep} className="w-full">
@@ -137,9 +143,9 @@ const ProfileCreate = () => {
                 {profileId && (
                   <div className="space-y-6">
                     <div>
-                      <h2 className="text-xl font-semibold mb-2">Fotos hochladen</h2>
+                      <h2 className="text-xl font-semibold mb-2">{photosTitle || 'Fotos hochladen'}</h2>
                       <p className="text-sm text-muted-foreground">
-                        Lade mindestens 1 Foto hoch. Das erste Foto wird als Hauptfoto verwendet.
+                        {photosSubtitle || 'Lade mindestens 1 Foto hoch. Das erste Foto wird als Hauptfoto verwendet.'}
                       </p>
                     </div>
                     <PhotoUploader profileId={profileId} />

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useSearchProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,6 +21,7 @@ const Suche = () => {
   const [currentPage, setCurrentPage] = useState(1);
   
   const { data: categories = [] } = useCategories();
+  const { data: radiusOptions = [] } = useDropdownOptions('radius_options');
   const { data: profiles = [], isLoading } = useSearchProfiles({
     location: searchParams.get('ort') || undefined,
     categoryId: searchParams.get('kategorie') || undefined,
@@ -100,11 +102,11 @@ const Suche = () => {
                   onChange={(e) => setRadius(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="5">5 km</option>
-                  <option value="10">10 km</option>
-                  <option value="25">25 km</option>
-                  <option value="50">50 km</option>
-                  <option value="100">100 km</option>
+                  {radiusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
