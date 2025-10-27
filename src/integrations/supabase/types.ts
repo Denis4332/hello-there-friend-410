@@ -139,6 +139,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dropdown_options: {
+        Row: {
+          active: boolean | null
+          category: string
+          created_at: string | null
+          id: string
+          label: string
+          sort_order: number
+          value: string
+        }
+        Insert: {
+          active?: boolean | null
+          category: string
+          created_at?: string | null
+          id?: string
+          label: string
+          sort_order?: number
+          value: string
+        }
+        Update: {
+          active?: boolean | null
+          category?: string
+          created_at?: string | null
+          id?: string
+          label?: string
+          sort_order?: number
+          value?: string
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           browser_info: string | null
