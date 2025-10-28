@@ -14,6 +14,7 @@ import { MapPin, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCities } from '@/hooks/useCities';
 import { detectLocation } from '@/lib/geolocation';
+import { geocodePlz } from '@/lib/geocoding';
 import { useToast } from '@/hooks/use-toast';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 
@@ -27,6 +28,9 @@ const profileSchema = z.object({
   about_me: z.string().max(500, 'Maximale Länge: 500 Zeichen').optional(),
   languages: z.array(z.string()).min(1, 'Mindestens eine Sprache erforderlich'),
   category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich'),
+  // GPS coordinates (automatically geocoded from PLZ)
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   // Contact fields (all optional)
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
@@ -152,8 +156,24 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     }
   };
 
+  const handleFormSubmit = async (data: ProfileFormData) => {
+    // Geocode PLZ to GPS coordinates if postal_code is provided
+    if (data.postal_code && data.city && !data.lat && !data.lng) {
+      const coords = await geocodePlz(data.postal_code, data.city);
+      if (coords) {
+        data.lat = coords.lat;
+        data.lng = coords.lng;
+        console.log('Geocoded coordinates:', coords);
+      } else {
+        console.warn('Could not geocode postal code:', data.postal_code);
+      }
+    }
+    
+    await onSubmit(data);
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div>
         <Label htmlFor="display_name">Anzeigename *</Label>
         <Input

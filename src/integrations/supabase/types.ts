@@ -678,6 +678,7 @@ export type Database = {
             }
             Returns: string
           }
+      check_contact_rate_limit: { Args: { _email: string }; Returns: boolean }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
