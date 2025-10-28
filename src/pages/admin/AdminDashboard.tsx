@@ -48,6 +48,12 @@ const AdminDashboard = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'unread');
       
+      // Count pending verifications
+      const { count: pendingVerifications } = await supabase
+        .from('verification_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
       return [
         { 
           label: 'Zu prüfen', 
@@ -89,6 +95,14 @@ const AdminDashboard = () => {
           color: 'text-red-500',
           bgColor: 'bg-red-50 dark:bg-red-950'
         },
+        { 
+          label: 'Verifizierungen', 
+          value: pendingVerifications || 0, 
+          link: '/admin/verifications',
+          icon: Shield,
+          color: 'text-cyan-500',
+          bgColor: 'bg-cyan-50 dark:bg-cyan-950'
+        },
       ];
     }
   });
@@ -101,8 +115,8 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
           
           {isLoading ? (
-            <div className="grid md:grid-cols-5 gap-4 mb-8">
-              {[1, 2, 3, 4, 5].map((i) => (
+            <div className="grid md:grid-cols-6 gap-4 mb-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className="bg-card border rounded-lg p-6">
                   <div className="h-4 bg-muted rounded w-24 mb-2 animate-pulse" />
                   <div className="h-8 bg-muted rounded w-12 animate-pulse" />
@@ -110,7 +124,7 @@ const AdminDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="grid md:grid-cols-5 gap-4 mb-8">
+            <div className="grid md:grid-cols-6 gap-4 mb-8">
               {stats?.map((stat) => {
                 const Icon = stat.icon;
                 return (

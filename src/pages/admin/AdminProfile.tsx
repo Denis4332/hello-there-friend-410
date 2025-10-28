@@ -22,6 +22,14 @@ const AdminProfile = () => {
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['admin-profiles', statusFilter, verifiedFilter],
     queryFn: async () => {
+      // Erst Admin User IDs holen
+      const { data: adminRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+      
+      const adminUserIds = adminRoles?.map(r => r.user_id) || [];
+      
       let query = supabase
         .from('profiles')
         .select(`
@@ -32,6 +40,11 @@ const AdminProfile = () => {
           )
         `)
         .order('created_at', { ascending: false });
+      
+      // Admins ausschließen
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+      }
       
       if (statusFilter) {
         query = query.eq('status', statusFilter);
@@ -272,6 +285,18 @@ const AdminProfile = () => {
                                     <p className="text-sm">{selectedProfile.about_me}</p>
                                   </div>
                                 )}
+                                
+                                <div>
+                                  <label className="text-sm font-medium mb-2 block">Kontaktdaten</label>
+                                  <div className="space-y-1 text-sm">
+                                    {selectedProfile.phone && <p>📞 Telefon: {selectedProfile.phone}</p>}
+                                    {selectedProfile.whatsapp && <p>💬 WhatsApp: {selectedProfile.whatsapp}</p>}
+                                    {selectedProfile.email && <p>📧 Email: {selectedProfile.email}</p>}
+                                    {selectedProfile.website && <p>🌐 Website: {selectedProfile.website}</p>}
+                                    {selectedProfile.telegram && <p>✈️ Telegram: {selectedProfile.telegram}</p>}
+                                    {selectedProfile.instagram && <p>📷 Instagram: {selectedProfile.instagram}</p>}
+                                  </div>
+                                </div>
                                 
                                 <div>
                                   <label className="block text-sm font-medium mb-1">Status</label>

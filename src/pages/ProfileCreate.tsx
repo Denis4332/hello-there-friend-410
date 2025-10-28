@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/Header';
 import { ProfileForm, ProfileFormData } from '@/components/profile/ProfileForm';
 import { PhotoUploader } from '@/components/profile/PhotoUploader';
+import { VerificationUploader } from '@/components/profile/VerificationUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
@@ -17,7 +18,7 @@ const ProfileCreate = () => {
   const [cantons, setCantons] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState<'form' | 'photos'>('form');
+  const [currentStep, setCurrentStep] = useState<'form' | 'photos' | 'verification'>('form');
 
   const { data: createTitle } = useSiteSetting('profile_create_title');
   const { data: createSubtitle } = useSiteSetting('profile_create_subtitle');
@@ -108,9 +109,21 @@ const ProfileCreate = () => {
   };
 
   const handlePhotosComplete = () => {
+    setCurrentStep('verification');
+  };
+
+  const handleVerificationComplete = () => {
     toast({
-      title: 'Profil vollständig',
-      description: 'Dein Profil wird nun überprüft',
+      title: 'Profil erfolgreich erstellt!',
+      description: 'Dein Profil wird jetzt geprüft und dann freigeschaltet.',
+    });
+    navigate('/');
+  };
+
+  const handleVerificationSkip = () => {
+    toast({
+      title: 'Profil erfolgreich erstellt!',
+      description: 'Dein Profil wird jetzt geprüft und dann freigeschaltet.',
     });
     navigate('/');
   };
@@ -127,12 +140,15 @@ const ProfileCreate = () => {
             </p>
 
             <Tabs value={currentStep} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="form" disabled={currentStep === 'photos'}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="form" disabled={currentStep !== 'form'}>
                   1. Profildaten
                 </TabsTrigger>
-                <TabsTrigger value="photos" disabled={!profileId}>
+                <TabsTrigger value="photos" disabled={currentStep === 'form'}>
                   2. Fotos hochladen
+                </TabsTrigger>
+                <TabsTrigger value="verification" disabled={currentStep !== 'verification'}>
+                  3. Verifizierung (Optional)
                 </TabsTrigger>
               </TabsList>
 
@@ -159,9 +175,19 @@ const ProfileCreate = () => {
                       onClick={handlePhotosComplete}
                       className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                     >
-                      Fertig
+                      Weiter
                     </button>
                   </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="verification" className="mt-6">
+                {profileId && (
+                  <VerificationUploader
+                    profileId={profileId}
+                    onComplete={handleVerificationComplete}
+                    onSkip={handleVerificationSkip}
+                  />
                 )}
               </TabsContent>
             </Tabs>

@@ -505,6 +505,50 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_submissions: {
+        Row: {
+          admin_note: string | null
+          created_at: string | null
+          id: string
+          profile_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          storage_path: string
+          submitted_at: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string | null
+          id?: string
+          profile_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          storage_path: string
+          submitted_at?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string | null
+          id?: string
+          profile_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          storage_path?: string
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_submissions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       geography_columns: {
