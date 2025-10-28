@@ -13,6 +13,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { SEO } from '@/components/SEO';
+import { ContactSection } from '@/components/profile/ContactSection';
 
 const Profil = () => {
   const { slug } = useParams();
@@ -173,6 +174,16 @@ const Profil = () => {
                   </p>
                 </div>
               )}
+
+              {/* Contact Section */}
+              <ContactSection
+                phone={profile.phone}
+                whatsapp={profile.whatsapp}
+                email={profile.email}
+                website={profile.website}
+                telegram={profile.telegram}
+                instagram={profile.instagram}
+              />
 
               <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
                 <DialogTrigger asChild>

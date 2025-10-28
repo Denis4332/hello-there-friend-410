@@ -75,19 +75,25 @@ const ProfileEdit = () => {
 
     setIsSubmitting(true);
     try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          display_name: data.display_name,
-          age: data.age,
-          gender: data.gender,
-          city: data.city,
-          canton: data.canton,
-          postal_code: data.postal_code,
-          about_me: data.about_me,
-          languages: data.languages,
-        })
-        .eq('id', profile.id);
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        display_name: data.display_name,
+        age: data.age,
+        gender: data.gender,
+        city: data.city,
+        canton: data.canton,
+        postal_code: data.postal_code,
+        about_me: data.about_me,
+        languages: data.languages,
+        phone: data.phone,
+        whatsapp: data.whatsapp,
+        email: data.email,
+        website: data.website,
+        telegram: data.telegram,
+        instagram: data.instagram,
+      })
+      .eq('id', profile.id);
 
       if (profileError) throw profileError;
 
@@ -212,6 +218,12 @@ const ProfileEdit = () => {
     about_me: profile.about_me || '',
     languages: profile.languages || [],
     category_ids: profile.profile_categories?.map((pc: any) => pc.category_id) || [],
+    phone: profile.phone || '',
+    whatsapp: profile.whatsapp || '',
+    email: profile.email || '',
+    website: profile.website || '',
+    telegram: profile.telegram || '',
+    instagram: profile.instagram || '',
   };
 
   return (

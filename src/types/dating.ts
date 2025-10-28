@@ -30,6 +30,13 @@ export interface Profile {
   status: ProfileStatus;
   created_at: string;
   updated_at: string;
+  // Contact fields
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  website?: string;
+  telegram?: string;
+  instagram?: string;
   // Relations (populated via joins)
   categories?: Category[];
   photos?: Photo[];
@@ -92,6 +99,13 @@ export interface ProfileFormData {
   about_me?: string;
   languages: string[];
   category_ids: string[];
+  // Contact fields
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  website?: string;
+  telegram?: string;
+  instagram?: string;
 }
 
 export interface SearchFilters {

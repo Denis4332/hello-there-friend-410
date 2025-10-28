@@ -307,18 +307,24 @@ export type Database = {
           city: string
           created_at: string | null
           display_name: string
+          email: string | null
           gender: string | null
           id: string
+          instagram: string | null
           is_premium: boolean | null
           languages: string[] | null
           lat: number | null
           lng: number | null
+          phone: string | null
           postal_code: string | null
           slug: string | null
           status: string | null
+          telegram: string | null
           updated_at: string | null
           user_id: string
           verified_at: string | null
+          website: string | null
+          whatsapp: string | null
         }
         Insert: {
           about_me?: string | null
@@ -327,18 +333,24 @@ export type Database = {
           city: string
           created_at?: string | null
           display_name: string
+          email?: string | null
           gender?: string | null
           id?: string
+          instagram?: string | null
           is_premium?: boolean | null
           languages?: string[] | null
           lat?: number | null
           lng?: number | null
+          phone?: string | null
           postal_code?: string | null
           slug?: string | null
           status?: string | null
+          telegram?: string | null
           updated_at?: string | null
           user_id: string
           verified_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Update: {
           about_me?: string | null
@@ -347,18 +359,24 @@ export type Database = {
           city?: string
           created_at?: string | null
           display_name?: string
+          email?: string | null
           gender?: string | null
           id?: string
+          instagram?: string | null
           is_premium?: boolean | null
           languages?: string[] | null
           lat?: number | null
           lng?: number | null
+          phone?: string | null
           postal_code?: string | null
           slug?: string | null
           status?: string | null
+          telegram?: string | null
           updated_at?: string | null
           user_id?: string
           verified_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }

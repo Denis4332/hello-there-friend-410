@@ -64,6 +64,12 @@ const ProfileCreate = () => {
           postal_code: data.postal_code,
           about_me: data.about_me,
           languages: data.languages,
+          phone: data.phone,
+          whatsapp: data.whatsapp,
+          email: data.email,
+          website: data.website,
+          telegram: data.telegram,
+          instagram: data.instagram,
           status: 'pending',
         })
         .select()
