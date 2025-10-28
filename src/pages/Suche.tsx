@@ -6,10 +6,13 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useSearchProfiles } from '@/hooks/useProfiles';
+import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { detectLocation } from '@/lib/geolocation';
+import { toast } from 'sonner';
+import { MapPin } from 'lucide-react';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,14 +22,34 @@ const Suche = () => {
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
   const [sort, setSort] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLng, setUserLng] = useState<number | null>(null);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
   const { data: categories = [] } = useCategories();
   const { data: radiusOptions = [] } = useDropdownOptions('radius');
-  const { data: profiles = [], isLoading } = useSearchProfiles({
+  
+  // GPS-based search
+  const { data: gpsProfiles = [], isLoading: isLoadingGps } = useProfilesByRadius(
+    userLat,
+    userLng,
+    parseInt(radius) || 25,
+    {
+      categoryId: category || undefined,
+      keyword: keyword || undefined,
+    }
+  );
+  
+  // Text-based search
+  const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
     location: searchParams.get('ort') || undefined,
     categoryId: searchParams.get('kategorie') || undefined,
     keyword: searchParams.get('stichwort') || undefined,
   });
+  
+  // Use GPS profiles if available, otherwise text search
+  const profiles = userLat && userLng ? gpsProfiles : textProfiles;
+  const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
 
   const { data: searchTitle } = useSiteSetting('search_page_title');
   const { data: searchSubtitle } = useSiteSetting('search_page_subtitle');
@@ -71,6 +94,21 @@ const Suche = () => {
     setSearchParams(params);
   };
 
+  const handleDetectLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      const result = await detectLocation();
+      setUserLat(result.lat);
+      setUserLng(result.lng);
+      setLocation(`${result.city}, ${result.postalCode}`);
+      toast.success(`Standort erkannt: ${result.city}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Standort konnte nicht ermittelt werden');
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -85,12 +123,29 @@ const Suche = () => {
                 <label htmlFor="q_location" className="block text-sm font-medium mb-1">
                   {searchLocationLabel || 'Standort'}
                 </label>
-                <Input
-                  id="q_location"
-                  placeholder="Stadt oder PLZ"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="q_location"
+                    placeholder="Stadt oder PLZ"
+                    value={location}
+                    onChange={(e) => {
+                      setLocation(e.target.value);
+                      setUserLat(null);
+                      setUserLng(null);
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleDetectLocation}
+                    disabled={isDetectingLocation}
+                    title="Standort ermitteln"
+                  >
+                    <MapPin className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <div>
                 <label htmlFor="q_radius" className="block text-sm font-medium mb-1">
@@ -156,7 +211,11 @@ const Suche = () => {
             <>
               <div className="grid md:grid-cols-2 gap-4">
                 {paginatedProfiles.map((profile) => (
-                  <ProfileCard key={profile.id} profile={profile} />
+                  <ProfileCard 
+                    key={profile.id} 
+                    profile={profile} 
+                    distance={(profile as any).distance_km}
+                  />
                 ))}
               </div>
               <Pagination

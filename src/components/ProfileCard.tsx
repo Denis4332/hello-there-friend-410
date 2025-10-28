@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileCardProps {
   profile: any; // Using any for now since we get DB schema
+  distance?: number; // Distance in km (from GPS search)
 }
 
-export const ProfileCard = ({ profile }: ProfileCardProps) => {
+export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
   // Get primary photo
   const primaryPhoto = profile.photos?.find((p: any) => p.is_primary) || profile.photos?.[0];
   const photoUrl = primaryPhoto 
@@ -43,9 +44,16 @@ export const ProfileCard = ({ profile }: ProfileCardProps) => {
               </Badge>
             )}
           </div>
-          <p className="text-sm text-muted-foreground mb-2">
-            {profile.city}, {profile.canton}
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-sm text-muted-foreground">
+              {profile.city}, {profile.canton}
+            </p>
+            {distance && (
+              <Badge variant="secondary" className="text-xs">
+                {distance} km
+              </Badge>
+            )}
+          </div>
           <p className="text-sm mb-3 line-clamp-2">{profile.about_me || 'Keine Beschreibung verfügbar'}</p>
           <div className="flex gap-2 flex-wrap">
             <Link to={`/profil/${profile.slug}`}>

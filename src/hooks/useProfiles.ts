@@ -199,3 +199,55 @@ export const useAllCities = () => {
     },
   });
 };
+
+export const useProfilesByRadius = (
+  userLat: number | null,
+  userLng: number | null,
+  radiusKm: number,
+  filters: {
+    categoryId?: string;
+    keyword?: string;
+  }
+) => {
+  return useQuery<(ProfileWithRelations & { distance_km: number })[]>({
+    queryKey: ['profiles-by-radius', userLat, userLng, radiusKm, filters],
+    queryFn: async () => {
+      if (!userLat || !userLng) return [];
+      
+      const { data, error } = await supabase.rpc('search_profiles_by_radius', {
+        user_lat: userLat,
+        user_lng: userLng,
+        radius_km: radiusKm,
+        filter_category_id: filters.categoryId || null,
+        filter_keyword: filters.keyword || null,
+      });
+      
+      if (error) throw error;
+      
+      // Fetch photos and categories for each profile
+      const profilesWithRelations = await Promise.all(
+        (data || []).map(async (profile: any) => {
+          const [photosResult, categoriesResult] = await Promise.all([
+            supabase
+              .from('photos')
+              .select('storage_path, is_primary')
+              .eq('profile_id', profile.id),
+            supabase
+              .from('profile_categories')
+              .select('category_id')
+              .eq('profile_id', profile.id),
+          ]);
+          
+          return {
+            ...profile,
+            photos: photosResult.data || [],
+            profile_categories: categoriesResult.data || [],
+          };
+        })
+      );
+      
+      return profilesWithRelations as (ProfileWithRelations & { distance_km: number })[];
+    },
+    enabled: !!userLat && !!userLng,
+  });
+};
