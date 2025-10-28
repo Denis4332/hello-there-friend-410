@@ -4,18 +4,36 @@ import { supabase } from '@/integrations/supabase/client';
 // Explicit types to avoid "Type instantiation is excessively deep" error
 type ProfileWithRelations = any;
 
+// Helper: Load all Admin User IDs
+const getAdminUserIds = async (): Promise<string[]> => {
+  const { data: adminRoles } = await supabase
+    .from('user_roles')
+    .select('user_id')
+    .eq('role', 'admin');
+  
+  return adminRoles?.map(r => r.user_id) || [];
+};
+
 export const useFeaturedProfiles = (limit: number = 8) => {
   return useQuery<ProfileWithRelations[]>({
     queryKey: ['featured-profiles', limit],
     queryFn: async () => {
-      const result = await (supabase as any)
+      const adminUserIds = await getAdminUserIds();
+      
+      let query = (supabase as any)
         .from('profiles')
         .select(`
           *,
           photos(storage_path, is_primary),
           profile_categories(category_id)
         `)
-        .eq('status', 'active')
+        .eq('status', 'active');
+      
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+      }
+      
+      const result = await query
         .order('is_premium', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -34,6 +52,8 @@ export const useSearchProfiles = (filters: {
   return useQuery<ProfileWithRelations[]>({
     queryKey: ['search-profiles', filters],
     queryFn: async () => {
+      const adminUserIds = await getAdminUserIds();
+      
       let query = (supabase as any)
         .from('profiles')
         .select(`
@@ -42,6 +62,10 @@ export const useSearchProfiles = (filters: {
           profile_categories(category_id)
         `)
         .eq('status', 'active');
+      
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+      }
       
       if (filters.location) {
         query = query.or(`city.ilike.%${filters.location}%,postal_code.ilike.%${filters.location}%`);
@@ -88,7 +112,9 @@ export const useCityProfiles = (cityName: string | undefined) => {
     queryFn: async () => {
       if (!cityName) return [];
       
-      const result = await (supabase as any)
+      const adminUserIds = await getAdminUserIds();
+      
+      let query = (supabase as any)
         .from('profiles')
         .select(`
           *,
@@ -98,6 +124,11 @@ export const useCityProfiles = (cityName: string | undefined) => {
         .eq('status', 'active')
         .ilike('city', cityName);
       
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+      }
+      
+      const result = await query;
       if (result.error) throw result.error;
       return (result.data || []) as ProfileWithRelations[];
     },
@@ -110,6 +141,8 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
     queryKey: ['category-profiles', categoryId],
     queryFn: async () => {
       if (!categoryId) return [];
+      
+      const adminUserIds = await getAdminUserIds();
       
       const result = await (supabase as any)
         .from('profile_categories')
@@ -124,10 +157,17 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
         .eq('profiles.status', 'active');
       
       if (result.error) throw result.error;
-      return (result.data?.map((p: any) => ({
+      
+      let profiles = result.data?.map((p: any) => ({
         ...p.profiles,
         profile_categories: [{ category_id: categoryId }]
-      })) || []) as ProfileWithRelations[];
+      })) || [];
+      
+      if (adminUserIds.length > 0) {
+        profiles = profiles.filter((p: any) => !adminUserIds.includes(p.user_id));
+      }
+      
+      return profiles as ProfileWithRelations[];
     },
     enabled: !!categoryId,
   });
@@ -214,6 +254,8 @@ export const useProfilesByRadius = (
     queryFn: async () => {
       if (!userLat || !userLng) return [];
       
+      const adminUserIds = await getAdminUserIds();
+      
       const { data, error } = await supabase.rpc('search_profiles_by_radius', {
         user_lat: userLat,
         user_lng: userLng,
@@ -224,9 +266,14 @@ export const useProfilesByRadius = (
       
       if (error) throw error;
       
+      let filteredData = data || [];
+      if (adminUserIds.length > 0) {
+        filteredData = filteredData.filter((p: any) => !adminUserIds.includes(p.user_id));
+      }
+      
       // Fetch photos and categories for each profile
       const profilesWithRelations = await Promise.all(
-        (data || []).map(async (profile: any) => {
+        filteredData.map(async (profile: any) => {
           const [photosResult, categoriesResult] = await Promise.all([
             supabase
               .from('photos')
