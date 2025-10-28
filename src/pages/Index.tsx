@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
-import { CityCard } from '@/components/CityCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useFeaturedProfiles, useTopCities } from '@/hooks/useProfiles';
+import { useFeaturedProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
@@ -23,7 +22,6 @@ const Index = () => {
   const [keyword, setKeyword] = useState('');
   
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
-  const { data: topCities = [], isLoading: loadingCities } = useTopCities(4);
   const { data: categories = [] } = useCategories();
   const { data: radiusOptions = [] } = useDropdownOptions('radius');
   
@@ -35,11 +33,8 @@ const Index = () => {
   const { data: metaDescription } = useSiteSetting('meta_description');
   const { data: heroImageUrl } = useSiteSetting('design_hero_image_url');
   const { data: heroOverlayOpacity } = useSiteSetting('design_hero_overlay_opacity');
-  const { data: topCitiesTitle } = useSiteSetting('home_top_cities_title');
   const { data: featuredProfilesTitle } = useSiteSetting('home_featured_profiles_title');
-  const { data: loadingCitiesText } = useSiteSetting('home_loading_cities_text');
   const { data: loadingProfilesText } = useSiteSetting('home_loading_profiles_text');
-  const { data: noCitiesText } = useSiteSetting('home_no_cities_text');
   const { data: noProfilesText } = useSiteSetting('home_no_profiles_text');
 
   const handleSearch = (e: React.FormEvent) => {
@@ -152,23 +147,6 @@ const Index = () => {
                 Umkreissuche benötigt Standortfreigabe oder Google Places API (folgt).
               </p>
             </form>
-          </div>
-        </section>
-
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <h2 className="text-2xl font-bold mb-6">{topCitiesTitle || 'Top-Städte'}</h2>
-            {loadingCities ? (
-              <p className="text-muted-foreground">{loadingCitiesText || 'Lade Städte...'}</p>
-            ) : topCities.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {topCities.map((city) => (
-                  <CityCard key={city.slug} name={city.city} slug={city.slug} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">{noCitiesText || 'Keine Städte verfügbar'}</p>
-            )}
           </div>
         </section>
 
