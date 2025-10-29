@@ -71,25 +71,28 @@ export const VerificationUploader = ({ profileId, onComplete, onSkip }: Verifica
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Identitäts-Verifizierung (Optional)</CardTitle>
+        <CardTitle>Identität verifizieren (Optional)</CardTitle>
         <CardDescription>
-          Erhalte ein verifiziertes Badge, indem du deine Identität bestätigst.
+          Verifizierte Profile werden mit einem Badge gekennzeichnet und haben höhere Sichtbarkeit.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="bg-muted p-4 rounded-lg">
-          <h4 className="font-medium mb-2">So funktionierts:</h4>
-          <ol className="list-decimal pl-5 space-y-1 text-sm">
-            <li>Schreibe "ESCORIA" auf ein Blatt Papier</li>
-            <li>Halte es neben dein Gesicht</li>
-            <li>Mache ein deutliches Selfie</li>
-            <li>Lade das Foto hier hoch</li>
-          </ol>
-        </div>
-
         {!uploaded ? (
-          <div className="border-2 border-dashed rounded-lg p-8 text-center">
-            <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <>
+            <div className="bg-muted/50 border-2 border-dashed rounded-lg p-6 text-center space-y-3">
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p className="font-medium">So funktioniert's:</p>
+                <ol className="text-left list-decimal list-inside space-y-1">
+                  <li>Nimm ein Blatt Papier und schreibe <strong>"ESCORIA"</strong> darauf</li>
+                  <li>Halte das Blatt neben dein Gesicht</li>
+                  <li>Mache ein Selfie von dir mit dem Blatt</li>
+                  <li>Lade das Foto hoch</li>
+                </ol>
+                <p className="text-xs italic mt-3">
+                  ⚠️ Dieses Foto wird NICHT öffentlich angezeigt - nur zur Verifizierung
+                </p>
+              </div>
+            </div>
             <input
               type="file"
               accept="image/*"
@@ -99,43 +102,53 @@ export const VerificationUploader = ({ profileId, onComplete, onSkip }: Verifica
               id="verification-upload"
             />
             <label htmlFor="verification-upload">
-              <Button variant="outline" disabled={uploading} asChild>
+              <Button
+                variant="default"
+                disabled={uploading}
+                className="w-full"
+                size="lg"
+                asChild
+              >
                 <span>
-                  {uploading ? 'Wird hochgeladen...' : 'Foto auswählen'}
+                  {uploading ? 'Wird hochgeladen...' : 'Verifizierungs-Foto hochladen'}
                 </span>
               </Button>
             </label>
             {preview && (
-              <div className="mt-4">
-                <img src={preview} alt="Vorschau" className="max-w-xs mx-auto rounded" />
+              <div className="relative w-full h-64 bg-muted rounded-lg overflow-hidden border">
+                <img src={preview} alt="Preview" className="object-cover w-full h-full" />
               </div>
             )}
-          </div>
+          </>
         ) : (
-          <div className="bg-success/10 border border-success rounded-lg p-6 text-center">
-            <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-success" />
-            <p className="font-medium">Verifizierung eingereicht!</p>
-            <p className="text-sm text-muted-foreground">Wir prüfen dein Foto und verifizieren dein Profil.</p>
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 bg-green-500 text-white rounded-full flex items-center justify-center mx-auto text-2xl">
+              ✓
+            </div>
+            <p className="text-sm font-medium">Verifizierungs-Foto erfolgreich hochgeladen!</p>
+            <p className="text-xs text-muted-foreground">
+              Dein Foto wird innerhalb von 24h von unserem Team geprüft
+            </p>
           </div>
         )}
-
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-4">
           <Button
             variant="outline"
             className="flex-1"
             onClick={onSkip}
             disabled={uploading}
+            size="lg"
           >
-            {uploaded ? 'Weiter' : 'Überspringen'}
+            {uploaded ? 'Ohne Verifizierung fortfahren' : 'Überspringen'}
           </Button>
-          {uploaded && (
-            <Button
-              className="flex-1"
-              onClick={onComplete}
-            >
-              Fertig
-            </Button>
-          )}
+          <Button
+            className="flex-1"
+            onClick={onComplete}
+            disabled={!uploaded}
+            size="lg"
+          >
+            Inserat zur Prüfung einreichen
+          </Button>
         </div>
       </CardContent>
     </Card>

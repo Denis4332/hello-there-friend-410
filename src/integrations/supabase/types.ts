@@ -319,6 +319,7 @@ export type Database = {
           postal_code: string | null
           slug: string | null
           status: string | null
+          street_address: string | null
           telegram: string | null
           updated_at: string | null
           user_id: string
@@ -345,6 +346,7 @@ export type Database = {
           postal_code?: string | null
           slug?: string | null
           status?: string | null
+          street_address?: string | null
           telegram?: string | null
           updated_at?: string | null
           user_id: string
@@ -371,6 +373,7 @@ export type Database = {
           postal_code?: string | null
           slug?: string | null
           status?: string | null
+          street_address?: string | null
           telegram?: string | null
           updated_at?: string | null
           user_id?: string

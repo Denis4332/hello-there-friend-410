@@ -9,21 +9,26 @@ import { useFeaturedProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
-import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { useCantons, useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
 import { SEO } from '@/components/SEO';
+import { MapPin } from 'lucide-react';
+import { detectLocation } from '@/lib/geolocation';
+import { toast } from 'sonner';
 
 const Index = () => {
   useDesignSettings(); // Apply design settings
   
   const navigate = useNavigate();
-  const [location, setLocation] = useState('');
-  const [radius, setRadius] = useState('25');
+  const [canton, setCanton] = useState('');
+  const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
   const { data: categories = [] } = useCategories();
-  const { data: radiusOptions = [] } = useDropdownOptions('radius');
+  const { data: cantons = [] } = useCantons();
+  const { data: cities = [] } = useCitiesByCantonSlim(canton);
   
   const { data: siteTitle } = useSiteSetting('site_title');
   const { data: heroSubtitle } = useSiteSetting('hero_subtitle');
@@ -40,11 +45,36 @@ const Index = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (location) params.set('ort', location);
-    if (radius) params.set('umkreis', radius);
+    if (canton) params.set('kanton', canton);
+    if (city) params.set('stadt', city);
     if (category) params.set('kategorie', category);
     if (keyword) params.set('stichwort', keyword);
     navigate(`/suche?${params.toString()}`);
+  };
+
+  const handleDetectLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      const result = await detectLocation();
+      
+      // Find matching canton
+      const matchingCanton = cantons.find(
+        (c) => c.name.toLowerCase() === result.canton.toLowerCase() ||
+               c.abbreviation.toLowerCase() === result.canton.toLowerCase()
+      );
+      
+      if (matchingCanton) {
+        setCanton(matchingCanton.abbreviation);
+        setCity(result.city);
+        toast.success(`Standort erkannt: ${result.city}, ${matchingCanton.abbreviation}`);
+      } else {
+        toast.error('Kanton konnte nicht zugeordnet werden');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Standort konnte nicht ermittelt werden');
+    } finally {
+      setIsDetectingLocation(false);
+    }
   };
 
   return (
@@ -81,31 +111,56 @@ const Index = () => {
               </p>
             )}
             <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
+              <div className="flex justify-end mb-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDetectLocation}
+                  disabled={isDetectingLocation}
+                  className="gap-2"
+                >
+                  <MapPin className="h-4 w-4" />
+                  {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe'}
+                </Button>
+              </div>
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label htmlFor="q_location" className="block text-sm font-medium mb-1">
-                    Ort/PLZ
-                  </label>
-                  <Input
-                    id="q_location"
-                    placeholder={searchLocationPlaceholder || "PLZ oder Ort"}
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="q_radius" className="block text-sm font-medium mb-1">
-                    Umkreis
+                  <label htmlFor="q_canton" className="block text-sm font-medium mb-1">
+                    Kanton
                   </label>
                   <select
-                    id="q_radius"
-                    value={radius}
-                    onChange={(e) => setRadius(e.target.value)}
+                    id="q_canton"
+                    value={canton}
+                    onChange={(e) => {
+                      setCanton(e.target.value);
+                      setCity(''); // Reset city when canton changes
+                    }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    {radiusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
+                    <option value="">Alle Kantone</option>
+                    {cantons.map((c) => (
+                      <option key={c.id} value={c.abbreviation}>
+                        {c.name} ({c.abbreviation})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="q_city" className="block text-sm font-medium mb-1">
+                    Stadt {!canton && <span className="text-xs text-muted-foreground">(wähle zuerst Kanton)</span>}
+                  </label>
+                  <select
+                    id="q_city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    disabled={!canton}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+                  >
+                    <option value="">Alle Städte</option>
+                    {cities.map((c) => (
+                      <option key={c.slug} value={c.name}>
+                        {c.name}
                       </option>
                     ))}
                   </select>
@@ -134,18 +189,15 @@ const Index = () => {
                   </label>
                   <Input
                     id="q_keyword"
-                    placeholder={searchKeywordPlaceholder || "Stichwort (optional)"}
+                    placeholder={searchKeywordPlaceholder || "Name, Service..."}
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" size="lg">
                 {searchButtonText || "Suchen"}
               </Button>
-              <p className="text-xs text-muted-foreground mt-2">
-                Umkreissuche benötigt Standortfreigabe oder Google Places API (folgt).
-              </p>
             </form>
           </div>
         </section>

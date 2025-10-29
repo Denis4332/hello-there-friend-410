@@ -114,18 +114,18 @@ const ProfileCreate = () => {
 
   const handleVerificationComplete = () => {
     toast({
-      title: 'Profil erfolgreich erstellt!',
-      description: 'Dein Profil wird jetzt geprüft und dann freigeschaltet.',
+      title: 'Inserat eingereicht!',
+      description: 'Dein Inserat wird in den nächsten 24 Stunden geprüft und freigeschaltet.',
     });
-    navigate('/');
+    navigate('/user/dashboard');
   };
 
   const handleVerificationSkip = () => {
     toast({
-      title: 'Profil erfolgreich erstellt!',
-      description: 'Dein Profil wird jetzt geprüft und dann freigeschaltet.',
+      title: 'Inserat eingereicht!',
+      description: 'Dein Inserat wird in den nächsten 24 Stunden geprüft und freigeschaltet.',
     });
-    navigate('/');
+    navigate('/user/dashboard');
   };
 
   return (
@@ -175,7 +175,7 @@ const ProfileCreate = () => {
                       onClick={handlePhotosComplete}
                       className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
                     >
-                      Weiter
+                      Fotos speichern und weiter
                     </button>
                   </div>
                 )}

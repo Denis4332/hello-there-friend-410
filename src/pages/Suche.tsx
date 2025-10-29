@@ -10,13 +10,15 @@ import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { useCantons, useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
 import { MapPin } from 'lucide-react';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [location, setLocation] = useState(searchParams.get('ort') || '');
+  const [canton, setCanton] = useState(searchParams.get('kanton') || '');
+  const [city, setCity] = useState(searchParams.get('stadt') || '');
   const [radius, setRadius] = useState(searchParams.get('umkreis') || '25');
   const [category, setCategory] = useState(searchParams.get('kategorie') || '');
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
@@ -27,6 +29,8 @@ const Suche = () => {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
   const { data: categories = [] } = useCategories();
+  const { data: cantons = [] } = useCantons();
+  const { data: cities = [] } = useCitiesByCantonSlim(canton);
   const { data: radiusOptions = [] } = useDropdownOptions('radius');
   
   // GPS-based search
@@ -41,8 +45,9 @@ const Suche = () => {
   );
   
   // Text-based search
+  const searchLocation = city || (canton ? `${canton}` : searchParams.get('ort') || undefined);
   const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
-    location: searchParams.get('ort') || undefined,
+    location: searchLocation,
     categoryId: searchParams.get('kategorie') || undefined,
     keyword: searchParams.get('stichwort') || undefined,
   });
@@ -87,11 +92,13 @@ const Suche = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (location) params.set('ort', location);
+    if (canton) params.set('kanton', canton);
+    if (city) params.set('stadt', city);
     if (radius) params.set('umkreis', radius);
     if (category) params.set('kategorie', category);
     if (keyword) params.set('stichwort', keyword);
     setSearchParams(params);
+    setCurrentPage(1);
   };
 
   const handleDetectLocation = async () => {
@@ -100,8 +107,20 @@ const Suche = () => {
       const result = await detectLocation();
       setUserLat(result.lat);
       setUserLng(result.lng);
-      setLocation(`${result.city}, ${result.postalCode}`);
-      toast.success(`Standort erkannt: ${result.city}`);
+      
+      // Find matching canton
+      const matchingCanton = cantons.find(
+        (c) => c.name.toLowerCase() === result.canton.toLowerCase() ||
+               c.abbreviation.toLowerCase() === result.canton.toLowerCase()
+      );
+      
+      if (matchingCanton) {
+        setCanton(matchingCanton.abbreviation);
+        setCity(result.city);
+        toast.success(`Standort erkannt: ${result.city}, ${matchingCanton.abbreviation}`);
+      } else {
+        toast.error('Kanton konnte nicht zugeordnet werden');
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Standort konnte nicht ermittelt werden');
     } finally {
@@ -118,48 +137,56 @@ const Suche = () => {
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           
           <form onSubmit={handleSearch} className="bg-card border rounded-lg p-6 mb-6">
-            <div className="grid md:grid-cols-4 gap-4 mb-4">
+            <div className="flex justify-end mb-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDetectLocation}
+                disabled={isDetectingLocation}
+                className="gap-2"
+              >
+                <MapPin className="h-4 w-4" />
+                {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe'}
+              </Button>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div>
-                <label htmlFor="q_location" className="block text-sm font-medium mb-1">
-                  {searchLocationLabel || 'Standort'}
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    id="q_location"
-                    placeholder="Stadt oder PLZ"
-                    value={location}
-                    onChange={(e) => {
-                      setLocation(e.target.value);
-                      setUserLat(null);
-                      setUserLng(null);
-                    }}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleDetectLocation}
-                    disabled={isDetectingLocation}
-                    title="Standort ermitteln"
-                  >
-                    <MapPin className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <label htmlFor="q_radius" className="block text-sm font-medium mb-1">
-                  {searchRadiusLabel || 'Umkreis'}
+                <label htmlFor="q_canton" className="block text-sm font-medium mb-1">
+                  Kanton
                 </label>
                 <select
-                  id="q_radius"
-                  value={radius}
-                  onChange={(e) => setRadius(e.target.value)}
+                  id="q_canton"
+                  value={canton}
+                  onChange={(e) => {
+                    setCanton(e.target.value);
+                    setCity(''); // Reset city when canton changes
+                  }}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  {radiusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
+                  <option value="">Alle Kantone</option>
+                  {cantons.map((c) => (
+                    <option key={c.id} value={c.abbreviation}>
+                      {c.name} ({c.abbreviation})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="q_city" className="block text-sm font-medium mb-1">
+                  Stadt {!canton && <span className="text-xs text-muted-foreground">(Kanton wählen)</span>}
+                </label>
+                <select
+                  id="q_city"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={!canton}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+                >
+                  <option value="">Alle Städte</option>
+                  {cities.map((c) => (
+                    <option key={c.slug} value={c.name}>
+                      {c.name}
                     </option>
                   ))}
                 </select>
@@ -194,9 +221,14 @@ const Suche = () => {
                 />
               </div>
             </div>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" size="lg">
               {searchButton || 'Suchen'}
             </Button>
+            {userLat && userLng && (
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                📍 Umkreissuche aktiv - {radius}km Radius
+              </p>
+            )}
           </form>
 
           <div className="flex justify-between items-center mb-4">
@@ -228,10 +260,13 @@ const Suche = () => {
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">{searchNoResults || 'Keine Profile gefunden. Versuche es mit anderen Suchkriterien.'}</p>
               <Button variant="outline" onClick={() => {
-                setLocation('');
+                setCanton('');
+                setCity('');
                 setCategory('');
                 setKeyword('');
                 setCurrentPage(1);
+                setUserLat(null);
+                setUserLng(null);
                 setSearchParams({});
               }}>
                 {searchResetButton || 'Filter zurücksetzen'}

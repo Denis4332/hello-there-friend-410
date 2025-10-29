@@ -2,6 +2,7 @@ interface GeolocationResult {
   city: string;
   canton: string;
   postalCode: string;
+  street?: string;
   lat: number;
   lng: number;
 }
@@ -48,6 +49,11 @@ export const detectLocation = async (): Promise<GeolocationResult> => {
 
           // Extract postal code
           const postalCode = address.postcode || '';
+          
+          // Extract street address (optional)
+          const street = address.road 
+            ? `${address.road}${address.house_number ? ' ' + address.house_number : ''}`
+            : undefined;
 
           if (!city) {
             throw new Error('Stadt konnte nicht ermittelt werden');
@@ -57,6 +63,7 @@ export const detectLocation = async (): Promise<GeolocationResult> => {
             city,
             canton,
             postalCode,
+            street,
             lat: latitude,
             lng: longitude,
           });

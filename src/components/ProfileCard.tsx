@@ -15,55 +15,57 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
     : null;
   
   return (
-    <div className="bg-card border rounded-lg p-4">
-      <div className="flex items-start gap-4">
-        {photoUrl ? (
-          <img 
-            src={photoUrl} 
-            alt={profile.display_name}
-            className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">
-            {profile.display_name.charAt(0)}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="font-bold text-lg">{profile.display_name}, {profile.age}</h3>
-            {profile.verified_at && (
-              <Badge variant="outline" className="bg-success/10 text-success border-success">
-                Verifiziert
-              </Badge>
+    <Link to={`/profil/${profile.slug}`} className="block group">
+      <div className="bg-card border rounded-lg p-4 hover:shadow-lg transition-all duration-200 group-hover:scale-[1.01]">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-shrink-0 mx-auto md:mx-0">
+            {photoUrl ? (
+              <img 
+                src={photoUrl} 
+                alt={profile.display_name}
+                className="w-32 h-32 md:w-40 md:h-40 rounded-lg object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div className="w-32 h-32 md:w-40 md:h-40 bg-muted rounded-lg flex items-center justify-center text-3xl font-bold">
+                {profile.display_name.charAt(0).toUpperCase()}
+              </div>
             )}
-            {profile.is_premium && (
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary">
-                VIP
-              </Badge>
-            )}
+            <div className="absolute top-2 right-2 flex flex-col gap-1">
+              {profile.verified_at && (
+                <Badge variant="secondary" className="bg-blue-500 text-white text-xs shadow-md">
+                  ✓ Verifiziert
+                </Badge>
+              )}
+              {profile.is_premium && (
+                <Badge variant="secondary" className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-xs shadow-md">
+                  ⭐ VIP
+                </Badge>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2 mb-2">
-            <p className="text-sm text-muted-foreground">
-              {profile.city}, {profile.canton}
-            </p>
-            {distance && (
-              <Badge variant="secondary" className="text-xs">
-                {distance} km
-              </Badge>
+          <div className="flex-1 min-w-0 flex flex-col">
+            <div className="mb-2">
+              <h3 className="font-bold text-xl truncate">
+                {profile.display_name}, {profile.age}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                📍 {profile.city}, {profile.canton}
+                {distance !== undefined && ` • ${distance.toFixed(1)} km entfernt`}
+              </p>
+            </div>
+            {profile.about_me && (
+              <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+                {profile.about_me}
+              </p>
             )}
-          </div>
-          <p className="text-sm mb-3 line-clamp-2">{profile.about_me || 'Keine Beschreibung verfügbar'}</p>
-          <div className="flex gap-2 flex-wrap">
-            <Link to={`/profil/${profile.slug}`}>
-              <button className="bg-primary text-primary-foreground px-4 py-1.5 rounded text-sm hover:bg-primary/90">
-                Profil ansehen
-              </button>
-            </Link>
+            <button className="w-full mt-auto bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90 transition-colors">
+              Profil ansehen
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
