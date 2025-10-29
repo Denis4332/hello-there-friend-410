@@ -61,7 +61,11 @@ const App = () => (
             <Route path="/500" element={<ServerError />} />
             <Route
               path="/profil/erstellen"
-              element={<Navigate to="/profil/bearbeiten" replace />}
+              element={
+                <UserProtectedRoute>
+                  <ProfileCreate />
+                </UserProtectedRoute>
+              }
             />
             <Route
               path="/mein-profil"
