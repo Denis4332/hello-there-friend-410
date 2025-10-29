@@ -46,6 +46,14 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
         throw new Error('Nicht authentifiziert');
       }
 
+      // Check existing photos in database for is_primary logic
+      const { data: existingPhotos } = await supabase
+        .from('photos')
+        .select('id')
+        .eq('profile_id', profileId);
+
+      const existingPhotosCount = existingPhotos?.length || 0;
+
       const uploadPromises = Array.from(files).map(async (file, index) => {
         // Client-side validation (for UX)
         if (file.size > maxSizeMB * 1024 * 1024) {
@@ -87,7 +95,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
         const { error: dbError } = await supabase.from('photos').insert({
           profile_id: profileId,
           storage_path: data.path,
-          is_primary: previews.length === 0 && index === 0,
+          is_primary: existingPhotosCount === 0 && index === 0,
         });
 
         if (dbError) throw dbError;

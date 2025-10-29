@@ -161,7 +161,7 @@ const UserDashboard = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(`/profil/${profile.id}`)}
+                    onClick={() => navigate(`/profil/${profile.slug}`)}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Öffentliches Profil ansehen
