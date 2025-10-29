@@ -31,7 +31,7 @@ export const useFeaturedProfiles = (limit: number = 8) => {
         .eq('status', 'active');
       
       if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+        query = query.not('user_id', 'in', adminUserIds);
       }
       
       const result = await query
@@ -66,7 +66,7 @@ export const useSearchProfiles = (filters: {
         .eq('status', 'active');
       
       if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+        query = query.not('user_id', 'in', adminUserIds);
       }
       
       if (filters.location) {
@@ -129,7 +129,7 @@ export const useCityProfiles = (cityName: string | undefined) => {
         .ilike('city', cityName);
       
       if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+        query = query.not('user_id', 'in', adminUserIds);
       }
       
       const result = await query;
