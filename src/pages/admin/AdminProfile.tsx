@@ -286,6 +286,16 @@ const AdminProfile = () => {
                                   </div>
                                 )}
                                 
+                                {(!selectedProfile.photos || selectedProfile.photos.length === 0) && (
+                                  <div className="bg-destructive/10 border border-destructive text-destructive text-sm p-3 rounded-lg flex items-start gap-2">
+                                    <span className="text-lg">⚠️</span>
+                                    <div>
+                                      <p className="font-semibold">Keine Fotos hochgeladen</p>
+                                      <p className="text-xs mt-1">Dieses Profil kann erst freigeschaltet werden, wenn mindestens 1 Foto vorhanden ist.</p>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <div>
                                   <label className="text-sm font-medium mb-2 block">Kontaktdaten</label>
                                   <div className="space-y-1 text-sm">
@@ -306,7 +316,14 @@ const AdminProfile = () => {
                                     onChange={(e) => setDialogStatus(e.target.value)}
                                   >
                                     <option value="pending">Zu prüfen</option>
-                                    <option value="active">Freigeben</option>
+                                    <option 
+                                      value="active" 
+                                      disabled={!selectedProfile.photos || selectedProfile.photos.length === 0}
+                                    >
+                                      {(!selectedProfile.photos || selectedProfile.photos.length === 0) 
+                                        ? 'Freigeben (❌ Fotos fehlen!)' 
+                                        : 'Freigeben ✓'}
+                                    </option>
                                     <option value="rejected">Ablehnen</option>
                                   </select>
                                 </div>
@@ -335,7 +352,10 @@ const AdminProfile = () => {
                                   <Button 
                                     className="flex-1"
                                     onClick={handleSaveProfile}
-                                    disabled={updateProfileMutation.isPending}
+                                    disabled={
+                                      updateProfileMutation.isPending || 
+                                      (dialogStatus === 'active' && (!selectedProfile.photos || selectedProfile.photos.length === 0))
+                                    }
                                   >
                                     {updateProfileMutation.isPending ? 'Speichert...' : 'Speichern'}
                                   </Button>
