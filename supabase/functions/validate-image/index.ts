@@ -127,9 +127,19 @@ Deno.serve(async (req) => {
     console.log(`Profile ownership verified for user ${user.id}`);
     console.log(`Validating image upload for profile ${profileId}: ${fileName}`);
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      return new Response(JSON.stringify({ error: 'File size exceeds 5MB limit' }), {
+    // Fetch max file size from site_settings
+    const { data: settingsData } = await supabaseClient
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'upload_max_file_size_mb')
+      .single();
+
+    const maxSizeMB = parseInt(settingsData?.value || '5');
+    console.log(`Using max file size: ${maxSizeMB}MB`);
+
+    // Validate file size
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      return new Response(JSON.stringify({ error: `File size exceeds ${maxSizeMB}MB limit` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
