@@ -16,7 +16,7 @@ const getAdminUserIds = async (): Promise<string[]> => {
 
 export const useFeaturedProfiles = (limit: number = 8) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['featured-profiles', limit, 'v2'],
+    queryKey: ['featured-profiles', limit, 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
@@ -51,7 +51,7 @@ export const useSearchProfiles = (filters: {
   keyword?: string;
 }) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['search-profiles', filters, 'v2'],
+    queryKey: ['search-profiles', filters, 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
@@ -90,7 +90,7 @@ export const useSearchProfiles = (filters: {
 
 export const useProfileBySlug = (slug: string | undefined) => {
   return useQuery<ProfileWithRelations | null>({
-    queryKey: ['profile', slug, 'v2'],
+    queryKey: ['profile', slug, 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!slug) return null;
@@ -111,7 +111,7 @@ export const useProfileBySlug = (slug: string | undefined) => {
 
 export const useCityProfiles = (cityName: string | undefined) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['city-profiles', cityName, 'v2'],
+    queryKey: ['city-profiles', cityName, 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!cityName) return [];
@@ -142,7 +142,7 @@ export const useCityProfiles = (cityName: string | undefined) => {
 
 export const useCategoryProfiles = (categoryId: string | undefined) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['category-profiles', categoryId, 'v2'],
+    queryKey: ['category-profiles', categoryId, 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!categoryId) return [];
@@ -180,7 +180,7 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
 
 export const useTopCities = (limit: number = 4) => {
   return useQuery({
-    queryKey: ['top-cities', limit, 'v2'],
+    queryKey: ['top-cities', limit, 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
@@ -215,7 +215,7 @@ export const useTopCities = (limit: number = 4) => {
 
 export const useAllCities = () => {
   return useQuery({
-    queryKey: ['all-cities', 'v2'],
+    queryKey: ['all-cities', 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
@@ -257,7 +257,7 @@ export const useProfilesByRadius = (
   }
 ) => {
   return useQuery<(ProfileWithRelations & { distance_km: number })[]>({
-    queryKey: ['profiles-by-radius', userLat, userLng, radiusKm, filters, 'v2'],
+    queryKey: ['profiles-by-radius', userLat, userLng, radiusKm, filters, 'v3'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!userLat || !userLng) return [];
