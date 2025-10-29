@@ -16,10 +16,13 @@ const getAdminUserIds = async (): Promise<string[]> => {
 
 export const useFeaturedProfiles = (limit: number = 8) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['featured-profiles', limit, 'v3'],
+    queryKey: ['featured-profiles', limit, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
+      const cacheBust = Date.now();
+      
+      console.log(`[useFeaturedProfiles] Cache bust: ${cacheBust}, Admin IDs to exclude:`, adminUserIds);
       
       let query = (supabase as any)
         .from('profiles')
@@ -39,7 +42,13 @@ export const useFeaturedProfiles = (limit: number = 8) => {
         .order('created_at', { ascending: false })
         .limit(limit);
       
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error('[useFeaturedProfiles] Error:', result.error);
+        throw result.error;
+      }
+      
+      console.log(`[useFeaturedProfiles] Fetched ${result.data?.length || 0} profiles after admin filter`);
+      
       return (result.data || []) as ProfileWithRelations[];
     },
   });
