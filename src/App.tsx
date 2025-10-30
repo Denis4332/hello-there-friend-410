@@ -39,11 +39,10 @@ import { useDesignSettings } from "./hooks/useDesignSettings";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const AppContent = () => {
   useDesignSettings(); // Load dynamic colors from database
   
   return (
-    <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
@@ -105,8 +104,13 @@ const App = () => {
         </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
-  </QueryClientProvider>
   );
 };
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AppContent />
+  </QueryClientProvider>
+);
 
 export default App;
