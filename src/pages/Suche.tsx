@@ -6,6 +6,7 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -19,7 +20,7 @@ const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
   const [city, setCity] = useState(searchParams.get('stadt') || '');
-  const [radius, setRadius] = useState(searchParams.get('umkreis') || '25');
+  const [radius, setRadius] = useState(parseInt(searchParams.get('umkreis') || '25'));
   const [category, setCategory] = useState(searchParams.get('kategorie') || '');
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
   const [sort, setSort] = useState('newest');
@@ -37,7 +38,7 @@ const Suche = () => {
   const { data: gpsProfiles = [], isLoading: isLoadingGps } = useProfilesByRadius(
     userLat,
     userLng,
-    parseInt(radius) || 25,
+    radius,
     {
       categoryId: category || undefined,
       keyword: keyword || undefined,
@@ -94,7 +95,7 @@ const Suche = () => {
     const params = new URLSearchParams();
     if (canton) params.set('kanton', canton);
     if (city) params.set('stadt', city);
-    if (radius) params.set('umkreis', radius);
+    if (radius) params.set('umkreis', radius.toString());
     if (category) params.set('kategorie', category);
     if (keyword) params.set('stichwort', keyword);
     setSearchParams(params);
@@ -117,7 +118,7 @@ const Suche = () => {
       if (matchingCanton) {
         setCanton(matchingCanton.abbreviation);
         setCity(result.city);
-        toast.success(`Standort erkannt: ${result.city}, ${matchingCanton.abbreviation}`);
+        toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation} (${radius}km Radius)`);
       } else {
         toast.error('Kanton konnte nicht zugeordnet werden');
       }
@@ -137,20 +138,39 @@ const Suche = () => {
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           
           <form onSubmit={handleSearch} className="bg-card border rounded-lg p-6 mb-6">
-            <div className="flex justify-end mb-4">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleDetectLocation}
-                disabled={isDetectingLocation}
-                className="gap-2"
-              >
-                <MapPin className="h-4 w-4" />
-                {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe'}
-              </Button>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <Button
+              type="button"
+              size="lg"
+              onClick={handleDetectLocation}
+              disabled={isDetectingLocation}
+              className="w-full mb-6 gap-2"
+            >
+              <MapPin className="h-5 w-5" />
+              {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
+            </Button>
+            
+            {userLat && userLng && (
+              <div className="mb-6 p-4 bg-muted rounded-lg">
+                <label className="text-sm font-medium block mb-2">
+                  Umkreis: {radius} km
+                </label>
+                <Slider
+                  value={[radius]}
+                  onValueChange={([value]) => setRadius(value)}
+                  min={5}
+                  max={100}
+                  step={5}
+                  className="mb-2"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>5 km</span>
+                  <span>100 km</span>
+                </div>
+              </div>
+            )}
+            
+            {!userLat && !userLng && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div>
                 <label htmlFor="q_canton" className="block text-sm font-medium mb-1">
                   Kanton
@@ -221,13 +241,12 @@ const Suche = () => {
                 />
               </div>
             </div>
-            <Button type="submit" className="w-full" size="lg">
-              {searchButton || 'Suchen'}
-            </Button>
-            {userLat && userLng && (
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                📍 Umkreissuche aktiv - {radius}km Radius
-              </p>
+            )}
+            
+            {!userLat && !userLng && (
+              <Button type="submit" className="w-full" size="lg">
+                {searchButton || 'Suchen'}
+              </Button>
             )}
           </form>
 
@@ -241,7 +260,7 @@ const Suche = () => {
             <p className="text-center text-muted-foreground py-12">Lade Ergebnisse...</p>
           ) : paginatedProfiles.length > 0 ? (
             <>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedProfiles.map((profile) => (
                   <ProfileCard 
                     key={profile.id} 

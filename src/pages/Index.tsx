@@ -5,6 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import { useFeaturedProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -23,6 +24,8 @@ const Index = () => {
   const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [radius, setRadius] = useState(25);
+  const [useGPS, setUseGPS] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
@@ -57,16 +60,16 @@ const Index = () => {
     try {
       const result = await detectLocation();
       
-      // Find matching canton
       const matchingCanton = cantons.find(
         (c) => c.name.toLowerCase() === result.canton.toLowerCase() ||
                c.abbreviation.toLowerCase() === result.canton.toLowerCase()
       );
       
       if (matchingCanton) {
+        setUseGPS(true);
         setCanton(matchingCanton.abbreviation);
         setCity(result.city);
-        toast.success(`Standort erkannt: ${result.city}, ${matchingCanton.abbreviation}`);
+        toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation}`);
       } else {
         toast.error('Kanton konnte nicht zugeordnet werden');
       }
@@ -111,20 +114,39 @@ const Index = () => {
               </p>
             )}
             <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
-              <div className="flex justify-end mb-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDetectLocation}
-                  disabled={isDetectingLocation}
-                  className="gap-2"
-                >
-                  <MapPin className="h-4 w-4" />
-                  {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe'}
-                </Button>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <Button
+                type="button"
+                size="lg"
+                onClick={handleDetectLocation}
+                disabled={isDetectingLocation}
+                className="w-full mb-6 gap-2"
+              >
+                <MapPin className="h-5 w-5" />
+                {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
+              </Button>
+              
+              {useGPS && (
+                <div className="mb-6 p-4 bg-muted rounded-lg">
+                  <label className="text-sm font-medium block mb-2">
+                    Umkreis: {radius} km
+                  </label>
+                  <Slider
+                    value={[radius]}
+                    onValueChange={([value]) => setRadius(value)}
+                    min={5}
+                    max={100}
+                    step={5}
+                    className="mb-2"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>5 km</span>
+                    <span>100 km</span>
+                  </div>
+                </div>
+              )}
+              
+              {!useGPS && (
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label htmlFor="q_canton" className="block text-sm font-medium mb-1">
                     Kanton
@@ -195,9 +217,13 @@ const Index = () => {
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full" size="lg">
-                {searchButtonText || "Suchen"}
-              </Button>
+              )}
+              
+              {!useGPS && (
+                <Button type="submit" className="w-full" size="lg">
+                  {searchButtonText || "Suchen"}
+                </Button>
+              )}
             </form>
           </div>
         </section>
@@ -208,7 +234,7 @@ const Index = () => {
             {loadingProfiles ? (
               <p className="text-muted-foreground">{loadingProfilesText || 'Lade Profile...'}</p>
             ) : featuredProfiles.length > 0 ? (
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {featuredProfiles.map((profile) => (
                   <ProfileCard key={profile.id} profile={profile} />
                 ))}
