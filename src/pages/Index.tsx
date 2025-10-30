@@ -6,6 +6,7 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useFeaturedProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -27,6 +28,18 @@ const Index = () => {
   const [radius, setRadius] = useState(25);
   const [useGPS, setUseGPS] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  const topCities = ['Zürich', 'Genf', 'Basel', 'Bern', 'Lausanne', 'Winterthur', 'Luzern', 'St. Gallen', 'Lugano', 'Thun'];
+
+  const toggleCity = (cityName: string) => {
+    setSelectedCities(prev => 
+      prev.includes(cityName) 
+        ? prev.filter(c => c !== cityName)
+        : [...prev, cityName]
+    );
+  };
   
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
   const { data: categories = [] } = useCategories();
@@ -49,6 +62,7 @@ const Index = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (canton) params.set('kanton', canton);
+    if (selectedCities.length > 0) params.set('stadt', selectedCities[0]);
     if (city) params.set('stadt', city);
     if (category) params.set('kategorie', category);
     if (keyword) params.set('stichwort', keyword);
@@ -113,117 +127,196 @@ const Index = () => {
                 {heroSubtitle}
               </p>
             )}
-            <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
+            <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-8">
               <Button
                 type="button"
                 size="lg"
                 onClick={handleDetectLocation}
                 disabled={isDetectingLocation}
-                className="w-full mb-6 gap-2"
+                className="w-full mb-8 gap-2 text-lg h-14"
               >
                 <MapPin className="h-5 w-5" />
                 {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
               </Button>
               
-              {useGPS && (
-                <div className="mb-6 p-4 bg-muted rounded-lg">
-                  <label className="text-sm font-medium block mb-2">
-                    Umkreis: {radius} km
-                  </label>
-                  <Slider
-                    value={[radius]}
-                    onValueChange={([value]) => setRadius(value)}
-                    min={5}
-                    max={100}
-                    step={5}
-                    className="mb-2"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>5 km</span>
-                    <span>100 km</span>
+              {useGPS ? (
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-medium">
+                        Umkreis: {radius} km
+                      </label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setUseGPS(false)}
+                      >
+                        Zurück zur Ortsauswahl
+                      </Button>
+                    </div>
+                    <Slider
+                      value={[radius]}
+                      onValueChange={([value]) => setRadius(value)}
+                      min={5}
+                      max={100}
+                      step={5}
+                      className="mt-2"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                      <span>5 km</span>
+                      <span>25 km</span>
+                      <span>50 km</span>
+                      <span>100 km</span>
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {!useGPS && (
-                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label htmlFor="q_canton" className="block text-sm font-medium mb-1">
-                    Kanton
-                  </label>
-                  <select
-                    id="q_canton"
-                    value={canton}
-                    onChange={(e) => {
-                      setCanton(e.target.value);
-                      setCity(''); // Reset city when canton changes
-                    }}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Alle Kantone</option>
-                    {cantons.map((c) => (
-                      <option key={c.id} value={c.abbreviation}>
-                        {c.name} ({c.abbreviation})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="q_city" className="block text-sm font-medium mb-1">
-                    Stadt {!canton && <span className="text-xs text-muted-foreground">(wähle zuerst Kanton)</span>}
-                  </label>
-                  <select
-                    id="q_city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    disabled={!canton}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
-                  >
-                    <option value="">Alle Städte</option>
-                    {cities.map((c) => (
-                      <option key={c.slug} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="q_category" className="block text-sm font-medium mb-1">
-                    Kategorie
-                  </label>
-                  <select
-                    id="q_category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Alle Kategorien</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="q_keyword" className="block text-sm font-medium mb-1">
-                    Stichwort
-                  </label>
+
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Kategorien</h3>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        type="button"
+                        variant={!category || category === 'all' ? "default" : "outline"}
+                        onClick={() => setCategory('all')}
+                        size="lg"
+                      >
+                        Alle
+                      </Button>
+                      {categories.map((cat) => (
+                        <Button
+                          key={cat.id}
+                          type="button"
+                          variant={category === cat.id ? "default" : "outline"}
+                          onClick={() => setCategory(cat.id)}
+                          size="lg"
+                        >
+                          {cat.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
                   <Input
-                    id="q_keyword"
-                    placeholder={searchKeywordPlaceholder || "Name, Service..."}
+                    placeholder={searchKeywordPlaceholder || "Stichwort eingeben..."}
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
+                    className="h-12"
                   />
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Kategorien</h3>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        type="button"
+                        variant={!category || category === 'all' ? "default" : "outline"}
+                        onClick={() => setCategory('all')}
+                        size="lg"
+                      >
+                        Alle
+                      </Button>
+                      {categories.map((cat) => (
+                        <Button
+                          key={cat.id}
+                          type="button"
+                          variant={category === cat.id ? "default" : "outline"}
+                          onClick={() => setCategory(cat.id)}
+                          size="lg"
+                        >
+                          {cat.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Beliebte Städte</h3>
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {topCities.map((cityName) => (
+                        <Button
+                          key={cityName}
+                          type="button"
+                          variant={selectedCities.includes(cityName) ? "default" : "outline"}
+                          onClick={() => toggleCity(cityName)}
+                          size="sm"
+                          className="whitespace-nowrap"
+                        >
+                          {cityName}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="w-full">
+                        {showAdvancedFilters ? 'Erweiterte Filter ausblenden' : 'Erweiterte Filter anzeigen'}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4 pt-4">
+                      <div>
+                        <label htmlFor="q_canton" className="block text-sm font-medium mb-1">
+                          Kanton
+                        </label>
+                        <select
+                          id="q_canton"
+                          value={canton}
+                          onChange={(e) => {
+                            setCanton(e.target.value);
+                            setCity('');
+                          }}
+                          className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="">Alle Kantone</option>
+                          {cantons.map((c) => (
+                            <option key={c.id} value={c.abbreviation}>
+                              {c.name} ({c.abbreviation})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="q_city" className="block text-sm font-medium mb-1">
+                          Stadt {!canton && <span className="text-xs text-muted-foreground">(wähle zuerst Kanton)</span>}
+                        </label>
+                        <select
+                          id="q_city"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          disabled={!canton}
+                          className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+                        >
+                          <option value="">Alle Städte</option>
+                          {cities.map((c) => (
+                            <option key={c.slug} value={c.name}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="q_keyword" className="block text-sm font-medium mb-1">
+                          Stichwort
+                        </label>
+                        <Input
+                          id="q_keyword"
+                          placeholder={searchKeywordPlaceholder || "Name, Service..."}
+                          value={keyword}
+                          onChange={(e) => setKeyword(e.target.value)}
+                          className="h-12"
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               )}
               
-              {!useGPS && (
-                <Button type="submit" className="w-full" size="lg">
-                  {searchButtonText || "Suchen"}
-                </Button>
-              )}
+              <Button type="submit" className="w-full mt-6 h-12" size="lg">
+                {searchButtonText || "Suchen"}
+              </Button>
             </form>
           </div>
         </section>
@@ -234,7 +327,7 @@ const Index = () => {
             {loadingProfiles ? (
               <p className="text-muted-foreground">{loadingProfilesText || 'Lade Profile...'}</p>
             ) : featuredProfiles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {featuredProfiles.map((profile) => (
                   <ProfileCard key={profile.id} profile={profile} />
                 ))}
