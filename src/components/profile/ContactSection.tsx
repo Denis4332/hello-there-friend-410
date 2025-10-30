@@ -1,6 +1,7 @@
-import { Phone, MessageCircle, Mail, Globe, Send } from "lucide-react";
+import { Phone, MessageCircle, Mail, Globe, Send, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface ContactSectionProps {
   phone?: string;
@@ -19,6 +20,8 @@ export const ContactSection = ({
   telegram,
   instagram,
 }: ContactSectionProps) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
   // Check if at least one contact method is available
   const hasContact = phone || whatsapp || email || website || telegram || instagram;
 
@@ -48,7 +51,18 @@ export const ContactSection = ({
         <CardTitle>Kontakt</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {phone && (
+        {!isVisible ? (
+          <Button 
+            onClick={() => setIsVisible(true)} 
+            className="w-full"
+            size="lg"
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Kontakt anzeigen
+          </Button>
+        ) : (
+          <>
+            {phone && (
           <Button
             variant="outline"
             className="w-full justify-start"
@@ -131,6 +145,8 @@ export const ContactSection = ({
               Instagram: {instagram}
             </a>
           </Button>
+        )}
+          </>
         )}
       </CardContent>
     </Card>
