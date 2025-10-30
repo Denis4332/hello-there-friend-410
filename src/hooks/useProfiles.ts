@@ -29,7 +29,9 @@ export const useFeaturedProfiles = (limit: number = 8) => {
         .select(`
           *,
           photos(storage_path, is_primary),
-          profile_categories(category_id)
+          profile_categories(
+            categories(id, name, slug)
+          )
         `)
         .eq('status', 'active');
       
@@ -70,7 +72,9 @@ export const useSearchProfiles = (filters: {
         .select(`
           *,
           photos(storage_path, is_primary),
-          profile_categories(category_id)
+          profile_categories(
+            categories(id, name, slug)
+          )
         `)
         .eq('status', 'active');
       
@@ -141,7 +145,9 @@ export const useCityProfiles = (cityName: string | undefined) => {
         .select(`
           *,
           photos(storage_path, is_primary),
-          profile_categories(category_id)
+          profile_categories(
+            categories(id, name, slug)
+          )
         `)
         .eq('status', 'active')
         .ilike('city', cityName);

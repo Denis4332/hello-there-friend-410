@@ -18,7 +18,7 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
       to={`/profil/${profile.slug}`} 
       className="block group relative overflow-hidden rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
     >
-      <div className="relative w-full h-[400px] md:h-[450px]">
+      <div className="relative w-full aspect-[3/4]">
         {photoUrl ? (
           <img 
             src={photoUrl} 
@@ -56,10 +56,10 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
         {/* Content - Bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white z-10">
           <div className="flex flex-col gap-1.5 mb-2">
-            {profile.category && (
+            {profile.profile_categories?.[0]?.categories && (
               <div className="flex items-center gap-1.5 text-xs font-medium">
                 <Tag className="h-3.5 w-3.5 text-blue-400" />
-                <span className="text-blue-400">{profile.category}</span>
+                <span className="text-blue-400">{profile.profile_categories[0].categories.name}</span>
               </div>
             )}
             <div className="flex items-center gap-1.5 text-xs font-medium">
