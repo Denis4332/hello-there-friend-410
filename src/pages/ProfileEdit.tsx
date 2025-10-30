@@ -79,6 +79,7 @@ const ProfileEdit = () => {
       .from('profiles')
       .update({
         display_name: data.display_name,
+        is_adult: data.is_adult,
         gender: data.gender,
         city: data.city,
         canton: data.canton,

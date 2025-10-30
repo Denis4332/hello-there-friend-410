@@ -311,6 +311,7 @@ export type Database = {
           gender: string | null
           id: string
           instagram: string | null
+          is_adult: boolean
           is_premium: boolean | null
           languages: string[] | null
           lat: number | null
@@ -338,6 +339,7 @@ export type Database = {
           gender?: string | null
           id?: string
           instagram?: string | null
+          is_adult?: boolean
           is_premium?: boolean | null
           languages?: string[] | null
           lat?: number | null
@@ -365,6 +367,7 @@ export type Database = {
           gender?: string | null
           id?: string
           instagram?: string | null
+          is_adult?: boolean
           is_premium?: boolean | null
           languages?: string[] | null
           lat?: number | null
