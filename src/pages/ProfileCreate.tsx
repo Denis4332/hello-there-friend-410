@@ -8,6 +8,7 @@ import { ProfileForm, ProfileFormData } from '@/components/profile/ProfileForm';
 import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { VerificationUploader } from '@/components/profile/VerificationUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const ProfileCreate = () => {
@@ -109,6 +110,10 @@ const ProfileCreate = () => {
 
   const handlePhotosComplete = () => {
     setCurrentStep('verification');
+    setTimeout(() => {
+      const verificationTab = document.querySelector('[value="verification"]');
+      verificationTab?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
   };
 
   const handleVerificationComplete = () => {
@@ -146,7 +151,7 @@ const ProfileCreate = () => {
                 <TabsTrigger value="photos" disabled={currentStep === 'form'}>
                   2. Fotos hochladen
                 </TabsTrigger>
-                <TabsTrigger value="verification" disabled={currentStep !== 'verification'}>
+                <TabsTrigger value="verification" disabled={!profileId}>
                   3. Verifizierung (Optional)
                 </TabsTrigger>
               </TabsList>
@@ -170,12 +175,14 @@ const ProfileCreate = () => {
                       </p>
                     </div>
                     <PhotoUploader profileId={profileId} />
-                    <button
+                    <Button
+                      type="button"
                       onClick={handlePhotosComplete}
-                      className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                      size="lg"
+                      className="w-full"
                     >
                       Fotos speichern und weiter
-                    </button>
+                    </Button>
                   </div>
                 )}
               </TabsContent>
