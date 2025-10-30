@@ -1,17 +1,21 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useVerifications } from '@/hooks/useVerifications';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Check, X } from 'lucide-react';
 
 const AdminVerifications = () => {
   const { verifications, isLoading, approve, reject, isApproving, isRejecting } = useVerifications();
   const [selectedVerification, setSelectedVerification] = useState<any>(null);
   const [rejectNote, setRejectNote] = useState('');
+  const [selectedVerifications, setSelectedVerifications] = useState<string[]>([]);
+  const [filterNew, setFilterNew] = useState(false);
+  const [sortBy, setSortBy] = useState<'date' | 'profile'>('date');
 
   const getPhotoUrl = (storagePath: string) => {
     const { data } = supabase.storage
@@ -39,12 +43,78 @@ const AdminVerifications = () => {
     setRejectNote('');
   };
 
+  const handleSelectAll = () => {
+    if (selectedVerifications.length === filteredVerifications.length) {
+      setSelectedVerifications([]);
+    } else {
+      setSelectedVerifications(filteredVerifications.map(v => v.id));
+    }
+  };
+
+  const handleToggleSelection = (id: string) => {
+    setSelectedVerifications(prev =>
+      prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkApprove = () => {
+    selectedVerifications.forEach(id => {
+      const verification = verifications?.find(v => v.id === id);
+      if (verification) {
+        approve({ submissionId: id, profileId: verification.profile_id });
+      }
+    });
+    setSelectedVerifications([]);
+  };
+
+  const handleBulkReject = () => {
+    selectedVerifications.forEach(id => {
+      reject({ submissionId: id });
+    });
+    setSelectedVerifications([]);
+  };
+
+  const filteredVerifications = useMemo(() => {
+    let filtered = verifications || [];
+    
+    if (filterNew) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      filtered = filtered.filter(v => new Date(v.submitted_at) > yesterday);
+    }
+    
+    return filtered.sort((a, b) => {
+      if (sortBy === 'date') {
+        return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+      }
+      return (a.profiles?.display_name || '').localeCompare(b.profiles?.display_name || '');
+    });
+  }, [verifications, filterNew, sortBy]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
       <main className="flex-1 py-8 bg-muted">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-6">Verifizierungen prüfen</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Verifizierungen prüfen</h1>
+            <div className="flex gap-2">
+              <Button
+                variant={filterNew ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterNew(!filterNew)}
+              >
+                Nur neue (&lt;24h)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortBy(sortBy === 'date' ? 'profile' : 'date')}
+              >
+                Sort: {sortBy === 'date' ? 'Datum' : 'Profil'}
+              </Button>
+            </div>
+          </div>
 
           <div className="bg-card border rounded-lg overflow-hidden">
             {isLoading ? (
@@ -52,15 +122,21 @@ const AdminVerifications = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Lade Verifizierungen...</p>
               </div>
-            ) : verifications && verifications.length === 0 ? (
+            ) : filteredVerifications.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
-                Keine offenen Verifizierungen
+                {filterNew ? 'Keine neuen Verifizierungen' : 'Keine offenen Verifizierungen'}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-muted">
                     <tr>
+                      <th className="text-left p-3 text-sm font-medium w-12">
+                        <Checkbox
+                          checked={selectedVerifications.length === filteredVerifications.length}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </th>
                       <th className="text-left p-3 text-sm font-medium">Vorschau</th>
                       <th className="text-left p-3 text-sm font-medium">Profil</th>
                       <th className="text-left p-3 text-sm font-medium">Stadt</th>
@@ -70,8 +146,14 @@ const AdminVerifications = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {verifications?.map((verification, index) => (
+                    {filteredVerifications.map((verification, index) => (
                       <tr key={verification.id} className={`border-t hover:bg-muted/50 transition-colors ${index % 2 === 0 ? 'bg-muted/20' : ''}`}>
+                        <td className="p-3">
+                          <Checkbox
+                            checked={selectedVerifications.includes(verification.id)}
+                            onCheckedChange={() => handleToggleSelection(verification.id)}
+                          />
+                        </td>
                         <td className="p-3">
                           <img
                             src={getPhotoUrl(verification.storage_path)}
@@ -169,6 +251,38 @@ const AdminVerifications = () => {
               </div>
             )}
           </div>
+
+          {selectedVerifications.length > 0 && (
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-card border rounded-lg shadow-lg p-4 z-50 flex items-center gap-4">
+              <span className="text-sm font-medium">
+                {selectedVerifications.length} ausgewählt
+              </span>
+              <Button
+                onClick={handleBulkApprove}
+                disabled={isApproving}
+                className="gap-2"
+              >
+                <Check className="h-4 w-4" />
+                Alle genehmigen
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleBulkReject}
+                disabled={isRejecting}
+                className="gap-2"
+              >
+                <X className="h-4 w-4" />
+                Alle ablehnen
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedVerifications([])}
+              >
+                Abbrechen
+              </Button>
+            </div>
+          )}
         </div>
       </main>
     </div>

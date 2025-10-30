@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useFeaturedProfiles } from '@/hooks/useProfiles';
@@ -13,7 +14,7 @@ import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { useCantons, useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
 import { SEO } from '@/components/SEO';
-import { MapPin, Building2, Tag, ChevronDown, Search } from 'lucide-react';
+import { MapPin, Building2, Tag, ChevronDown, Search, X } from 'lucide-react';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
 
@@ -81,6 +82,24 @@ const Index = () => {
     }
   };
 
+  const handleResetFilters = () => {
+    setCanton('');
+    setCity('');
+    setCategory('');
+    setKeyword('');
+    setUseGPS(false);
+  };
+
+  const activeFiltersCount = useMemo(() => {
+    return [
+      canton && 1,
+      city && 1,
+      category && 1,
+      keyword && 1,
+      useGPS && 1
+    ].filter(Boolean).length;
+  }, [canton, city, category, keyword, useGPS]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
@@ -115,6 +134,26 @@ const Index = () => {
               </p>
             )}
             <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
+              <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
+                <h2 className="text-lg font-semibold">Suche</h2>
+                {activeFiltersCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {activeFiltersCount} Filter aktiv
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetFilters}
+                      className="h-8"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Zurücksetzen
+                    </Button>
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 size="lg"

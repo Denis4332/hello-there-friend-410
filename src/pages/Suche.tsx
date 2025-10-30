@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -6,6 +6,7 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
@@ -15,7 +16,7 @@ import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useCantons, useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
-import { MapPin, Building2, Tag, ChevronDown, Search } from 'lucide-react';
+import { MapPin, Building2, Tag, ChevronDown, Search, RefreshCw, X } from 'lucide-react';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,6 +29,7 @@ const Suche = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
   const { data: categories = [] } = useCategories();
@@ -106,29 +108,77 @@ const Suche = () => {
   const handleDetectLocation = async () => {
     setIsDetectingLocation(true);
     try {
-      const result = await detectLocation();
-      setUserLat(result.lat);
-      setUserLng(result.lng);
-      
-      // Find matching canton
-      const matchingCanton = cantons.find(
-        (c) => c.name.toLowerCase() === result.canton.toLowerCase() ||
-               c.abbreviation.toLowerCase() === result.canton.toLowerCase()
-      );
-      
-      if (matchingCanton) {
-        setCanton(matchingCanton.abbreviation);
-        setCity(result.city);
-        toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation} (${radius}km Radius)`);
-      } else {
-        toast.error('Kanton konnte nicht zugeordnet werden');
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            setUserLat(lat);
+            setUserLng(lng);
+            setLocationAccuracy(accuracy);
+
+            // Get location name via reverse geocoding
+            const result = await detectLocation();
+            
+            const matchingCanton = cantons.find(
+              (c) => c.name.toLowerCase() === result.canton.toLowerCase() ||
+                     c.abbreviation.toLowerCase() === result.canton.toLowerCase()
+            );
+            
+            if (matchingCanton) {
+              setCanton(matchingCanton.abbreviation);
+              setCity(result.city);
+              toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation} (±${Math.round(accuracy)}m)`);
+            } else {
+              toast.error('Kanton konnte nicht zugeordnet werden');
+            }
+
+            setIsDetectingLocation(false);
+          },
+          (error) => {
+            toast.error('Standort konnte nicht ermittelt werden');
+            setIsDetectingLocation(false);
+          },
+          { enableHighAccuracy: true }
+        );
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Standort konnte nicht ermittelt werden');
-    } finally {
       setIsDetectingLocation(false);
     }
   };
+
+  const handleResetFilters = () => {
+    setCanton('');
+    setCity('');
+    setCategory('');
+    setKeyword('');
+    setCurrentPage(1);
+    setUserLat(null);
+    setUserLng(null);
+    setLocationAccuracy(null);
+    setSearchParams({});
+  };
+
+  const activeFiltersCount = useMemo(() => {
+    return [
+      canton && 1,
+      city && 1,
+      category && 1,
+      keyword && 1,
+      (userLat && userLng) && 1
+    ].filter(Boolean).length;
+  }, [canton, city, category, keyword, userLat, userLng]);
+
+  // Dynamic radius adjustment based on GPS accuracy
+  useEffect(() => {
+    if (locationAccuracy && locationAccuracy > 500) {
+      setRadius(20);
+      toast.info('GPS-Signal schwach - Suchradius auf 20km erhöht');
+    }
+  }, [locationAccuracy]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -139,6 +189,26 @@ const Suche = () => {
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           
           <form onSubmit={handleSearch} className="bg-card border rounded-lg p-6 mb-6">
+            <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
+              <h2 className="text-lg font-semibold">Filter</h2>
+              {activeFiltersCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {activeFiltersCount} aktiv
+                  </Badge>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetFilters}
+                    className="h-8"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Zurücksetzen
+                  </Button>
+                </div>
+              )}
+            </div>
             <Button
               type="button"
               size="lg"
@@ -157,18 +227,46 @@ const Suche = () => {
                     <label className="text-sm font-medium">
                       Umkreis: {radius} km
                     </label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setUserLat(null);
-                        setUserLng(null);
-                      }}
-                    >
-                      Zurück zur Ortsauswahl
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDetectLocation}
+                        disabled={isDetectingLocation}
+                        className="h-8"
+                      >
+                        <RefreshCw className={`h-3 w-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} />
+                        Neu erkennen
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setUserLat(null);
+                          setUserLng(null);
+                          setLocationAccuracy(null);
+                        }}
+                        className="h-8"
+                      >
+                        Ortsauswahl
+                      </Button>
+                    </div>
                   </div>
+
+                  {locationAccuracy && (
+                    <div className={`text-sm mb-2 flex items-center gap-2 ${locationAccuracy > 100 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      <MapPin className="h-3 w-3" />
+                      Genauigkeit: ±{Math.round(locationAccuracy)}m
+                      {locationAccuracy > 100 && (
+                        <span className="text-amber-600 text-xs">
+                          ⚠️ Ungenau - größerer Radius empfohlen
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   <Slider
                     value={[radius]}
                     onValueChange={([value]) => setRadius(value)}
