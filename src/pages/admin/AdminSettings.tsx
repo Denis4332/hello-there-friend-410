@@ -304,6 +304,11 @@ export default function AdminSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="mb-6 p-4 bg-accent/10 border border-accent rounded-md">
+                    <p className="text-sm font-medium text-accent-foreground">
+                      ⚠️ Achtung: Änderungen an den Farben werden sofort auf der gesamten Website sichtbar!
+                    </p>
+                  </div>
                   {designLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />

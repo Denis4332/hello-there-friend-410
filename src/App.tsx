@@ -35,11 +35,15 @@ import AdminDropdowns from "./pages/admin/AdminDropdowns";
 import AdminVerifications from "./pages/admin/AdminVerifications";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
+import { useDesignSettings } from "./hooks/useDesignSettings";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => {
+  useDesignSettings(); // Load dynamic colors from database
+  
+  return (
+    <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
@@ -102,6 +106,7 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
