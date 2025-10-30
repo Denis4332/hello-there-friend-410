@@ -134,25 +134,6 @@ const Index = () => {
               </p>
             )}
             
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 max-w-md mx-auto">
-              <Button
-                size="lg"
-                className="flex-1 h-14 text-lg font-semibold"
-                onClick={() => navigate('/auth')}
-              >
-                Anmeldung
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="flex-1 h-14 text-lg font-semibold"
-                onClick={() => navigate('/profil/erstellen')}
-              >
-                Inserat aufgeben
-              </Button>
-            </div>
-            
             <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
               <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
                 <h2 className="text-lg font-semibold">Suche</h2>
