@@ -111,102 +111,118 @@ export const Header = () => {
             )}
           </nav>
           
-          {/* Mobile Navigation */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="md:hidden text-primary-foreground hover:text-primary-foreground/80">
-                <Menu className="h-6 w-6" />
+          {/* Mobile CTA Icons */}
+          <div className="flex md:hidden items-center gap-2">
+            <Link to="/profil/erstellen">
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
+                <Plus className="h-5 w-5" />
               </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] bg-background overflow-y-auto">
-              <nav className="flex flex-col gap-4 mt-8">
-                {/* Primary Navigation */}
-                <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
-                  {navHome || 'Start'}
-                </Link>
-                <Link to="/staedte" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
-                  {navCities || 'Städte'}
-                </Link>
-                <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
-                  {navCategories || 'Kategorien'}
-                </Link>
+            </Link>
+            
+            {!user && (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
+            
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] bg-background overflow-y-auto">
+                <nav className="flex flex-col gap-4 mt-8">
+                  {/* Primary Navigation */}
+                  <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                    {navHome || 'Start'}
+                  </Link>
+                  <Link to="/staedte" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                    {navCities || 'Städte'}
+                  </Link>
+                  <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                    {navCategories || 'Kategorien'}
+                  </Link>
 
-                <Separator />
+                  <Separator />
 
-                {/* Quick Actions */}
-                <Link 
-                  to="/profil/erstellen" 
-                  onClick={() => setMobileMenuOpen(false)} 
-                  className="flex items-center gap-2 text-lg font-semibold text-primary hover:text-primary/80"
-                >
-                  <Plus className="h-5 w-5" />
-                  Inserat aufgeben
-                </Link>
-                <Link 
-                  to="/suche" 
-                  onClick={() => setMobileMenuOpen(false)} 
-                  className="flex items-center gap-2 text-lg font-medium hover:text-primary"
-                >
-                  <Search className="h-5 w-5" />
-                  Suche
-                </Link>
+                  {/* Quick Actions */}
+                  <Link 
+                    to="/profil/erstellen" 
+                    onClick={() => setMobileMenuOpen(false)} 
+                    className="flex items-center gap-2 text-lg font-semibold text-primary hover:text-primary/80"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Inserat aufgeben
+                  </Link>
+                  <Link 
+                    to="/suche" 
+                    onClick={() => setMobileMenuOpen(false)} 
+                    className="flex items-center gap-2 text-lg font-medium hover:text-primary"
+                  >
+                    <Search className="h-5 w-5" />
+                    Suche
+                  </Link>
 
-                <Separator />
+                  <Separator />
 
-                {/* Extended Links */}
-                <Link to="/agb" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
-                  AGB
-                </Link>
-                <Link to="/datenschutz" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
-                  Datenschutzerklärung
-                </Link>
-                <Link to="/kontakt" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
-                  {navContact || 'Kontakt'}
-                </Link>
+                  {/* Extended Links */}
+                  <Link to="/agb" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
+                    AGB
+                  </Link>
+                  <Link to="/datenschutz" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
+                    Datenschutzerklärung
+                  </Link>
+                  <Link to="/kontakt" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
+                    {navContact || 'Kontakt'}
+                  </Link>
 
-                {!user ? (
-                  <>
-                    <Separator />
-                    <Button onClick={() => { setMobileMenuOpen(false); navigate('/auth'); }} className="mt-2">
-                      {navLogin || 'Anmelden'}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Separator />
-                    <div className="mt-2 space-y-3">
-                      <Link
-                        to="/mein-profil"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-2 text-lg font-medium hover:text-primary"
-                      >
-                        <User className="h-5 w-5" />
-                        {navMyProfile || 'Mein Profil'}
-                      </Link>
-                      {role === 'admin' && (
-                        <Link
-                          to="/admin"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center gap-2 text-lg font-medium text-primary hover:text-primary/80"
-                        >
-                          <Shield className="h-5 w-5" />
-                          Admin Dashboard
-                        </Link>
-                      )}
-                      <Button
-                        variant="outline"
-                        onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                        className="w-full justify-start gap-2"
-                      >
-                        <LogOut className="h-5 w-5" />
-                        {navLogout || 'Abmelden'}
+                  {!user ? (
+                    <>
+                      <Separator />
+                      <Button onClick={() => { setMobileMenuOpen(false); navigate('/auth'); }} className="mt-2">
+                        {navLogin || 'Anmelden'}
                       </Button>
-                    </div>
-                  </>
-                )}
-              </nav>
-            </SheetContent>
-          </Sheet>
+                    </>
+                  ) : (
+                    <>
+                      <Separator />
+                      <div className="mt-2 space-y-3">
+                        <Link
+                          to="/mein-profil"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-2 text-lg font-medium hover:text-primary"
+                        >
+                          <User className="h-5 w-5" />
+                          {navMyProfile || 'Mein Profil'}
+                        </Link>
+                        {role === 'admin' && (
+                          <Link
+                            to="/admin"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-2 text-lg font-medium text-primary hover:text-primary/80"
+                          >
+                            <Shield className="h-5 w-5" />
+                            Admin Dashboard
+                          </Link>
+                        )}
+                        <Button
+                          variant="outline"
+                          onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                          className="w-full justify-start gap-2"
+                        >
+                          <LogOut className="h-5 w-5" />
+                          {navLogout || 'Abmelden'}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>
