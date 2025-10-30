@@ -7,7 +7,7 @@ import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -15,7 +15,7 @@ import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useCantons, useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
-import { MapPin } from 'lucide-react';
+import { MapPin, Building2, Tag, ChevronDown, Search } from 'lucide-react';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,18 +29,6 @@ const Suche = () => {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  const topCities = ['Zürich', 'Genf', 'Basel', 'Bern', 'Lausanne', 'Winterthur', 'Luzern', 'St. Gallen', 'Lugano', 'Thun'];
-
-  const toggleCity = (cityName: string) => {
-    setSelectedCities(prev => 
-      prev.includes(cityName) 
-        ? prev.filter(c => c !== cityName)
-        : [...prev, cityName]
-    );
-  };
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
@@ -107,7 +95,6 @@ const Suche = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (canton) params.set('kanton', canton);
-    if (selectedCities.length > 0) params.set('stadt', selectedCities[0]);
     if (city) params.set('stadt', city);
     if (radius) params.set('umkreis', radius.toString());
     if (category) params.set('kategorie', category);
@@ -151,20 +138,20 @@ const Suche = () => {
           <h1 className="text-3xl font-bold mb-2">{searchTitle || 'Profile durchsuchen'}</h1>
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           
-          <form onSubmit={handleSearch} className="bg-card border rounded-lg p-8 mb-6">
+          <form onSubmit={handleSearch} className="bg-card border rounded-lg p-6 mb-6">
             <Button
               type="button"
               size="lg"
               onClick={handleDetectLocation}
               disabled={isDetectingLocation}
-              className="w-full mb-8 gap-2 text-lg h-14"
+              className="w-full mb-6 gap-2 text-lg h-14"
             >
               <MapPin className="h-5 w-5" />
               {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
             </Button>
             
             {userLat && userLng ? (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-medium">
@@ -198,30 +185,38 @@ const Suche = () => {
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Kategorien</h3>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      type="button"
-                      variant={!category || category === 'all' ? "default" : "outline"}
-                      onClick={() => setCategory('all')}
-                      size="lg"
-                    >
-                      Alle
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between h-12">
+                      <Tag className="h-4 w-4" />
+                      {category ? categories.find(c => c.id === category)?.name : 'Alle Kategorien'}
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
-                    {categories.map((cat) => (
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-2">
+                    <div className="space-y-1">
                       <Button
-                        key={cat.id}
                         type="button"
-                        variant={category === cat.id ? "default" : "outline"}
-                        onClick={() => setCategory(cat.id)}
-                        size="lg"
+                        variant={!category ? "default" : "ghost"}
+                        onClick={() => setCategory('')}
+                        className="w-full justify-start"
                       >
-                        {cat.name}
+                        Alle Kategorien
                       </Button>
-                    ))}
-                  </div>
-                </div>
+                      {categories.map((cat) => (
+                        <Button
+                          key={cat.id}
+                          type="button"
+                          variant={category === cat.id ? "default" : "ghost"}
+                          onClick={() => setCategory(cat.id)}
+                          className="w-full justify-start"
+                        >
+                          {cat.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
                 <Input
                   placeholder={searchKeywordLabel || "Stichwort eingeben..."}
@@ -231,119 +226,132 @@ const Suche = () => {
                 />
               </div>
             ) : (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Kategorien</h3>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      type="button"
-                      variant={!category || category === 'all' ? "default" : "outline"}
-                      onClick={() => setCategory('all')}
-                      size="lg"
-                    >
-                      Alle
-                    </Button>
-                    {categories.map((cat) => (
-                      <Button
-                        key={cat.id}
-                        type="button"
-                        variant={category === cat.id ? "default" : "outline"}
-                        onClick={() => setCategory(cat.id)}
-                        size="lg"
-                      >
-                        {cat.name}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between h-12">
+                        <MapPin className="h-4 w-4" />
+                        {canton || 'Kanton wählen'}
+                        <ChevronDown className="h-4 w-4" />
                       </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-medium mb-3">Beliebte Städte</h3>
-                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                    {topCities.map((cityName) => (
-                      <Button
-                        key={cityName}
-                        type="button"
-                        variant={selectedCities.includes(cityName) ? "default" : "outline"}
-                        onClick={() => toggleCity(cityName)}
-                        size="sm"
-                        className="whitespace-nowrap"
-                      >
-                        {cityName}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
-                  <CollapsibleTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="w-full">
-                      {showAdvancedFilters ? 'Erweiterte Filter ausblenden' : 'Erweiterte Filter anzeigen'}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-4 pt-4">
-                    <div>
-                      <label htmlFor="q_canton" className="block text-sm font-medium mb-1">
-                        Kanton
-                      </label>
-                      <select
-                        id="q_canton"
-                        value={canton}
-                        onChange={(e) => {
-                          setCanton(e.target.value);
-                          setCity('');
-                        }}
-                        className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Alle Kantone</option>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={!canton ? "default" : "ghost"}
+                          onClick={() => {
+                            setCanton('');
+                            setCity('');
+                          }}
+                          size="sm"
+                        >
+                          Alle
+                        </Button>
                         {cantons.map((c) => (
-                          <option key={c.id} value={c.abbreviation}>
-                            {c.name} ({c.abbreviation})
-                          </option>
+                          <Button
+                            key={c.id}
+                            type="button"
+                            variant={canton === c.abbreviation ? "default" : "ghost"}
+                            onClick={() => {
+                              setCanton(c.abbreviation);
+                              setCity('');
+                            }}
+                            size="sm"
+                          >
+                            {c.abbreviation}
+                          </Button>
                         ))}
-                      </select>
-                    </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
 
-                    <div>
-                      <label htmlFor="q_city" className="block text-sm font-medium mb-1">
-                        Stadt {!canton && <span className="text-xs text-muted-foreground">(Kanton wählen)</span>}
-                      </label>
-                      <select
-                        id="q_city"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
                         disabled={!canton}
-                        className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+                        className="w-full justify-between h-12"
                       >
-                        <option value="">Alle Städte</option>
+                        <Building2 className="h-4 w-4" />
+                        {city || 'Stadt wählen'}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 max-h-80 overflow-y-auto p-2">
+                      <div className="space-y-1">
+                        <Button
+                          type="button"
+                          variant={!city ? "default" : "ghost"}
+                          onClick={() => setCity('')}
+                          className="w-full justify-start"
+                        >
+                          Alle Städte
+                        </Button>
                         {cities.map((c) => (
-                          <option key={c.slug} value={c.name}>
+                          <Button
+                            key={c.slug}
+                            type="button"
+                            variant={city === c.name ? "default" : "ghost"}
+                            onClick={() => setCity(c.name)}
+                            className="w-full justify-start"
+                          >
                             {c.name}
-                          </option>
+                          </Button>
                         ))}
-                      </select>
-                    </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
 
-                    <div>
-                      <label htmlFor="q_keyword" className="block text-sm font-medium mb-1">
-                        {searchKeywordLabel || 'Stichwort'}
-                      </label>
-                      <Input
-                        id="q_keyword"
-                        placeholder="Name, Service..."
-                        value={keyword}
-                        onChange={(e) => setKeyword(e.target.value)}
-                        className="h-12"
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between h-12">
+                        <Tag className="h-4 w-4" />
+                        {category ? categories.find(c => c.id === category)?.name : 'Alle Kategorien'}
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-2">
+                      <div className="space-y-1">
+                        <Button
+                          type="button"
+                          variant={!category ? "default" : "ghost"}
+                          onClick={() => setCategory('')}
+                          className="w-full justify-start"
+                        >
+                          Alle Kategorien
+                        </Button>
+                        {categories.map((cat) => (
+                          <Button
+                            key={cat.id}
+                            type="button"
+                            variant={category === cat.id ? "default" : "ghost"}
+                            onClick={() => setCategory(cat.id)}
+                            className="w-full justify-start"
+                          >
+                            {cat.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Stichwort eingeben..."
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="flex-1 h-12"
+                  />
+                  <Button type="submit" className="h-12 px-8">
+                    <Search className="h-4 w-4 mr-2" />
+                    {searchButton || 'Suchen'}
+                  </Button>
+                </div>
               </div>
             )}
-            
-            <Button type="submit" className="w-full mt-6 h-12" size="lg">
-              {searchButton || 'Suchen'}
-            </Button>
           </form>
 
           <div className="flex justify-between items-center mb-4">
