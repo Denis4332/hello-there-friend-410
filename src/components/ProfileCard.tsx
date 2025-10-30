@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Crown, CheckCircle2 } from 'lucide-react';
+import { Crown, CheckCircle2, Tag, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileCardProps {
@@ -55,15 +55,26 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
         
         {/* Content - Bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white z-10">
-          <p className="text-xs mb-2 opacity-90">
-            📍 {profile.city}, {profile.canton}
-            {distance !== undefined && ` • ${distance.toFixed(1)} km`}
-          </p>
-          <h3 className="text-2xl font-bold mb-2">
+          <div className="flex flex-col gap-1.5 mb-2">
+            {profile.category && (
+              <div className="flex items-center gap-1.5 text-xs font-medium">
+                <Tag className="h-3.5 w-3.5 text-blue-400" />
+                <span className="text-blue-400">{profile.category}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <MapPin className="h-3.5 w-3.5 text-blue-400" />
+              <span className="text-blue-400">
+                {profile.city}, {profile.canton}
+                {distance !== undefined && ` • ${distance.toFixed(1)} km`}
+              </span>
+            </div>
+          </div>
+          <h3 className="text-xl font-bold mb-1.5">
             {profile.display_name}
           </h3>
           {profile.about_me && (
-            <p className="text-sm opacity-90 line-clamp-2">
+            <p className="text-xs opacity-90 line-clamp-2">
               {profile.about_me}
             </p>
           )}
