@@ -133,6 +133,26 @@ const Index = () => {
                 {heroSubtitle}
               </p>
             )}
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 max-w-md mx-auto">
+              <Button
+                size="lg"
+                className="flex-1 h-14 text-lg font-semibold"
+                onClick={() => navigate('/auth')}
+              >
+                Anmeldung
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 h-14 text-lg font-semibold"
+                onClick={() => navigate('/profil/erstellen')}
+              >
+                Inserat aufgeben
+              </Button>
+            </div>
+            
             <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
               <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
                 <h2 className="text-lg font-semibold">Suche</h2>
@@ -374,7 +394,7 @@ const Index = () => {
             {loadingProfiles ? (
               <p className="text-muted-foreground">{loadingProfilesText || 'Lade Profile...'}</p>
             ) : featuredProfiles.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {featuredProfiles.map((profile) => (
                   <ProfileCard key={profile.id} profile={profile} />
                 ))}
