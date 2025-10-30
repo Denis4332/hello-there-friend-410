@@ -79,7 +79,16 @@ export const useSearchProfiles = (filters: {
       }
       
       if (filters.location) {
-        query = query.or(`city.ilike.%${filters.location}%,postal_code.ilike.%${filters.location}%`);
+        // Check if location is a canton abbreviation (2-3 uppercase letters)
+        const isCantonCode = /^[A-Z]{2,3}$/.test(filters.location);
+        
+        if (isCantonCode) {
+          // Search by canton
+          query = query.eq('canton', filters.location);
+        } else {
+          // Search by city or postal code
+          query = query.or(`city.ilike.%${filters.location}%,postal_code.ilike.%${filters.location}%`);
+        }
       }
       
       if (filters.categoryId) {

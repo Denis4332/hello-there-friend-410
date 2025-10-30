@@ -48,10 +48,9 @@ const Suche = () => {
     }
   );
   
-  // Text-based search
-  const searchLocation = city || (canton ? `${canton}` : searchParams.get('ort') || undefined);
+  // Text-based search - prioritize city, then canton
   const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
-    location: searchLocation,
+    location: city || canton || searchParams.get('ort') || undefined,
     categoryId: searchParams.get('kategorie') || undefined,
     keyword: searchParams.get('stichwort') || undefined,
   });
