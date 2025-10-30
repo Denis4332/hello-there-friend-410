@@ -58,7 +58,6 @@ const ProfileCreate = () => {
         .insert({
           user_id: user.id,
           display_name: data.display_name,
-          age: data.age,
           gender: data.gender,
           city: data.city,
           canton: data.canton,

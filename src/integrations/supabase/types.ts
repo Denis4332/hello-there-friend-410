@@ -302,7 +302,7 @@ export type Database = {
       profiles: {
         Row: {
           about_me: string | null
-          age: number
+          age: number | null
           canton: string
           city: string
           created_at: string | null
@@ -329,7 +329,7 @@ export type Database = {
         }
         Insert: {
           about_me?: string | null
-          age: number
+          age?: number | null
           canton: string
           city: string
           created_at?: string | null
@@ -356,7 +356,7 @@ export type Database = {
         }
         Update: {
           about_me?: string | null
-          age?: number
+          age?: number | null
           canton?: string
           city?: string
           created_at?: string | null

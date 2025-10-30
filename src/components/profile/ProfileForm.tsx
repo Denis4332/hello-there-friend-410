@@ -20,7 +20,9 @@ import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 
 const profileSchema = z.object({
   display_name: z.string().min(2, 'Name muss mindestens 2 Zeichen lang sein').max(50),
-  age: z.number().min(18, 'Mindestalter ist 18').max(99),
+  is_adult: z.boolean().refine((val) => val === true, {
+    message: 'Du musst bestätigen, dass du volljährig bist',
+  }),
   gender: z.string().optional(),
   city: z.string().min(2, 'Stadt ist erforderlich'),
   canton: z.string().min(1, 'Kanton ist erforderlich'),
@@ -100,9 +102,18 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
   };
 
   const handleCitySelect = (cityName: string) => {
+    // Validate that city belongs to selected canton
+    const isValidCity = cities?.some(c => c.name === cityName);
+    if (!isValidCity && selectedCanton) {
+      toast({
+        title: 'Fehler',
+        description: `Diese Stadt gehört nicht zum Kanton ${selectedCanton}. Bitte wähle eine Stadt aus der Liste.`,
+        variant: 'destructive',
+      });
+      return;
+    }
     setValue('city', cityName);
     setCitySearchOpen(false);
-    // Canton is already selected, no need to set it again
   };
 
   const handleDetectLocation = async () => {
@@ -174,17 +185,19 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
         )}
       </div>
 
-      <div>
-        <Label htmlFor="age">Alter *</Label>
-        <Input
-          id="age"
-          type="number"
-          {...register('age', { valueAsNumber: true })}
-          placeholder="18"
+      <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+        <Checkbox
+          id="is_adult"
+          {...register('is_adult')}
         />
-        {errors.age && (
-          <p className="text-sm text-destructive mt-1">{errors.age.message}</p>
-        )}
+        <div className="space-y-1 leading-none">
+          <Label htmlFor="is_adult" className="cursor-pointer">
+            Ich bestätige, dass ich volljährig bin (18+) *
+          </Label>
+          {errors.is_adult && (
+            <p className="text-sm text-destructive">{errors.is_adult.message}</p>
+          )}
+        </div>
       </div>
 
       <div>
@@ -274,7 +287,11 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
                   <CommandInput placeholder="Stadt suchen..." />
                   <CommandList>
                     <CommandEmpty>
-                      {citiesLoading ? 'Lädt Städte...' : 'Keine Stadt gefunden'}
+                      {citiesLoading 
+                        ? 'Lädt Städte...' 
+                        : selectedCanton
+                          ? 'Keine Stadt in diesem Kanton gefunden. Du kannst die Stadt manuell eingeben.'
+                          : 'Bitte wähle zuerst einen Kanton.'}
                     </CommandEmpty>
                     <CommandGroup>
                       {cities?.map((city) => (

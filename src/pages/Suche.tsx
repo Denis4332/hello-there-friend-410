@@ -35,6 +35,16 @@ const Suche = () => {
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
   const { data: cities = [] } = useCitiesByCantonSlim(canton);
+
+  // Reset city when canton changes if city doesn't belong to new canton
+  useEffect(() => {
+    if (canton && city && cities) {
+      const cityBelongsToCanton = cities.some(c => c.name === city);
+      if (!cityBelongsToCanton) {
+        setCity('');
+      }
+    }
+  }, [canton, cities, city]);
   const { data: radiusOptions = [] } = useDropdownOptions('radius');
   
   // GPS-based search

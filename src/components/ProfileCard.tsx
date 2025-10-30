@@ -60,7 +60,7 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
             {distance !== undefined && ` • ${distance.toFixed(1)} km`}
           </p>
           <h3 className="text-2xl font-bold mb-2">
-            {profile.display_name}, {profile.age}
+            {profile.display_name}
           </h3>
           {profile.about_me && (
             <p className="text-sm opacity-90 line-clamp-2">
