@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { PopupBanner } from './PopupBanner';
+import { DemoPopupBanner } from './DemoPopupBanner';
 import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
 
@@ -8,9 +9,20 @@ const STORAGE_KEY_PREFIX = 'banner_shown_';
 export const BannerManager = () => {
   const { data: popupAds } = useAdvertisements('popup');
   const [currentAd, setCurrentAd] = useState<Advertisement | null>(null);
+  const [showDemoPopup, setShowDemoPopup] = useState(false);
 
   useEffect(() => {
-    if (!popupAds || popupAds.length === 0) return;
+    if (!popupAds || popupAds.length === 0) {
+      // Zeige Demo-Popup wenn keine echten Ads vorhanden
+      const demoShown = localStorage.getItem('demo_popup_shown');
+      if (!demoShown) {
+        const timer = setTimeout(() => {
+          setShowDemoPopup(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+      return;
+    }
 
     const showPopup = () => {
       // Find first eligible ad
@@ -91,6 +103,15 @@ export const BannerManager = () => {
       console.error('Failed to track click:', error);
     }
   };
+
+  // Zeige Demo-Popup wenn konfiguriert
+  if (showDemoPopup && !currentAd) {
+    return (
+      <DemoPopupBanner
+        onClose={() => setShowDemoPopup(false)}
+      />
+    );
+  }
 
   if (!currentAd) return null;
 
