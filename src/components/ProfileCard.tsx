@@ -16,9 +16,9 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
   return (
     <Link 
       to={`/profil/${profile.slug}`} 
-      className="block group relative overflow-hidden rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+      className="block group overflow-hidden rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl bg-card border"
     >
-      <div className="relative w-full aspect-[3/4]">
+      <div className="relative w-full aspect-[4/5]">
         {photoUrl ? (
           <img 
             src={photoUrl} 
@@ -35,9 +35,6 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
           </div>
         )}
         
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-        
         {/* Badges - Top Left */}
         <div className="absolute top-3 left-3 flex gap-2 z-10">
           {profile.is_premium && (
@@ -52,33 +49,33 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
             </div>
           )}
         </div>
-        
-        {/* Content - Bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 text-white z-10">
-          <div className="flex flex-col gap-1.5 mb-2">
-            {profile.profile_categories?.[0]?.categories && (
-              <div className="flex items-center gap-1.5 text-xs font-medium">
-                <Tag className="h-3.5 w-3.5 text-blue-400" />
-                <span className="text-blue-400">{profile.profile_categories[0].categories.name}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5 text-xs font-medium">
-              <MapPin className="h-3.5 w-3.5 text-blue-400" />
-              <span className="text-blue-400">
-                {profile.city}, {profile.canton}
-                {distance !== undefined && ` • ${distance.toFixed(1)} km`}
-              </span>
+      </div>
+      
+      {/* White Info Bar */}
+      <div className="p-3 bg-card">
+        <div className="flex flex-col gap-1.5 mb-2">
+          {profile.profile_categories?.[0]?.categories && (
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Tag className="h-3.5 w-3.5" />
+              <span>{profile.profile_categories[0].categories.name}</span>
             </div>
-          </div>
-          <h3 className="text-xl font-bold mb-1.5">
-            {profile.display_name}
-          </h3>
-          {profile.about_me && (
-            <p className="text-xs opacity-90 line-clamp-2">
-              {profile.about_me}
-            </p>
           )}
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5" />
+            <span>
+              {profile.city}, {profile.canton}
+              {distance !== undefined && ` • ${distance.toFixed(1)} km`}
+            </span>
+          </div>
         </div>
+        <h3 className="text-lg font-bold text-foreground mb-1">
+          {profile.display_name}
+        </h3>
+        {profile.about_me && (
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {profile.about_me}
+          </p>
+        )}
       </div>
     </Link>
   );
