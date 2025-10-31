@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Crown, CheckCircle2, Tag, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface ProfileCardProps {
   profile: any;
@@ -16,7 +17,12 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
   return (
     <Link 
       to={`/profil/${profile.slug}`} 
-      className="block group overflow-hidden rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl bg-card border"
+      className={cn(
+        "block group overflow-hidden rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl bg-card",
+        profile.is_premium 
+          ? "border-2 border-amber-400 shadow-lg shadow-amber-400/20" 
+          : "border"
+      )}
     >
       <div className="relative w-full aspect-[4/5]">
         {photoUrl ? (

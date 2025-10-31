@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { ProfileForm, ProfileFormData } from '@/components/profile/ProfileForm';
 import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { VerificationUploader } from '@/components/profile/VerificationUploader';
+import { ListingTypeSelector } from '@/components/profile/ListingTypeSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -19,7 +20,8 @@ const ProfileCreate = () => {
   const [cantons, setCantons] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [currentStep, setCurrentStep] = useState<'form' | 'photos' | 'verification'>('form');
+  const [isPremium, setIsPremium] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'form' | 'listing-type' | 'photos' | 'verification'>('form');
 
   const { data: createTitle } = useSiteSetting('profile_create_title');
   const { data: createSubtitle } = useSiteSetting('profile_create_subtitle');
@@ -92,11 +94,11 @@ const ProfileCreate = () => {
       if (categoriesError) throw categoriesError;
 
       setProfileId(profile.id);
-      setCurrentStep('photos');
+      setCurrentStep('listing-type');
 
       toast({
         title: 'Profil erstellt',
-        description: 'Lade nun deine Fotos hoch',
+        description: 'Wähle nun deinen Inserat-Typ',
       });
     } catch (error: any) {
       toast({
@@ -106,6 +108,31 @@ const ProfileCreate = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleListingTypeSubmit = async () => {
+    if (!profileId) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_premium: isPremium })
+        .eq('id', profileId);
+
+      if (error) throw error;
+
+      setCurrentStep('photos');
+      toast({
+        title: isPremium ? 'Premium Inserat gewählt' : 'Normal Inserat gewählt',
+        description: 'Lade nun deine Fotos hoch',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -145,15 +172,18 @@ const ProfileCreate = () => {
             </p>
 
             <Tabs value={currentStep} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="form" disabled={currentStep !== 'form'}>
                   1. Profildaten
                 </TabsTrigger>
-                <TabsTrigger value="photos" disabled={currentStep === 'form'}>
-                  2. Fotos hochladen
+                <TabsTrigger value="listing-type" disabled={!profileId || currentStep === 'form'}>
+                  2. Inserat-Typ
                 </TabsTrigger>
-                <TabsTrigger value="verification" disabled={!profileId}>
-                  3. Verifizierung (Optional)
+                <TabsTrigger value="photos" disabled={currentStep === 'form' || currentStep === 'listing-type'}>
+                  3. Fotos
+                </TabsTrigger>
+                <TabsTrigger value="verification" disabled={currentStep === 'form' || currentStep === 'listing-type'}>
+                  4. Verifizierung
                 </TabsTrigger>
               </TabsList>
 
@@ -164,6 +194,16 @@ const ProfileCreate = () => {
                   categories={categories}
                   isSubmitting={isSubmitting}
                 />
+              </TabsContent>
+
+              <TabsContent value="listing-type" className="mt-6">
+                {profileId && (
+                  <ListingTypeSelector
+                    selectedType={isPremium ? 'premium' : 'normal'}
+                    onSelect={(type) => setIsPremium(type === 'premium')}
+                    onContinue={handleListingTypeSubmit}
+                  />
+                )}
               </TabsContent>
 
               <TabsContent value="photos" className="mt-6">
