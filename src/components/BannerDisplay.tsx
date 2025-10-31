@@ -1,6 +1,7 @@
 import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
 import { useEffect } from 'react';
+import { AdvertisementCTA } from './AdvertisementCTA';
 
 interface BannerDisplayProps {
   position: 'top' | 'grid';
@@ -51,7 +52,13 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
     }
   }, [ads]);
 
-  if (!ads || ads.length === 0) return null;
+  if (!ads || ads.length === 0) {
+    return (
+      <div className={className}>
+        <AdvertisementCTA position={position} />
+      </div>
+    );
+  }
 
   // Show highest priority ad
   const ad = ads[0];

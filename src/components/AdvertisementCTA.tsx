@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Badge } from './ui/badge';
+import { TrendingUp } from 'lucide-react';
 
 interface AdvertisementCTAProps {
   position: 'top' | 'grid';
@@ -8,28 +10,39 @@ interface AdvertisementCTAProps {
 }
 
 export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAProps) => {
+  const isTopPosition = position === 'top';
+  
   return (
-    <Card className={`relative overflow-hidden ${className}`}>
+    <Card className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${className}`}>
       <div 
-        className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-background"
+        className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background"
         style={{
           backgroundImage: 'url("https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1200")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          opacity: 0.15,
+          opacity: 0.08,
         }}
       />
       
-      <div className="relative p-8 text-center space-y-4">
-        <h3 className="text-2xl font-bold text-foreground">
-          Möchten Sie an dieser Stelle werben?
+      <div className={`relative text-center space-y-3 ${isTopPosition ? 'p-12' : 'p-6'}`}>
+        <Badge variant="secondary" className="mb-2">
+          <TrendingUp className="w-3 h-3 mr-1" />
+          {isTopPosition ? 'Premium-Position verfügbar' : 'Werbeplatz verfügbar'}
+        </Badge>
+        
+        <h3 className={`font-bold text-foreground ${isTopPosition ? 'text-3xl' : 'text-xl'}`}>
+          {isTopPosition ? 'Hier könnte Ihre Werbung stehen!' : 'Ihre Anzeige hier'}
         </h3>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Erreichen Sie tausende potenzielle Kunden mit einer gut sichtbaren Bannerplatzierung.
+        
+        <p className={`text-muted-foreground mx-auto ${isTopPosition ? 'text-base max-w-md' : 'text-sm max-w-xs'}`}>
+          {isTopPosition 
+            ? 'Erreichen Sie tausende potenzielle Kunden mit einer prominent platzierten Anzeige.'
+            : 'Präsentieren Sie Ihr Angebot zwischen den Profilen.'}
         </p>
-        <Button asChild size="lg" className="font-semibold">
+        
+        <Button asChild size={isTopPosition ? 'lg' : 'default'} className="font-semibold">
           <Link to="/bannerpreise">
-            Jetzt Banner buchen!
+            {isTopPosition ? 'Jetzt Top-Position sichern!' : 'Banner buchen'}
           </Link>
         </Button>
       </div>
