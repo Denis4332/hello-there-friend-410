@@ -50,10 +50,10 @@ const AppContent = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BannerManager />
         <ErrorBoundary>
           <BrowserRouter>
-          <Routes>
+            <BannerManager />
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/suche" element={<Suche />} />
