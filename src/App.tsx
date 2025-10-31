@@ -36,6 +36,9 @@ import AdminVerifications from "./pages/admin/AdminVerifications";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { useDesignSettings } from "./hooks/useDesignSettings";
+import { BannerManager } from "./components/BannerManager";
+import Bannerpreise from "./pages/Bannerpreise";
+import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +50,7 @@ const AppContent = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <BannerManager />
         <ErrorBoundary>
           <BrowserRouter>
           <Routes>
@@ -61,6 +65,7 @@ const AppContent = () => {
             <Route path="/kontakt" element={<Kontakt />} />
             <Route path="/agb" element={<AGB />} />
             <Route path="/datenschutz" element={<Datenschutz />} />
+            <Route path="/bannerpreise" element={<Bannerpreise />} />
             <Route path="/500" element={<ServerError />} />
             <Route
               path="/profil/erstellen"
@@ -98,6 +103,7 @@ const AppContent = () => {
             <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
             <Route path="/admin/dropdowns" element={<ProtectedRoute><AdminDropdowns /></ProtectedRoute>} />
             <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
+            <Route path="/admin/advertisements" element={<ProtectedRoute><AdminAdvertisements /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

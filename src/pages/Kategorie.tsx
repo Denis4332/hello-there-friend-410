@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useCategoryProfiles } from '@/hooks/useProfiles';
 import { useCategoryBySlug } from '@/hooks/useCategories';
 import { SEO } from '@/components/SEO';
+import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 
 const Kategorie = () => {
   const { slug } = useParams();
@@ -57,6 +58,8 @@ const Kategorie = () => {
           {category?.intro_text && (
             <p className="text-muted-foreground mb-8 max-w-3xl">{category.intro_text}</p>
           )}
+
+          <AdvertisementCTA position="grid" className="mb-8" />
 
           {loadingProfiles ? (
             <p className="text-center text-muted-foreground py-12">Lade Profile...</p>

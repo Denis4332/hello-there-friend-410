@@ -98,14 +98,23 @@ export const AdminHeader = () => {
                 )}
               >
                 Nachrichten
-                {unreadCount && unreadCount > 0 && (
-                  <Badge variant="destructive" className="h-5 px-1.5 text-xs animate-pulse">
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="ml-1 px-1.5 py-0 text-xs">
                     {unreadCount}
                   </Badge>
                 )}
               </Link>
               <Link 
-                to="/admin/settings" 
+                to="/admin/advertisements" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/advertisements") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
+                Banner
+              </Link>
+              <Link 
+                to="/admin/settings"
                 className={cn(
                   "hover:text-primary transition-colors",
                   isActive("/admin/settings") && "text-primary font-semibold border-b-2 border-primary pb-1"

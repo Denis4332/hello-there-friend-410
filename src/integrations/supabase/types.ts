@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisements: {
+        Row: {
+          active: boolean | null
+          clicks: number | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          image_url: string
+          impressions: number | null
+          link_url: string
+          payment_required: boolean | null
+          popup_delay_seconds: number | null
+          popup_frequency: string | null
+          position: string
+          price_per_day: number | null
+          priority: number | null
+          start_date: string | null
+          stripe_payment_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          clicks?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          image_url: string
+          impressions?: number | null
+          link_url: string
+          payment_required?: boolean | null
+          popup_delay_seconds?: number | null
+          popup_frequency?: string | null
+          position: string
+          price_per_day?: number | null
+          priority?: number | null
+          start_date?: string | null
+          stripe_payment_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          clicks?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string
+          impressions?: number | null
+          link_url?: string
+          payment_required?: boolean | null
+          popup_delay_seconds?: number | null
+          popup_frequency?: string | null
+          position?: string
+          price_per_day?: number | null
+          priority?: number | null
+          start_date?: string | null
+          stripe_payment_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cantons: {
         Row: {
           abbreviation: string

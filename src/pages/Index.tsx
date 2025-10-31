@@ -17,6 +17,8 @@ import { SEO } from '@/components/SEO';
 import { MapPin, Building2, Tag, ChevronDown, Search, X } from 'lucide-react';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
+import { BannerDisplay } from '@/components/BannerDisplay';
+import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 
 const Index = () => {
   useDesignSettings(); // Apply design settings
@@ -369,6 +371,9 @@ const Index = () => {
           </div>
         </section>
 
+        {/* Top Banner */}
+        <BannerDisplay position="top" className="container mx-auto px-4 py-8" />
+
         <section className="py-12 bg-muted">
           <div className="container mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6">{featuredProfilesTitle || 'Aktuelle Profile'}</h2>
@@ -376,8 +381,15 @@ const Index = () => {
               <p className="text-muted-foreground">{loadingProfilesText || 'Lade Profile...'}</p>
             ) : featuredProfiles.length > 0 ? (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                {featuredProfiles.map((profile) => (
-                  <ProfileCard key={profile.id} profile={profile} />
+                {featuredProfiles.map((profile, index) => (
+                  <>
+                    <ProfileCard key={profile.id} profile={profile} />
+                    {(index + 1) % 8 === 0 && (
+                      <div className="col-span-2 lg:col-span-3">
+                        <AdvertisementCTA position="grid" />
+                      </div>
+                    )}
+                  </>
                 ))}
               </div>
             ) : (
