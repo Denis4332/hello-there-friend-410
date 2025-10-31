@@ -36,16 +36,17 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
         )}
         
         {/* Badges - Top Left */}
-        <div className="absolute top-3 left-3 flex gap-2 z-10">
+        <div className="absolute top-3 left-3 flex gap-3 z-10">
           {profile.is_premium && (
-            <div className="flex items-center gap-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              <Crown className="h-3 w-3" />
+            <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl animate-pulse">
+              <Crown className="h-4 w-4" />
               VIP
             </div>
           )}
           {profile.verified_at && (
-            <div className="flex items-center gap-1 bg-blue-400 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              <CheckCircle2 className="h-3 w-3" />
+            <div className="flex items-center gap-1.5 bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl">
+              <CheckCircle2 className="h-4 w-4" />
+              VERIFIZIERT
             </div>
           )}
         </div>
