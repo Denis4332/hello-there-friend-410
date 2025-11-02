@@ -27,6 +27,8 @@ const profileSchema = z.object({
   city: z.string().min(2, 'Stadt ist erforderlich'),
   canton: z.string().min(1, 'Kanton ist erforderlich'),
   postal_code: z.string().optional(),
+  street_address: z.string().optional(),
+  show_street: z.boolean().default(false),
   about_me: z.string().max(500, 'Maximale Länge: 500 Zeichen').optional(),
   languages: z.array(z.string()).min(1, 'Mindestens eine Sprache erforderlich'),
   category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich'),
@@ -121,9 +123,18 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     try {
       const location = await detectLocation();
       
-      // Set city first
+      // Set street address if available
+      if (location.street) {
+        setValue('street_address', location.street);
+      }
+      
+      // Set city and postal code
       setValue('city', location.city);
       setValue('postal_code', location.postalCode);
+      
+      // Set GPS coordinates directly
+      setValue('lat', location.lat);
+      setValue('lng', location.lng);
       
       // Try to match canton
       const matchingCanton = cantons.find((c) =>
@@ -136,12 +147,16 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
         setValue('canton', matchingCanton.abbreviation);
         toast({
           title: 'Standort erkannt',
-          description: `${location.city}, ${matchingCanton.abbreviation} wurde eingetragen`,
+          description: location.street 
+            ? `${location.street}, ${location.city}, ${matchingCanton.abbreviation}` 
+            : `${location.city}, ${matchingCanton.abbreviation}`,
         });
       } else {
         toast({
           title: 'Standort erkannt',
-          description: `${location.city} wurde eingetragen (Kanton bitte manuell wählen)`,
+          description: location.street 
+            ? `${location.street}, ${location.city} (Kanton bitte manuell wählen)` 
+            : `${location.city} (Kanton bitte manuell wählen)`,
         });
       }
     } catch (error: any) {
@@ -338,6 +353,29 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
       <div>
         <Label htmlFor="postal_code">PLZ</Label>
         <Input id="postal_code" {...register('postal_code')} placeholder="8000" />
+      </div>
+
+      <div>
+        <Label htmlFor="street_address">Straße (optional)</Label>
+        <Input 
+          id="street_address" 
+          {...register('street_address')} 
+          placeholder="Musterstrasse 123" 
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Die Straße wird nur angezeigt, wenn du das unten erlaubst
+        </p>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="show_street"
+          checked={watch('show_street')}
+          onCheckedChange={(checked) => setValue('show_street', checked as boolean)}
+        />
+        <label htmlFor="show_street" className="text-sm cursor-pointer">
+          Straße öffentlich anzeigen (empfohlen: nur Stadt zeigen für mehr Privatsphäre)
+        </label>
       </div>
 
       <div>

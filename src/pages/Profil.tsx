@@ -160,8 +160,15 @@ const Profil = () => {
                   )}
                 </div>
                 <p className="text-lg text-muted-foreground">
-                  📍 {profile.city}, {profile.canton}
+                  📍 {profile.show_street && profile.street_address 
+                    ? `${profile.street_address}, ${profile.city}, ${profile.canton}` 
+                    : `${profile.city}, ${profile.canton}`}
                 </p>
+                {!profile.show_street && profile.street_address && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    🔒 Exakte Adresse nur nach Kontaktaufnahme
+                  </p>
+                )}
               </div>
 
               {/* About Me */}

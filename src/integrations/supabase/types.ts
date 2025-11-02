@@ -381,6 +381,7 @@ export type Database = {
           lng: number | null
           phone: string | null
           postal_code: string | null
+          show_street: boolean | null
           slug: string | null
           status: string | null
           street_address: string | null
@@ -409,6 +410,7 @@ export type Database = {
           lng?: number | null
           phone?: string | null
           postal_code?: string | null
+          show_street?: boolean | null
           slug?: string | null
           status?: string | null
           street_address?: string | null
@@ -437,6 +439,7 @@ export type Database = {
           lng?: number | null
           phone?: string | null
           postal_code?: string | null
+          show_street?: boolean | null
           slug?: string | null
           status?: string | null
           street_address?: string | null

@@ -70,7 +70,9 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" />
             <span>
-              {profile.city}, {profile.canton}
+              {profile.show_street && profile.street_address 
+                ? `${profile.street_address}, ${profile.city}` 
+                : `${profile.city}, ${profile.canton}`}
               {distance !== undefined && ` • ${distance.toFixed(1)} km`}
             </span>
           </div>
