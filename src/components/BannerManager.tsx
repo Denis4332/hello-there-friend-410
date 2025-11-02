@@ -12,20 +12,11 @@ export const BannerManager = () => {
   const [showDemoPopup, setShowDemoPopup] = useState(false);
 
   useEffect(() => {
-    if (!popupAds || popupAds.length === 0) {
-      // Zeige Demo-Popup wenn keine echten Ads vorhanden
-      const demoShown = localStorage.getItem('demo_popup_shown');
-      if (!demoShown) {
-        const timer = setTimeout(() => {
-          setShowDemoPopup(true);
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
-      return;
-    }
+    // Warte bis Query fertig geladen ist
+    if (popupAds === undefined) return;
 
-    const showPopup = () => {
-      // Find first eligible ad
+    // Fall 1: Echte Ads vorhanden - zeige diese
+    if (popupAds.length > 0) {
       for (const ad of popupAds) {
         const storageKey = `${STORAGE_KEY_PREFIX}${ad.id}`;
         const lastShown = localStorage.getItem(storageKey);
@@ -38,9 +29,19 @@ export const BannerManager = () => {
           return () => clearTimeout(timer);
         }
       }
-    };
+      return; // Keine Demo-Popup wenn echte Ads verfügbar
+    }
 
-    showPopup();
+    // Fall 2: Keine echten Ads → Demo-Popup
+    // sessionStorage statt localStorage = nur einmal pro Session
+    const demoShown = sessionStorage.getItem('demo_popup_shown');
+    
+    if (!demoShown) {
+      const timer = setTimeout(() => {
+        setShowDemoPopup(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
   }, [popupAds]);
 
   const shouldShowAd = (ad: Advertisement, lastShown: string | null): boolean => {

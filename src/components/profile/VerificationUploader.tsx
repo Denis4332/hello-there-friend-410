@@ -4,6 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, CheckCircle2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface VerificationUploaderProps {
   profileId: string;
@@ -132,15 +143,39 @@ export const VerificationUploader = ({ profileId, onComplete, onSkip }: Verifica
           </div>
         )}
         <div className="flex gap-2 pt-4">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={onSkip}
-            disabled={uploading}
-            size="lg"
-          >
-            {uploaded ? 'Ohne Verifizierung fortfahren' : 'Überspringen'}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex-1"
+                disabled={uploading}
+                size="lg"
+              >
+                Überspringen
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>⚠️ Ohne Verifizierung fortfahren?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-3">
+                  <p>Dein Profil wird <strong>NICHT verifiziert</strong> und hat dadurch:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    <li>Deutlich <strong>weniger Sichtbarkeit</strong></li>
+                    <li>Kein Verifizierungs-Badge ✓</li>
+                    <li>Weniger Vertrauen bei Besuchern</li>
+                  </ul>
+                  <p className="font-medium pt-2">Bist du sicher, dass du ohne Verifizierung fortfahren möchtest?</p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen & verifizieren</AlertDialogCancel>
+                <AlertDialogAction onClick={onSkip} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Ohne Verifizierung fortfahren
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
           <Button
             className="flex-1"
             onClick={onComplete}

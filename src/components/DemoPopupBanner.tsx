@@ -10,7 +10,7 @@ interface DemoPopupBannerProps {
 
 export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
   const handleClose = () => {
-    localStorage.setItem('demo_popup_shown', 'true');
+    sessionStorage.setItem('demo_popup_shown', 'true');
     onClose();
   };
 

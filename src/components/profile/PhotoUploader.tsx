@@ -37,6 +37,10 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
       return;
     }
 
+    // Sofort lokale Previews erstellen für instant feedback
+    const localPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+    setPreviews([...previews, ...localPreviews]);
+
     setUploading(true);
 
     try {
@@ -103,8 +107,13 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
         return data.url;
       });
 
-      const urls = await Promise.all(uploadPromises);
-      setPreviews([...previews, ...urls]);
+      const uploadedUrls = await Promise.all(uploadPromises);
+      
+      // Lokale Previews durch echte URLs ersetzen
+      setPreviews(prev => {
+        const withoutLocalPreviews = prev.slice(0, prev.length - files.length);
+        return [...withoutLocalPreviews, ...uploadedUrls];
+      });
 
       toast({
         title: 'Fotos hochgeladen',
@@ -113,6 +122,9 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
 
       onUploadComplete?.();
     } catch (error: any) {
+      // Bei Fehler lokale Previews entfernen
+      setPreviews(prev => prev.slice(0, prev.length - files.length));
+      
       toast({
         title: 'Upload fehlgeschlagen',
         description: error.message || 'Fehler beim Hochladen der Fotos',
