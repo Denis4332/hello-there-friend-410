@@ -57,7 +57,6 @@ interface ProfileFormProps {
 
 export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
   const { toast } = useToast();
-  const [citySearchOpen, setCitySearchOpen] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
   
   const { data: languages = [] } = useDropdownOptions('languages');
@@ -79,11 +78,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
 
   const selectedLanguages = watch('languages') || [];
   const selectedCategories = watch('category_ids') || [];
-  const selectedCity = watch('city') || '';
   const selectedCanton = watch('canton') || '';
-  
-  // Load cities only after canton is selected
-  const { data: cities, isLoading: citiesLoading } = useCitiesByCantonSlim(selectedCanton);
 
   const toggleLanguage = (lang: string) => {
     const current = selectedLanguages;
@@ -101,21 +96,6 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     } else {
       setValue('category_ids', [...current, catId]);
     }
-  };
-
-  const handleCitySelect = (cityName: string) => {
-    // Validate that city belongs to selected canton
-    const isValidCity = cities?.some(c => c.name === cityName);
-    if (!isValidCity && selectedCanton) {
-      toast({
-        title: 'Fehler',
-        description: `Diese Stadt gehört nicht zum Kanton ${selectedCanton}. Bitte wähle eine Stadt aus der Liste.`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    setValue('city', cityName);
-    setCitySearchOpen(false);
   };
 
   const handleDetectLocation = async () => {
@@ -237,7 +217,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
           onValueChange={(value) => {
             setValue('canton', value);
             // Reset city when canton changes
-            if (selectedCity && selectedCanton !== value) {
+            if (watch('city') && selectedCanton !== value) {
               setValue('city', '');
             }
           }}
@@ -267,7 +247,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
             variant="outline"
             size="sm"
             onClick={handleDetectLocation}
-            disabled={detectingLocation || citiesLoading}
+            disabled={detectingLocation}
             className="h-8"
           >
             {detectingLocation ? (
@@ -283,67 +263,11 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
             )}
           </Button>
         </div>
-        {selectedCanton && cities && cities.length > 0 ? (
-          <>
-            <Popover open={citySearchOpen} onOpenChange={setCitySearchOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={citySearchOpen}
-                  className="w-full justify-between"
-                >
-                  {selectedCity || 'Stadt auswählen...'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Stadt suchen..." />
-                  <CommandList>
-                    <CommandEmpty>
-                      {citiesLoading 
-                        ? 'Lädt Städte...' 
-                        : selectedCanton
-                          ? 'Keine Stadt in diesem Kanton gefunden. Du kannst die Stadt manuell eingeben.'
-                          : 'Bitte wähle zuerst einen Kanton.'}
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {cities?.map((city) => (
-                        <CommandItem
-                          key={city.slug}
-                          value={city.name}
-                          onSelect={handleCitySelect}
-                        >
-                          <Check
-                            className={cn(
-                              'mr-2 h-4 w-4',
-                              selectedCity === city.name ? 'opacity-100' : 'opacity-0'
-                            )}
-                          />
-                          {city.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            <p className="text-xs text-muted-foreground mt-1">
-              Oder gib eine Stadt manuell ein:
-            </p>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground mb-1">
-            {!selectedCanton ? '← Wähle zuerst einen Kanton' : 'Keine Städte in der Datenbank - gib Stadt manuell ein:'}
-          </p>
-        )}
         <Input
           id="city"
           {...register('city')}
-          placeholder={selectedCanton ? "Stadt eingeben" : "Zuerst Kanton wählen"}
+          placeholder={selectedCanton ? "Stadt eingeben (z.B. Zürich)" : "Zuerst Kanton wählen"}
           disabled={!selectedCanton}
-          className="mt-1"
         />
         {errors.city && (
           <p className="text-sm text-destructive mt-1">{errors.city.message}</p>

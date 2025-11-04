@@ -21,7 +21,6 @@ import { MapPin, Building2, Tag, ChevronDown, Search, RefreshCw, X } from 'lucid
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
-  const [city, setCity] = useState(searchParams.get('stadt') || '');
   const [radius, setRadius] = useState(parseInt(searchParams.get('umkreis') || '25'));
   const [category, setCategory] = useState(searchParams.get('kategorie') || '');
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
@@ -34,17 +33,6 @@ const Suche = () => {
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
-  const { data: cities = [] } = useCitiesByCantonSlim(canton);
-
-  // Reset city when canton changes if city doesn't belong to new canton
-  useEffect(() => {
-    if (canton && city && cities) {
-      const cityBelongsToCanton = cities.some(c => c.name === city);
-      if (!cityBelongsToCanton) {
-        setCity('');
-      }
-    }
-  }, [canton, cities, city]);
   const { data: radiusOptions = [] } = useDropdownOptions('radius');
   
   // GPS-based search
@@ -58,9 +46,9 @@ const Suche = () => {
     }
   );
   
-  // Text-based search - prioritize city, then canton
+  // Text-based search - canton only
   const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
-    location: city || canton || searchParams.get('ort') || undefined,
+    location: canton || searchParams.get('ort') || undefined,
     categoryId: searchParams.get('kategorie') || undefined,
     keyword: searchParams.get('stichwort') || undefined,
   });
@@ -106,7 +94,6 @@ const Suche = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (canton) params.set('kanton', canton);
-    if (city) params.set('stadt', city);
     if (radius) params.set('umkreis', radius.toString());
     if (category) params.set('kategorie', category);
     if (keyword) params.set('stichwort', keyword);
@@ -138,7 +125,6 @@ const Suche = () => {
             
             if (matchingCanton) {
               setCanton(matchingCanton.abbreviation);
-              setCity(result.city);
               toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation} (±${Math.round(accuracy)}m)`);
             } else {
               toast.error('Kanton konnte nicht zugeordnet werden');
@@ -161,7 +147,6 @@ const Suche = () => {
 
   const handleResetFilters = () => {
     setCanton('');
-    setCity('');
     setCategory('');
     setKeyword('');
     setCurrentPage(1);
@@ -174,12 +159,11 @@ const Suche = () => {
   const activeFiltersCount = useMemo(() => {
     return [
       canton && 1,
-      city && 1,
       category && 1,
       keyword && 1,
       (userLat && userLng) && 1
     ].filter(Boolean).length;
-  }, [canton, city, category, keyword, userLat, userLng]);
+  }, [canton, category, keyword, userLat, userLng]);
 
   // Dynamic radius adjustment based on GPS accuracy
   useEffect(() => {
@@ -334,7 +318,7 @@ const Suche = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-between h-12">
@@ -348,10 +332,7 @@ const Suche = () => {
                         <Button
                           type="button"
                           variant={!canton ? "default" : "ghost"}
-                          onClick={() => {
-                            setCanton('');
-                            setCity('');
-                          }}
+                          onClick={() => setCanton('')}
                           size="sm"
                         >
                           Alle
@@ -361,50 +342,10 @@ const Suche = () => {
                             key={c.id}
                             type="button"
                             variant={canton === c.abbreviation ? "default" : "ghost"}
-                            onClick={() => {
-                              setCanton(c.abbreviation);
-                              setCity('');
-                            }}
+                            onClick={() => setCanton(c.abbreviation)}
                             size="sm"
                           >
                             {c.abbreviation}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        disabled={!canton}
-                        className="w-full justify-between h-12"
-                      >
-                        <Building2 className="h-4 w-4" />
-                        {city || 'Stadt wählen'}
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 max-h-80 overflow-y-auto p-2">
-                      <div className="space-y-1">
-                        <Button
-                          type="button"
-                          variant={!city ? "default" : "ghost"}
-                          onClick={() => setCity('')}
-                          className="w-full justify-start"
-                        >
-                          Alle Städte
-                        </Button>
-                        {cities.map((c) => (
-                          <Button
-                            key={c.slug}
-                            type="button"
-                            variant={city === c.name ? "default" : "ghost"}
-                            onClick={() => setCity(c.name)}
-                            className="w-full justify-start"
-                          >
-                            {c.name}
                           </Button>
                         ))}
                       </div>
@@ -491,7 +432,6 @@ const Suche = () => {
               <p className="text-muted-foreground mb-4">{searchNoResults || 'Keine Profile gefunden. Versuche es mit anderen Suchkriterien.'}</p>
               <Button variant="outline" onClick={() => {
                 setCanton('');
-                setCity('');
                 setCategory('');
                 setKeyword('');
                 setCurrentPage(1);
