@@ -284,7 +284,7 @@ const Suche = () => {
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 p-2">
+                  <PopoverContent className="w-[90vw] md:w-80 p-2 max-h-[60vh] overflow-y-auto" align="start">
                     <div className="space-y-1">
                       <Button
                         type="button"
@@ -327,7 +327,7 @@ const Suche = () => {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 p-2">
+                    <PopoverContent className="w-[90vw] md:w-80 p-2 max-h-[60vh] overflow-y-auto" align="start">
                       <div className="grid grid-cols-2 gap-2">
                         <Button
                           type="button"
@@ -360,7 +360,7 @@ const Suche = () => {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 p-2">
+                    <PopoverContent className="w-[90vw] md:w-80 p-2 max-h-[60vh] overflow-y-auto" align="start">
                       <div className="space-y-1">
                         <Button
                           type="button"
