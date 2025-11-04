@@ -12,7 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MapPin, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
+
 import { detectLocation } from '@/lib/geolocation';
 import { geocodePlz } from '@/lib/geocoding';
 import { useToast } from '@/hooks/use-toast';
