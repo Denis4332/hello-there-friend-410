@@ -12,9 +12,9 @@ import { useFeaturedProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
-import { useCantons, useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
+import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { SEO } from '@/components/SEO';
-import { MapPin, Building2, Tag, ChevronDown, Search, X } from 'lucide-react';
+import { MapPin, Tag, ChevronDown, Search, X } from 'lucide-react';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
 import { BannerDisplay } from '@/components/BannerDisplay';
@@ -25,17 +25,18 @@ const Index = () => {
   
   const navigate = useNavigate();
   const [canton, setCanton] = useState('');
-  const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
   const [keyword, setKeyword] = useState('');
   const [radius, setRadius] = useState(25);
   const [useGPS, setUseGPS] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [cantonOpen, setCantonOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryGpsOpen, setCategoryGpsOpen] = useState(false);
   
   const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
-  const { data: cities = [] } = useCitiesByCantonSlim(canton);
   
   const { data: siteTitle } = useSiteSetting('site_title');
   const { data: heroSubtitle } = useSiteSetting('hero_subtitle');
@@ -53,7 +54,6 @@ const Index = () => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (canton) params.set('kanton', canton);
-    if (city) params.set('stadt', city);
     if (category) params.set('kategorie', category);
     if (keyword) params.set('stichwort', keyword);
     navigate(`/suche?${params.toString()}`);
@@ -72,7 +72,6 @@ const Index = () => {
       if (matchingCanton) {
         setUseGPS(true);
         setCanton(matchingCanton.abbreviation);
-        setCity(result.city);
         toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation}`);
       } else {
         toast.error('Kanton konnte nicht zugeordnet werden');
@@ -86,7 +85,6 @@ const Index = () => {
 
   const handleResetFilters = () => {
     setCanton('');
-    setCity('');
     setCategory('');
     setKeyword('');
     setUseGPS(false);
@@ -95,12 +93,11 @@ const Index = () => {
   const activeFiltersCount = useMemo(() => {
     return [
       canton && 1,
-      city && 1,
       category && 1,
       keyword && 1,
       useGPS && 1
     ].filter(Boolean).length;
-  }, [canton, city, category, keyword, useGPS]);
+  }, [canton, category, keyword, useGPS]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -200,7 +197,7 @@ const Index = () => {
                     </div>
                   </div>
 
-                  <Popover>
+                  <Popover open={categoryGpsOpen} onOpenChange={setCategoryGpsOpen}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-between h-12">
                         <Tag className="h-4 w-4" />
@@ -208,12 +205,15 @@ const Index = () => {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 p-2">
+                    <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto">
                       <div className="space-y-1">
                         <Button
                           type="button"
                           variant={!category ? "default" : "ghost"}
-                          onClick={() => setCategory('')}
+                          onClick={() => {
+                            setCategory('');
+                            setCategoryGpsOpen(false);
+                          }}
                           className="w-full justify-start"
                         >
                           Alle Kategorien
@@ -223,7 +223,10 @@ const Index = () => {
                             key={cat.id}
                             type="button"
                             variant={category === cat.id ? "default" : "ghost"}
-                            onClick={() => setCategory(cat.id)}
+                            onClick={() => {
+                              setCategory(cat.id);
+                              setCategoryGpsOpen(false);
+                            }}
                             className="w-full justify-start"
                           >
                             {cat.name}
@@ -242,8 +245,8 @@ const Index = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Popover>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Popover open={cantonOpen} onOpenChange={setCantonOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-between h-12">
                           <MapPin className="h-4 w-4" />
@@ -251,16 +254,17 @@ const Index = () => {
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80 p-2">
-                        <div className="grid grid-cols-2 gap-2">
+                      <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align="start">
+                        <div className="grid grid-cols-3 gap-1.5">
                           <Button
                             type="button"
                             variant={!canton ? "default" : "ghost"}
                             onClick={() => {
                               setCanton('');
-                              setCity('');
+                              setCantonOpen(false);
                             }}
                             size="sm"
+                            className="h-9"
                           >
                             Alle
                           </Button>
@@ -271,9 +275,10 @@ const Index = () => {
                               variant={canton === c.abbreviation ? "default" : "ghost"}
                               onClick={() => {
                                 setCanton(c.abbreviation);
-                                setCity('');
+                                setCantonOpen(false);
                               }}
                               size="sm"
+                              className="h-9"
                             >
                               {c.abbreviation}
                             </Button>
@@ -282,44 +287,7 @@ const Index = () => {
                       </PopoverContent>
                     </Popover>
 
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          disabled={!canton}
-                          className="w-full justify-between h-12"
-                        >
-                          <Building2 className="h-4 w-4" />
-                          {city || 'Stadt wählen'}
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80 max-h-80 overflow-y-auto p-2">
-                        <div className="space-y-1">
-                          <Button
-                            type="button"
-                            variant={!city ? "default" : "ghost"}
-                            onClick={() => setCity('')}
-                            className="w-full justify-start"
-                          >
-                            Alle Städte
-                          </Button>
-                          {cities.map((c) => (
-                            <Button
-                              key={c.slug}
-                              type="button"
-                              variant={city === c.name ? "default" : "ghost"}
-                              onClick={() => setCity(c.name)}
-                              className="w-full justify-start"
-                            >
-                              {c.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-
-                    <Popover>
+                    <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-between h-12">
                           <Tag className="h-4 w-4" />
@@ -327,12 +295,15 @@ const Index = () => {
                           <ChevronDown className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80 p-2">
+                      <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto">
                         <div className="space-y-1">
                           <Button
                             type="button"
                             variant={!category ? "default" : "ghost"}
-                            onClick={() => setCategory('')}
+                            onClick={() => {
+                              setCategory('');
+                              setCategoryOpen(false);
+                            }}
                             className="w-full justify-start"
                           >
                             Alle Kategorien
@@ -342,7 +313,10 @@ const Index = () => {
                               key={cat.id}
                               type="button"
                               variant={category === cat.id ? "default" : "ghost"}
-                              onClick={() => setCategory(cat.id)}
+                              onClick={() => {
+                                setCategory(cat.id);
+                                setCategoryOpen(false);
+                              }}
                               className="w-full justify-start"
                             >
                               {cat.name}
