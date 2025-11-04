@@ -30,6 +30,9 @@ const Suche = () => {
   const [userLng, setUserLng] = useState<number | null>(null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [cantonOpen, setCantonOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryGpsOpen, setCategoryGpsOpen] = useState(false);
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
@@ -276,7 +279,7 @@ const Suche = () => {
                   </div>
                 </div>
 
-                <Popover>
+                <Popover open={categoryGpsOpen} onOpenChange={setCategoryGpsOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-between h-12">
                       <Tag className="h-4 w-4" />
@@ -284,12 +287,15 @@ const Suche = () => {
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[90vw] md:w-80 p-2 max-h-[60vh] overflow-y-auto" align="start">
+                  <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align="start">
                     <div className="space-y-1">
                       <Button
                         type="button"
                         variant={!category ? "default" : "ghost"}
-                        onClick={() => setCategory('')}
+                        onClick={() => {
+                          setCategory('');
+                          setCategoryGpsOpen(false);
+                        }}
                         className="w-full justify-start"
                       >
                         Alle Kategorien
@@ -299,7 +305,10 @@ const Suche = () => {
                           key={cat.id}
                           type="button"
                           variant={category === cat.id ? "default" : "ghost"}
-                          onClick={() => setCategory(cat.id)}
+                          onClick={() => {
+                            setCategory(cat.id);
+                            setCategoryGpsOpen(false);
+                          }}
                           className="w-full justify-start"
                         >
                           {cat.name}
@@ -319,7 +328,7 @@ const Suche = () => {
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Popover>
+                  <Popover open={cantonOpen} onOpenChange={setCantonOpen}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-between h-12">
                         <MapPin className="h-4 w-4" />
@@ -327,13 +336,17 @@ const Suche = () => {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[90vw] md:w-80 p-2 max-h-[60vh] overflow-y-auto" align="start">
-                      <div className="grid grid-cols-2 gap-2">
+                    <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align="start">
+                      <div className="grid grid-cols-3 gap-1.5">
                         <Button
                           type="button"
                           variant={!canton ? "default" : "ghost"}
-                          onClick={() => setCanton('')}
+                          onClick={() => {
+                            setCanton('');
+                            setCantonOpen(false);
+                          }}
                           size="sm"
+                          className="h-9"
                         >
                           Alle
                         </Button>
@@ -342,8 +355,12 @@ const Suche = () => {
                             key={c.id}
                             type="button"
                             variant={canton === c.abbreviation ? "default" : "ghost"}
-                            onClick={() => setCanton(c.abbreviation)}
+                            onClick={() => {
+                              setCanton(c.abbreviation);
+                              setCantonOpen(false);
+                            }}
                             size="sm"
+                            className="h-9"
                           >
                             {c.abbreviation}
                           </Button>
@@ -352,7 +369,7 @@ const Suche = () => {
                     </PopoverContent>
                   </Popover>
 
-                  <Popover>
+                  <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-between h-12">
                         <Tag className="h-4 w-4" />
@@ -360,12 +377,15 @@ const Suche = () => {
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[90vw] md:w-80 p-2 max-h-[60vh] overflow-y-auto" align="start">
+                    <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align="start">
                       <div className="space-y-1">
                         <Button
                           type="button"
                           variant={!category ? "default" : "ghost"}
-                          onClick={() => setCategory('')}
+                          onClick={() => {
+                            setCategory('');
+                            setCategoryOpen(false);
+                          }}
                           className="w-full justify-start"
                         >
                           Alle Kategorien
@@ -375,7 +395,10 @@ const Suche = () => {
                             key={cat.id}
                             type="button"
                             variant={category === cat.id ? "default" : "ghost"}
-                            onClick={() => setCategory(cat.id)}
+                            onClick={() => {
+                              setCategory(cat.id);
+                              setCategoryOpen(false);
+                            }}
                             className="w-full justify-start"
                           >
                             {cat.name}
