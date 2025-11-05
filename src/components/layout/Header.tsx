@@ -17,8 +17,9 @@ export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const { data: navHome } = useSiteSetting('nav_home');
-  const { data: navCities } = useSiteSetting('nav_cities');
+  const { data: navCantons } = useSiteSetting('nav_cantons');
   const { data: navCategories } = useSiteSetting('nav_categories');
+  const { data: navBanners } = useSiteSetting('nav_banners');
   const { data: navContact } = useSiteSetting('nav_contact');
   const { data: navLogin } = useSiteSetting('nav_login');
   const { data: navMyAccount } = useSiteSetting('nav_my_account');
@@ -42,11 +43,14 @@ export const Header = () => {
             <Link to="/" className="hover:underline">
               {navHome || 'Start'}
             </Link>
-            <Link to="/staedte" className="hover:underline">
-              {navCities || 'Städte'}
+            <Link to="/kantone" className="hover:underline">
+              {navCantons || 'Kantone'}
             </Link>
             <Link to="/kategorien" className="hover:underline">
               {navCategories || 'Kategorien'}
+            </Link>
+            <Link to="/bannerpreise" className="hover:underline">
+              {navBanners || 'Werbung'}
             </Link>
             <Link to="/kontakt" className="hover:underline">
               {navContact || 'Kontakt'}
@@ -139,11 +143,14 @@ export const Header = () => {
                   <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
                     {navHome || 'Start'}
                   </Link>
-                  <Link to="/staedte" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
-                    {navCities || 'Städte'}
+                  <Link to="/kantone" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                    {navCantons || 'Kantone'}
                   </Link>
                   <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
                     {navCategories || 'Kategorien'}
+                  </Link>
+                  <Link to="/bannerpreise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                    {navBanners || 'Werbung'}
                   </Link>
 
                   <Separator />

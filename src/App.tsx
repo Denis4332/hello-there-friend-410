@@ -11,6 +11,7 @@ import Profil from "./pages/Profil";
 import Stadt from "./pages/Stadt";
 import Kategorie from "./pages/Kategorie";
 import Cities from "./pages/Cities";
+import Kantone from "./pages/Kantone";
 import Categories from "./pages/Categories";
 import Kontakt from "./pages/Kontakt";
 import AGB from "./pages/AGB";
@@ -60,7 +61,8 @@ const AppContent = () => {
             <Route path="/profil/:slug" element={<Profil />} />
             <Route path="/stadt/:slug" element={<Stadt />} />
             <Route path="/kategorie/:slug" element={<Kategorie />} />
-            <Route path="/staedte" element={<Cities />} />
+            <Route path="/staedte" element={<Navigate to="/kantone" replace />} />
+            <Route path="/kantone" element={<Kantone />} />
             <Route path="/kategorien" element={<Categories />} />
             <Route path="/kontakt" element={<Kontakt />} />
             <Route path="/agb" element={<AGB />} />
