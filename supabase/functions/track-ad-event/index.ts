@@ -29,12 +29,17 @@ serve(async (req) => {
     // Increment the counter
     const column = event_type === 'impression' ? 'impressions' : 'clicks';
     
-    // First get current value
-    const { data: currentAd, error: fetchError } = await supabaseClient
-      .from('advertisements')
-      .select(column)
-      .eq('id', ad_id)
-      .single();
+  // First get current value
+  const { data: currentAd, error: fetchError } = await supabaseClient
+    .from('advertisements')
+    .select(column)
+    .eq('id', ad_id)
+    .single();
+
+  if (fetchError) {
+    console.error('Fetch error:', fetchError);
+    throw new Error('Advertisement not found or inactive');
+  }
 
     if (fetchError) throw fetchError;
     if (!currentAd) throw new Error('Advertisement not found');

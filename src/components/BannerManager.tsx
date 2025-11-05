@@ -39,20 +39,25 @@ export const BannerManager = () => {
     if (!demoShown) {
       const timer = setTimeout(() => {
         setShowDemoPopup(true);
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [popupAds]);
 
   const shouldShowAd = (ad: Advertisement, lastShown: string | null): boolean => {
+    // Session-basierte Sperre für 'always' - nur 1x pro Browser-Session
+    if (ad.popup_frequency === 'always') {
+      const sessionKey = `${STORAGE_KEY_PREFIX}${ad.id}_session`;
+      if (sessionStorage.getItem(sessionKey)) return false;
+      return true;
+    }
+
     if (!lastShown) return true;
 
     const lastShownTime = new Date(lastShown).getTime();
     const now = new Date().getTime();
 
     switch (ad.popup_frequency) {
-      case 'always':
-        return true;
       case 'once_per_day':
         return now - lastShownTime > 24 * 60 * 60 * 1000;
       case 'once_per_session':
@@ -65,6 +70,13 @@ export const BannerManager = () => {
     if (currentAd) {
       const storageKey = `${STORAGE_KEY_PREFIX}${currentAd.id}`;
       localStorage.setItem(storageKey, new Date().toISOString());
+      
+      // Auch Session-Storage setzen für 'always' Frequenz
+      if (currentAd.popup_frequency === 'always') {
+        const sessionKey = `${STORAGE_KEY_PREFIX}${currentAd.id}_session`;
+        sessionStorage.setItem(sessionKey, 'true');
+      }
+      
       setCurrentAd(null);
     }
   };

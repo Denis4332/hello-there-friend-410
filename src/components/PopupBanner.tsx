@@ -31,13 +31,13 @@ export const PopupBanner = ({ ad, onClose, onImpression, onClick }: PopupBannerP
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={handleClose}
     >
       <div
-        className={`relative max-w-2xl w-full bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+        className={`relative w-[95vw] md:w-[600px] lg:w-[800px] max-w-2xl bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
           isVisible ? 'scale-100' : 'scale-95'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -45,10 +45,10 @@ export const PopupBanner = ({ ad, onClose, onImpression, onClick }: PopupBannerP
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background"
+          className="absolute top-2 right-2 md:top-4 md:right-4 z-10 bg-background/90 hover:bg-background h-10 w-10 rounded-full shadow-lg"
           onClick={handleClose}
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </Button>
 
         <div
@@ -58,7 +58,11 @@ export const PopupBanner = ({ ad, onClose, onImpression, onClick }: PopupBannerP
           <img
             src={ad.image_url}
             alt={ad.title}
-            className="w-full h-auto object-cover"
+            loading="lazy"
+            className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+            }}
           />
         </div>
       </div>
