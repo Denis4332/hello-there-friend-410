@@ -14,17 +14,33 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
     : null;
   
+  const listingType = profile.listing_type || 'free';
+  const isTop = listingType === 'top';
+  const isPremium = listingType === 'premium' || isTop;
+  const isBasic = listingType === 'basic';
+
   return (
     <Link 
       to={`/profil/${profile.slug}`} 
       className={cn(
-        "block group overflow-hidden rounded-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl bg-card",
-        profile.is_premium 
-          ? "border-2 border-amber-400 shadow-lg shadow-amber-400/20" 
-          : "border"
+        "block group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl bg-card",
+        isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03]",
+        isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02]",
+        isBasic && "border-2 border-blue-400/50 hover:scale-[1.01]",
+        !isTop && !isPremium && !isBasic && "border hover:scale-[1.01]"
       )}
     >
-      <div className="relative w-full aspect-[4/5]">
+      {/* TOP AD Banner */}
+      {isTop && (
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-red-600 to-pink-600 text-white text-xs font-bold py-1.5 text-center z-20 animate-pulse">
+          ⭐ TOP INSERAT ⭐
+        </div>
+      )}
+      
+      <div className={cn(
+        "relative w-full aspect-[4/5]",
+        isTop && "mt-6"
+      )}>
         {photoUrl ? (
           <img 
             src={photoUrl} 
@@ -43,10 +59,15 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
         
         {/* Badges - Top Left */}
         <div className="absolute top-3 left-3 flex gap-3 z-10">
-          {profile.is_premium && (
-            <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl animate-pulse">
+          {isPremium && (
+            <div className={cn(
+              "flex items-center gap-1.5 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl",
+              isTop 
+                ? "bg-gradient-to-r from-red-600 to-pink-600 animate-pulse" 
+                : "bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600 animate-pulse"
+            )}>
               <Crown className="h-4 w-4" />
-              VIP
+              {isTop ? 'TOP' : 'VIP'}
             </div>
           )}
           {profile.verified_at && (

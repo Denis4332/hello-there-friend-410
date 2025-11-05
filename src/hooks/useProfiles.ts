@@ -40,7 +40,7 @@ export const useFeaturedProfiles = (limit: number = 8) => {
       }
       
       const result = await query
-        .order('is_premium', { ascending: false })
+        .order('listing_type', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(limit);
       

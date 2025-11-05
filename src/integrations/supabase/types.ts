@@ -378,14 +378,17 @@ export type Database = {
           is_premium: boolean | null
           languages: string[] | null
           lat: number | null
+          listing_type: string | null
           lng: number | null
           phone: string | null
           postal_code: string | null
+          premium_until: string | null
           show_street: boolean | null
           slug: string | null
           status: string | null
           street_address: string | null
           telegram: string | null
+          top_ad_until: string | null
           updated_at: string | null
           user_id: string
           verified_at: string | null
@@ -407,14 +410,17 @@ export type Database = {
           is_premium?: boolean | null
           languages?: string[] | null
           lat?: number | null
+          listing_type?: string | null
           lng?: number | null
           phone?: string | null
           postal_code?: string | null
+          premium_until?: string | null
           show_street?: boolean | null
           slug?: string | null
           status?: string | null
           street_address?: string | null
           telegram?: string | null
+          top_ad_until?: string | null
           updated_at?: string | null
           user_id: string
           verified_at?: string | null
@@ -436,14 +442,17 @@ export type Database = {
           is_premium?: boolean | null
           languages?: string[] | null
           lat?: number | null
+          listing_type?: string | null
           lng?: number | null
           phone?: string | null
           postal_code?: string | null
+          premium_until?: string | null
           show_street?: boolean | null
           slug?: string | null
           status?: string | null
           street_address?: string | null
           telegram?: string | null
+          top_ad_until?: string | null
           updated_at?: string | null
           user_id?: string
           verified_at?: string | null

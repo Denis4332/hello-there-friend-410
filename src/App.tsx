@@ -39,6 +39,8 @@ import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { useDesignSettings } from "./hooks/useDesignSettings";
 import { BannerManager } from "./components/BannerManager";
 import Bannerpreise from "./pages/Bannerpreise";
+import Preise from "./pages/Preise";
+import ProfileUpgrade from "./pages/ProfileUpgrade";
 import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
 
 const queryClient = new QueryClient();
@@ -68,6 +70,7 @@ const AppContent = () => {
             <Route path="/agb" element={<AGB />} />
             <Route path="/datenschutz" element={<Datenschutz />} />
             <Route path="/bannerpreise" element={<Bannerpreise />} />
+            <Route path="/preise" element={<Preise />} />
             <Route path="/500" element={<ServerError />} />
             <Route
               path="/profil/erstellen"
@@ -90,6 +93,14 @@ const AppContent = () => {
               element={
                 <UserProtectedRoute>
                   <ProfileEdit />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/user/upgrade"
+              element={
+                <UserProtectedRoute>
+                  <ProfileUpgrade />
                 </UserProtectedRoute>
               }
             />

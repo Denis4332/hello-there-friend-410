@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useCantons } from '@/hooks/useCantons';
 import { Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 
 export const Footer = () => {
@@ -8,10 +10,14 @@ export const Footer = () => {
   const { data: datenschutzText } = useSiteSetting('footer_datenschutz');
   const { data: kontaktText } = useSiteSetting('footer_kontakt');
   const { data: adminText } = useSiteSetting('footer_admin');
+  const { data: ctaText } = useSiteSetting('footer_cta_text');
+  const { data: ctaLink } = useSiteSetting('footer_cta_link');
   const { data: facebookUrl } = useSiteSetting('footer_facebook_url');
   const { data: instagramUrl } = useSiteSetting('footer_instagram_url');
   const { data: twitterUrl } = useSiteSetting('footer_twitter_url');
   const { data: linkedinUrl } = useSiteSetting('footer_linkedin_url');
+  
+  const { data: cantons } = useCantons();
 
   const socialLinks = [
     { url: facebookUrl, icon: Facebook, label: 'Facebook' },
@@ -20,44 +26,110 @@ export const Footer = () => {
     { url: linkedinUrl, icon: Linkedin, label: 'LinkedIn' },
   ].filter(link => link.url && link.url.trim() !== '');
 
+  const topCantons = cantons?.slice(0, 8) || [];
+
   return (
-    <footer className="bg-muted mt-auto py-6">
+    <footer className="bg-muted mt-auto py-12">
       <div className="container mx-auto px-4">
-        <div className="text-center">
-          {socialLinks.length > 0 && (
-            <div className="flex justify-center gap-4 mb-4">
-              {socialLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={link.label}
-                >
-                  <link.icon className="h-5 w-5" />
-                </a>
+        <div className="grid md:grid-cols-4 gap-8 mb-8">
+          {/* Beliebte Kantone */}
+          <div>
+            <h3 className="font-semibold mb-4">Beliebte Kantone</h3>
+            <ul className="space-y-2">
+              {topCantons.map((canton: any) => (
+                <li key={canton.id}>
+                  <Link 
+                    to={`/suche?canton=${canton.abbreviation}`}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {canton.name}
+                  </Link>
+                </li>
               ))}
-            </div>
-          )}
-          <p className="text-sm text-muted-foreground">
-            {copyright || '© 2025 Escoria'} ·{' '}
-            <Link to="/agb" className="hover:underline">
-              {agbText || 'AGB'}
-            </Link>{' '}
-            ·{' '}
-            <Link to="/datenschutz" className="hover:underline">
-              {datenschutzText || 'Datenschutz'}
-            </Link>{' '}
-            ·{' '}
-            <Link to="/kontakt" className="hover:underline">
-              {kontaktText || 'Kontakt'}
-            </Link>{' '}
-            ·{' '}
-            <Link to="/admin/login" className="hover:underline">
-              {adminText || 'Admin'}
-            </Link>
-          </p>
+            </ul>
+          </div>
+
+          {/* Informationen */}
+          <div>
+            <h3 className="font-semibold mb-4">Informationen</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/preise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Preise & Pakete
+                </Link>
+              </li>
+              <li>
+                <Link to="/bannerpreise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Werbung schalten
+                </Link>
+              </li>
+              <li>
+                <Link to="/kontakt" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {kontaktText || 'Kontakt'}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Rechtliches */}
+          <div>
+            <h3 className="font-semibold mb-4">Rechtliches</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/agb" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {agbText || 'AGB'}
+                </Link>
+              </li>
+              <li>
+                <Link to="/datenschutz" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {datenschutzText || 'Datenschutz'}
+                </Link>
+              </li>
+              <li>
+                <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {adminText || 'Admin'}
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* CTA */}
+          <div>
+            <h3 className="font-semibold mb-4">Inserat erstellen</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Erstelle jetzt dein kostenloses Inserat und erreiche tausende Nutzer.
+            </p>
+            <Button asChild className="w-full">
+              <Link to={ctaLink || '/auth?mode=signup'}>
+                {ctaText || 'Jetzt Inserat erstellen'}
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Social & Copyright */}
+        <div className="border-t border-border pt-6">
+          <div className="text-center">
+            {socialLinks.length > 0 && (
+              <div className="flex justify-center gap-4 mb-4">
+                {socialLinks.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={link.label}
+                  >
+                    <link.icon className="h-5 w-5" />
+                  </a>
+                ))}
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {copyright || '© 2025 Escoria'}
+            </p>
+          </div>
         </div>
       </div>
     </footer>

@@ -20,7 +20,7 @@ const ProfileCreate = () => {
   const [cantons, setCantons] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [isPremium, setIsPremium] = useState(false);
+  const [listingType, setListingType] = useState<'free' | 'basic' | 'premium' | 'top'>('basic');
   const [currentStep, setCurrentStep] = useState<'form' | 'listing-type' | 'photos' | 'verification'>('form');
 
   const { data: createTitle } = useSiteSetting('profile_create_title');
@@ -121,14 +121,23 @@ const ProfileCreate = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ is_premium: isPremium })
+        .update({ 
+          listing_type: listingType,
+          is_premium: listingType === 'premium' || listingType === 'top' 
+        })
         .eq('id', profileId);
 
       if (error) throw error;
 
       setCurrentStep('photos');
+      const typeNames = {
+        free: 'Basis',
+        basic: 'Standard',
+        premium: 'Premium',
+        top: 'TOP AD'
+      };
       toast({
-        title: isPremium ? 'Premium Inserat gewählt' : 'Normal Inserat gewählt',
+        title: `${typeNames[listingType]} Inserat gewählt`,
         description: 'Lade nun deine Fotos hoch',
       });
     } catch (error: any) {
@@ -203,8 +212,8 @@ const ProfileCreate = () => {
               <TabsContent value="listing-type" className="mt-6">
                 {profileId && (
                   <ListingTypeSelector
-                    selectedType={isPremium ? 'premium' : 'normal'}
-                    onSelect={(type) => setIsPremium(type === 'premium')}
+                    selectedType={listingType}
+                    onSelect={(type) => setListingType(type)}
                     onContinue={handleListingTypeSubmit}
                   />
                 )}
