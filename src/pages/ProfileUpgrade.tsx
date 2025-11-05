@@ -63,14 +63,13 @@ const ProfileUpgrade = () => {
   };
 
   const getCurrentBadge = () => {
-    const type = profile?.listing_type || 'free';
+    const type = profile?.listing_type || 'basic';
     const badges = {
-      free: { label: 'Basis', variant: 'secondary' as const },
       basic: { label: 'Standard', variant: 'default' as const },
       premium: { label: 'Premium', variant: 'default' as const },
       top: { label: 'TOP AD', variant: 'destructive' as const },
     };
-    return badges[type as keyof typeof badges] || badges.free;
+    return badges[type as keyof typeof badges] || badges.basic;
   };
 
   const packages = [
@@ -159,9 +158,6 @@ const ProfileUpgrade = () => {
             <p className="text-xl text-muted-foreground mb-4">
               Dein aktuelles Paket: <Badge variant={currentBadge.variant}>{currentBadge.label}</Badge>
             </p>
-            <div className="inline-block bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-4 py-2 rounded-full text-sm font-semibold">
-              🎉 Alle Upgrades aktuell GRATIS während der Beta-Phase!
-            </div>
           </div>
 
           {/* Upgrade Cards */}
@@ -216,10 +212,10 @@ const ProfileUpgrade = () => {
             <CardContent className="p-6">
               <h3 className="font-semibold mb-2">💡 Wichtige Informationen</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Während der Beta-Phase sind alle Pakete kostenlos</li>
-                <li>• Nach dem Launch kannst du jederzeit upgraden oder downgraden</li>
-                <li>• Bei Downgrade bleibt dein Inserat online, wird aber mit weniger Features angezeigt</li>
+                <li>• Du kannst jederzeit upgraden oder downgraden</li>
+                <li>• Bei Downgrade wird dein Inserat deaktiviert</li>
                 <li>• Upgrades werden sofort aktiviert</li>
+                <li>• Monatliche Kündigungsfrist</li>
               </ul>
             </CardContent>
           </Card>

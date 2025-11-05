@@ -14,7 +14,7 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
     : null;
   
-  const listingType = profile.listing_type || 'free';
+  const listingType = profile.listing_type || 'basic';
   const isTop = listingType === 'top';
   const isPremium = listingType === 'premium' || isTop;
   const isBasic = listingType === 'basic';

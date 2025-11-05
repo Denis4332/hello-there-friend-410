@@ -20,7 +20,7 @@ const ProfileCreate = () => {
   const [cantons, setCantons] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [listingType, setListingType] = useState<'free' | 'basic' | 'premium' | 'top'>('basic');
+  const [listingType, setListingType] = useState<'basic' | 'premium' | 'top'>('basic');
   const [currentStep, setCurrentStep] = useState<'form' | 'listing-type' | 'photos' | 'verification'>('form');
 
   const { data: createTitle } = useSiteSetting('profile_create_title');
@@ -131,7 +131,6 @@ const ProfileCreate = () => {
 
       setCurrentStep('photos');
       const typeNames = {
-        free: 'Basis',
         basic: 'Standard',
         premium: 'Premium',
         top: 'TOP AD'

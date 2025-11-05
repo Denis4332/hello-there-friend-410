@@ -9,8 +9,6 @@ import { useSiteSetting } from '@/hooks/useSiteSettings';
 const Preise = () => {
   const { data: pageTitle } = useSiteSetting('pricing_page_title');
   const { data: pageSubtitle } = useSiteSetting('pricing_page_subtitle');
-  const { data: freeTitle } = useSiteSetting('pricing_free_title');
-  const { data: freePrice } = useSiteSetting('pricing_free_price');
   const { data: basicTitle } = useSiteSetting('pricing_basic_title');
   const { data: basicPrice } = useSiteSetting('pricing_basic_price');
   const { data: premiumTitle } = useSiteSetting('pricing_premium_title');
@@ -20,21 +18,6 @@ const Preise = () => {
 
   const packages = [
     {
-      id: 'free',
-      title: freeTitle || 'Basis Inserat',
-      price: freePrice || 'GRATIS',
-      icon: Star,
-      iconBg: 'bg-muted',
-      iconColor: 'text-muted-foreground',
-      border: 'border-border',
-      features: [
-        'Basis-Sichtbarkeit',
-        'Unbegrenzt aktiv',
-        'In Suchergebnissen',
-        'Profil-Seite',
-      ],
-    },
-    {
       id: 'basic',
       title: basicTitle || 'Standard Inserat',
       price: basicPrice || 'CHF 49/Monat',
@@ -43,10 +26,10 @@ const Preise = () => {
       iconColor: 'text-blue-600 dark:text-blue-400',
       border: 'border-blue-500/50',
       features: [
-        'Alles von Basis +',
-        'Bessere Platzierung in Suche',
+        'Erscheint in Suchergebnissen',
+        'Unbegrenzte Laufzeit',
+        'Bessere Platzierung',
         'Hervorgehobene Darstellung',
-        'Erhöhte Sichtbarkeit',
       ],
     },
     {
@@ -100,13 +83,10 @@ const Preise = () => {
             <p className="text-xl text-muted-foreground mb-6">
               {pageSubtitle || 'Wähle das passende Paket für dein Inserat'}
             </p>
-            <div className="inline-block bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-4 py-2 rounded-full text-sm font-semibold">
-              🎉 Alle Pakete aktuell GRATIS während der Beta-Phase!
-            </div>
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid md:grid-cols-3 gap-6 mb-16">
             {packages.map((pkg) => {
               const Icon = pkg.icon;
               return (
@@ -158,7 +138,6 @@ const Preise = () => {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-4 font-semibold">Feature</th>
-                    <th className="text-center p-4 font-semibold">Basis</th>
                     <th className="text-center p-4 font-semibold">Standard</th>
                     <th className="text-center p-4 font-semibold">Premium</th>
                     <th className="text-center p-4 font-semibold">TOP AD</th>
@@ -166,21 +145,18 @@ const Preise = () => {
                 </thead>
                 <tbody>
                   {[
-                    { name: 'In Suchergebnissen', free: true, basic: true, premium: true, top: true },
-                    { name: 'Profil-Seite', free: true, basic: true, premium: true, top: true },
-                    { name: 'Foto-Upload', free: true, basic: true, premium: true, top: true },
-                    { name: 'Bessere Platzierung', free: false, basic: true, premium: true, top: true },
-                    { name: 'Hervorgehoben', free: false, basic: true, premium: true, top: true },
-                    { name: 'VIP Badge', free: false, basic: false, premium: true, top: true },
-                    { name: 'Größere Darstellung', free: false, basic: false, premium: true, top: true },
-                    { name: 'TOP Position', free: false, basic: false, premium: false, top: true },
-                    { name: 'TOP Banner', free: false, basic: false, premium: false, top: true },
+                    { name: 'In Suchergebnissen', basic: true, premium: true, top: true },
+                    { name: 'Profil-Seite', basic: true, premium: true, top: true },
+                    { name: 'Foto-Upload', basic: true, premium: true, top: true },
+                    { name: 'Bessere Platzierung', basic: true, premium: true, top: true },
+                    { name: 'Hervorgehoben', basic: true, premium: true, top: true },
+                    { name: 'VIP Badge', basic: false, premium: true, top: true },
+                    { name: 'Größere Darstellung', basic: false, premium: true, top: true },
+                    { name: 'TOP Position', basic: false, premium: false, top: true },
+                    { name: 'TOP Banner', basic: false, premium: false, top: true },
                   ].map((row, idx) => (
                     <tr key={idx} className="border-b hover:bg-muted/50">
                       <td className="p-4">{row.name}</td>
-                      <td className="text-center p-4">
-                        {row.free ? <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /> : '—'}
-                      </td>
                       <td className="text-center p-4">
                         {row.basic ? <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /> : '—'}
                       </td>
@@ -217,7 +193,7 @@ const Preise = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Während der Beta-Phase sind alle Pakete kostenlos. Nach dem Launch erfolgt die Bezahlung sicher über Stripe per Kreditkarte oder TWINT.
+                    Die Bezahlung erfolgt sicher über Stripe per Kreditkarte oder TWINT. Du kannst jederzeit kündigen.
                   </p>
                 </CardContent>
               </Card>
@@ -227,7 +203,7 @@ const Preise = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Dein Inserat bleibt online, wird aber auf das Basis-Paket heruntergestuft. Du kannst jederzeit wieder upgraden.
+                    Dein Inserat bleibt online, wird aber deaktiviert. Du kannst jederzeit wieder ein Paket buchen.
                   </p>
                 </CardContent>
               </Card>
