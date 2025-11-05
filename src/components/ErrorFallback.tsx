@@ -1,13 +1,11 @@
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 
 interface ErrorFallbackProps {
   error: Error | null;
 }
 
 export const ErrorFallback = ({ error }: ErrorFallbackProps) => {
-  const navigate = useNavigate();
   const isDevelopment = import.meta.env.DEV;
 
   const handleReload = () => {
@@ -15,7 +13,7 @@ export const ErrorFallback = ({ error }: ErrorFallbackProps) => {
   };
 
   const handleGoHome = () => {
-    navigate('/');
+    window.location.href = '/';
   };
 
   return (

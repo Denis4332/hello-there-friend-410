@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -17,16 +17,22 @@ const Stadt = () => {
   const { data: city, isLoading: loadingCity } = useCityBySlug(slug || '');
   const { data: cityProfiles = [], isLoading: loadingProfiles } = useCityProfiles(city?.name);
 
-  if (!city && !loadingCity) {
+  if (loadingCity || !city) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Stadt nicht gefunden</h1>
-            <Link to="/staedte">
-              <Button>Alle Städte anzeigen</Button>
-            </Link>
+            {loadingCity ? (
+              <p className="text-muted-foreground">Lade Stadt...</p>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold mb-4">Stadt nicht gefunden</h1>
+                <Link to="/staedte">
+                  <Button>Alle Städte anzeigen</Button>
+                </Link>
+              </>
+            )}
           </div>
         </main>
         <Footer />
