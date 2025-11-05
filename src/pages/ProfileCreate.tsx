@@ -122,8 +122,7 @@ const ProfileCreate = () => {
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          listing_type: listingType,
-          is_premium: listingType === 'premium' || listingType === 'top' 
+          listing_type: listingType
         })
         .eq('id', profileId);
 

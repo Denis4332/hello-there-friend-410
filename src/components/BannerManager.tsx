@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { PopupBanner } from './PopupBanner';
 import { DemoPopupBanner } from './DemoPopupBanner';
 import { useAdvertisements } from '@/hooks/useAdvertisements';
@@ -10,6 +11,14 @@ export const BannerManager = () => {
   const { data: popupAds } = useAdvertisements('popup');
   const [currentAd, setCurrentAd] = useState<Advertisement | null>(null);
   const [showDemoPopup, setShowDemoPopup] = useState(false);
+  const [adRotationTrigger, setAdRotationTrigger] = useState(0);
+  const location = useLocation();
+
+  // Reset Pop-up bei Route-Wechsel
+  useEffect(() => {
+    setCurrentAd(null);
+    setAdRotationTrigger(prev => prev + 1);
+  }, [location.pathname]);
 
   useEffect(() => {
     // Warte bis Query fertig geladen ist
@@ -17,17 +26,23 @@ export const BannerManager = () => {
 
     // Fall 1: Echte Ads vorhanden - zeige diese
     if (popupAds.length > 0) {
-      for (const ad of popupAds) {
+      // Filtere verfügbare Ads
+      const availableAds = popupAds.filter(ad => {
         const storageKey = `${STORAGE_KEY_PREFIX}${ad.id}`;
         const lastShown = localStorage.getItem(storageKey);
+        return shouldShowAd(ad, lastShown);
+      });
 
-        if (shouldShowAd(ad, lastShown)) {
-          const timer = setTimeout(() => {
-            setCurrentAd(ad);
-          }, ad.popup_delay_seconds * 1000);
+      if (availableAds.length > 0) {
+        // ROTATION: Zufällige Ad auswählen (Multi-Advertiser Support)
+        const randomIndex = Math.floor(Math.random() * availableAds.length);
+        const selectedAd = availableAds[randomIndex];
+        
+        const timer = setTimeout(() => {
+          setCurrentAd(selectedAd);
+        }, selectedAd.popup_delay_seconds * 1000);
 
-          return () => clearTimeout(timer);
-        }
+        return () => clearTimeout(timer);
       }
       return; // Keine Demo-Popup wenn echte Ads verfügbar
     }
@@ -42,14 +57,18 @@ export const BannerManager = () => {
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [popupAds]);
+  }, [popupAds, adRotationTrigger]);
 
   const shouldShowAd = (ad: Advertisement, lastShown: string | null): boolean => {
-    // Session-basierte Sperre für 'always' - nur 1x pro Browser-Session
+    // 'always' Frequenz: Zeige bei jedem Navigation-Wechsel (mit Mindestabstand)
     if (ad.popup_frequency === 'always') {
-      const sessionKey = `${STORAGE_KEY_PREFIX}${ad.id}_session`;
-      if (sessionStorage.getItem(sessionKey)) return false;
-      return true;
+      if (!lastShown) return true;
+      
+      const lastShownTime = new Date(lastShown).getTime();
+      const now = new Date().getTime();
+      
+      // Mindestabstand: 30 Sekunden (verhindert Spam bei schnellem Klicken)
+      return now - lastShownTime > 30 * 1000;
     }
 
     if (!lastShown) return true;
@@ -70,12 +89,6 @@ export const BannerManager = () => {
     if (currentAd) {
       const storageKey = `${STORAGE_KEY_PREFIX}${currentAd.id}`;
       localStorage.setItem(storageKey, new Date().toISOString());
-      
-      // Auch Session-Storage setzen für 'always' Frequenz
-      if (currentAd.popup_frequency === 'always') {
-        const sessionKey = `${STORAGE_KEY_PREFIX}${currentAd.id}_session`;
-        sessionStorage.setItem(sessionKey, 'true');
-      }
       
       setCurrentAd(null);
     }

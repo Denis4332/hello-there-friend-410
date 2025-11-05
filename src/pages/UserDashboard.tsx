@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, ExternalLink, Edit, Trash2, Star } from 'lucide-react';
+import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield } from 'lucide-react';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const UserDashboard = () => {
@@ -169,6 +169,78 @@ const UserDashboard = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Inserat-Paket Card */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    {profile.listing_type === 'top' && <Star className="h-5 w-5 text-pink-600" />}
+                    {profile.listing_type === 'premium' && <Crown className="h-5 w-5 text-amber-500" />}
+                    {profile.listing_type === 'basic' && <Shield className="h-5 w-5 text-gray-500" />}
+                    Dein Inserat-Paket
+                  </span>
+                  {profile.listing_type === 'top' && (
+                    <Badge className="bg-gradient-to-r from-red-600 to-pink-600 text-white">
+                      TOP AD
+                    </Badge>
+                  )}
+                  {profile.listing_type === 'premium' && (
+                    <Badge className="bg-gradient-to-r from-amber-400 to-pink-600 text-white">
+                      PREMIUM
+                    </Badge>
+                  )}
+                  {profile.listing_type === 'basic' && (
+                    <Badge variant="secondary">STANDARD</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Aktuelles Paket:</p>
+                    <p className="font-semibold">
+                      {profile.listing_type === 'basic' && '📋 Standard Inserat - Basis-Sichtbarkeit'}
+                      {profile.listing_type === 'premium' && '👑 Premium Inserat - VIP Badge, größere Darstellung, höhere Priorität'}
+                      {profile.listing_type === 'top' && '⭐ TOP AD - Maximale Sichtbarkeit, immer ganz oben, hervorgehoben'}
+                    </p>
+                  </div>
+                  
+                  {(profile.premium_until || profile.top_ad_until) && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm text-muted-foreground">Gültig bis:</p>
+                      <p className="font-medium text-green-600">
+                        {new Date(profile.premium_until || profile.top_ad_until || '').toLocaleDateString('de-CH', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  )}
+
+                  {profile.listing_type !== 'top' && (
+                    <Button 
+                      onClick={() => navigate('/user/upgrade')} 
+                      className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+                    >
+                      <Crown className="h-4 w-4 mr-2" />
+                      Paket upgraden
+                    </Button>
+                  )}
+
+                  {profile.listing_type === 'top' && (
+                    <Button 
+                      onClick={() => navigate('/user/upgrade')} 
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Paket verlängern
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
