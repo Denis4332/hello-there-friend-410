@@ -9,5 +9,6 @@ verify_jwt = false
 [functions.log-error]
 verify_jwt = false
 
-[functions.create-admin-account]
-verify_jwt = false
+# Admin account creation disabled after initial setup for security
+# [functions.create-admin-account]
+# verify_jwt = false

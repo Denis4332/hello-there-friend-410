@@ -801,6 +801,8 @@ export type Database = {
             Returns: string
           }
       check_contact_rate_limit: { Args: { _email: string }; Returns: boolean }
+      check_error_rate_limit: { Args: { _url: string }; Returns: boolean }
+      cleanup_old_error_logs: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {

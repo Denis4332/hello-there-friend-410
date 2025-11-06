@@ -13,11 +13,18 @@ export const useCreateReport = () => {
       reason: string;
       message: string;
     }) => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('Sie müssen angemeldet sein, um eine Meldung zu erstellen');
+      }
+
       const { data, error } = await supabase
         .from('reports')
         .insert({
           profile_id: profileId,
-          reporter_user_id: null, // Anonymous reports allowed
+          reporter_user_id: user.id,
           reason,
           message,
           status: 'open',
@@ -33,7 +40,10 @@ export const useCreateReport = () => {
     },
     onError: (error) => {
       console.error('Report error:', error);
-      toast.error('Fehler beim Absenden der Meldung');
+      const errorMessage = error.message === 'Sie müssen angemeldet sein, um eine Meldung zu erstellen'
+        ? error.message
+        : 'Fehler beim Absenden der Meldung';
+      toast.error(errorMessage);
     },
   });
 };
