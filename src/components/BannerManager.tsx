@@ -47,16 +47,11 @@ export const BannerManager = () => {
       return; // Keine Demo-Popup wenn echte Ads verfügbar
     }
 
-    // Fall 2: Keine echten Ads → Demo-Popup
-    // sessionStorage statt localStorage = nur einmal pro Session
-    const demoShown = sessionStorage.getItem('demo_popup_shown');
-    
-    if (!demoShown) {
-      const timer = setTimeout(() => {
-        setShowDemoPopup(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
+    // Fall 2: Keine echten Ads → Demo-Popup (bei jeder Navigation)
+    const timer = setTimeout(() => {
+      setShowDemoPopup(true);
+    }, 5000);
+    return () => clearTimeout(timer);
   }, [popupAds, adRotationTrigger]);
 
   const shouldShowAd = (ad: Advertisement, lastShown: string | null): boolean => {
