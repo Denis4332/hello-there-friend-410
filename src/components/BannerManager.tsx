@@ -6,6 +6,8 @@ import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
 
 const STORAGE_KEY_PREFIX = 'banner_shown_';
+const DEMO_POPUP_KEY = 'demo_popup_last_shown';
+const MIN_INTERVAL = 30 * 60 * 1000; // 30 Minuten in Millisekunden
 
 export const BannerManager = () => {
   const { data: popupAds } = useAdvertisements('popup');
@@ -47,11 +49,17 @@ export const BannerManager = () => {
       return; // Keine Demo-Popup wenn echte Ads verfügbar
     }
 
-    // Fall 2: Keine echten Ads → Demo-Popup (bei jeder Navigation)
-    const timer = setTimeout(() => {
-      setShowDemoPopup(true);
-    }, 5000);
-    return () => clearTimeout(timer);
+    // Fall 2: Keine echten Ads → Demo-Popup (mit 30 Min Mindestabstand)
+    const lastShown = localStorage.getItem(DEMO_POPUP_KEY);
+    const shouldShow = !lastShown || 
+      (new Date().getTime() - new Date(lastShown).getTime()) > MIN_INTERVAL;
+
+    if (shouldShow) {
+      const timer = setTimeout(() => {
+        setShowDemoPopup(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
   }, [popupAds, adRotationTrigger]);
 
   const shouldShowAd = (ad: Advertisement, lastShown: string | null): boolean => {
