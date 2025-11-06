@@ -48,11 +48,11 @@ export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
           </p>
           
           <div className="flex gap-3 justify-center pt-4">
-            <Button asChild size="lg">
-              <Link to="/bannerpreise">
+            <Link to="/bannerpreise">
+              <Button size="lg" onClick={handleClose}>
                 Banner buchen (ab CHF 50/Tag)
-              </Link>
-            </Button>
+              </Button>
+            </Link>
             <Button variant="outline" onClick={handleClose}>
               Später
             </Button>

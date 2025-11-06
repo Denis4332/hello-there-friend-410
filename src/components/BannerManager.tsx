@@ -7,6 +7,7 @@ import { Advertisement } from '@/types/advertisement';
 
 const STORAGE_KEY_PREFIX = 'banner_shown_';
 const DEMO_POPUP_KEY = 'demo_popup_last_shown';
+const SESSION_KEY = 'demo_popup_shown_this_session';
 const MIN_INTERVAL = 30 * 60 * 1000; // 30 Minuten in Millisekunden
 
 export const BannerManager = () => {
@@ -23,6 +24,11 @@ export const BannerManager = () => {
   }, [location.pathname]);
 
   useEffect(() => {
+    // WICHTIG: Kein Pop-up auf Banner-Preis-Seite anzeigen
+    if (location.pathname === '/bannerpreise') {
+      return;
+    }
+
     // Warte bis Query fertig geladen ist
     if (popupAds === undefined) return;
 
@@ -49,14 +55,19 @@ export const BannerManager = () => {
       return; // Keine Demo-Popup wenn echte Ads verfügbar
     }
 
-    // Fall 2: Keine echten Ads → Demo-Popup (mit 30 Min Mindestabstand)
+    // Fall 2: Keine echten Ads → Demo-Popup (Session + Zeit-Check)
+    const isNewSession = !sessionStorage.getItem(SESSION_KEY);
     const lastShown = localStorage.getItem(DEMO_POPUP_KEY);
-    const shouldShow = !lastShown || 
-      (new Date().getTime() - new Date(lastShown).getTime()) > MIN_INTERVAL;
+
+    // REGEL 1: Neue Session → sofort zeigen
+    // REGEL 2: Gleiche Session → nur nach 30 Min
+    const shouldShow = isNewSession || 
+      (!lastShown || (new Date().getTime() - new Date(lastShown).getTime()) > MIN_INTERVAL);
 
     if (shouldShow) {
       const timer = setTimeout(() => {
         setShowDemoPopup(true);
+        sessionStorage.setItem(SESSION_KEY, 'true'); // Session markieren
       }, 5000);
       return () => clearTimeout(timer);
     }
