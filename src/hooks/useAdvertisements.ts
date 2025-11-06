@@ -26,11 +26,12 @@ export const useAdvertisements = (position?: Advertisement['position']) => {
 export const useTrackImpression = () => {
   return useMutation({
     mutationFn: async (adId: string) => {
-      // Track via edge function
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
           ad_id: adId,
@@ -45,11 +46,12 @@ export const useTrackImpression = () => {
 export const useTrackClick = () => {
   return useMutation({
     mutationFn: async (adId: string) => {
-      // Track via edge function
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
           ad_id: adId,
