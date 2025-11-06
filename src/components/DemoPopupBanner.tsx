@@ -14,13 +14,18 @@ export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
     onClose();
   };
 
+  const handleNeverShow = () => {
+    localStorage.setItem('demo_popup_never_show', 'true');
+    onClose();
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
       onClick={handleClose}
     >
       <Card 
-        className="relative w-[90vw] md:w-[500px] max-w-md border-dashed border-2 border-primary/50 bg-background"
+        className="relative w-[90vw] md:w-[500px] max-w-md border-dashed border-2 border-primary/50 bg-background animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <Button
@@ -47,14 +52,24 @@ export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
             Perfekt für wichtige Ankündigungen und maximale Reichweite!
           </p>
           
-          <div className="flex gap-3 justify-center pt-4">
-            <Link to="/bannerpreise">
-              <Button size="lg" onClick={handleClose}>
-                Banner buchen (ab CHF 50/Tag)
+          <div className="flex flex-col gap-3 pt-4">
+            <div className="flex gap-3 justify-center">
+              <Link to="/bannerpreise">
+                <Button size="lg" onClick={handleClose}>
+                  Banner buchen (ab CHF 50/Tag)
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={handleClose}>
+                Später
               </Button>
-            </Link>
-            <Button variant="outline" onClick={handleClose}>
-              Später
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleNeverShow}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Nicht mehr anzeigen
             </Button>
           </div>
         </CardContent>
