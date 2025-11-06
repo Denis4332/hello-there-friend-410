@@ -29,19 +29,40 @@ const profileSchema = z.object({
   postal_code: z.string().optional(),
   street_address: z.string().optional(),
   show_street: z.boolean().default(false),
-  about_me: z.string().max(500, 'Maximale Länge: 500 Zeichen').optional(),
+  about_me: z.string()
+    .max(500, 'Maximale Länge: 500 Zeichen')
+    .refine((val) => !val || !/<script|javascript:|onerror=/i.test(val), {
+      message: 'Ungültige Zeichen im Text'
+    })
+    .optional(),
   languages: z.array(z.string()).min(1, 'Mindestens eine Sprache erforderlich'),
   category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich'),
   // GPS coordinates (automatically geocoded from PLZ)
   lat: z.number().optional(),
   lng: z.number().optional(),
-  // Contact fields (all optional)
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
+  // Contact fields with enhanced validation
+  phone: z.string()
+    .regex(/^[\d\s\+\-\(\)]+$/, 'Ungültige Telefonnummer (nur Zahlen, Leerzeichen, +, -, ( ) erlaubt)')
+    .min(7, 'Telefonnummer zu kurz (mindestens 7 Zeichen)')
+    .max(20, 'Telefonnummer zu lang (maximal 20 Zeichen)')
+    .optional()
+    .or(z.literal("")),
+  whatsapp: z.string()
+    .regex(/^[\d\s\+\-\(\)]+$/, 'Ungültige WhatsApp-Nummer (nur Zahlen, Leerzeichen, +, -, ( ) erlaubt)')
+    .min(7, 'Nummer zu kurz (mindestens 7 Zeichen)')
+    .max(20, 'Nummer zu lang (maximal 20 Zeichen)')
+    .optional()
+    .or(z.literal("")),
   email: z.string().email('Ungültige E-Mail-Adresse').optional().or(z.literal("")),
   website: z.string().url('Ungültige URL').optional().or(z.literal("")),
-  telegram: z.string().optional(),
-  instagram: z.string().optional(),
+  telegram: z.string()
+    .regex(/^[a-zA-Z0-9_]{5,32}$/, 'Ungültiger Telegram-Username (5-32 Zeichen, nur Buchstaben, Zahlen und _)')
+    .optional()
+    .or(z.literal("")),
+  instagram: z.string()
+    .regex(/^[a-zA-Z0-9._]{1,30}$/, 'Ungültiger Instagram-Username (max 30 Zeichen, nur Buchstaben, Zahlen, . und _)')
+    .optional()
+    .or(z.literal("")),
 });
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
