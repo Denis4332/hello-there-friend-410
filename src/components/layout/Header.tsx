@@ -49,6 +49,9 @@ export const Header = () => {
             <Link to="/kategorien" className="hover:underline">
               {navCategories || 'Kategorien'}
             </Link>
+            <Link to="/preise" className="hover:underline">
+              Preise & Pakete
+            </Link>
             <Link to="/bannerpreise" className="hover:underline">
               {navBanners || 'Werbung'}
             </Link>
@@ -148,6 +151,9 @@ export const Header = () => {
                   </Link>
                   <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
                     {navCategories || 'Kategorien'}
+                  </Link>
+                  <Link to="/preise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                    Preise & Pakete
                   </Link>
                   <Link to="/bannerpreise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
                     {navBanners || 'Werbung'}

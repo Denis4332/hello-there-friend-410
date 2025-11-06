@@ -29,6 +29,7 @@ export const useSiteSettings = (category?: string) => {
       if (error) throw error;
       return data as SiteSetting[];
     },
+    refetchOnMount: 'always',
   });
 };
 
@@ -45,7 +46,8 @@ export const useSiteSetting = (key: string) => {
       if (error) throw error;
       return data?.value || '';
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
