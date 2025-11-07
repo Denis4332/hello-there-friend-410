@@ -12,6 +12,9 @@ verify_jwt = true
 [functions.track-ad-event]
 verify_jwt = true
 
+[functions.check-subscription-expiry]
+verify_jwt = false
+
 # Admin account creation disabled after initial setup for security
 # [functions.create-admin-account]
 # verify_jwt = false

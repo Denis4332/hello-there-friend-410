@@ -55,11 +55,46 @@ const ProfileUpgrade = () => {
   };
 
   const handleUpgrade = async (listingType: 'basic' | 'premium' | 'top') => {
-    // TODO: Stripe Integration - Aktuell nur Anzeige
-    toast({
-      title: 'Upgrade',
-      description: `Upgrade zu ${listingType} - Diese Funktion wird nach der Beta-Phase verfügbar sein.`,
-    });
+    if (!profile) return;
+    
+    try {
+      const updates: any = { listing_type: listingType };
+      
+      // Ablaufdatum setzen (heute + 30 Tage)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      
+      if (listingType === 'premium') {
+        updates.premium_until = expiryDate.toISOString();
+        updates.top_ad_until = null;
+      } else if (listingType === 'top') {
+        updates.top_ad_until = expiryDate.toISOString();
+        updates.premium_until = null;
+      } else {
+        updates.premium_until = null;
+        updates.top_ad_until = null;
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Upgrade erfolgreich!',
+        description: `Dein Profil wurde auf ${listingType.toUpperCase()} upgradet und ist 30 Tage gültig.`,
+      });
+      
+      await loadProfile();
+    } catch (error: any) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const getCurrentBadge = () => {

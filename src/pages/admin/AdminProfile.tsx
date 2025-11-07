@@ -16,6 +16,8 @@ const AdminProfile = () => {
   const [dialogStatus, setDialogStatus] = useState('');
   const [dialogVerified, setDialogVerified] = useState(false);
   const [dialogNote, setDialogNote] = useState('');
+  const [dialogListingType, setDialogListingType] = useState('');
+  const [dialogExpiryDate, setDialogExpiryDate] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -68,16 +70,34 @@ const AdminProfile = () => {
       status: string; 
       verified: boolean;
       note?: string;
+      listingType: string;
+      expiryDate?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Update profile status and verification
+      // Build update object
+      const updates: any = {
+        status: data.status,
+        verified_at: data.verified ? new Date().toISOString() : null,
+        listing_type: data.listingType
+      };
+      
+      // Handle expiry dates based on listing type
+      if (data.listingType === 'premium' && data.expiryDate) {
+        updates.premium_until = new Date(data.expiryDate).toISOString();
+        updates.top_ad_until = null;
+      } else if (data.listingType === 'top' && data.expiryDate) {
+        updates.top_ad_until = new Date(data.expiryDate).toISOString();
+        updates.premium_until = null;
+      } else if (data.listingType === 'basic' || data.listingType === 'free') {
+        updates.premium_until = null;
+        updates.top_ad_until = null;
+      }
+      
+      // Update profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
-          status: data.status,
-          verified_at: data.verified ? new Date().toISOString() : null
-        })
+        .update(updates)
         .eq('id', data.profileId);
       
       if (profileError) throw profileError;
@@ -120,6 +140,16 @@ const AdminProfile = () => {
     setDialogStatus(profile.status);
     setDialogVerified(!!profile.verified_at);
     setDialogNote('');
+    setDialogListingType(profile.listing_type || 'free');
+    
+    // Set expiry date if exists
+    const expiryDate = profile.listing_type === 'premium' 
+      ? profile.premium_until 
+      : profile.listing_type === 'top' 
+        ? profile.top_ad_until 
+        : null;
+    
+    setDialogExpiryDate(expiryDate ? new Date(expiryDate).toISOString().split('T')[0] : '');
   };
 
   const handleSaveProfile = () => {
@@ -129,7 +159,9 @@ const AdminProfile = () => {
       profileId: selectedProfile.id,
       status: dialogStatus,
       verified: dialogVerified,
-      note: dialogNote
+      note: dialogNote,
+      listingType: dialogListingType,
+      expiryDate: dialogExpiryDate
     });
   };
 
@@ -336,6 +368,41 @@ const AdminProfile = () => {
                                     onChange={(e) => setDialogVerified(e.target.checked)}
                                   />
                                   <label htmlFor="verified" className="text-sm">Verifiziert</label>
+                                </div>
+                                
+                                <div className="border-t pt-4 mt-4">
+                                  <h3 className="font-semibold mb-3 text-sm">💎 Inserat-Paket verwalten</h3>
+                                  
+                                  <div className="space-y-3">
+                                    <div>
+                                      <label className="block text-sm font-medium mb-1">Inserat-Typ</label>
+                                      <select 
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                        value={dialogListingType}
+                                        onChange={(e) => setDialogListingType(e.target.value)}
+                                      >
+                                        <option value="free">Free (Standard)</option>
+                                        <option value="basic">Basic (CHF 49)</option>
+                                        <option value="premium">Premium (CHF 99)</option>
+                                        <option value="top">TOP AD (CHF 199)</option>
+                                      </select>
+                                    </div>
+
+                                    {(dialogListingType === 'premium' || dialogListingType === 'top') && (
+                                      <div>
+                                        <label className="block text-sm font-medium mb-1">Gültig bis</label>
+                                        <input 
+                                          type="date"
+                                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                          value={dialogExpiryDate}
+                                          onChange={(e) => setDialogExpiryDate(e.target.value)}
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          Leer lassen für unbegrenzt gültig
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                                 
                                 <div>
