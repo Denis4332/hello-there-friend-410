@@ -360,7 +360,7 @@ const Index = () => {
                     <ProfileCard key={profile.id} profile={profile} />
                     {(index + 1) % 8 === 0 && (
                       <div className="col-span-2 lg:col-span-3">
-                        <AdvertisementCTA position="grid" />
+                        <BannerDisplay position="grid" className="w-full" />
                       </div>
                     )}
                   </>
