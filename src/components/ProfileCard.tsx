@@ -71,9 +71,8 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
             </div>
           )}
           {profile.verified_at && (
-            <div className="flex items-center gap-1.5 bg-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl">
+            <div className="flex items-center justify-center bg-blue-500 text-white p-1.5 rounded-full shadow-xl">
               <CheckCircle2 className="h-4 w-4" />
-              VERIFIZIERT
             </div>
           )}
         </div>
