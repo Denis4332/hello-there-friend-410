@@ -23,7 +23,7 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
     <Link 
       to={`/profil/${profile.slug}`} 
       className={cn(
-        "block group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl bg-card",
+        "relative block group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl bg-card",
         isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03]",
         isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02]",
         isBasic && "border-2 border-blue-400/50 hover:scale-[1.01]",
