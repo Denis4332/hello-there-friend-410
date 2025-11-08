@@ -29,17 +29,17 @@ export const Header = () => {
   const { data: logoText } = useSiteSetting('design_logo_text');
 
   return (
-    <header className="bg-primary text-primary-foreground">
+    <header className="bg-primary text-primary-foreground" role="banner">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2" aria-label="Zur Startseite">
             {logoUrl ? (
               <img src={logoUrl} alt={logoText || 'Logo'} className="h-8 object-contain" />
             ) : (
               <span className="text-xl font-bold">{logoText || 'ESCORIA'}</span>
             )}
           </Link>
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-6" aria-label="Hauptnavigation">
             <Link to="/" className="hover:underline">
               {navHome || 'Start'}
             </Link>
@@ -61,30 +61,32 @@ export const Header = () => {
 
             {/* Quick Actions */}
             <Link to="/profil/erstellen">
-              <Button variant="secondary" size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
+              <Button variant="secondary" size="sm" className="gap-2" aria-label="Inserat aufgeben">
+                <Plus className="h-4 w-4" aria-hidden="true" />
                 <span className="hidden lg:inline">Inserat aufgeben</span>
               </Button>
             </Link>
             
             <Link to="/suche">
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
-                <Search className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Suche öffnen">
+                <Search className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">Suche</span>
               </Button>
             </Link>
 
             {!user && (
               <Link to="/auth">
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
-                  <User className="h-4 w-4" />
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Anmelden">
+                  <User className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only">Anmelden</span>
                 </Button>
               </Link>
             )}
             {user && role === 'user' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
-                    <User className="h-4 w-4 mr-2" />
+                  <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Mein Account Menü öffnen">
+                    <User className="h-4 w-4 mr-2" aria-hidden="true" />
                     {navMyAccount || 'Mein Account'}
                   </Button>
                 </DropdownMenuTrigger>
@@ -101,8 +103,8 @@ export const Header = () => {
             {user && role === 'admin' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
-                    <User className="h-4 w-4 mr-2" />
+                  <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Admin Menü öffnen">
+                    <User className="h-4 w-4 mr-2" aria-hidden="true" />
                     Admin
                   </Button>
                 </DropdownMenuTrigger>
@@ -121,27 +123,30 @@ export const Header = () => {
           {/* Mobile CTA Icons */}
           <div className="flex md:hidden items-center gap-2">
             <Link to="/profil/erstellen">
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
-                <Plus className="h-5 w-5" />
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Inserat aufgeben">
+                <Plus className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">Inserat aufgeben</span>
               </Button>
             </Link>
             
             {!user && (
               <Link to="/auth">
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Anmelden">
+                  <User className="h-5 w-5" aria-hidden="true" />
+                  <span className="sr-only">Anmelden</span>
                 </Button>
               </Link>
             )}
             
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80">
-                  <Menu className="h-6 w-6" />
+                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Menü öffnen">
+                  <Menu className="h-6 w-6" aria-hidden="true" />
+                  <span className="sr-only">Menü</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] bg-background overflow-y-auto">
-                <nav className="flex flex-col gap-4 mt-8">
+              <SheetContent side="right" className="w-[300px] bg-background overflow-y-auto" aria-label="Mobile Navigation">
+                <nav className="flex flex-col gap-4 mt-8" aria-label="Mobile Menü">
                   {/* Primary Navigation */}
                   <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
                     {navHome || 'Start'}

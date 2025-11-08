@@ -88,6 +88,7 @@ export const HeroSection = ({
   return (
     <section 
       className="relative py-16"
+      aria-label="Hero-Bereich mit Suchfunktion"
       style={{
         backgroundImage: heroImageUrl ? `url(${heroImageUrl})` : undefined,
         backgroundSize: 'cover',
@@ -111,9 +112,9 @@ export const HeroSection = ({
           </p>
         )}
         
-        <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6">
+        <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6" role="search" aria-label="Hauptsuche">
           <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
-            <h2 className="text-lg font-semibold">Suche</h2>
+            <h2 className="text-lg font-semibold" id="hero-search-heading">Suche</h2>
             {activeFiltersCount > 0 && (
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
@@ -139,8 +140,9 @@ export const HeroSection = ({
             onClick={handleDetectLocation}
             disabled={isDetectingLocation}
             className="w-full mb-6 gap-2 text-lg h-14"
+            aria-label="Standort automatisch erkennen"
           >
-            <MapPin className="h-5 w-5" />
+            <MapPin className="h-5 w-5" aria-hidden="true" />
             {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
           </Button>
           
@@ -148,7 +150,7 @@ export const HeroSection = ({
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium">
+                  <label htmlFor="hero-radius-slider" className="text-sm font-medium">
                     Umkreis: {radius} km
                   </label>
                   <Button
@@ -161,12 +163,14 @@ export const HeroSection = ({
                   </Button>
                 </div>
                 <Slider
+                  id="hero-radius-slider"
                   value={[radius]}
                   onValueChange={([value]) => setRadius(value)}
                   min={5}
                   max={100}
                   step={5}
                   className="mt-2"
+                  aria-label={`Suchradius einstellen, aktuell ${radius} Kilometer`}
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-2">
                   <span>5 km</span>
@@ -191,6 +195,7 @@ export const HeroSection = ({
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 className="h-12"
+                aria-label="Suchbegriff eingeben"
               />
             </div>
           ) : (
@@ -224,9 +229,10 @@ export const HeroSection = ({
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   className="flex-1 h-12"
+                  aria-label="Suchbegriff eingeben"
                 />
-                <Button type="submit" className="h-12 px-8">
-                  <Search className="h-4 w-4 mr-2" />
+                <Button type="submit" className="h-12 px-8" aria-label="Suche starten">
+                  <Search className="h-4 w-4 mr-2" aria-hidden="true" />
                   {searchButtonText || "Suchen"}
                 </Button>
               </div>

@@ -37,13 +37,21 @@ export const FilterPopover = ({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-between h-12">
-          {trigger.icon}
-          {selectedItem ? selectedItem.label : trigger.label}
-          <ChevronDown className="h-4 w-4" />
+        <Button 
+          variant="outline" 
+          className="w-full justify-between h-12"
+          aria-label={selectedItem ? `Ausgewählt: ${selectedItem.label}` : trigger.label}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <span className="flex items-center gap-2" aria-hidden="true">
+            {trigger.icon}
+            {selectedItem ? selectedItem.label : trigger.label}
+          </span>
+          <ChevronDown className="h-4 w-4" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align={align}>
+      <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align={align} role="listbox">
         <div className={layout === 'grid' ? 'grid grid-cols-3 gap-1.5' : 'space-y-1'}>
           <Button
             type="button"
@@ -58,19 +66,21 @@ export const FilterPopover = ({
             {allLabel}
           </Button>
           {items.map((item) => (
-            <Button
-              key={item.id}
-              type="button"
-              variant={selected === item.id ? "default" : "ghost"}
-              onClick={() => {
-                onSelect(item.id);
-                onOpenChange(false);
-              }}
-              size={layout === 'grid' ? 'sm' : 'default'}
-              className={layout === 'grid' ? 'h-9' : 'w-full justify-start'}
-            >
-              {item.label}
-            </Button>
+          <Button
+            key={item.id}
+            type="button"
+            variant={selected === item.id ? "default" : "ghost"}
+            onClick={() => {
+              onSelect(item.id);
+              onOpenChange(false);
+            }}
+            size={layout === 'grid' ? 'sm' : 'default'}
+            className={layout === 'grid' ? 'h-9' : 'w-full justify-start'}
+            role="option"
+            aria-selected={selected === item.id}
+          >
+            {item.label}
+          </Button>
           ))}
         </div>
       </PopoverContent>

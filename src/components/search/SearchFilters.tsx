@@ -65,9 +65,9 @@ export const SearchFilters = ({
   setCategoryGpsOpen,
 }: SearchFiltersProps) => {
   return (
-    <form onSubmit={onSubmit} className="bg-card border rounded-lg p-6 mb-6">
+    <form onSubmit={onSubmit} className="bg-card border rounded-lg p-6 mb-6" role="search" aria-label="Suchfilter">
       <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
-        <h2 className="text-lg font-semibold">Filter</h2>
+        <h2 className="text-lg font-semibold" id="filter-heading">Filter</h2>
         {activeFiltersCount > 0 && (
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
@@ -79,8 +79,9 @@ export const SearchFilters = ({
               size="sm"
               onClick={onResetFilters}
               className="h-8"
+              aria-label="Alle Filter zurücksetzen"
             >
-              <X className="h-4 w-4 mr-1" />
+              <X className="h-4 w-4 mr-1" aria-hidden="true" />
               Zurücksetzen
             </Button>
           </div>
@@ -93,8 +94,9 @@ export const SearchFilters = ({
         onClick={onDetectLocation}
         disabled={isDetectingLocation}
         className="w-full mb-6 gap-2 text-lg h-14"
+        aria-label="Standort automatisch erkennen"
       >
-        <MapPin className="h-5 w-5" />
+        <MapPin className="h-5 w-5" aria-hidden="true" />
         {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
       </Button>
       
@@ -102,7 +104,7 @@ export const SearchFilters = ({
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium">
+              <label htmlFor="radius-slider" className="text-sm font-medium">
                 Umkreis: {radius} km
               </label>
               <div className="flex gap-2">
@@ -113,8 +115,9 @@ export const SearchFilters = ({
                   onClick={onDetectLocation}
                   disabled={isDetectingLocation}
                   className="h-8"
+                  aria-label="Standort neu erkennen"
                 >
-                  <RefreshCw className={`h-3 w-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3 w-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} aria-hidden="true" />
                   Neu erkennen
                 </Button>
                 <Button
@@ -123,6 +126,7 @@ export const SearchFilters = ({
                   size="sm"
                   onClick={onResetGPS}
                   className="h-8"
+                  aria-label="Zurück zur Ortsauswahl"
                 >
                   Ortsauswahl
                 </Button>
@@ -142,12 +146,14 @@ export const SearchFilters = ({
             )}
 
             <Slider
+              id="radius-slider"
               value={[radius]}
               onValueChange={([value]) => onRadiusChange(value)}
               min={5}
               max={100}
               step={5}
               className="mt-2"
+              aria-label={`Suchradius einstellen, aktuell ${radius} Kilometer`}
             />
             <div className="flex justify-between text-xs text-muted-foreground mt-2">
               <span>5 km</span>
@@ -172,6 +178,7 @@ export const SearchFilters = ({
             value={keyword}
             onChange={(e) => onKeywordChange(e.target.value)}
             className="h-12"
+            aria-label="Suchbegriff eingeben"
           />
         </div>
       ) : (
@@ -205,9 +212,10 @@ export const SearchFilters = ({
               value={keyword}
               onChange={(e) => onKeywordChange(e.target.value)}
               className="flex-1 h-12"
+              aria-label="Suchbegriff eingeben"
             />
-            <Button type="submit" className="h-12 px-8">
-              <Search className="h-4 w-4 mr-2" />
+            <Button type="submit" className="h-12 px-8" aria-label="Suche starten">
+              <Search className="h-4 w-4 mr-2" aria-hidden="true" />
               {searchButtonText || 'Suchen'}
             </Button>
           </div>
