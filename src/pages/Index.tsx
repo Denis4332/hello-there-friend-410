@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
+import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -352,7 +353,11 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6">{featuredProfilesTitle || 'Aktuelle Profile'}</h2>
             {loadingProfiles ? (
-              <p className="text-muted-foreground">{loadingProfilesText || 'Lade Profile...'}</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ProfileCardSkeleton key={i} />
+                ))}
+              </div>
             ) : featuredProfiles.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {featuredProfiles.map((profile, index) => (

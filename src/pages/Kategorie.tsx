@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ProfileCard } from '@/components/ProfileCard';
+import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCategoryProfiles } from '@/hooks/useProfiles';
@@ -62,7 +63,11 @@ const Kategorie = () => {
           <AdvertisementCTA position="grid" className="mb-8" />
 
           {loadingProfiles ? (
-            <p className="text-center text-muted-foreground py-12">Lade Profile...</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProfileCardSkeleton key={i} />
+              ))}
+            </div>
           ) : paginatedProfiles.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 gap-4">

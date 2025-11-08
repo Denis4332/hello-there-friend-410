@@ -15,6 +15,7 @@ import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { SEO } from '@/components/SEO';
 import { ContactSection } from '@/components/profile/ContactSection';
+import { ProfileDetailSkeleton } from '@/components/ProfileDetailSkeleton';
 
 const Profil = () => {
   const { slug } = useParams();
@@ -63,8 +64,10 @@ const Profil = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Lade Profil...</p>
+        <main className="flex-1 py-8">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <ProfileDetailSkeleton />
+          </div>
         </main>
         <Footer />
       </div>
