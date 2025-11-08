@@ -72,7 +72,7 @@ export const VerificationUploader = ({ profileId, onComplete, onSkip }: Verifica
 
       setUploaded(true);
       toast({ title: 'Erfolgreich hochgeladen', description: 'Dein Verifizierungsfoto wurde eingereicht.' });
-    } catch (error: any) {
+    } catch (error) {
       toast({ title: 'Fehler beim Upload', description: error.message, variant: 'destructive' });
     } finally {
       setUploading(false);

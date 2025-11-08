@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
-import { useCantons } from '@/hooks/useCantons';
+import { useCantons, Canton } from '@/hooks/useCantons';
 import { Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 
 export const Footer = () => {
@@ -36,7 +36,7 @@ export const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">Beliebte Kantone</h3>
             <ul className="space-y-2">
-              {topCantons.map((canton: any) => (
+              {topCantons.map((canton: Canton) => (
                 <li key={canton.id}>
                   <Link 
                     to={`/suche?canton=${canton.abbreviation}`}

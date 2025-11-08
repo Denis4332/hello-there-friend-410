@@ -59,10 +59,10 @@ const ProfileEdit = () => {
 
       if (photosError) throw photosError;
       setPhotos(photosData || []);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler beim Laden',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
     } finally {
@@ -121,10 +121,10 @@ const ProfileEdit = () => {
       });
 
       navigate('/mein-profil');
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
     } finally {
@@ -150,10 +150,10 @@ const ProfileEdit = () => {
       });
 
       loadData();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
     }
@@ -181,10 +181,10 @@ const ProfileEdit = () => {
       });
 
       loadData();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
     }
@@ -221,7 +221,7 @@ const ProfileEdit = () => {
     show_street: profile.show_street ?? false,
     about_me: profile.about_me || '',
     languages: profile.languages || [],
-    category_ids: profile.profile_categories?.map((pc: any) => pc.category_id) || [],
+    category_ids: profile.profile_categories?.map((pc) => pc.category_id) || [],
     phone: profile.phone || '',
     whatsapp: profile.whatsapp || '',
     email: profile.email || '',

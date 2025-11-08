@@ -192,13 +192,13 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
       
       if (result.error) throw result.error;
       
-      let profiles = result.data?.map((p: any) => ({
+      let profiles = result.data?.map((p) => ({
         ...p.profiles,
         profile_categories: [{ category_id: categoryId }]
       })) || [];
       
       if (adminUserIds.length > 0) {
-        profiles = profiles.filter((p: any) => !adminUserIds.includes(p.user_id));
+        profiles = profiles.filter((p) => !adminUserIds.includes(p.user_id));
       }
       
       return profiles as ProfileWithRelations[];
@@ -305,12 +305,12 @@ export const useProfilesByRadius = (
       
       let filteredData = data || [];
       if (adminUserIds.length > 0) {
-        filteredData = filteredData.filter((p: any) => !adminUserIds.includes(p.user_id));
+        filteredData = filteredData.filter((p) => !adminUserIds.includes(p.user_id));
       }
       
       // Fetch photos and categories for each profile
       const profilesWithRelations = await Promise.all(
-        filteredData.map(async (profile: any) => {
+        filteredData.map(async (profile) => {
           const [photosResult, categoriesResult] = await Promise.all([
             supabase
               .from('photos')

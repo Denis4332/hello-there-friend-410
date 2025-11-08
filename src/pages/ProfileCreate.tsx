@@ -41,10 +41,10 @@ const ProfileCreate = () => {
 
       if (cantonsRes.data) setCantons(cantonsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler beim Laden',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
     }
@@ -104,10 +104,10 @@ const ProfileCreate = () => {
         title: 'Profil erstellt',
         description: 'Wähle nun deinen Inserat-Typ',
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
     } finally {
@@ -138,10 +138,10 @@ const ProfileCreate = () => {
         title: `${typeNames[listingType]} Inserat gewählt`,
         description: 'Lade nun deine Fotos hoch',
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
     }

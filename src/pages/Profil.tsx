@@ -34,13 +34,13 @@ const Profil = () => {
   
   // Get all photos
   const photos = profile?.photos || [];
-  const photoUrls = photos.map((p: any) => 
+  const photoUrls = photos.map((p) => 
     supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl
   );
   
   // Get category names
   const categoryNames = profile?.profile_categories
-    ?.map((pc: any) => {
+    ?.map((pc) => {
       const cat = allCategories.find((c) => c.id === pc.category_id);
       return cat?.name;
     })

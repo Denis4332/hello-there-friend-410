@@ -36,6 +36,8 @@ export default function AdminAdvertisements() {
     popup_delay_seconds: 5,
     popup_frequency: 'once_per_session' as Advertisement['popup_frequency'],
     price_per_day: 0,
+    stripe_payment_id: null as string | null,
+    payment_required: false,
   });
 
   const resetForm = () => {
@@ -51,6 +53,8 @@ export default function AdminAdvertisements() {
       popup_delay_seconds: 5,
       popup_frequency: 'once_per_session',
       price_per_day: 0,
+      stripe_payment_id: null,
+      payment_required: false,
     });
     setEditingAd(null);
   };
@@ -87,6 +91,8 @@ export default function AdminAdvertisements() {
       popup_delay_seconds: ad.popup_delay_seconds,
       popup_frequency: ad.popup_frequency,
       price_per_day: ad.price_per_day || 0,
+      stripe_payment_id: ad.stripe_payment_id,
+      payment_required: ad.payment_required,
     });
     setIsDialogOpen(true);
   };

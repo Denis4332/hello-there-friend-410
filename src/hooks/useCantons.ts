@@ -5,6 +5,7 @@ export interface Canton {
   id: string;
   name: string;
   abbreviation: string;
+  slug?: string;
 }
 
 export const useCantons = () => {

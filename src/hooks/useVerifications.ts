@@ -52,7 +52,7 @@ export const useVerifications = () => {
       queryClient.invalidateQueries({ queryKey: ['verifications'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
     }
   });
@@ -78,7 +78,7 @@ export const useVerifications = () => {
       queryClient.invalidateQueries({ queryKey: ['verifications'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
     }
   });

@@ -81,7 +81,7 @@ export const useAllAdvertisements = () => {
 export const useCreateAdvertisement = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (ad: any) => {
+    mutationFn: async (ad: Omit<Advertisement, 'id' | 'clicks' | 'impressions' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('advertisements')
         .insert([ad])

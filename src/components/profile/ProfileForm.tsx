@@ -160,7 +160,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
             : `${location.city} (Kanton bitte manuell wählen)`,
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: 'Fehler',
         description: error.message || 'Standort konnte nicht ermittelt werden',

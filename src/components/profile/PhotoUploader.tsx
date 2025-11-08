@@ -121,7 +121,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
       });
 
       onUploadComplete?.();
-    } catch (error: any) {
+    } catch (error) {
       // Bei Fehler lokale Previews entfernen
       setPreviews(prev => prev.slice(0, prev.length - files.length));
       
