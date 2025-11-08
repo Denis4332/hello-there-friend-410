@@ -2,11 +2,12 @@ import { Helmet } from 'react-helmet-async';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 export const Tracking = () => {
-  const { data: gaId } = useSiteSetting('analytics_google_id');
-  const { data: gtmId } = useSiteSetting('analytics_gtm_id');
-  const { data: fbPixel } = useSiteSetting('tracking_facebook_pixel');
-  const { data: googleVerify } = useSiteSetting('tracking_google_verify');
-  const { data: bingVerify } = useSiteSetting('tracking_bing_verify');
+  const { data: gaId } = useSiteSetting('google_analytics_id');
+  const { data: gtmId } = useSiteSetting('google_tag_manager_id');
+  const { data: fbPixel } = useSiteSetting('facebook_pixel_id');
+  const { data: googleVerify } = useSiteSetting('google_site_verification');
+  const { data: bingVerify } = useSiteSetting('bing_site_verification');
+  const { data: yandexVerify } = useSiteSetting('yandex_verification');
 
   return (
     <Helmet>
@@ -66,6 +67,11 @@ export const Tracking = () => {
       {/* Bing Webmaster Verification */}
       {bingVerify && (
         <meta name="msvalidate.01" content={bingVerify} />
+      )}
+
+      {/* Yandex Webmaster Verification */}
+      {yandexVerify && (
+        <meta name="yandex-verification" content={yandexVerify} />
       )}
     </Helmet>
   );

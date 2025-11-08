@@ -3,6 +3,7 @@ import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { SchemaOrg } from './seo/SchemaOrg';
 import { Tracking } from './seo/Tracking';
 import { SocialMeta } from './seo/SocialMeta';
+import { HreflangTags } from './seo/HreflangTags';
 
 interface SEOProps {
   title: string;
@@ -79,6 +80,9 @@ export const SEO = ({
       
       {/* Schema.org Structured Data */}
       <SchemaOrg type={schemaType} />
+      
+      {/* Hreflang Tags */}
+      <HreflangTags currentUrl={currentUrl} />
     </>
   );
 };
