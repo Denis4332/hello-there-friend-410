@@ -25,6 +25,11 @@ export default function AdminSettings() {
   const { data: contactSettings, isLoading: contactLoading } = useSiteSettings('contact');
   const { data: configSettings, isLoading: configLoading } = useSiteSettings('config');
   const { data: advancedSettings, isLoading: advancedLoading } = useSiteSettings('advanced');
+  const { data: trackingSettings, isLoading: trackingLoading } = useSiteSettings('tracking');
+  const { data: schemaSettings, isLoading: schemaLoading } = useSiteSettings('schema');
+  const { data: indexingSettings, isLoading: indexingLoading } = useSiteSettings('indexing');
+  const { data: socialSettings, isLoading: socialLoading } = useSiteSettings('social');
+  const { data: advancedSeoSettings, isLoading: advancedSeoLoading } = useSiteSettings('advanced_seo');
   const updateMutation = useUpdateSiteSetting();
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
@@ -89,6 +94,49 @@ export default function AdminSettings() {
     const currentValue = editedValues[setting.key] ?? setting.value;
     const hasChanged = editedValues[setting.key] !== undefined && editedValues[setting.key] !== setting.value;
     const isUploading = uploadingImages[setting.key];
+
+    // Boolean field (checkbox)
+    if (setting.type === 'boolean') {
+      return (
+        <div key={setting.id} className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1 flex-1">
+              <Label htmlFor={setting.key} className="text-sm font-medium">
+                {setting.label}
+              </Label>
+              {setting.description && (
+                <p className="text-xs text-muted-foreground">{setting.description}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id={setting.key}
+                checked={currentValue === 'true'}
+                onChange={(e) => handleChange(setting.key, e.target.checked ? 'true' : 'false')}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              {hasChanged && (
+                <Button
+                  size="sm"
+                  onClick={() => handleSave(setting.id, setting.key)}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-1" />
+                      Speichern
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     // Image upload field
     if (setting.type === 'image') {
@@ -272,7 +320,12 @@ export default function AdminSettings() {
               <TabsTrigger value="contact">Kontakt</TabsTrigger>
               <TabsTrigger value="config">Konfiguration</TabsTrigger>
               <TabsTrigger value="advanced">Erweitert</TabsTrigger>
-              <TabsTrigger value="seo">SEO</TabsTrigger>
+              <TabsTrigger value="seo">SEO Basis</TabsTrigger>
+              <TabsTrigger value="tracking">Tracking</TabsTrigger>
+              <TabsTrigger value="schema">Schema.org</TabsTrigger>
+              <TabsTrigger value="indexing">Indexierung</TabsTrigger>
+              <TabsTrigger value="social">Social Media</TabsTrigger>
+              <TabsTrigger value="advanced_seo">SEO Erweitert</TabsTrigger>
             </TabsList>
 
             <TabsContent value="content" className="space-y-6">
@@ -503,9 +556,9 @@ export default function AdminSettings() {
             <TabsContent value="seo" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>SEO-Einstellungen</CardTitle>
+                  <CardTitle>SEO Basis-Einstellungen</CardTitle>
                   <CardDescription>
-                    Optimiere deine Website für Suchmaschinen
+                    Grundlegende SEO-Einstellungen für Meta Tags
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -515,6 +568,106 @@ export default function AdminSettings() {
                     </div>
                   ) : (
                     seoSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="tracking" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tracking & Analytics</CardTitle>
+                  <CardDescription>
+                    Google Analytics, Tag Manager, Facebook Pixel und Verifikations-Codes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {trackingLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    trackingSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="schema" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Schema.org Structured Data</CardTitle>
+                  <CardDescription>
+                    Konfiguriere strukturierte Daten für bessere Suchergebnisse
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {schemaLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    schemaSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="indexing" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Indexierung & Sitemap</CardTitle>
+                  <CardDescription>
+                    Sitemap-Konfiguration und NoIndex-Seiten
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {indexingLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    indexingSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="social" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Social Media Erweitert</CardTitle>
+                  <CardDescription>
+                    Open Graph, Twitter Cards und Social Media IDs
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {socialLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    socialSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="advanced_seo" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Erweiterte SEO Features</CardTitle>
+                  <CardDescription>
+                    Breadcrumbs, Hreflang, Rich Snippets und FAQ Schema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {advancedSeoLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    advancedSeoSettings?.map(renderSettingField)
                   )}
                 </CardContent>
               </Card>
