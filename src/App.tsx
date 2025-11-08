@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Suspense } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import Index from "./pages/Index";
@@ -22,18 +23,21 @@ import Auth from "./pages/Auth";
 import ProfileCreate from "./pages/ProfileCreate";
 import UserDashboard from "./pages/UserDashboard";
 import ProfileEdit from "./pages/ProfileEdit";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminProfile from "./pages/admin/AdminProfile";
-import AdminAccount from "./pages/admin/AdminAccount";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminCategories from "./pages/admin/AdminCategories";
-import AdminCities from "./pages/admin/AdminCities";
-import AdminReports from "./pages/admin/AdminReports";
-import AdminMessages from "./pages/admin/AdminMessages";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminDropdowns from "./pages/admin/AdminDropdowns";
-import AdminVerifications from "./pages/admin/AdminVerifications";
+// Lazy load admin pages for better code splitting
+import { lazy } from "react";
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
+const AdminAccount = lazy(() => import("./pages/admin/AdminAccount"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
+const AdminCities = lazy(() => import("./pages/admin/AdminCities"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminDropdowns = lazy(() => import("./pages/admin/AdminDropdowns"));
+const AdminVerifications = lazy(() => import("./pages/admin/AdminVerifications"));
+const AdminAdvertisements = lazy(() => import("./pages/admin/AdminAdvertisements"));
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { useDesignSettings } from "./hooks/useDesignSettings";
@@ -41,9 +45,19 @@ import { BannerManager } from "./components/BannerManager";
 import Bannerpreise from "./pages/Bannerpreise";
 import Preise from "./pages/Preise";
 import ProfileUpgrade from "./pages/ProfileUpgrade";
-import AdminAdvertisements from "./pages/admin/AdminAdvertisements";
 
-const queryClient = new QueryClient();
+// Optimized QueryClient with aggressive caching
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection time (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      refetchOnMount: false, // Don't refetch on component mount if data exists
+      retry: 1, // Only retry failed requests once
+    },
+  },
+});
 
 const AppContent = () => {
   useDesignSettings(); // Load dynamic colors from database
@@ -56,7 +70,12 @@ const AppContent = () => {
         <ErrorBoundary>
           <BrowserRouter>
             <BannerManager />
-            <Routes>
+            <Suspense fallback={
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/suche" element={<Suche />} />
@@ -118,8 +137,9 @@ const AppContent = () => {
             <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
             <Route path="/admin/advertisements" element={<ProtectedRoute><AdminAdvertisements /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
         </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
