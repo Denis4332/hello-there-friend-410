@@ -1,22 +1,15 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-import { detectLocation } from '@/lib/geolocation';
 import { geocodePlz } from '@/lib/geocoding';
-import { useToast } from '@/hooks/use-toast';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { BasicInfoSection } from './sections/BasicInfoSection';
+import { LocationSection } from './sections/LocationSection';
+import { AboutMeSection } from './sections/AboutMeSection';
+import { LanguagesSection } from './sections/LanguagesSection';
+import { CategoriesSection } from './sections/CategoriesSection';
+import { ContactInfoSection } from './sections/ContactInfoSection';
 
 const profileSchema = z.object({
   display_name: z.string().min(2, 'Name muss mindestens 2 Zeichen lang sein').max(50),
@@ -77,9 +70,6 @@ interface ProfileFormProps {
 }
 
 export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
-  const { toast } = useToast();
-  const [detectingLocation, setDetectingLocation] = useState(false);
-  
   const { data: languages = [] } = useDropdownOptions('languages');
   const { data: genders = [] } = useDropdownOptions('genders');
 
@@ -99,7 +89,6 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
 
   const selectedLanguages = watch('languages') || [];
   const selectedCategories = watch('category_ids') || [];
-  const selectedCanton = watch('canton') || '';
 
   const toggleLanguage = (lang: string) => {
     const current = selectedLanguages;
@@ -119,58 +108,6 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     }
   };
 
-  const handleDetectLocation = async () => {
-    setDetectingLocation(true);
-    try {
-      const location = await detectLocation();
-      
-      // Set street address if available
-      if (location.street) {
-        setValue('street_address', location.street);
-      }
-      
-      // Set city and postal code
-      setValue('city', location.city);
-      setValue('postal_code', location.postalCode);
-      
-      // Set GPS coordinates directly
-      setValue('lat', location.lat);
-      setValue('lng', location.lng);
-      
-      // Try to match canton
-      const matchingCanton = cantons.find((c) =>
-        c.name.toLowerCase().includes(location.canton.toLowerCase()) ||
-        c.abbreviation.toLowerCase() === location.canton.toLowerCase() ||
-        location.canton.toLowerCase().includes(c.name.toLowerCase())
-      );
-      
-      if (matchingCanton) {
-        setValue('canton', matchingCanton.abbreviation);
-        toast({
-          title: 'Standort erkannt',
-          description: location.street 
-            ? `${location.street}, ${location.city}, ${matchingCanton.abbreviation}` 
-            : `${location.city}, ${matchingCanton.abbreviation}`,
-        });
-      } else {
-        toast({
-          title: 'Standort erkannt',
-          description: location.street 
-            ? `${location.street}, ${location.city} (Kanton bitte manuell wählen)` 
-            : `${location.city} (Kanton bitte manuell wählen)`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Standort konnte nicht ermittelt werden',
-        variant: 'destructive',
-      });
-    } finally {
-      setDetectingLocation(false);
-    }
-  };
-
   const handleFormSubmit = async (data: ProfileFormData) => {
     // Geocode PLZ to GPS coordinates if postal_code is provided
     if (data.postal_code && data.city && !data.lat && !data.lng) {
@@ -186,278 +123,38 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <div>
-        <Label htmlFor="display_name">Anzeigename *</Label>
-        <Input
-          id="display_name"
-          {...register('display_name')}
-          placeholder="Dein öffentlicher Name"
-        />
-        {errors.display_name && (
-          <p className="text-sm text-destructive mt-1">{errors.display_name.message}</p>
-        )}
-      </div>
+      <BasicInfoSection
+        register={register}
+        errors={errors}
+        genders={genders}
+        onGenderChange={(value) => setValue('gender', value)}
+      />
 
-      <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-        <Checkbox
-          id="is_adult"
-          {...register('is_adult')}
-        />
-        <div className="space-y-1 leading-none">
-          <Label htmlFor="is_adult" className="cursor-pointer">
-            Ich bestätige, dass ich volljährig bin (18+) *
-          </Label>
-          {errors.is_adult && (
-            <p className="text-sm text-destructive">{errors.is_adult.message}</p>
-          )}
-        </div>
-      </div>
+      <LocationSection
+        register={register}
+        errors={errors}
+        setValue={setValue}
+        watch={watch}
+        cantons={cantons}
+      />
 
-      <div>
-        <Label htmlFor="gender">Geschlecht</Label>
-        <Select onValueChange={(value) => setValue('gender', value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Wähle dein Geschlecht" />
-          </SelectTrigger>
-          <SelectContent>
-            {genders.map((gender) => (
-              <SelectItem key={gender.value} value={gender.value}>
-                {gender.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <AboutMeSection register={register} errors={errors} />
 
-      <div>
-        <Label htmlFor="canton">Kanton *</Label>
-        <Select 
-          onValueChange={(value) => {
-            setValue('canton', value);
-            // Reset city when canton changes
-            if (watch('city') && selectedCanton !== value) {
-              setValue('city', '');
-            }
-          }}
-          value={selectedCanton}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Wähle deinen Kanton" />
-          </SelectTrigger>
-          <SelectContent>
-            {cantons.map((canton) => (
-              <SelectItem key={canton.id} value={canton.abbreviation}>
-                {canton.name} ({canton.abbreviation})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.canton && (
-          <p className="text-sm text-destructive mt-1">{errors.canton.message}</p>
-        )}
-      </div>
+      <LanguagesSection
+        languages={languages}
+        selectedLanguages={selectedLanguages}
+        onToggle={toggleLanguage}
+        errors={errors}
+      />
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="city">Stadt *</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleDetectLocation}
-            disabled={detectingLocation}
-            className="h-8"
-          >
-            {detectingLocation ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                Wird erkannt...
-              </>
-            ) : (
-              <>
-                <MapPin className="h-4 w-4 mr-1" />
-                Mein Standort
-              </>
-            )}
-          </Button>
-        </div>
-        <Input
-          id="city"
-          {...register('city')}
-          placeholder={selectedCanton ? "Stadt eingeben (z.B. Zürich)" : "Zuerst Kanton wählen"}
-          disabled={!selectedCanton}
-        />
-        {errors.city && (
-          <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
-        )}
-      </div>
+      <CategoriesSection
+        categories={categories}
+        selectedCategories={selectedCategories}
+        onToggle={toggleCategory}
+        errors={errors}
+      />
 
-      <div>
-        <Label htmlFor="postal_code">PLZ</Label>
-        <Input id="postal_code" {...register('postal_code')} placeholder="8000" />
-      </div>
-
-      <div>
-        <Label htmlFor="street_address">Straße (optional)</Label>
-        <Input 
-          id="street_address" 
-          {...register('street_address')} 
-          placeholder="Musterstrasse 123" 
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Die Straße wird nur angezeigt, wenn du das unten erlaubst
-        </p>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="show_street"
-          checked={watch('show_street')}
-          onCheckedChange={(checked) => setValue('show_street', checked as boolean)}
-        />
-        <label htmlFor="show_street" className="text-sm cursor-pointer">
-          Straße öffentlich anzeigen (empfohlen: nur Stadt zeigen für mehr Privatsphäre)
-        </label>
-      </div>
-
-      <div>
-        <Label htmlFor="about_me">Über mich</Label>
-        <Textarea
-          id="about_me"
-          {...register('about_me')}
-          placeholder="Erzähle ein bisschen über dich..."
-          rows={4}
-        />
-        {errors.about_me && (
-          <p className="text-sm text-destructive mt-1">{errors.about_me.message}</p>
-        )}
-      </div>
-
-      <div>
-        <Label>Sprachen *</Label>
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          {languages.map((lang) => (
-            <div key={lang.value} className="flex items-center space-x-2">
-              <Checkbox
-                id={`lang-${lang.value}`}
-                checked={selectedLanguages.includes(lang.value)}
-                onCheckedChange={() => toggleLanguage(lang.value)}
-              />
-              <label htmlFor={`lang-${lang.value}`} className="text-sm cursor-pointer">
-                {lang.label}
-              </label>
-            </div>
-          ))}
-        </div>
-        {errors.languages && (
-          <p className="text-sm text-destructive mt-1">{errors.languages.message}</p>
-        )}
-      </div>
-
-      <div>
-        <Label>Kategorien / Interessen *</Label>
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`cat-${cat.id}`}
-                checked={selectedCategories.includes(cat.id)}
-                onCheckedChange={() => toggleCategory(cat.id)}
-              />
-              <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
-                {cat.name}
-              </label>
-            </div>
-          ))}
-        </div>
-        {errors.category_ids && (
-          <p className="text-sm text-destructive mt-1">{errors.category_ids.message}</p>
-        )}
-      </div>
-
-      {/* Contact Information Section */}
-      <div className="space-y-4 pt-6 border-t">
-        <div>
-          <h3 className="text-lg font-semibold">Kontaktmöglichkeiten</h3>
-          <p className="text-sm text-muted-foreground">
-            Füge mindestens eine Kontaktmöglichkeit hinzu, damit Interessenten dich erreichen können.
-          </p>
-        </div>
-
-        <div>
-          <Label htmlFor="phone">Telefonnummer</Label>
-          <Input
-            id="phone"
-            {...register('phone')}
-            placeholder="+41 79 123 45 67"
-          />
-          {errors.phone && (
-            <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="whatsapp">WhatsApp</Label>
-          <Input
-            id="whatsapp"
-            {...register('whatsapp')}
-            placeholder="+41 79 123 45 67"
-          />
-          {errors.whatsapp && (
-            <p className="text-sm text-destructive mt-1">{errors.whatsapp.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="email">E-Mail</Label>
-          <Input
-            id="email"
-            type="email"
-            {...register('email')}
-            placeholder="name@beispiel.ch"
-          />
-          {errors.email && (
-            <p className="text-sm text-destructive mt-1">{errors.email.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="website">Website</Label>
-          <Input
-            id="website"
-            type="url"
-            {...register('website')}
-            placeholder="https://..."
-          />
-          {errors.website && (
-            <p className="text-sm text-destructive mt-1">{errors.website.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="telegram">Telegram</Label>
-          <Input
-            id="telegram"
-            {...register('telegram')}
-            placeholder="@username"
-          />
-          {errors.telegram && (
-            <p className="text-sm text-destructive mt-1">{errors.telegram.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="instagram">Instagram</Label>
-          <Input
-            id="instagram"
-            {...register('instagram')}
-            placeholder="@username"
-          />
-          {errors.instagram && (
-            <p className="text-sm text-destructive mt-1">{errors.instagram.message}</p>
-          )}
-        </div>
-      </div>
+      <ContactInfoSection register={register} errors={errors} />
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? 'Wird gespeichert...' : submitButtonText}

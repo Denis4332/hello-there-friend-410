@@ -2,22 +2,14 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { ProfileCard } from '@/components/ProfileCard';
-import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
-import { Pagination } from '@/components/Pagination';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
-import { useDropdownOptions } from '@/hooks/useDropdownOptions';
-import { useCantons, useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
+import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
-import { MapPin, Building2, Tag, ChevronDown, Search, RefreshCw, X } from 'lucide-react';
+import { SearchFilters } from '@/components/search/SearchFilters';
+import { SearchResults } from '@/components/search/SearchResults';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,7 +29,6 @@ const Suche = () => {
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
-  const { data: radiusOptions = [] } = useDropdownOptions('radius');
   
   // GPS-based search
   const { data: gpsProfiles = [], isLoading: isLoadingGps } = useProfilesByRadius(
@@ -63,12 +54,8 @@ const Suche = () => {
 
   const { data: searchTitle } = useSiteSetting('search_page_title');
   const { data: searchSubtitle } = useSiteSetting('search_page_subtitle');
-  const { data: searchLocationLabel } = useSiteSetting('search_filter_label_location');
-  const { data: searchRadiusLabel } = useSiteSetting('search_filter_label_radius');
-  const { data: searchCategoryLabel } = useSiteSetting('search_filter_label_category');
   const { data: searchKeywordLabel } = useSiteSetting('search_filter_label_keyword');
   const { data: searchButton } = useSiteSetting('search_button_text');
-  const { data: searchResetButton } = useSiteSetting('search_button_reset');
   const { data: searchNoResults } = useSiteSetting('search_no_results_text');
 
   // Sort profiles (client-side for now)
@@ -185,246 +172,39 @@ const Suche = () => {
           <h1 className="text-3xl font-bold mb-2">{searchTitle || 'Profile durchsuchen'}</h1>
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           
-          <form onSubmit={handleSearch} className="bg-card border rounded-lg p-6 mb-6">
-            <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
-              <h2 className="text-lg font-semibold">Filter</h2>
-              {activeFiltersCount > 0 && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {activeFiltersCount} aktiv
-                  </Badge>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleResetFilters}
-                    className="h-8"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Zurücksetzen
-                  </Button>
-                </div>
-              )}
-            </div>
-            <Button
-              type="button"
-              size="lg"
-              onClick={handleDetectLocation}
-              disabled={isDetectingLocation}
-              className="w-full mb-6 gap-2 text-lg h-14"
-            >
-              <MapPin className="h-5 w-5" />
-              {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
-            </Button>
-            
-            {userLat && userLng ? (
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-medium">
-                      Umkreis: {radius} km
-                    </label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDetectLocation}
-                        disabled={isDetectingLocation}
-                        className="h-8"
-                      >
-                        <RefreshCw className={`h-3 w-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} />
-                        Neu erkennen
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setUserLat(null);
-                          setUserLng(null);
-                          setLocationAccuracy(null);
-                        }}
-                        className="h-8"
-                      >
-                        Ortsauswahl
-                      </Button>
-                    </div>
-                  </div>
-
-                  {locationAccuracy && (
-                    <div className={`text-sm mb-2 flex items-center gap-2 ${locationAccuracy > 100 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                      <MapPin className="h-3 w-3" />
-                      Genauigkeit: ±{Math.round(locationAccuracy)}m
-                      {locationAccuracy > 100 && (
-                        <span className="text-amber-600 text-xs">
-                          ⚠️ Ungenau - größerer Radius empfohlen
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <Slider
-                    value={[radius]}
-                    onValueChange={([value]) => setRadius(value)}
-                    min={5}
-                    max={100}
-                    step={5}
-                    className="mt-2"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>5 km</span>
-                    <span>25 km</span>
-                    <span>50 km</span>
-                    <span>100 km</span>
-                  </div>
-                </div>
-
-                <Popover open={categoryGpsOpen} onOpenChange={setCategoryGpsOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between h-12">
-                      <Tag className="h-4 w-4" />
-                      {category ? categories.find(c => c.id === category)?.name : 'Alle Kategorien'}
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align="start">
-                    <div className="space-y-1">
-                      <Button
-                        type="button"
-                        variant={!category ? "default" : "ghost"}
-                        onClick={() => {
-                          setCategory('');
-                          setCategoryGpsOpen(false);
-                        }}
-                        className="w-full justify-start"
-                      >
-                        Alle Kategorien
-                      </Button>
-                      {categories.map((cat) => (
-                        <Button
-                          key={cat.id}
-                          type="button"
-                          variant={category === cat.id ? "default" : "ghost"}
-                          onClick={() => {
-                            setCategory(cat.id);
-                            setCategoryGpsOpen(false);
-                          }}
-                          className="w-full justify-start"
-                        >
-                          {cat.name}
-                        </Button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                <Input
-                  placeholder={searchKeywordLabel || "Stichwort eingeben..."}
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  className="h-12"
-                />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Popover open={cantonOpen} onOpenChange={setCantonOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between h-12">
-                        <MapPin className="h-4 w-4" />
-                        {canton || 'Kanton wählen'}
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align="start">
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <Button
-                          type="button"
-                          variant={!canton ? "default" : "ghost"}
-                          onClick={() => {
-                            setCanton('');
-                            setCantonOpen(false);
-                          }}
-                          size="sm"
-                          className="h-9"
-                        >
-                          Alle
-                        </Button>
-                        {cantons.map((c) => (
-                          <Button
-                            key={c.id}
-                            type="button"
-                            variant={canton === c.abbreviation ? "default" : "ghost"}
-                            onClick={() => {
-                              setCanton(c.abbreviation);
-                              setCantonOpen(false);
-                            }}
-                            size="sm"
-                            className="h-9"
-                          >
-                            {c.abbreviation}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between h-12">
-                        <Tag className="h-4 w-4" />
-                        {category ? categories.find(c => c.id === category)?.name : 'Alle Kategorien'}
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[280px] p-2 max-h-[400px] overflow-y-auto" align="start">
-                      <div className="space-y-1">
-                        <Button
-                          type="button"
-                          variant={!category ? "default" : "ghost"}
-                          onClick={() => {
-                            setCategory('');
-                            setCategoryOpen(false);
-                          }}
-                          className="w-full justify-start"
-                        >
-                          Alle Kategorien
-                        </Button>
-                        {categories.map((cat) => (
-                          <Button
-                            key={cat.id}
-                            type="button"
-                            variant={category === cat.id ? "default" : "ghost"}
-                            onClick={() => {
-                              setCategory(cat.id);
-                              setCategoryOpen(false);
-                            }}
-                            className="w-full justify-start"
-                          >
-                            {cat.name}
-                          </Button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Stichwort eingeben..."
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    className="flex-1 h-12"
-                  />
-                  <Button type="submit" className="h-12 px-8">
-                    <Search className="h-4 w-4 mr-2" />
-                    {searchButton || 'Suchen'}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </form>
+          <SearchFilters
+            canton={canton}
+            category={category}
+            keyword={keyword}
+            radius={radius}
+            userLat={userLat}
+            userLng={userLng}
+            locationAccuracy={locationAccuracy}
+            isDetectingLocation={isDetectingLocation}
+            activeFiltersCount={activeFiltersCount}
+            cantons={cantons}
+            categories={categories}
+            onCantonChange={setCanton}
+            onCategoryChange={setCategory}
+            onKeywordChange={setKeyword}
+            onRadiusChange={setRadius}
+            onDetectLocation={handleDetectLocation}
+            onResetFilters={handleResetFilters}
+            onResetGPS={() => {
+              setUserLat(null);
+              setUserLng(null);
+              setLocationAccuracy(null);
+            }}
+            onSubmit={handleSearch}
+            searchButtonText={searchButton}
+            searchKeywordLabel={searchKeywordLabel}
+            cantonOpen={cantonOpen}
+            categoryOpen={categoryOpen}
+            categoryGpsOpen={categoryGpsOpen}
+            setCantonOpen={setCantonOpen}
+            setCategoryOpen={setCategoryOpen}
+            setCategoryGpsOpen={setCategoryGpsOpen}
+          />
 
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
@@ -432,45 +212,14 @@ const Suche = () => {
             </p>
           </div>
 
-          {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <ProfileCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : paginatedProfiles.length > 0 ? (
-            <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {paginatedProfiles.map((profile) => (
-                  <ProfileCard 
-                    key={profile.id} 
-                    profile={profile} 
-                    distance={(profile as any).distance_km}
-                  />
-                ))}
-              </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-              />
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">{searchNoResults || 'Keine Profile gefunden. Versuche es mit anderen Suchkriterien.'}</p>
-              <Button variant="outline" onClick={() => {
-                setCanton('');
-                setCategory('');
-                setKeyword('');
-                setCurrentPage(1);
-                setUserLat(null);
-                setUserLng(null);
-                setSearchParams({});
-              }}>
-                {searchResetButton || 'Filter zurücksetzen'}
-              </Button>
-            </div>
-          )}
+          <SearchResults
+            profiles={paginatedProfiles}
+            isLoading={isLoading}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            noResultsText={searchNoResults}
+          />
         </div>
       </main>
       <Footer />
