@@ -38,8 +38,7 @@ export const useCreateReport = () => {
     onSuccess: () => {
       toast.success('Meldung wurde erfolgreich eingereicht');
     },
-    onError: (error) => {
-      console.error('Report error:', error);
+    onError: (error: Error) => {
       const errorMessage = error.message === 'Sie müssen angemeldet sein, um eine Meldung zu erstellen'
         ? error.message
         : 'Fehler beim Absenden der Meldung';

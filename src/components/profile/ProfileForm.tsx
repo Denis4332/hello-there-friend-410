@@ -178,9 +178,6 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
       if (coords) {
         data.lat = coords.lat;
         data.lng = coords.lng;
-        console.log('Geocoded coordinates:', coords);
-      } else {
-        console.warn('Could not geocode postal code:', data.postal_code);
       }
     }
     

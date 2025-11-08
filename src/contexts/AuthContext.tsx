@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setRole(data?.role || 'user');
     } catch (error) {
-      console.error('Error loading user role:', error);
+      // Silent error handling - default to user role
       setRole('user');
     } finally {
       setLoading(false);

@@ -1,28 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeSlug } from '@/lib/stringUtils';
 
 // Explicit types to avoid "Type instantiation is excessively deep" error
 type ProfileWithRelations = any;
 
-// Helper: Load all Admin User IDs
+// Cache admin user IDs to avoid repeated queries
+let adminUserIdsCache: string[] | null = null;
+let adminUserIdsCacheTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Helper: Load all Admin User IDs with caching
 const getAdminUserIds = async (): Promise<string[]> => {
+  const now = Date.now();
+  if (adminUserIdsCache && now - adminUserIdsCacheTime < CACHE_DURATION) {
+    return adminUserIdsCache;
+  }
+
   const { data: adminRoles } = await supabase
     .from('user_roles')
     .select('user_id')
     .eq('role', 'admin');
   
-  return adminRoles?.map(r => r.user_id) || [];
+  adminUserIdsCache = adminRoles?.map(r => r.user_id) || [];
+  adminUserIdsCacheTime = now;
+  return adminUserIdsCache;
 };
 
 export const useFeaturedProfiles = (limit: number = 8) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['featured-profiles', limit, 'v4'],
+    queryKey: ['featured-profiles', limit, 'v5'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
-      const cacheBust = Date.now();
-      
-      console.log(`[useFeaturedProfiles] Cache bust: ${cacheBust}, Admin IDs to exclude:`, adminUserIds);
       
       let query = (supabase as any)
         .from('profiles')
@@ -44,12 +54,7 @@ export const useFeaturedProfiles = (limit: number = 8) => {
         .order('created_at', { ascending: false })
         .limit(limit);
       
-      if (result.error) {
-        console.error('[useFeaturedProfiles] Error:', result.error);
-        throw result.error;
-      }
-      
-      console.log(`[useFeaturedProfiles] Fetched ${result.data?.length || 0} profiles after admin filter`);
+      if (result.error) throw result.error;
       
       return (result.data || []) as ProfileWithRelations[];
     },
@@ -62,7 +67,7 @@ export const useSearchProfiles = (filters: {
   keyword?: string;
 }) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['search-profiles', filters, 'v3'],
+    queryKey: ['search-profiles', filters, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
@@ -112,7 +117,7 @@ export const useSearchProfiles = (filters: {
 
 export const useProfileBySlug = (slug: string | undefined) => {
   return useQuery<ProfileWithRelations | null>({
-    queryKey: ['profile', slug, 'v3'],
+    queryKey: ['profile', slug, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!slug) return null;
@@ -133,7 +138,7 @@ export const useProfileBySlug = (slug: string | undefined) => {
 
 export const useCityProfiles = (cityName: string | undefined) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['city-profiles', cityName, 'v3'],
+    queryKey: ['city-profiles', cityName, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!cityName) return [];
@@ -166,7 +171,7 @@ export const useCityProfiles = (cityName: string | undefined) => {
 
 export const useCategoryProfiles = (categoryId: string | undefined) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['category-profiles', categoryId, 'v3'],
+    queryKey: ['category-profiles', categoryId, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!categoryId) return [];
@@ -204,7 +209,7 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
 
 export const useTopCities = (limit: number = 4) => {
   return useQuery({
-    queryKey: ['top-cities', limit, 'v3'],
+    queryKey: ['top-cities', limit, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
@@ -223,7 +228,7 @@ export const useTopCities = (limit: number = 4) => {
             city: p.city,
             canton: p.canton,
             count: 1,
-            slug: p.city.toLowerCase().replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae'),
+            slug: normalizeSlug(p.city),
           });
         } else {
           cityMap.get(key)!.count++;
@@ -239,7 +244,7 @@ export const useTopCities = (limit: number = 4) => {
 
 export const useAllCities = () => {
   return useQuery({
-    queryKey: ['all-cities', 'v3'],
+    queryKey: ['all-cities', 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
@@ -258,7 +263,7 @@ export const useAllCities = () => {
             city: p.city,
             canton: p.canton,
             count: 1,
-            slug: p.city.toLowerCase().replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae'),
+            slug: normalizeSlug(p.city),
           });
         } else {
           cityMap.get(key)!.count++;
@@ -281,7 +286,7 @@ export const useProfilesByRadius = (
   }
 ) => {
   return useQuery<(ProfileWithRelations & { distance_km: number })[]>({
-    queryKey: ['profiles-by-radius', userLat, userLng, radiusKm, filters, 'v3'],
+    queryKey: ['profiles-by-radius', userLat, userLng, radiusKm, filters, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       if (!userLat || !userLng) return [];

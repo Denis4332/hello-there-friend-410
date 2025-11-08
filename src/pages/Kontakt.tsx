@@ -56,7 +56,6 @@ const Kontakt = () => {
         });
 
       if (error) {
-        console.error('Contact form submission error:', error);
         toast({
           title: 'Fehler',
           description: 'Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.',
@@ -76,7 +75,6 @@ const Kontakt = () => {
       setEmail('');
       setMessage('');
     } catch (error) {
-      console.error('Unexpected error:', error);
       toast({
         title: 'Fehler',
         description: 'Ein unerwarteter Fehler ist aufgetreten.',

@@ -56,8 +56,7 @@ export const useMarkAsRead = () => {
       queryClient.invalidateQueries({ queryKey: ['contact-messages-unread-count'] });
       toast.success('Nachricht als gelesen markiert');
     },
-    onError: (error) => {
-      console.error('Mark as read error:', error);
+    onError: () => {
       toast.error('Fehler beim Markieren der Nachricht');
     },
   });
@@ -80,8 +79,7 @@ export const useDeleteMessage = () => {
       queryClient.invalidateQueries({ queryKey: ['contact-messages-unread-count'] });
       toast.success('Nachricht gelöscht');
     },
-    onError: (error) => {
-      console.error('Delete message error:', error);
+    onError: () => {
       toast.error('Fehler beim Löschen der Nachricht');
     },
   });
