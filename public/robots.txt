@@ -4,4 +4,4 @@ Disallow: /admin/
 Disallow: /mein-profil/
 Disallow: /auth/
 
-Sitemap: https://fwatgrgbwgtueunihbwv.supabase.co/functions/v1/generate-sitemap
+Sitemap: https://escoria.ch/sitemap.xml

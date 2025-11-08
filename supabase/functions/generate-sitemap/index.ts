@@ -12,11 +12,50 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('Starting sitemap generation...');
+    console.log('🗺️ Starting sitemap generation...');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Client for database queries
     const supabase = createClient(supabaseUrl, supabaseKey);
+    // Client with service role for storage operations
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // Check if we have a recent sitemap in storage (less than 24 hours old)
+    const { data: existingFile, error: fileError } = await supabaseAdmin
+      .storage
+      .from('sitemaps')
+      .list('', { limit: 1, search: 'sitemap.xml' });
+
+    if (!fileError && existingFile && existingFile.length > 0) {
+      const fileAge = Date.now() - new Date(existingFile[0].updated_at || existingFile[0].created_at).getTime();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+
+      if (fileAge < twentyFourHours) {
+        console.log('✅ Using cached sitemap (age: ' + Math.round(fileAge / 1000 / 60) + ' minutes)');
+        
+        // Return the cached sitemap
+        const { data: cachedSitemap } = await supabaseAdmin
+          .storage
+          .from('sitemaps')
+          .download('sitemap.xml');
+
+        if (cachedSitemap) {
+          const xml = await cachedSitemap.text();
+          return new Response(xml, {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/xml; charset=utf-8',
+              'Cache-Control': 'public, max-age=3600',
+            },
+          });
+        }
+      }
+    }
+
+    console.log('🔄 Generating fresh sitemap...');
 
     // Fetch all active profiles with slugs
     const { data: profiles, error: profilesError } = await supabase
@@ -141,13 +180,30 @@ Deno.serve(async (req) => {
 
     xml += '</urlset>';
 
-    console.log('Sitemap generated successfully');
+    // Save to storage
+    console.log('💾 Saving sitemap to storage...');
+    const { error: uploadError } = await supabaseAdmin
+      .storage
+      .from('sitemaps')
+      .upload('sitemap.xml', xml, {
+        contentType: 'application/xml',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('⚠️ Error saving to storage:', uploadError);
+      // Continue anyway - we can still return the generated sitemap
+    } else {
+      console.log('✅ Sitemap saved to storage');
+    }
+
+    console.log('✅ Sitemap generated successfully');
 
     return new Response(xml, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Cache-Control': 'public, max-age=3600',
       },
     });
   } catch (error) {
