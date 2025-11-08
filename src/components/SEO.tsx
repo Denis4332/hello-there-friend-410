@@ -4,11 +4,13 @@ import { SchemaOrg } from './seo/SchemaOrg';
 import { Tracking } from './seo/Tracking';
 import { SocialMeta } from './seo/SocialMeta';
 import { HreflangTags } from './seo/HreflangTags';
+import { ImageMetaTags } from './seo/ImageMetaTags';
 
 interface SEOProps {
   title: string;
   description: string;
   image?: string;
+  imageAlt?: string;
   url?: string;
   type?: 'website' | 'profile' | 'article';
   schemaType?: 'Organization' | 'LocalBusiness' | 'WebSite' | 'Person';
@@ -18,6 +20,7 @@ export const SEO = ({
   title, 
   description, 
   image = 'https://escoria.ch/placeholder.svg',
+  imageAlt,
   url,
   type = 'website',
   schemaType = 'Organization'
@@ -37,12 +40,17 @@ export const SEO = ({
   const currentUrl = url || window.location.href;
   const isNoIndex = noindexPages?.split(',').some(page => currentUrl.includes(page.trim()));
   
+  // Truncate description if too long (max 160 characters for SEO)
+  const metaDescription = description.length > 160 
+    ? description.substring(0, 157) + '...' 
+    : description;
+  
   return (
     <>
       <Helmet>
         {/* Basic Meta Tags */}
         <title>{fullTitle}</title>
-        <meta name="description" content={description} />
+        <meta name="description" content={metaDescription} />
         
         {/* Extended Meta Tags */}
         {author && <meta name="author" content={author} />}
@@ -73,10 +81,18 @@ export const SEO = ({
       {/* Social Meta Tags */}
       <SocialMeta 
         title={fullTitle}
-        description={description}
+        description={metaDescription}
         image={image}
         url={currentUrl}
       />
+      
+      {/* Enhanced Image Meta Tags */}
+      {image && (
+        <ImageMetaTags 
+          url={image} 
+          alt={imageAlt || title} 
+        />
+      )}
       
       {/* Schema.org Structured Data */}
       <SchemaOrg type={schemaType} />

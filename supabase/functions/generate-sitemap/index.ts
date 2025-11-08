@@ -115,19 +115,23 @@ Deno.serve(async (req) => {
     // Homepage
     xml += '  <url>\n';
     xml += `    <loc>${baseUrl}/</loc>\n`;
+    xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
+    xml += '    <changefreq>daily</changefreq>\n';
     xml += '    <priority>1.0</priority>\n';
     xml += '  </url>\n';
 
     // Static pages - high priority
     const staticPages = [
-      { path: '/suche', priority: '0.9' },
-      { path: '/staedte', priority: '0.9' },
-      { path: '/kategorien', priority: '0.9' },
+      { path: '/suche', priority: '0.9', changefreq: 'daily' },
+      { path: '/staedte', priority: '0.9', changefreq: 'weekly' },
+      { path: '/kategorien', priority: '0.9', changefreq: 'weekly' },
     ];
 
     staticPages.forEach(page => {
       xml += '  <url>\n';
       xml += `    <loc>${baseUrl}${page.path}</loc>\n`;
+      xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
+      xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
       xml += `    <priority>${page.priority}</priority>\n`;
       xml += '  </url>\n';
     });
@@ -141,6 +145,7 @@ Deno.serve(async (req) => {
           const lastmod = new Date(profile.updated_at).toISOString().split('T')[0];
           xml += `    <lastmod>${lastmod}</lastmod>\n`;
         }
+        xml += '    <changefreq>weekly</changefreq>\n';
         xml += '    <priority>0.8</priority>\n';
         xml += '  </url>\n';
       }
@@ -150,6 +155,8 @@ Deno.serve(async (req) => {
     cityData.forEach(city => {
       xml += '  <url>\n';
       xml += `    <loc>${baseUrl}/stadt/${city.slug}</loc>\n`;
+      xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
+      xml += '    <changefreq>weekly</changefreq>\n';
       xml += '    <priority>0.8</priority>\n';
       xml += '  </url>\n';
     });
@@ -159,6 +166,8 @@ Deno.serve(async (req) => {
       if (category.slug) {
         xml += '  <url>\n';
         xml += `    <loc>${baseUrl}/kategorie/${category.slug}</loc>\n`;
+        xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
+        xml += '    <changefreq>weekly</changefreq>\n';
         xml += '    <priority>0.8</priority>\n';
         xml += '  </url>\n';
       }
@@ -166,14 +175,16 @@ Deno.serve(async (req) => {
 
     // Footer pages - lower priority
     const footerPages = [
-      { path: '/kontakt', priority: '0.7' },
-      { path: '/agb', priority: '0.5' },
-      { path: '/datenschutz', priority: '0.5' },
+      { path: '/kontakt', priority: '0.7', changefreq: 'monthly' },
+      { path: '/agb', priority: '0.5', changefreq: 'yearly' },
+      { path: '/datenschutz', priority: '0.5', changefreq: 'yearly' },
     ];
 
     footerPages.forEach(page => {
       xml += '  <url>\n';
       xml += `    <loc>${baseUrl}${page.path}</loc>\n`;
+      xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
+      xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
       xml += `    <priority>${page.priority}</priority>\n`;
       xml += '  </url>\n';
     });

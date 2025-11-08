@@ -4,6 +4,8 @@ import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCities } from '@/hooks/useCities';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
+import { SEO } from '@/components/SEO';
 
 const Cities = () => {
   const { data: cities = [], isLoading } = useCities();
@@ -14,9 +16,14 @@ const Cities = () => {
   
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={pageTitle || 'Alle Städte'}
+        description={pageDescription || 'Finden Sie verifizierte Anbieter in Ihrer Region'}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
+          <Breadcrumbs items={[{ label: 'Städte' }]} />
           <h1 className="text-3xl font-bold mb-4">{pageTitle || 'Alle Städte'}</h1>
           <p className="text-muted-foreground mb-8 max-w-3xl">
             {pageDescription || 'Finden Sie verifizierte Anbieter in Ihrer Region. Wählen Sie eine Stadt aus, um alle verfügbaren Profile anzuzeigen.'}

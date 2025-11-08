@@ -10,6 +10,8 @@ import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
 import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchResults } from '@/components/search/SearchResults';
+import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
+import { SEO } from '@/components/SEO';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -166,9 +168,14 @@ const Suche = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={searchTitle || 'Profile durchsuchen'}
+        description={searchSubtitle || 'Durchsuchen Sie alle verifizierten Profile in der Schweiz'}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
+          <Breadcrumbs items={[{ label: 'Suche' }]} />
           <h1 className="text-3xl font-bold mb-2">{searchTitle || 'Profile durchsuchen'}</h1>
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           

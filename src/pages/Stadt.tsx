@@ -10,6 +10,7 @@ import { useCityProfiles } from '@/hooks/useProfiles';
 import { useCityBySlug } from '@/hooks/useCities';
 import { SEO } from '@/components/SEO';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
+import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 
 const Stadt = () => {
   const { slug } = useParams();
@@ -59,6 +60,12 @@ const Stadt = () => {
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
+          <Breadcrumbs 
+            items={[
+              { label: 'Städte', href: '/staedte' },
+              { label: city.name }
+            ]}
+          />
           <h1 className="text-3xl font-bold mb-4">
             Anbieter in {city.name} – verifizierte Profile & Agenturen
           </h1>

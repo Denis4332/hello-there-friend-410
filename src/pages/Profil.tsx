@@ -16,6 +16,8 @@ import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { SEO } from '@/components/SEO';
 import { ContactSection } from '@/components/profile/ContactSection';
 import { ProfileDetailSkeleton } from '@/components/ProfileDetailSkeleton';
+import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
+import { ProfileSchema } from '@/components/seo/ProfileSchema';
 
 const Profil = () => {
   const { slug } = useParams();
@@ -97,12 +99,22 @@ const Profil = () => {
         title={`${profile.display_name}, ${profile.age} aus ${profile.city}`}
         description={profile.about_me?.slice(0, 160) || `${profile.display_name}, ${profile.age} Jahre, aus ${profile.city}, ${profile.canton}`}
         image={photoUrls[0] || undefined}
+        imageAlt={`Foto von ${profile.display_name}`}
         url={`https://escoria.ch/profil/${profile.slug}`}
         type="profile"
+        schemaType="Person"
       />
+      <ProfileSchema profile={profile} />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-6xl">
+          <Breadcrumbs 
+            items={[
+              { label: 'Profile', href: '/suche' },
+              { label: profile.city || '', href: `/stadt/${profile.city?.toLowerCase()}` },
+              { label: profile.display_name }
+            ]}
+          />
           {/* 2-Column Layout: Photos left, Info right */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Photo Gallery - Left Column (60%) */}

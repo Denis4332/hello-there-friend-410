@@ -10,6 +10,7 @@ import { useCategoryProfiles } from '@/hooks/useProfiles';
 import { useCategoryBySlug } from '@/hooks/useCategories';
 import { SEO } from '@/components/SEO';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
+import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 
 const Kategorie = () => {
   const { slug } = useParams();
@@ -53,6 +54,12 @@ const Kategorie = () => {
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4">
+          <Breadcrumbs 
+            items={[
+              { label: 'Kategorien', href: '/kategorien' },
+              { label: category?.name || '' }
+            ]}
+          />
           <h1 className="text-3xl font-bold mb-4">
             Kategorie: {category?.name} – verifizierte Profile
           </h1>
