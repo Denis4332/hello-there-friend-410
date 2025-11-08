@@ -1,3 +1,12 @@
+/**
+ * Result type for geolocation detection
+ * @property {string} city - Detected city name (e.g., "Zürich")
+ * @property {string} canton - Detected canton name or abbreviation (e.g., "Zürich" or "ZH")
+ * @property {string} postalCode - Swiss postal code (PLZ)
+ * @property {string} [street] - Optional street address with house number
+ * @property {number} lat - GPS latitude coordinate
+ * @property {number} lng - GPS longitude coordinate
+ */
 interface GeolocationResult {
   city: string;
   canton: string;
@@ -7,6 +16,30 @@ interface GeolocationResult {
   lng: number;
 }
 
+/**
+ * Detects the user's current location using the browser's Geolocation API
+ * and performs reverse geocoding via OpenStreetMap Nominatim.
+ * 
+ * @throws {Error} "Geolocation wird von deinem Browser nicht unterstützt" - Browser lacks geolocation support
+ * @throws {Error} "Standort-Zugriff wurde verweigert" - User denied location permission
+ * @throws {Error} "Standort ist nicht verfügbar" - Position cannot be determined
+ * @throws {Error} "Zeitüberschreitung bei Standort-Ermittlung" - Request timeout (10s)
+ * @throws {Error} "Stadt konnte nicht ermittelt werden" - Nominatim response lacks city data
+ * @throws {Error} "Standort konnte nicht verarbeitet werden" - Nominatim API error
+ * 
+ * @returns {Promise<GeolocationResult>} Location details with GPS coordinates and address
+ * 
+ * @example
+ * ```typescript
+ * try {
+ *   const location = await detectLocation();
+ *   console.log(`Du bist in ${location.city}, ${location.canton}`);
+ *   console.log(`GPS: ${location.lat}, ${location.lng}`);
+ * } catch (error) {
+ *   toast.error(error.message);
+ * }
+ * ```
+ */
 export const detectLocation = async (): Promise<GeolocationResult> => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
