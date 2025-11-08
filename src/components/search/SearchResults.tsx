@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { Pagination } from '@/components/Pagination';
-import { ProfileWithRelations } from '@/types/common';
+import type { ProfileWithRelations } from '@/types/common';
 
 interface SearchResultsProps {
   profiles: ProfileWithRelations[];
@@ -12,7 +13,7 @@ interface SearchResultsProps {
   noResultsText?: string;
 }
 
-export const SearchResults = ({
+const SearchResultsComponent = ({
   profiles,
   isLoading,
   currentPage,
@@ -60,3 +61,5 @@ export const SearchResults = ({
     </>
   );
 };
+
+export const SearchResults = memo(SearchResultsComponent);

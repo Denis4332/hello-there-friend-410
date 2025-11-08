@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface PaginationProps {
@@ -6,7 +7,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-export const Pagination = ({ currentPage, totalPages, onPageChange }: PaginationProps) => {
+const PaginationComponent = ({ currentPage, totalPages, onPageChange }: PaginationProps) => {
   if (totalPages <= 1) return null;
 
   const pages = [];
@@ -82,3 +83,5 @@ export const Pagination = ({ currentPage, totalPages, onPageChange }: Pagination
     </div>
   );
 };
+
+export const Pagination = memo(PaginationComponent);

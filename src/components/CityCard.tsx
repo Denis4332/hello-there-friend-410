@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 
 interface CityCardProps {
@@ -5,7 +6,7 @@ interface CityCardProps {
   slug: string;
 }
 
-export const CityCard = ({ name, slug }: CityCardProps) => {
+const CityCardComponent = ({ name, slug }: CityCardProps) => {
   return (
     <Link to={`/stadt/${slug}`}>
       <div className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
@@ -14,3 +15,5 @@ export const CityCard = ({ name, slug }: CityCardProps) => {
     </Link>
   );
 };
+
+export const CityCard = memo(CityCardComponent);

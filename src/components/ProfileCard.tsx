@@ -1,8 +1,9 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Crown, CheckCircle2, Tag, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Profile, Photo } from '@/types/dating';
+import type { Profile, Photo } from '@/types/dating';
 
 interface ProfileCardProps {
   profile: Profile & {
@@ -20,7 +21,7 @@ interface ProfileCardProps {
   distance?: number;
 }
 
-export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
+const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
   const photoUrl = primaryPhoto 
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
@@ -121,3 +122,5 @@ export const ProfileCard = ({ profile, distance }: ProfileCardProps) => {
     </Link>
   );
 };
+
+export const ProfileCard = memo(ProfileCardComponent);

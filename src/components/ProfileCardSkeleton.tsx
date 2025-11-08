@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
-export const ProfileCardSkeleton = () => {
+const ProfileCardSkeletonComponent = () => {
   return (
     <Card className="overflow-hidden">
       <div className="relative">
@@ -24,3 +25,5 @@ export const ProfileCardSkeleton = () => {
     </Card>
   );
 };
+
+export const ProfileCardSkeleton = memo(ProfileCardSkeletonComponent);
