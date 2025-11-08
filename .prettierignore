@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+bun.lockb
+package-lock.json
+
+# Build outputs
+dist
+build
+.vite
+
+# Generated files
+src/integrations/supabase/types.ts
+
+# Config files
+.env
+.env.*
+
+# Migrations
+supabase/migrations
+
+# IDE
+.vscode
+.idea
+
+# Misc
+coverage
+*.log
