@@ -53,6 +53,7 @@ const AdminDropdowns = lazy(() => import("./pages/admin/AdminDropdowns"));
 const AdminVerifications = lazy(() => import("./pages/admin/AdminVerifications"));
 const AdminAdvertisements = lazy(() => import("./pages/admin/AdminAdvertisements"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminRateLimits = lazy(() => import("./pages/admin/AdminRateLimits"));
 
 // Optimized QueryClient with aggressive caching
 const queryClient = new QueryClient({
@@ -153,7 +154,8 @@ const AppContent = () => {
             <Route path="/admin/dropdowns" element={<ProtectedRoute><AdminDropdowns /></ProtectedRoute>} />
             <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
             <Route path="/admin/advertisements" element={<ProtectedRoute><AdminAdvertisements /></ProtectedRoute>} />
-            <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
+              <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
+              <Route path="/admin/rate-limits" element={<ProtectedRoute><AdminRateLimits /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

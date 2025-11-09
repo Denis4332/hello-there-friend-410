@@ -11,14 +11,27 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/hooks/useContactMessages';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { data: unreadCount } = useUnreadCount();
+  
+  // Fetch locked accounts count
+  const { data: lockedCount } = useQuery({
+    queryKey: ['locked-accounts-count'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_rate_limits_for_admin');
+      if (error) return 0;
+      return (data as any[])?.filter(r => r.is_locked).length || 0;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -139,6 +152,21 @@ export const AdminHeader = () => {
                 )}
               >
                 Analytics
+              </Link>
+              <Link 
+                to="/admin/rate-limits" 
+                className={cn(
+                  "hover:text-primary transition-colors flex items-center gap-2",
+                  isActive("/admin/rate-limits") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
+                <ShieldAlert className="h-4 w-4" />
+                Sicherheit
+                {lockedCount && lockedCount > 0 && (
+                  <Badge variant="destructive" className="ml-1 px-1.5 py-0 text-xs">
+                    {lockedCount}
+                  </Badge>
+                )}
               </Link>
             </nav>
           </div>

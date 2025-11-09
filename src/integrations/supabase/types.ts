@@ -976,6 +976,10 @@ export type Database = {
             }
             Returns: string
           }
+      admin_unlock_rate_limit: {
+        Args: { _email: string; _type: string }
+        Returns: boolean
+      }
       check_auth_rate_limit: {
         Args: { _email: string; _type: string }
         Returns: Json
@@ -1126,6 +1130,21 @@ export type Database = {
           profile_count: number
           role: Database["public"]["Enums"]["app_role"]
           status: Database["public"]["Enums"]["user_status"]
+        }[]
+      }
+      get_rate_limits_for_admin: {
+        Args: never
+        Returns: {
+          attempt_type: string
+          created_at: string
+          email: string
+          failed_attempts: number
+          id: string
+          is_locked: boolean
+          last_attempt_at: string
+          locked_until: string
+          minutes_remaining: number
+          updated_at: string
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }

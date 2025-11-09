@@ -11,7 +11,8 @@ import {
   Shield, 
   FolderKanban, 
   MapPin,
-  User
+  User,
+  ShieldAlert
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -53,6 +54,10 @@ const AdminDashboard = () => {
         .from('verification_submissions')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
+      
+      // Count locked accounts
+      const { data: rateLimitsData } = await supabase.rpc('get_rate_limits_for_admin');
+      const lockedAccounts = (rateLimitsData as any[])?.filter(r => r.is_locked).length || 0;
       
       return [
         { 
@@ -102,6 +107,14 @@ const AdminDashboard = () => {
           icon: Shield,
           color: 'text-cyan-500',
           bgColor: 'bg-cyan-50 dark:bg-cyan-950'
+        },
+        { 
+          label: 'Gesperrte Accounts', 
+          value: lockedAccounts, 
+          link: '/admin/rate-limits',
+          icon: ShieldAlert,
+          color: 'text-yellow-500',
+          bgColor: 'bg-yellow-50 dark:bg-yellow-950'
         },
       ];
     }
@@ -197,6 +210,15 @@ const AdminDashboard = () => {
                     <h3 className="font-semibold">Nachrichten</h3>
                   </div>
                   <p className="text-sm text-muted-foreground">Kontaktanfragen beantworten</p>
+                </div>
+              </Link>
+              <Link to="/admin/rate-limits">
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <ShieldAlert className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Rate Limits</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Gesperrte Accounts verwalten</p>
                 </div>
               </Link>
             </div>
