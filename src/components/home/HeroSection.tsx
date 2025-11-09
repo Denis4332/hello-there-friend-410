@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { MapPin, Tag, Search, X } from 'lucide-react';
 import { FilterPopover } from '@/components/search/FilterPopover';
 import { detectLocation } from '@/lib/geolocation';
+import { getOptimizedImageUrl, supportsWebP } from '@/utils/imageOptimization';
 import { toast } from 'sonner';
 import { Canton } from '@/types/common';
 
@@ -42,6 +43,25 @@ export const HeroSection = ({
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryGpsOpen, setCategoryGpsOpen] = useState(false);
+  const [bgLoaded, setBgLoaded] = useState(false);
+  const [webpSupported, setWebpSupported] = useState(false);
+
+  useEffect(() => {
+    supportsWebP().then(setWebpSupported);
+  }, []);
+
+  useEffect(() => {
+    if (heroImageUrl) {
+      const optimizedUrl = getOptimizedImageUrl(heroImageUrl, {
+        width: 1920,
+        quality: 80,
+        format: webpSupported ? 'webp' : 'origin'
+      });
+      const img = new Image();
+      img.src = optimizedUrl;
+      img.onload = () => setBgLoaded(true);
+    }
+  }, [heroImageUrl, webpSupported]);
 
   const activeFiltersCount = [canton, category, keyword, useGPS].filter(Boolean).length;
 
@@ -85,15 +105,23 @@ export const HeroSection = ({
     setUseGPS(false);
   };
 
+  const optimizedBgUrl = heroImageUrl && bgLoaded 
+    ? getOptimizedImageUrl(heroImageUrl, { 
+        width: 1920, 
+        quality: 80, 
+        format: webpSupported ? 'webp' : 'origin' 
+      })
+    : undefined;
+
   return (
     <section 
       className="relative py-16"
       aria-label="Hero-Bereich mit Suchfunktion"
       style={{
-        backgroundImage: heroImageUrl ? `url(${heroImageUrl})` : undefined,
+        backgroundImage: optimizedBgUrl ? `url(${optimizedBgUrl})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundColor: heroImageUrl ? undefined : 'hsl(var(--muted))',
+        backgroundColor: !optimizedBgUrl ? 'hsl(var(--muted))' : undefined,
       }}
     >
       {heroImageUrl && (

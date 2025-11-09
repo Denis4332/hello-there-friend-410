@@ -3,29 +3,41 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Suspense, useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
+import { useDesignSettings } from "./hooks/useDesignSettings";
+import { BannerManager } from "./components/BannerManager";
+import { ProtectedRoute } from "./components/admin/ProtectedRoute";
+import { UserProtectedRoute } from "./components/UserProtectedRoute";
+import { PageSkeleton } from "./components/PageSkeleton";
+
+// Eager load only homepage and auth
 import Index from "./pages/Index";
-import Suche from "./pages/Suche";
-import Profil from "./pages/Profil";
-import Stadt from "./pages/Stadt";
-import Kategorie from "./pages/Kategorie";
-import Cities from "./pages/Cities";
-import Kantone from "./pages/Kantone";
-import Categories from "./pages/Categories";
-import Kontakt from "./pages/Kontakt";
-import AGB from "./pages/AGB";
-import Datenschutz from "./pages/Datenschutz";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ServerError from "./pages/ServerError";
-import Auth from "./pages/Auth";
-import ProfileCreate from "./pages/ProfileCreate";
-import UserDashboard from "./pages/UserDashboard";
-import ProfileEdit from "./pages/ProfileEdit";
-// Lazy load admin pages for better code splitting
-import { lazy } from "react";
+
+// Lazy load all other pages for optimal code splitting
+const Suche = lazy(() => import("./pages/Suche"));
+const Profil = lazy(() => import("./pages/Profil"));
+const Stadt = lazy(() => import("./pages/Stadt"));
+const Kategorie = lazy(() => import("./pages/Kategorie"));
+const Cities = lazy(() => import("./pages/Cities"));
+const Kantone = lazy(() => import("./pages/Kantone"));
+const Categories = lazy(() => import("./pages/Categories"));
+const Kontakt = lazy(() => import("./pages/Kontakt"));
+const AGB = lazy(() => import("./pages/AGB"));
+const Datenschutz = lazy(() => import("./pages/Datenschutz"));
+const Preise = lazy(() => import("./pages/Preise"));
+const Bannerpreise = lazy(() => import("./pages/Bannerpreise"));
+const ProfileCreate = lazy(() => import("./pages/ProfileCreate"));
+const UserDashboard = lazy(() => import("./pages/UserDashboard"));
+const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
+const ProfileUpgrade = lazy(() => import("./pages/ProfileUpgrade"));
+
+// Lazy load admin pages
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
@@ -40,13 +52,6 @@ const AdminDropdowns = lazy(() => import("./pages/admin/AdminDropdowns"));
 const AdminVerifications = lazy(() => import("./pages/admin/AdminVerifications"));
 const AdminAdvertisements = lazy(() => import("./pages/admin/AdminAdvertisements"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
-import { ProtectedRoute } from "./components/admin/ProtectedRoute";
-import { UserProtectedRoute } from "./components/UserProtectedRoute";
-import { useDesignSettings } from "./hooks/useDesignSettings";
-import { BannerManager } from "./components/BannerManager";
-import Bannerpreise from "./pages/Bannerpreise";
-import Preise from "./pages/Preise";
-import ProfileUpgrade from "./pages/ProfileUpgrade";
 
 // Optimized QueryClient with aggressive caching
 const queryClient = new QueryClient({
@@ -84,11 +89,7 @@ const AppContent = () => {
           <BrowserRouter>
             <PageViewTracker />
             <BannerManager />
-            <Suspense fallback={
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            }>
+            <Suspense fallback={<PageSkeleton />}>
               <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

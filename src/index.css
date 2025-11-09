@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font optimization - use swap for better performance */
+@layer base {
+  * {
+    font-display: swap;
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

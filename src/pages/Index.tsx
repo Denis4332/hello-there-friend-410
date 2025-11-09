@@ -1,5 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { lazy, Suspense } from 'react';
 import { useFeaturedProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -9,7 +10,10 @@ import { SEO } from '@/components/SEO';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 import { HeroSection } from '@/components/home/HeroSection';
-import { FeaturedProfilesSection } from '@/components/home/FeaturedProfilesSection';
+import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
+
+// Lazy load non-critical section
+const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedProfilesSection').then(m => ({ default: m.FeaturedProfilesSection })));
 
 const Index = () => {
   useDesignSettings();
@@ -50,12 +54,25 @@ const Index = () => {
 
         <BannerDisplay position="top" className="container mx-auto px-4 py-8" />
 
-        <FeaturedProfilesSection
-          profiles={featuredProfiles}
-          isLoading={loadingProfiles}
-          title={featuredProfilesTitle}
-          noProfilesText={noProfilesText}
-        />
+        <Suspense fallback={
+          <section className="py-12 bg-muted">
+            <div className="container mx-auto px-4">
+              <div className="h-8 bg-muted-foreground/20 rounded w-1/4 mb-6 animate-pulse" />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ProfileCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+          </section>
+        }>
+          <FeaturedProfilesSection
+            profiles={featuredProfiles}
+            isLoading={loadingProfiles}
+            title={featuredProfilesTitle}
+            noProfilesText={noProfilesText}
+          />
+        </Suspense>
       </main>
       <Footer />
     </div>
