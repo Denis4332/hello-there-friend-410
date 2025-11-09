@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, user, hasRole, loading } = useAuth();
+  const { checkRateLimit, recordAttempt } = useAuthRateLimit();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,9 +32,24 @@ const AdminLogin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check rate limit
+    const rateLimitCheck = await checkRateLimit(email, 'login');
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: 'Zu viele Versuche',
+        description: rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     const { error } = await signIn(email, password);
+
+    // Record attempt
+    await recordAttempt(email, 'login', !error);
 
     if (error) {
       toast({

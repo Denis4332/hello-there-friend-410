@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
+import { useToast } from '@/hooks/use-toast';
 
 const emailSchema = z.string().email('Ungültige E-Mail-Adresse');
 
@@ -22,6 +24,8 @@ export const ForgotPasswordDialog = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { resetPassword } = useAuth();
+  const { checkRateLimit, recordAttempt } = useAuthRateLimit();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,9 +41,23 @@ export const ForgotPasswordDialog = () => {
       return;
     }
 
+    // Check rate limit
+    const rateLimitCheck = await checkRateLimit(email, 'password_reset');
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: 'Zu viele Versuche',
+        description: rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     const { error: resetError } = await resetPassword(email);
+
+    // Record attempt
+    await recordAttempt(email, 'password_reset', !resetError);
 
     setIsLoading(false);
 

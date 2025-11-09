@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
+import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
+import { useToast } from '@/hooks/use-toast';
 
 const authSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
@@ -23,6 +25,8 @@ const authSchema = z.object({
 const Auth = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
+  const { toast } = useToast();
+  const { checkRateLimit, recordAttempt } = useAuthRateLimit();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,8 +68,23 @@ const Auth = () => {
     e.preventDefault();
     if (!validate()) return;
 
+    // Check rate limit
+    const rateLimitCheck = await checkRateLimit(email, 'login');
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: 'Zu viele Versuche',
+        description: rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     const { error } = await signIn(email, password);
+    
+    // Record attempt
+    await recordAttempt(email, 'login', !error);
+    
     setIsSubmitting(false);
 
     if (!error) {
@@ -77,8 +96,23 @@ const Auth = () => {
     e.preventDefault();
     if (!validate()) return;
 
+    // Check rate limit
+    const rateLimitCheck = await checkRateLimit(email, 'signup');
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: 'Zu viele Versuche',
+        description: rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     const { error } = await signUp(email, password);
+    
+    // Record attempt
+    await recordAttempt(email, 'signup', !error);
+    
     setIsSubmitting(false);
 
     if (!error) {
