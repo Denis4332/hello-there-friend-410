@@ -29,6 +29,26 @@ const AdminAccount = () => {
       return;
     }
 
+    if (!/[A-Z]/.test(newPassword)) {
+      toast.error('Passwort muss mindestens einen Großbuchstaben enthalten');
+      return;
+    }
+
+    if (!/[a-z]/.test(newPassword)) {
+      toast.error('Passwort muss mindestens einen Kleinbuchstaben enthalten');
+      return;
+    }
+
+    if (!/[0-9]/.test(newPassword)) {
+      toast.error('Passwort muss mindestens eine Zahl enthalten');
+      return;
+    }
+
+    if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      toast.error('Passwort muss mindestens ein Sonderzeichen enthalten');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -113,7 +133,7 @@ const AdminAccount = () => {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Mindestens 8 Zeichen
+                    Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen
                   </p>
                 </div>
 

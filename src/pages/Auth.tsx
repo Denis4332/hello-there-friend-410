@@ -11,7 +11,12 @@ import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const authSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
-  password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen lang sein'),
+  password: z.string()
+    .min(8, 'Passwort muss mindestens 8 Zeichen lang sein')
+    .regex(/[A-Z]/, 'Passwort muss mindestens einen Großbuchstaben enthalten')
+    .regex(/[a-z]/, 'Passwort muss mindestens einen Kleinbuchstaben enthalten')
+    .regex(/[0-9]/, 'Passwort muss mindestens eine Zahl enthalten')
+    .regex(/[^A-Za-z0-9]/, 'Passwort muss mindestens ein Sonderzeichen enthalten'),
 });
 
 const Auth = () => {
@@ -161,7 +166,7 @@ const Auth = () => {
                       <p className="text-sm text-destructive mt-1">{errors.password}</p>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
-                      Mindestens 6 Zeichen
+                      Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen
                     </p>
                   </div>
 
