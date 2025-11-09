@@ -10,9 +10,11 @@ interface RateLimitCheck {
 export const useAuthRateLimit = () => {
   const checkRateLimit = async (email: string, type: 'login' | 'signup' | 'password_reset'): Promise<RateLimitCheck> => {
     try {
-      const { data, error } = await supabase.rpc('check_auth_rate_limit', {
-        _email: email.toLowerCase().trim(),
-        _type: type
+      const { data, error } = await supabase.functions.invoke('check-auth-rate-limit', {
+        body: {
+          email: email.toLowerCase().trim(),
+          type: type
+        }
       });
 
       if (error) {
@@ -20,7 +22,7 @@ export const useAuthRateLimit = () => {
         return { allowed: true, remaining_attempts: 5 }; // Fail open for safety
       }
 
-      return data as unknown as RateLimitCheck;
+      return data as RateLimitCheck;
     } catch (error) {
       console.error('Rate limit check error:', error);
       return { allowed: true, remaining_attempts: 5 }; // Fail open for safety
@@ -29,10 +31,12 @@ export const useAuthRateLimit = () => {
 
   const recordAttempt = async (email: string, type: 'login' | 'signup' | 'password_reset', success: boolean): Promise<void> => {
     try {
-      const { error } = await supabase.rpc('record_auth_attempt', {
-        _email: email.toLowerCase().trim(),
-        _type: type,
-        _success: success
+      const { error } = await supabase.functions.invoke('record-auth-attempt', {
+        body: {
+          email: email.toLowerCase().trim(),
+          type: type,
+          success: success
+        }
       });
 
       if (error) {

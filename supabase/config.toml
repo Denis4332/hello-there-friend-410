@@ -21,6 +21,12 @@ verify_jwt = false
 [functions.track-profile-view]
 verify_jwt = false
 
+[functions.check-auth-rate-limit]
+verify_jwt = false
+
+[functions.record-auth-attempt]
+verify_jwt = false
+
 # Admin account creation disabled after initial setup for security
 # [functions.create-admin-account]
 # verify_jwt = false
