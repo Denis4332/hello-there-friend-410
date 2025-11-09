@@ -131,6 +131,15 @@ export const AdminHeader = () => {
               >
                 Dropdowns
               </Link>
+              <Link 
+                to="/admin/analytics" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/analytics") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
+                Analytics
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">

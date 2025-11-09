@@ -2,6 +2,7 @@ import { Phone, MessageCircle, Mail, Globe, Send, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface ContactSectionProps {
   phone?: string;
@@ -10,6 +11,7 @@ interface ContactSectionProps {
   website?: string;
   telegram?: string;
   instagram?: string;
+  profileId?: string;
 }
 
 export const ContactSection = ({
@@ -19,8 +21,10 @@ export const ContactSection = ({
   website,
   telegram,
   instagram,
+  profileId,
 }: ContactSectionProps) => {
   const [isVisible, setIsVisible] = useState(false);
+  const { trackContactClick } = useAnalytics();
   
   // Check if at least one contact method is available
   const hasContact = phone || whatsapp || email || website || telegram || instagram;
@@ -68,7 +72,10 @@ export const ContactSection = ({
             className="w-full justify-start"
             asChild
           >
-            <a href={`tel:${phone}`}>
+            <a 
+              href={`tel:${phone}`}
+              onClick={() => profileId && trackContactClick(profileId, 'phone')}
+            >
               <Phone className="mr-2 h-4 w-4" />
               {phone}
             </a>
@@ -81,7 +88,12 @@ export const ContactSection = ({
             className="w-full justify-start"
             asChild
           >
-            <a href={formatWhatsAppUrl(whatsapp)} target="_blank" rel="noopener noreferrer">
+            <a 
+              href={formatWhatsAppUrl(whatsapp)} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={() => profileId && trackContactClick(profileId, 'whatsapp')}
+            >
               <MessageCircle className="mr-2 h-4 w-4" />
               WhatsApp: {whatsapp}
             </a>
@@ -94,7 +106,10 @@ export const ContactSection = ({
             className="w-full justify-start"
             asChild
           >
-            <a href={`mailto:${email}`}>
+            <a 
+              href={`mailto:${email}`}
+              onClick={() => profileId && trackContactClick(profileId, 'email')}
+            >
               <Mail className="mr-2 h-4 w-4" />
               {email}
             </a>
@@ -107,7 +122,12 @@ export const ContactSection = ({
             className="w-full justify-start"
             asChild
           >
-            <a href={website} target="_blank" rel="noopener noreferrer">
+            <a 
+              href={website} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={() => profileId && trackContactClick(profileId, 'website')}
+            >
               <Globe className="mr-2 h-4 w-4" />
               Website
             </a>
@@ -120,7 +140,12 @@ export const ContactSection = ({
             className="w-full justify-start"
             asChild
           >
-            <a href={formatTelegramUrl(telegram)} target="_blank" rel="noopener noreferrer">
+            <a 
+              href={formatTelegramUrl(telegram)} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={() => profileId && trackContactClick(profileId, 'telegram')}
+            >
               <Send className="mr-2 h-4 w-4" />
               Telegram: {telegram}
             </a>
@@ -133,7 +158,12 @@ export const ContactSection = ({
             className="w-full justify-start"
             asChild
           >
-            <a href={formatInstagramUrl(instagram)} target="_blank" rel="noopener noreferrer">
+            <a 
+              href={formatInstagramUrl(instagram)} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={() => profileId && trackContactClick(profileId, 'instagram')}
+            >
               <svg
                 className="mr-2 h-4 w-4"
                 fill="currentColor"

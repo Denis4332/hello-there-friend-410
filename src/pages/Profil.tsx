@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProfileBySlug } from '@/hooks/useProfiles';
 import { useCreateReport } from '@/hooks/useReports';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,7 @@ import { ContactSection } from '@/components/profile/ContactSection';
 import { ProfileDetailSkeleton } from '@/components/ProfileDetailSkeleton';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { ProfileSchema } from '@/components/seo/ProfileSchema';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Profil = () => {
   const { slug } = useParams();
@@ -25,10 +26,18 @@ const Profil = () => {
   const { data: allCategories = [] } = useCategories();
   const { data: reportReasons = [] } = useDropdownOptions('report_reasons');
   const createReport = useCreateReport();
+  const { trackProfileView } = useAnalytics();
   
   const [reportReason, setReportReason] = useState('');
   const [reportMessage, setReportMessage] = useState('');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+
+  // Track profile view
+  useEffect(() => {
+    if (profile?.id) {
+      trackProfileView(profile.id);
+    }
+  }, [profile?.id, trackProfileView]);
 
   const { data: contactButton } = useSiteSetting('profile_contact_button');
   const { data: reportButton } = useSiteSetting('profile_report_button');
@@ -239,6 +248,7 @@ const Profil = () => {
                 website={profile.website}
                 telegram={profile.telegram}
                 instagram={profile.instagram}
+                profileId={profile.id}
               />
 
               {/* Report Button */}

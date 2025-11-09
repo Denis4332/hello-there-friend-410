@@ -2,10 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Suspense, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { useAnalytics } from "./hooks/useAnalytics";
 import Index from "./pages/Index";
 import Suche from "./pages/Suche";
 import Profil from "./pages/Profil";
@@ -38,6 +39,7 @@ const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminDropdowns = lazy(() => import("./pages/admin/AdminDropdowns"));
 const AdminVerifications = lazy(() => import("./pages/admin/AdminVerifications"));
 const AdminAdvertisements = lazy(() => import("./pages/admin/AdminAdvertisements"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { useDesignSettings } from "./hooks/useDesignSettings";
@@ -59,6 +61,17 @@ const queryClient = new QueryClient({
   },
 });
 
+const PageViewTracker = () => {
+  const location = useLocation();
+  const { trackPageView } = useAnalytics();
+  
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname, trackPageView]);
+  
+  return null;
+};
+
 const AppContent = () => {
   useDesignSettings(); // Load dynamic colors from database
   
@@ -69,6 +82,7 @@ const AppContent = () => {
         <Sonner />
         <ErrorBoundary>
           <BrowserRouter>
+            <PageViewTracker />
             <BannerManager />
             <Suspense fallback={
               <div className="min-h-screen flex items-center justify-center">
@@ -136,6 +150,7 @@ const AppContent = () => {
             <Route path="/admin/dropdowns" element={<ProtectedRoute><AdminDropdowns /></ProtectedRoute>} />
             <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
             <Route path="/admin/advertisements" element={<ProtectedRoute><AdminAdvertisements /></ProtectedRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

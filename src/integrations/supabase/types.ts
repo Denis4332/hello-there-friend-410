@@ -77,6 +77,42 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cantons: {
         Row: {
           abbreviation: string
@@ -362,6 +398,44 @@ export type Database = {
           },
         ]
       }
+      profile_views: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          profile_id: string
+          referrer: string | null
+          session_id: string
+          viewer_user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          profile_id: string
+          referrer?: string | null
+          session_id: string
+          viewer_user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          profile_id?: string
+          referrer?: string | null
+          session_id?: string
+          viewer_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           about_me: string | null
@@ -492,6 +566,56 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_queries: {
+        Row: {
+          canton: string | null
+          category_id: string | null
+          created_at: string | null
+          id: string
+          query_text: string | null
+          radius: number | null
+          results_count: number | null
+          session_id: string | null
+          user_id: string | null
+          user_lat: number | null
+          user_lng: number | null
+        }
+        Insert: {
+          canton?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          query_text?: string | null
+          radius?: number | null
+          results_count?: number | null
+          session_id?: string | null
+          user_id?: string | null
+          user_lat?: number | null
+          user_lng?: number | null
+        }
+        Update: {
+          canton?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          query_text?: string | null
+          radius?: number | null
+          results_count?: number | null
+          session_id?: string | null
+          user_id?: string | null
+          user_lat?: number | null
+          user_lng?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_queries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -671,6 +795,25 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_view_counts: {
+        Row: {
+          profile_id: string | null
+          total_views: number | null
+          unique_views: number | null
+          views_24h: number | null
+          views_30d: number | null
+          views_7d: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _postgis_deprecate: {
@@ -802,6 +945,7 @@ export type Database = {
           }
       check_contact_rate_limit: { Args: { _email: string }; Returns: boolean }
       check_error_rate_limit: { Args: { _url: string }; Returns: boolean }
+      cleanup_old_analytics: { Args: never; Returns: undefined }
       cleanup_old_error_logs: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
