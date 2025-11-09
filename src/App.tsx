@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import ServerError from "./pages/ServerError";
 
 // Lazy load all other pages for optimal code splitting
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Suche = lazy(() => import("./pages/Suche"));
 const Profil = lazy(() => import("./pages/Profil"));
 const Stadt = lazy(() => import("./pages/Stadt"));
@@ -93,6 +94,7 @@ const AppContent = () => {
               <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/suche" element={<Suche />} />
             <Route path="/profil/:slug" element={<Profil />} />
             <Route path="/stadt/:slug" element={<Stadt />} />

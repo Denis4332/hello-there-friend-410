@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 
 const authSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
@@ -129,6 +130,10 @@ const Auth = () => {
                     {errors.password && (
                       <p className="text-sm text-destructive mt-1">{errors.password}</p>
                     )}
+                  </div>
+
+                  <div className="flex justify-end">
+                    <ForgotPasswordDialog />
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>

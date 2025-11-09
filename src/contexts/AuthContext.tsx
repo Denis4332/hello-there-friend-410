@@ -14,6 +14,8 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   hasRole: (requiredRole: 'admin' | 'user') => boolean;
 }
 
@@ -176,6 +178,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    // Check rate limit before sending reset email
+    const rateLimitCheck = await checkRateLimit(email, 'password_reset');
+    
+    if (!rateLimitCheck.allowed) {
+      const lockedUntil = rateLimitCheck.locked_until ? new Date(rateLimitCheck.locked_until) : null;
+      const minutesRemaining = lockedUntil ? Math.ceil((lockedUntil.getTime() - Date.now()) / 60000) : 0;
+      
+      toast({
+        title: 'Zu viele Anfragen',
+        description: minutesRemaining > 0 
+          ? `Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
+          : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
+        variant: 'destructive',
+      });
+      
+      return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    // Record the attempt
+    await recordAttempt(email, 'password_reset', !error);
+
+    if (error) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'E-Mail gesendet',
+        description: 'Bitte überprüfen Sie Ihr E-Mail-Postfach für den Passwort-Reset-Link.',
+      });
+    }
+
+    return { error };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Erfolg',
+        description: 'Ihr Passwort wurde erfolgreich geändert.',
+      });
+    }
+
+    return { error };
+  };
+
   const hasRole = (requiredRole: 'admin' | 'user') => {
     if (requiredRole === 'admin') {
       return role === 'admin';
@@ -193,6 +258,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signUp,
         signIn,
         signOut,
+        resetPassword,
+        updatePassword,
         hasRole,
       }}
     >

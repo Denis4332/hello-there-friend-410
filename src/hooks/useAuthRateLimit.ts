@@ -8,7 +8,7 @@ interface RateLimitCheck {
 }
 
 export const useAuthRateLimit = () => {
-  const checkRateLimit = async (email: string, type: 'login' | 'signup'): Promise<RateLimitCheck> => {
+  const checkRateLimit = async (email: string, type: 'login' | 'signup' | 'password_reset'): Promise<RateLimitCheck> => {
     try {
       const { data, error } = await supabase.rpc('check_auth_rate_limit', {
         _email: email.toLowerCase().trim(),
@@ -27,7 +27,7 @@ export const useAuthRateLimit = () => {
     }
   };
 
-  const recordAttempt = async (email: string, type: 'login' | 'signup', success: boolean): Promise<void> => {
+  const recordAttempt = async (email: string, type: 'login' | 'signup' | 'password_reset', success: boolean): Promise<void> => {
     try {
       const { error } = await supabase.rpc('record_auth_attempt', {
         _email: email.toLowerCase().trim(),
