@@ -1,0 +1,47 @@
+import { supabase } from '@/integrations/supabase/client';
+
+interface RateLimitCheck {
+  allowed: boolean;
+  remaining_attempts?: number;
+  locked_until?: string;
+  message?: string;
+}
+
+export const useAuthRateLimit = () => {
+  const checkRateLimit = async (email: string, type: 'login' | 'signup'): Promise<RateLimitCheck> => {
+    try {
+      const { data, error } = await supabase.rpc('check_auth_rate_limit', {
+        _email: email.toLowerCase().trim(),
+        _type: type
+      });
+
+      if (error) {
+        console.error('Rate limit check failed:', error);
+        return { allowed: true, remaining_attempts: 5 }; // Fail open for safety
+      }
+
+      return data as unknown as RateLimitCheck;
+    } catch (error) {
+      console.error('Rate limit check error:', error);
+      return { allowed: true, remaining_attempts: 5 }; // Fail open for safety
+    }
+  };
+
+  const recordAttempt = async (email: string, type: 'login' | 'signup', success: boolean): Promise<void> => {
+    try {
+      const { error } = await supabase.rpc('record_auth_attempt', {
+        _email: email.toLowerCase().trim(),
+        _type: type,
+        _success: success
+      });
+
+      if (error) {
+        console.error('Failed to record auth attempt:', error);
+      }
+    } catch (error) {
+      console.error('Record attempt error:', error);
+    }
+  };
+
+  return { checkRateLimit, recordAttempt };
+};

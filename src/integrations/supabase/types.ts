@@ -113,6 +113,39 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_rate_limits: {
+        Row: {
+          attempt_type: string
+          created_at: string | null
+          email: string
+          failed_attempts: number | null
+          id: string
+          last_attempt_at: string | null
+          locked_until: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempt_type: string
+          created_at?: string | null
+          email: string
+          failed_attempts?: number | null
+          id?: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempt_type?: string
+          created_at?: string | null
+          email?: string
+          failed_attempts?: number | null
+          id?: string
+          last_attempt_at?: string | null
+          locked_until?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cantons: {
         Row: {
           abbreviation: string
@@ -943,9 +976,14 @@ export type Database = {
             }
             Returns: string
           }
+      check_auth_rate_limit: {
+        Args: { _email: string; _type: string }
+        Returns: Json
+      }
       check_contact_rate_limit: { Args: { _email: string }; Returns: boolean }
       check_error_rate_limit: { Args: { _url: string }; Returns: boolean }
       cleanup_old_analytics: { Args: never; Returns: undefined }
+      cleanup_old_auth_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_error_logs: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
@@ -1139,6 +1177,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      record_auth_attempt: {
+        Args: { _email: string; _success: boolean; _type: string }
+        Returns: undefined
+      }
       search_profiles_by_radius: {
         Args: {
           filter_category_id?: string

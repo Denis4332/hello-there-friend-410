@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
 
 type UserRole = 'admin' | 'user' | null;
 
@@ -24,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { checkRateLimit, recordAttempt } = useAuthRateLimit();
 
   useEffect(() => {
     // Set up auth state listener
@@ -78,6 +80,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string) => {
+    // Check rate limit before attempting signup
+    const rateLimitCheck = await checkRateLimit(email, 'signup');
+    
+    if (!rateLimitCheck.allowed) {
+      const lockedUntil = rateLimitCheck.locked_until ? new Date(rateLimitCheck.locked_until) : null;
+      const minutesRemaining = lockedUntil ? Math.ceil((lockedUntil.getTime() - Date.now()) / 60000) : 0;
+      
+      toast({
+        title: 'Zu viele Anmeldeversuche',
+        description: minutesRemaining > 0 
+          ? `Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
+          : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
+        variant: 'destructive',
+      });
+      
+      return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
+    }
+    
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -87,6 +107,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         emailRedirectTo: redirectUrl,
       },
     });
+
+    // Record the attempt result
+    await recordAttempt(email, 'signup', !error);
 
     if (error) {
       toast({
@@ -100,15 +123,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Check rate limit before attempting login
+    const rateLimitCheck = await checkRateLimit(email, 'login');
+    
+    if (!rateLimitCheck.allowed) {
+      const lockedUntil = rateLimitCheck.locked_until ? new Date(rateLimitCheck.locked_until) : null;
+      const minutesRemaining = lockedUntil ? Math.ceil((lockedUntil.getTime() - Date.now()) / 60000) : 0;
+      
+      toast({
+        title: 'Zu viele Anmeldeversuche',
+        description: minutesRemaining > 0 
+          ? `Account wurde vorübergehend gesperrt. Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
+          : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
+        variant: 'destructive',
+      });
+      
+      return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    // Record the attempt result
+    await recordAttempt(email, 'login', !error);
+
     if (error) {
+      const remaining = rateLimitCheck.remaining_attempts ? rateLimitCheck.remaining_attempts - 1 : 0;
+      
       toast({
         title: 'Login fehlgeschlagen',
-        description: error.message,
+        description: remaining > 0 
+          ? `${error.message} Noch ${remaining} Versuche übrig.`
+          : error.message,
         variant: 'destructive',
       });
     }
