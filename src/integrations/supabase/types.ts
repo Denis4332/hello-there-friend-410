@@ -120,6 +120,7 @@ export type Database = {
           email: string
           failed_attempts: number | null
           id: string
+          ip_address: string | null
           last_attempt_at: string | null
           locked_until: string | null
           updated_at: string | null
@@ -130,6 +131,7 @@ export type Database = {
           email: string
           failed_attempts?: number | null
           id?: string
+          ip_address?: string | null
           last_attempt_at?: string | null
           locked_until?: string | null
           updated_at?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           email?: string
           failed_attempts?: number | null
           id?: string
+          ip_address?: string | null
           last_attempt_at?: string | null
           locked_until?: string | null
           updated_at?: string | null
