@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
+[![CI](https://github.com/username/repo/actions/workflows/ci.yml/badge.svg)](https://github.com/username/repo/actions/workflows/ci.yml)
+[![Lighthouse CI](https://github.com/username/repo/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/username/repo/actions/workflows/lighthouse.yml)
+[![Security Scan](https://github.com/username/repo/actions/workflows/security.yml/badge.svg)](https://github.com/username/repo/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/username/repo/branch/main/graph/badge.svg)](https://codecov.io/gh/username/repo)
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/01c4b111-26cf-4d31-8791-24bb8c13acb2
+
+📚 **[CI/CD Documentation](./CI_CD.md)** - Learn about our automated testing, deployment, and quality gates
 
 ## How can I edit this code?
 

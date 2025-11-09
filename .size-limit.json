@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Main JavaScript Bundle",
+    "path": "dist/assets/*.js",
+    "limit": "150 KB",
+    "webpack": false
+  },
+  {
+    "name": "CSS Bundle",
+    "path": "dist/assets/*.css",
+    "limit": "30 KB",
+    "webpack": false
+  }
+]
