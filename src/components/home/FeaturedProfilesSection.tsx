@@ -25,6 +25,13 @@ export const FeaturedProfilesSection = ({
   title,
   noProfilesText,
 }: FeaturedProfilesSectionProps) => {
+  // Split profiles into chunks of 8
+  const chunkSize = 8;
+  const chunks = [];
+  for (let i = 0; i < profiles.length; i += chunkSize) {
+    chunks.push(profiles.slice(i, i + chunkSize));
+  }
+
   return (
     <section className="py-12 bg-muted content-visibility-auto">
       <div className="container mx-auto px-4">
@@ -36,16 +43,23 @@ export const FeaturedProfilesSection = ({
             ))}
           </div>
         ) : profiles.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-fr">
-            {profiles.map((profile, index) => (
-              <>
-                <ProfileCard key={profile.id} profile={profile} />
-                {(index + 1) % 8 === 0 && (
-                  <div className="col-span-2 md:col-span-3 lg:col-span-4">
+          <div className="space-y-8">
+            {chunks.map((chunk, chunkIndex) => (
+              <div key={`chunk-${chunkIndex}`}>
+                {/* Grid for up to 8 profiles */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-fr">
+                  {chunk.map((profile) => (
+                    <ProfileCard key={profile.id} profile={profile} />
+                  ))}
+                </div>
+                
+                {/* Banner AFTER each grid (except the last one) */}
+                {chunkIndex < chunks.length - 1 && (
+                  <div className="mt-8">
                     <BannerDisplay position="grid" className="w-full" />
                   </div>
                 )}
-              </>
+              </div>
             ))}
           </div>
         ) : (
