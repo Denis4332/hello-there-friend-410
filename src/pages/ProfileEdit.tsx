@@ -46,7 +46,15 @@ const ProfileEdit = () => {
         return;
       }
 
-      setProfile(profileRes.data);
+      // SECURITY: Load contact data from separate protected table
+      const { data: contactData } = await supabase
+        .from('profile_contacts')
+        .select('*')
+        .eq('profile_id', profileRes.data.id)
+        .maybeSingle();
+
+      // Merge profile and contact data
+      setProfile({ ...profileRes.data, ...contactData });
       if (cantonsRes.data) setCantons(cantonsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
 
@@ -75,29 +83,40 @@ const ProfileEdit = () => {
 
     setIsSubmitting(true);
     try {
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({
-        display_name: data.display_name,
-        is_adult: data.is_adult,
-        gender: data.gender,
-        city: data.city,
-        canton: data.canton,
-        postal_code: data.postal_code,
-        street_address: data.street_address,
-        show_street: data.show_street,
-        about_me: data.about_me,
-        languages: data.languages,
-        phone: data.phone,
-        whatsapp: data.whatsapp,
-        email: data.email,
-        website: data.website,
-        telegram: data.telegram,
-        instagram: data.instagram,
-      })
-      .eq('id', profile.id);
+      // SECURITY: Update profile data (no contact info)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          display_name: data.display_name,
+          age: data.age,
+          is_adult: data.is_adult,
+          gender: data.gender,
+          city: data.city,
+          canton: data.canton,
+          postal_code: data.postal_code,
+          about_me: data.about_me,
+          languages: data.languages,
+        })
+        .eq('id', profile.id);
 
       if (profileError) throw profileError;
+
+      // SECURITY: Update contact data in separate protected table
+      const { error: contactError } = await supabase
+        .from('profile_contacts')
+        .upsert({
+          profile_id: profile.id,
+          email: data.email,
+          phone: data.phone,
+          whatsapp: data.whatsapp,
+          telegram: data.telegram,
+          instagram: data.instagram,
+          website: data.website,
+          street_address: data.street_address,
+          show_street: data.show_street,
+        });
+
+      if (contactError) throw contactError;
 
       await supabase
         .from('profile_categories')
@@ -212,6 +231,7 @@ const ProfileEdit = () => {
 
   const defaultValues: ProfileFormData = {
     display_name: profile.display_name,
+    age: profile.age || 18,
     is_adult: true,
     gender: profile.gender,
     city: profile.city,

@@ -55,35 +55,45 @@ const ProfileCreate = () => {
 
     setIsSubmitting(true);
     try {
-      // Create profile
+      // SECURITY: Create profile without contact data
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .insert({
           user_id: user.id,
           display_name: data.display_name,
+          age: data.age,
           is_adult: data.is_adult,
           gender: data.gender,
           city: data.city,
           canton: data.canton,
           postal_code: data.postal_code,
-          street_address: data.street_address,
-          show_street: data.show_street,
           lat: data.lat,
           lng: data.lng,
           about_me: data.about_me,
           languages: data.languages,
-          phone: data.phone,
-          whatsapp: data.whatsapp,
-          email: data.email,
-          website: data.website,
-          telegram: data.telegram,
-          instagram: data.instagram,
           status: 'pending',
         })
         .select()
         .single();
 
       if (profileError) throw profileError;
+
+      // SECURITY: Insert contact data into separate protected table
+      const { error: contactError } = await supabase
+        .from('profile_contacts')
+        .insert({
+          profile_id: profile.id,
+          email: data.email,
+          phone: data.phone,
+          whatsapp: data.whatsapp,
+          telegram: data.telegram,
+          instagram: data.instagram,
+          website: data.website,
+          street_address: data.street_address,
+          show_street: data.show_street,
+        });
+
+      if (contactError) throw contactError;
 
       // Insert profile categories
       const categoryInserts = data.category_ids.map((catId) => ({

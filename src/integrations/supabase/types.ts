@@ -399,6 +399,59 @@ export type Database = {
           },
         ]
       }
+      profile_contacts: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          instagram: string | null
+          phone: string | null
+          profile_id: string
+          show_street: boolean | null
+          street_address: string | null
+          telegram: string | null
+          updated_at: string | null
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          phone?: string | null
+          profile_id: string
+          show_street?: boolean | null
+          street_address?: string | null
+          telegram?: string | null
+          updated_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          phone?: string | null
+          profile_id?: string
+          show_street?: boolean | null
+          street_address?: string | null
+          telegram?: string | null
+          updated_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_moderation_notes: {
         Row: {
           action: string
@@ -480,29 +533,21 @@ export type Database = {
           city: string
           created_at: string | null
           display_name: string
-          email: string | null
           gender: string | null
           id: string
-          instagram: string | null
           is_adult: boolean
           languages: string[] | null
           lat: number | null
           listing_type: string | null
           lng: number | null
-          phone: string | null
           postal_code: string | null
           premium_until: string | null
-          show_street: boolean | null
           slug: string | null
           status: string | null
-          street_address: string | null
-          telegram: string | null
           top_ad_until: string | null
           updated_at: string | null
           user_id: string
           verified_at: string | null
-          website: string | null
-          whatsapp: string | null
         }
         Insert: {
           about_me?: string | null
@@ -511,29 +556,21 @@ export type Database = {
           city: string
           created_at?: string | null
           display_name: string
-          email?: string | null
           gender?: string | null
           id?: string
-          instagram?: string | null
           is_adult?: boolean
           languages?: string[] | null
           lat?: number | null
           listing_type?: string | null
           lng?: number | null
-          phone?: string | null
           postal_code?: string | null
           premium_until?: string | null
-          show_street?: boolean | null
           slug?: string | null
           status?: string | null
-          street_address?: string | null
-          telegram?: string | null
           top_ad_until?: string | null
           updated_at?: string | null
           user_id: string
           verified_at?: string | null
-          website?: string | null
-          whatsapp?: string | null
         }
         Update: {
           about_me?: string | null
@@ -542,29 +579,21 @@ export type Database = {
           city?: string
           created_at?: string | null
           display_name?: string
-          email?: string | null
           gender?: string | null
           id?: string
-          instagram?: string | null
           is_adult?: boolean
           languages?: string[] | null
           lat?: number | null
           listing_type?: string | null
           lng?: number | null
-          phone?: string | null
           postal_code?: string | null
           premium_until?: string | null
-          show_street?: boolean | null
           slug?: string | null
           status?: string | null
-          street_address?: string | null
-          telegram?: string | null
           top_ad_until?: string | null
           updated_at?: string | null
           user_id?: string
           verified_at?: string | null
-          website?: string | null
-          whatsapp?: string | null
         }
         Relationships: []
       }

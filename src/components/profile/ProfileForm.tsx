@@ -13,6 +13,7 @@ import { ContactInfoSection } from './sections/ContactInfoSection';
 
 const profileSchema = z.object({
   display_name: z.string().min(2, 'Name muss mindestens 2 Zeichen lang sein').max(50),
+  age: z.number().int().min(18, 'Du musst mindestens 18 Jahre alt sein').max(120, 'Ungültiges Alter'),
   is_adult: z.boolean().refine((val) => val === true, {
     message: 'Du musst bestätigen, dass du volljährig bist',
   }),

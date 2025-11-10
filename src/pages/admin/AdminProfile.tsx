@@ -60,7 +60,21 @@ const AdminProfile = () => {
       
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+
+      // SECURITY: Load contact data for each profile (admins can see all)
+      const profilesWithContacts = await Promise.all(
+        (data || []).map(async (profile) => {
+          const { data: contactData } = await supabase
+            .from('profile_contacts')
+            .select('*')
+            .eq('profile_id', profile.id)
+            .maybeSingle();
+          
+          return { ...profile, contact: contactData };
+        })
+      );
+      
+      return profilesWithContacts;
     }
   });
 
@@ -331,12 +345,15 @@ const AdminProfile = () => {
                                 <div>
                                   <label className="text-sm font-medium mb-2 block">Kontaktdaten</label>
                                   <div className="space-y-1 text-sm">
-                                    {selectedProfile.phone && <p>📞 Telefon: {selectedProfile.phone}</p>}
-                                    {selectedProfile.whatsapp && <p>💬 WhatsApp: {selectedProfile.whatsapp}</p>}
-                                    {selectedProfile.email && <p>📧 Email: {selectedProfile.email}</p>}
-                                    {selectedProfile.website && <p>🌐 Website: {selectedProfile.website}</p>}
-                                    {selectedProfile.telegram && <p>✈️ Telegram: {selectedProfile.telegram}</p>}
-                                    {selectedProfile.instagram && <p>📷 Instagram: {selectedProfile.instagram}</p>}
+                                    {selectedProfile.contact?.phone && <p>📞 Telefon: {selectedProfile.contact.phone}</p>}
+                                    {selectedProfile.contact?.whatsapp && <p>💬 WhatsApp: {selectedProfile.contact.whatsapp}</p>}
+                                    {selectedProfile.contact?.email && <p>📧 Email: {selectedProfile.contact.email}</p>}
+                                    {selectedProfile.contact?.website && <p>🌐 Website: {selectedProfile.contact.website}</p>}
+                                    {selectedProfile.contact?.telegram && <p>✈️ Telegram: {selectedProfile.contact.telegram}</p>}
+                                    {selectedProfile.contact?.instagram && <p>📷 Instagram: {selectedProfile.contact.instagram}</p>}
+                                    {selectedProfile.contact?.street_address && (
+                                      <p>🏠 Adresse: {selectedProfile.contact.street_address}</p>
+                                    )}
                                   </div>
                                 </div>
                                 
