@@ -40,22 +40,22 @@ export const Header = () => {
             )}
           </Link>
           <nav className="hidden md:flex items-center gap-6" aria-label="Hauptnavigation">
-            <Link to="/" className="hover:underline">
+            <Link to="/" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navHome || 'Start'}
             </Link>
-            <Link to="/kantone" className="hover:underline">
+            <Link to="/kantone" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navCantons || 'Kantone'}
             </Link>
-            <Link to="/kategorien" className="hover:underline">
+            <Link to="/kategorien" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navCategories || 'Kategorien'}
             </Link>
-            <Link to="/preise" className="hover:underline">
+            <Link to="/preise" className="hover:underline active:text-primary-foreground/80 transition-colors">
               Preise & Pakete
             </Link>
-            <Link to="/bannerpreise" className="hover:underline">
+            <Link to="/bannerpreise" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navBanners || 'Werbung'}
             </Link>
-            <Link to="/kontakt" className="hover:underline">
+            <Link to="/kontakt" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navContact || 'Kontakt'}
             </Link>
 
@@ -121,18 +121,18 @@ export const Header = () => {
           </nav>
           
           {/* Mobile CTA Icons */}
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex md:hidden items-center gap-4">
             <Link to="/profil/erstellen">
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Inserat aufgeben">
-                <Plus className="h-5 w-5" aria-hidden="true" />
+              <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label="Inserat aufgeben">
+                <Plus className="h-6 w-6" aria-hidden="true" />
                 <span className="sr-only">Inserat aufgeben</span>
               </Button>
             </Link>
             
             {!user && (
               <Link to="/auth">
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Anmelden">
-                  <User className="h-5 w-5" aria-hidden="true" />
+                <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label="Anmelden">
+                  <User className="h-6 w-6" aria-hidden="true" />
                   <span className="sr-only">Anmelden</span>
                 </Button>
               </Link>
@@ -140,7 +140,7 @@ export const Header = () => {
             
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Menü öffnen">
+                <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label="Menü öffnen">
                   <Menu className="h-6 w-6" aria-hidden="true" />
                   <span className="sr-only">Menü</span>
                 </Button>
@@ -148,19 +148,19 @@ export const Header = () => {
               <SheetContent side="right" className="w-[300px] bg-background overflow-y-auto" aria-label="Mobile Navigation">
                 <nav className="flex flex-col gap-4 mt-8" aria-label="Mobile Menü">
                   {/* Primary Navigation */}
-                  <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                  <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
                     {navHome || 'Start'}
                   </Link>
-                  <Link to="/kantone" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                  <Link to="/kantone" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
                     {navCantons || 'Kantone'}
                   </Link>
-                  <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                  <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
                     {navCategories || 'Kategorien'}
                   </Link>
-                  <Link to="/preise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                  <Link to="/preise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
                     Preise & Pakete
                   </Link>
-                  <Link to="/bannerpreise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary">
+                  <Link to="/bannerpreise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
                     {navBanners || 'Werbung'}
                   </Link>
 
@@ -170,30 +170,30 @@ export const Header = () => {
                   <Link 
                     to="/profil/erstellen" 
                     onClick={() => setMobileMenuOpen(false)} 
-                    className="flex items-center gap-2 text-lg font-semibold text-primary hover:text-primary/80"
+                    className="flex items-center gap-3 text-lg font-semibold text-primary hover:text-primary/80 active:text-primary/60 py-3 transition-colors"
                   >
-                    <Plus className="h-5 w-5" />
+                    <Plus className="h-6 w-6" />
                     Inserat aufgeben
                   </Link>
                   <Link 
                     to="/suche" 
                     onClick={() => setMobileMenuOpen(false)} 
-                    className="flex items-center gap-2 text-lg font-medium hover:text-primary"
+                    className="flex items-center gap-3 text-lg font-medium hover:text-primary active:text-primary/80 py-3 transition-colors"
                   >
-                    <Search className="h-5 w-5" />
+                    <Search className="h-6 w-6" />
                     Suche
                   </Link>
 
                   <Separator />
 
                   {/* Extended Links */}
-                  <Link to="/agb" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Link to="/agb" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
                     AGB
                   </Link>
-                  <Link to="/datenschutz" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Link to="/datenschutz" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
                     Datenschutzerklärung
                   </Link>
-                  <Link to="/kontakt" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Link to="/kontakt" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
                     {navContact || 'Kontakt'}
                   </Link>
 
@@ -211,18 +211,18 @@ export const Header = () => {
                         <Link
                           to="/mein-profil"
                           onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center gap-2 text-lg font-medium hover:text-primary"
+                          className="flex items-center gap-3 text-lg font-medium hover:text-primary active:text-primary/80 py-3 transition-colors"
                         >
-                          <User className="h-5 w-5" />
+                          <User className="h-6 w-6" />
                           {navMyProfile || 'Mein Profil'}
                         </Link>
                         {role === 'admin' && (
                           <Link
                             to="/admin"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-2 text-lg font-medium text-primary hover:text-primary/80"
+                            className="flex items-center gap-3 text-lg font-medium text-primary hover:text-primary/80 active:text-primary/60 py-3 transition-colors"
                           >
-                            <Shield className="h-5 w-5" />
+                            <Shield className="h-6 w-6" />
                             Admin Dashboard
                           </Link>
                         )}

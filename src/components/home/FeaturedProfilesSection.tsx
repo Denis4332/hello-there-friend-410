@@ -22,18 +22,18 @@ export const FeaturedProfilesSection = ({
       <div className="container mx-auto px-4">
         <h2 className="text-2xl font-bold mb-6">{title || 'Aktuelle Profile'}</h2>
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <ProfileCardSkeleton key={i} />
             ))}
           </div>
         ) : profiles.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {profiles.map((profile, index) => (
               <>
                 <ProfileCard key={profile.id} profile={profile} />
                 {(index + 1) % 8 === 0 && (
-                  <div className="col-span-2 lg:col-span-3">
+                  <div className="col-span-1 sm:col-span-2 lg:col-span-3">
                     <BannerDisplay position="grid" className="w-full" />
                   </div>
                 )}

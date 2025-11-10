@@ -37,11 +37,11 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
     <Link 
       to={`/profil/${profile.slug}`} 
       className={cn(
-        "relative block group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl bg-card",
-        isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03]",
-        isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02]",
-        isBasic && "border-2 border-blue-400/50 hover:scale-[1.01]",
-        !isTop && !isPremium && !isBasic && "border hover:scale-[1.01]"
+        "relative block group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
+        isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03] active:scale-[1.01]",
+        isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02] active:scale-100",
+        isBasic && "border-2 border-blue-400/50 hover:scale-[1.01] active:scale-100",
+        !isTop && !isPremium && !isBasic && "border hover:scale-[1.01] active:scale-100"
       )}
     >
       {/* TOP AD Banner */}
@@ -95,8 +95,8 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       </div>
       
       {/* White Info Bar */}
-      <div className="p-3 bg-card">
-        <div className="flex flex-col gap-1.5 mb-2">
+      <div className="p-4 bg-card">
+        <div className="flex flex-col gap-2 mb-2">
           {profile.profile_categories?.[0]?.categories && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Tag className="h-3.5 w-3.5" />
