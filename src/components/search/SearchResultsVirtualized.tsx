@@ -1,3 +1,11 @@
+/**
+ * IMPORTANT: Profile Card Grid Layout Standard
+ * Mobile (< 768px): 2 columns (grid-cols-2)
+ * Tablet (≥ 768px): 3 columns (md:grid-cols-3)
+ * Desktop (≥ 1024px): 4 columns (lg:grid-cols-4)
+ * 
+ * DO NOT change this to grid-cols-1 on mobile!
+ */
 import { memo, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ProfileCard } from '@/components/ProfileCard';
@@ -32,10 +40,9 @@ const SearchResultsVirtualizedComponent = ({
   const getColumnCount = () => {
     if (typeof window === 'undefined') return 4;
     const width = window.innerWidth;
-    if (width < 768) return 1; // mobile
-    if (width < 1024) return 2; // tablet
-    if (width < 1280) return 3; // small desktop
-    return 4; // large desktop
+    if (width < 768) return 2; // mobile: 2 columns
+    if (width < 1024) return 3; // tablet: 3 columns
+    return 4; // desktop: 4 columns
   };
 
   const columnCount = getColumnCount();
@@ -57,7 +64,7 @@ const SearchResultsVirtualizedComponent = ({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
         {Array.from({ length: 24 }).map((_, i) => (
           <ProfileCardSkeleton key={i} />
         ))}
@@ -79,7 +86,7 @@ const SearchResultsVirtualizedComponent = ({
   if (profiles.length < 50) {
     return (
       <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {profiles.map((profile) => (
             <ProfileCard key={profile.id} profile={profile} />
           ))}
@@ -131,7 +138,7 @@ const SearchResultsVirtualizedComponent = ({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 px-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 px-4">
                   {rowProfiles.map((profile) => (
                     <ProfileCard key={profile.id} profile={profile} />
                   ))}
