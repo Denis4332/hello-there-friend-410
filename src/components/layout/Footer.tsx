@@ -29,7 +29,7 @@ export const Footer = () => {
   const topCantons = cantons?.slice(0, 8) || [];
 
   return (
-    <footer className="bg-muted mt-auto py-12">
+    <footer className="bg-muted mt-auto py-12 content-visibility-auto">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Beliebte Kantone */}

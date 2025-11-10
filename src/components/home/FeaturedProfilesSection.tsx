@@ -18,7 +18,7 @@ export const FeaturedProfilesSection = ({
   noProfilesText,
 }: FeaturedProfilesSectionProps) => {
   return (
-    <section className="py-12 bg-muted">
+    <section className="py-12 bg-muted content-visibility-auto">
       <div className="container mx-auto px-4">
         <h2 className="text-2xl font-bold mb-6">{title || 'Aktuelle Profile'}</h2>
         {isLoading ? (

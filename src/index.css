@@ -110,3 +110,24 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Content Visibility Optimization for Below-the-fold Sections */
+@layer utilities {
+  .content-visibility-auto {
+    content-visibility: auto;
+    /* Estimated height for better rendering performance */
+    contain-intrinsic-size: auto 600px;
+  }
+  
+  /* For larger sections like featured profiles */
+  .content-visibility-auto-large {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 1200px;
+  }
+  
+  /* For footer */
+  .content-visibility-auto-footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 400px;
+  }
+}

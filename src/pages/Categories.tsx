@@ -32,7 +32,7 @@ const Categories = () => {
           {isLoading ? (
             <p className="text-muted-foreground">{loadingText || 'Lade Kategorien...'}</p>
           ) : categories.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 content-visibility-auto">
               {categories.map((category) => (
                 <Link key={category.id} to={`/kategorie/${category.slug}`}>
                   <Card className="hover:border-primary transition-colors">
