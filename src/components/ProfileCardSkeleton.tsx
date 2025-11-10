@@ -1,28 +1,27 @@
 import { memo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
 
 const ProfileCardSkeletonComponent = () => {
   return (
-    <Card className="overflow-hidden">
-      <div className="relative">
-        <Skeleton className="w-full aspect-[3/4]" />
+    <div className="relative flex flex-col overflow-hidden rounded-lg border bg-card">
+      {/* Image Skeleton - aspect-[4/5] to match ProfileCard */}
+      <div className="relative w-full aspect-[4/5] flex-shrink-0">
+        <Skeleton className="w-full h-full" />
       </div>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <Skeleton className="h-6 w-32 mb-2" />
-            <Skeleton className="h-4 w-24" />
-          </div>
+      
+      {/* Info Bar Skeleton - h-[200px] to match ProfileCard */}
+      <div className="p-4 bg-card flex flex-col gap-3 h-[200px]">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-40" />
         </div>
-        <Skeleton className="h-4 w-full mt-3" />
-        <Skeleton className="h-4 w-3/4 mt-2" />
-        <div className="flex gap-2 mt-3">
-          <Skeleton className="h-5 w-16" />
-          <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-6 w-3/4" />
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-5/6" />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
