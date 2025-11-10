@@ -1203,6 +1203,15 @@ export type Database = {
         Args: { _email: string; _success: boolean; _type: string }
         Returns: undefined
       }
+      record_auth_attempt_with_ip: {
+        Args: {
+          _attempt_type: string
+          _email: string
+          _ip_address: string
+          _success: boolean
+        }
+        Returns: undefined
+      }
       search_profiles_by_radius: {
         Args: {
           filter_category_id?: string
