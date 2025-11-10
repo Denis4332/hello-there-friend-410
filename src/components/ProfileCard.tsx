@@ -103,7 +103,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       </div>
       
       {/* White Info Bar */}
-      <div className="p-4 bg-card flex-1 flex flex-col justify-between min-h-[160px]">
+      <div className="p-4 bg-card flex flex-col justify-between h-[180px] overflow-hidden">
         <div className="flex flex-col gap-2 mb-2">
           {profile.profile_categories?.[0]?.categories && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
