@@ -53,12 +53,29 @@ const ResetPassword = () => {
 
     setIsLoading(true);
 
-    const { error: updateError } = await updatePassword(newPassword);
+    try {
+      // Check if password is leaked
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: leakCheck, error: leakError } = await supabase.functions.invoke('check-leaked-password', {
+        body: { password: newPassword }
+      });
 
-    setIsLoading(false);
+      if (!leakError && leakCheck?.isLeaked) {
+        setError(`Dieses Passwort wurde in ${leakCheck.count.toLocaleString()} Datenlecks gefunden und ist nicht sicher. Bitte wähle ein anderes Passwort.`);
+        setIsLoading(false);
+        return;
+      }
 
-    if (!updateError) {
-      navigate('/');
+      const { error: updateError } = await updatePassword(newPassword);
+
+      setIsLoading(false);
+
+      if (!updateError) {
+        navigate('/');
+      }
+    } catch (err) {
+      setError('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+      setIsLoading(false);
     }
   };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,6 +96,25 @@ const Auth = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+
+    // Check if password is leaked
+    try {
+      const { data: leakCheck, error: leakError } = await supabase.functions.invoke('check-leaked-password', {
+        body: { password }
+      });
+
+      if (!leakError && leakCheck?.isLeaked) {
+        toast({
+          title: 'Unsicheres Passwort',
+          description: `Dieses Passwort wurde in ${leakCheck.count.toLocaleString()} Datenlecks gefunden. Bitte wähle ein anderes Passwort.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    } catch (err) {
+      console.error('Leaked password check failed:', err);
+      // Continue with signup if check fails
+    }
 
     // Check rate limit
     const rateLimitCheck = await checkRateLimit(email, 'signup');
