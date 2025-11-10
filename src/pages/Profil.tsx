@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useState, useEffect } from 'react';
 import { useProfileBySlug } from '@/hooks/useProfiles';
+import { useProfileContacts } from '@/hooks/useProfileContacts';
 import { useCreateReport } from '@/hooks/useReports';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories } from '@/hooks/useCategories';
@@ -23,6 +24,8 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 const Profil = () => {
   const { slug } = useParams();
   const { data: profile, isLoading } = useProfileBySlug(slug);
+  // SECURITY: Contact data is fetched separately with RLS protection
+  const { data: contacts } = useProfileContacts(profile?.id);
   const { data: allCategories = [] } = useCategories();
   const { data: reportReasons = [] } = useDropdownOptions('report_reasons');
   const createReport = useCreateReport();
@@ -184,11 +187,11 @@ const Profil = () => {
                   )}
                 </div>
                 <p className="text-lg text-muted-foreground">
-                  📍 {profile.show_street && profile.street_address 
-                    ? `${profile.street_address}, ${profile.city}, ${profile.canton}` 
+                  📍 {contacts?.show_street && contacts?.street_address 
+                    ? `${contacts.street_address}, ${profile.city}, ${profile.canton}` 
                     : `${profile.city}, ${profile.canton}`}
                 </p>
-                {!profile.show_street && profile.street_address && (
+                {contacts && !contacts.show_street && contacts.street_address && (
                   <p className="text-xs text-muted-foreground mt-1">
                     🔒 Exakte Adresse nur nach Kontaktaufnahme
                   </p>
@@ -240,14 +243,14 @@ const Profil = () => {
                 </div>
               )}
 
-              {/* Contact Section */}
+              {/* Contact Section - SECURITY: Only shows if user has access */}
               <ContactSection
-                phone={profile.phone}
-                whatsapp={profile.whatsapp}
-                email={profile.email}
-                website={profile.website}
-                telegram={profile.telegram}
-                instagram={profile.instagram}
+                phone={contacts?.phone}
+                whatsapp={contacts?.whatsapp}
+                email={contacts?.email}
+                website={contacts?.website}
+                telegram={contacts?.telegram}
+                instagram={contacts?.instagram}
                 profileId={profile.id}
               />
 

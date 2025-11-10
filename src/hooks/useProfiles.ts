@@ -52,10 +52,13 @@ export const useFeaturedProfiles = (limit: number = 8) => {
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
       
+      // SECURITY: Explicitly select only public fields (no contact data)
       let query = (supabase as any)
         .from('profiles')
         .select(`
-          *,
+          id, slug, display_name, age, gender, city, canton, postal_code,
+          lat, lng, about_me, languages, is_adult, verified_at, status, 
+          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
           photos(storage_path, is_primary),
           profile_categories(
             categories(id, name, slug)
@@ -109,10 +112,13 @@ export const useSearchProfiles = (filters: {
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
       
+      // SECURITY: Explicitly select only public fields (no contact data)
       let query = (supabase as any)
         .from('profiles')
         .select(`
-          *,
+          id, slug, display_name, age, gender, city, canton, postal_code,
+          lat, lng, about_me, languages, is_adult, verified_at, status, 
+          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
           photos(storage_path, is_primary),
           profile_categories(
             categories(id, name, slug)
@@ -174,9 +180,16 @@ export const useProfileBySlug = (slug: string | undefined) => {
     queryFn: async () => {
       if (!slug) return null;
       
+      // SECURITY: Explicitly select only public fields (no contact data)
       const result = await (supabase as any)
         .from('profiles')
-        .select('*, photos(storage_path, is_primary), profile_categories(category_id)')
+        .select(`
+          id, slug, display_name, age, gender, city, canton, postal_code,
+          lat, lng, about_me, languages, is_adult, verified_at, status, 
+          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
+          photos(storage_path, is_primary), 
+          profile_categories(category_id)
+        `)
         .eq('slug', slug)
         .eq('status', 'active')
         .maybeSingle();
@@ -209,10 +222,13 @@ export const useCityProfiles = (cityName: string | undefined) => {
       
       const adminUserIds = await getAdminUserIds();
       
+      // SECURITY: Explicitly select only public fields (no contact data)
       let query = (supabase as any)
         .from('profiles')
         .select(`
-          *,
+          id, slug, display_name, age, gender, city, canton, postal_code,
+          lat, lng, about_me, languages, is_adult, verified_at, status, 
+          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
           photos(storage_path, is_primary),
           profile_categories(
             categories(id, name, slug)
@@ -253,12 +269,15 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
       
       const adminUserIds = await getAdminUserIds();
       
+      // SECURITY: Explicitly select only public fields (no contact data)
       const result = await (supabase as any)
         .from('profile_categories')
         .select(`
           profile_id,
           profiles!inner(
-            *,
+            id, slug, display_name, age, gender, city, canton, postal_code,
+            lat, lng, about_me, languages, is_adult, verified_at, status, 
+            listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
             photos(storage_path, is_primary)
           )
         `)
