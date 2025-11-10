@@ -61,10 +61,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         </div>
       )}
       
-      <div className={cn(
-        "relative w-full aspect-[4/5] flex-shrink-0",
-        isTop && "mt-6"
-      )}>
+      <div className="relative w-full aspect-[4/5] flex-shrink-0">
         {photoUrl ? (
           <ResponsiveImage
             src={photoUrl}
