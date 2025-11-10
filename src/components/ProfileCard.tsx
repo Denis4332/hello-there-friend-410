@@ -61,17 +61,17 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         </div>
       )}
       
-      <div className="relative w-full aspect-[4/5] flex-shrink-0">
+      <div className="relative w-full flex-shrink-0" style={{ paddingBottom: '125%' }}>
         {photoUrl ? (
           <ResponsiveImage
             src={photoUrl}
             alt={profile.display_name}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
             loading="lazy"
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
+          <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center">
             <span className="text-6xl font-bold text-muted-foreground">
               {profile.display_name.charAt(0).toUpperCase()}
             </span>
