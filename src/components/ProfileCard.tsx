@@ -104,7 +104,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       
       {/* White Info Bar */}
       <div className="p-4 bg-card flex flex-col gap-3 h-[200px]">
-        <div className="flex flex-col gap-2 mb-2">
+        <div className="flex flex-col gap-2">
           {profile.profile_categories?.[0]?.categories && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Tag className="h-3.5 w-3.5" />
@@ -121,7 +121,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
             </span>
           </div>
         </div>
-        <h3 className="text-lg font-bold text-foreground mb-1 line-clamp-1">
+        <h3 className="text-lg font-bold text-foreground line-clamp-1">
           {profile.display_name}
         </h3>
         {profile.about_me && (
