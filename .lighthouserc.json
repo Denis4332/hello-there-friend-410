@@ -7,16 +7,37 @@
       "url": [
         "http://localhost:4173/",
         "http://localhost:4173/suche",
-        "http://localhost:4173/kategorien"
+        "http://localhost:4173/kategorien",
+        "http://localhost:4173/profil/test-profile"
       ],
-      "settings": {
-        "preset": "desktop",
-        "throttling": {
-          "rttMs": 40,
-          "throughputKbps": 10240,
-          "cpuSlowdownMultiplier": 1
+      "settings": [
+        {
+          "preset": "desktop",
+          "throttling": {
+            "rttMs": 40,
+            "throughputKbps": 10240,
+            "cpuSlowdownMultiplier": 1
+          }
+        },
+        {
+          "preset": "mobile",
+          "throttling": {
+            "rttMs": 150,
+            "throughputKbps": 1638.4,
+            "cpuSlowdownMultiplier": 4,
+            "requestLatencyMs": 562.5,
+            "downloadThroughputKbps": 1638.4,
+            "uploadThroughputKbps": 675
+          },
+          "emulatedFormFactor": "mobile",
+          "screenEmulation": {
+            "mobile": true,
+            "width": 375,
+            "height": 667,
+            "deviceScaleFactor": 2
+          }
         }
-      }
+      ]
     },
     "assert": {
       "preset": "lighthouse:recommended",
@@ -28,7 +49,10 @@
         "first-contentful-paint": ["warn", { "maxNumericValue": 2000 }],
         "largest-contentful-paint": ["warn", { "maxNumericValue": 2500 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
-        "total-blocking-time": ["warn", { "maxNumericValue": 300 }]
+        "total-blocking-time": ["warn", { "maxNumericValue": 300 }],
+        "interactive": ["warn", { "maxNumericValue": 3500 }],
+        "speed-index": ["warn", { "maxNumericValue": 3000 }],
+        "max-potential-fid": ["warn", { "maxNumericValue": 130 }]
       }
     },
     "upload": {
