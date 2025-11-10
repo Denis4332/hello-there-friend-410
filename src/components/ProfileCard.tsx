@@ -79,7 +79,10 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         )}
         
         {/* Badges - Top Left */}
-        <div className="absolute top-3 left-3 flex gap-3 z-10">
+        <div className={cn(
+          "absolute left-3 flex gap-3 z-10",
+          isTop ? "top-9" : "top-3"
+        )}>
           {isPremium && (
             <div className={cn(
               "flex items-center gap-1.5 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl",
@@ -100,7 +103,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       </div>
       
       {/* White Info Bar */}
-      <div className="p-4 bg-card flex-1 flex flex-col justify-between min-h-[120px]">
+      <div className="p-4 bg-card flex-1 flex flex-col justify-between min-h-[160px]">
         <div className="flex flex-col gap-2 mb-2">
           {profile.profile_categories?.[0]?.categories && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
