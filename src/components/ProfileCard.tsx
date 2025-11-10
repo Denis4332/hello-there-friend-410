@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Crown, CheckCircle2, Tag, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { OptimizedImage } from '@/components/OptimizedImage';
+import { ResponsiveImage } from '@/components/ResponsiveImage';
 import type { Profile, Photo } from '@/types/dating';
 
 interface ProfileCardProps {
@@ -56,12 +56,10 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         isTop && "mt-6"
       )}>
         {photoUrl ? (
-          <OptimizedImage
+          <ResponsiveImage
             src={photoUrl}
             alt={profile.display_name}
-            width={400}
-            height={500}
-            quality={85}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
             loading="lazy"
             className="w-full h-full object-cover"
           />

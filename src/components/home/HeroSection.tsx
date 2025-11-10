@@ -52,14 +52,32 @@ export const HeroSection = ({
 
   useEffect(() => {
     if (heroImageUrl) {
+      // Use smaller image for mobile devices
+      const isMobile = window.innerWidth < 768;
+      const width = isMobile ? 828 : 1920;
+      const quality = isMobile ? 70 : 80;
+      
       const optimizedUrl = getOptimizedImageUrl(heroImageUrl, {
-        width: 1920,
-        quality: 80,
+        width,
+        quality,
         format: webpSupported ? 'webp' : 'origin'
       });
+      
+      // Preload critical hero image
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = optimizedUrl;
+      link.fetchPriority = 'high';
+      document.head.appendChild(link);
+      
       const img = new Image();
       img.src = optimizedUrl;
       img.onload = () => setBgLoaded(true);
+      
+      return () => {
+        document.head.removeChild(link);
+      };
     }
   }, [heroImageUrl, webpSupported]);
 
@@ -105,10 +123,11 @@ export const HeroSection = ({
     setUseGPS(false);
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const optimizedBgUrl = heroImageUrl && bgLoaded 
     ? getOptimizedImageUrl(heroImageUrl, { 
-        width: 1920, 
-        quality: 80, 
+        width: isMobile ? 828 : 1920, 
+        quality: isMobile ? 70 : 80, 
         format: webpSupported ? 'webp' : 'origin' 
       })
     : undefined;
