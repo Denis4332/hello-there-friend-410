@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
+import { usePrefetch } from '@/hooks/usePrefetch';
 import { Crown, CheckCircle2, Tag, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -33,9 +34,18 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
   const isPremium = listingType === 'premium' || isTop;
   const isBasic = listingType === 'basic';
 
+  // Prefetch profile page on hover for faster navigation
+  const profileUrl = `/profil/${profile.slug}`;
+  const { handleMouseEnter, handleMouseLeave } = usePrefetch([profileUrl], {
+    delay: 100,
+    onHover: true,
+  });
+
   return (
     <Link 
-      to={`/profil/${profile.slug}`} 
+      to={profileUrl}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={cn(
         "relative block group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
         isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03] active:scale-[1.01]",

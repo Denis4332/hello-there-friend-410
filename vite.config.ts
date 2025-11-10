@@ -39,10 +39,38 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
         runtimeCaching: [
+          // Aggressive image caching for profile photos
           {
-            urlPattern: /^https:\/\/fwatgrgbwgtueunihbwv\.supabase\.co\/.*/i,
+            urlPattern: /^https:\/\/fwatgrgbwgtueunihbwv\.supabase\.co\/storage\/v1\/object\/public\/profile-photos\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'profile-images',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 90, // 90 days for profile photos
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              // Use background sync for better offline experience
+              plugins: [
+                {
+                  cacheWillUpdate: async ({ response }: any) => {
+                    // Cache successful responses and transformed images
+                    if (response.status === 200 || response.status === 0) {
+                      return response;
+                    }
+                    return null;
+                  },
+                },
+              ],
+            },
+          },
+          // Cache other Supabase storage assets (verification images, etc.)
+          {
+            urlPattern: /^https:\/\/fwatgrgbwgtueunihbwv\.supabase\.co\/storage\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'supabase-storage',
@@ -50,6 +78,35 @@ export default defineConfig(({ mode }) => ({
                 maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          // Cache profile pages for faster navigation
+          {
+            urlPattern: /^https?:\/\/.*\/profil\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'profile-pages',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
+          // Cache API responses
+          {
+            urlPattern: /^https:\/\/fwatgrgbwgtueunihbwv\.supabase\.co\/rest\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 5, // 5 minutes for API responses
+              },
+              networkTimeoutSeconds: 5,
             },
           },
         ],
