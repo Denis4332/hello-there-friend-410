@@ -154,6 +154,15 @@ export const AdminHeader = () => {
                 Analytics
               </Link>
               <Link 
+                to="/admin/performance" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/performance") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
+                Performance
+              </Link>
+              <Link 
                 to="/admin/rate-limits" 
                 className={cn(
                   "hover:text-primary transition-colors flex items-center gap-2",
