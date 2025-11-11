@@ -45,14 +45,93 @@ const getAdminUserIds = async (): Promise<string[]> => {
  * const { data: profiles, isLoading } = useFeaturedProfiles(12);
  * ```
  */
-export const useFeaturedProfiles = (limit: number = 8) => {
+// TOP-Inserate schweizweit (für Homepage)
+export const useTopProfiles = (limit: number = 3) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['featured-profiles', limit, 'v5'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryKey: ['top-profiles', limit],
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
       
-      // SECURITY: Explicitly select only public fields (no contact data)
+      let query = (supabase as any)
+        .from('profiles')
+        .select(`
+          id, slug, display_name, age, gender, city, canton, postal_code,
+          lat, lng, about_me, languages, is_adult, verified_at, status, 
+          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
+          photos(storage_path, is_primary),
+          profile_categories(
+            categories(id, name, slug)
+          )
+        `)
+        .eq('status', 'active')
+        .eq('listing_type', 'top');
+      
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
+      }
+      
+      const result = await query
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (result.error) throw result.error;
+      
+      return validateProfilesResponse(result.data || []);
+    },
+  });
+};
+
+// Premium/Basic Inserate lokal (nach Kanton)
+export const useLocalProfiles = (canton: string | null, limit: number = 5) => {
+  return useQuery<ProfileWithRelations[]>({
+    queryKey: ['local-profiles', canton, limit],
+    staleTime: 5 * 60 * 1000,
+    enabled: !!canton,
+    queryFn: async () => {
+      if (!canton) return [];
+      
+      const adminUserIds = await getAdminUserIds();
+      
+      let query = (supabase as any)
+        .from('profiles')
+        .select(`
+          id, slug, display_name, age, gender, city, canton, postal_code,
+          lat, lng, about_me, languages, is_adult, verified_at, status, 
+          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
+          photos(storage_path, is_primary),
+          profile_categories(
+            categories(id, name, slug)
+          )
+        `)
+        .eq('status', 'active')
+        .eq('canton', canton)
+        .in('listing_type', ['premium', 'basic']);
+      
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
+      }
+      
+      const result = await query
+        .order('listing_type', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (result.error) throw result.error;
+      
+      return validateProfilesResponse(result.data || []);
+    },
+  });
+};
+
+// Fallback: Alle Profile schweizweit (wenn keine Geo-Detection)
+export const useFeaturedProfiles = (limit: number = 8) => {
+  return useQuery<ProfileWithRelations[]>({
+    queryKey: ['featured-profiles', limit, 'v5'],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const adminUserIds = await getAdminUserIds();
+      
       let query = (supabase as any)
         .from('profiles')
         .select(`
@@ -71,7 +150,6 @@ export const useFeaturedProfiles = (limit: number = 8) => {
       }
       
       const result = await query
-        .order('listing_type', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(limit);
       

@@ -1,7 +1,7 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { lazy, Suspense } from 'react';
-import { useFeaturedProfiles } from '@/hooks/useProfiles';
+import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
+import { useTopProfiles, useLocalProfiles, useFeaturedProfiles } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
@@ -11,6 +11,8 @@ import { BannerDisplay } from '@/components/BannerDisplay';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
+import { detectLocation } from '@/lib/geolocation';
+import { sortProfilesByListingType } from '@/lib/profileUtils';
 
 // Lazy load non-critical section
 const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedProfilesSection').then(m => ({ default: m.FeaturedProfilesSection })));
@@ -18,7 +20,42 @@ const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedPro
 const Index = () => {
   useDesignSettings();
   
-  const { data: featuredProfiles = [], isLoading: loadingProfiles } = useFeaturedProfiles(8);
+  const [userCanton, setUserCanton] = useState<string | null>(null);
+  const [geoDetectionAttempted, setGeoDetectionAttempted] = useState(false);
+  
+  // Geo-Detection beim Mount
+  useEffect(() => {
+    detectLocation()
+      .then(location => {
+        setUserCanton(location.canton);
+        setGeoDetectionAttempted(true);
+      })
+      .catch(() => {
+        setGeoDetectionAttempted(true);
+      });
+  }, []);
+  
+  // OPTION A: 3 TOP schweizweit + 5 Premium/Basic lokal
+  const { data: topProfiles = [], isLoading: loadingTop } = useTopProfiles(3);
+  const { data: localProfiles = [], isLoading: loadingLocal } = useLocalProfiles(userCanton, 5);
+  const { data: fallbackProfiles = [], isLoading: loadingFallback } = useFeaturedProfiles(8);
+  
+  // Merge und sortiere Profile
+  const featuredProfiles = useMemo(() => {
+    if (!geoDetectionAttempted) return [];
+    
+    // Wenn Geo-Detection erfolgreich: TOP + Local
+    if (userCanton && localProfiles.length > 0) {
+      const combined = [...topProfiles, ...localProfiles];
+      return sortProfilesByListingType(combined);
+    }
+    
+    // Fallback: Alle schweizweit
+    return sortProfilesByListingType(fallbackProfiles);
+  }, [geoDetectionAttempted, userCanton, topProfiles, localProfiles, fallbackProfiles]);
+  
+  const loadingProfiles = !geoDetectionAttempted || loadingTop || loadingLocal || loadingFallback;
+  
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
   
