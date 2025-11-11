@@ -367,6 +367,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "photos_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_categories: {
@@ -395,6 +402,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_categories_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -450,6 +464,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "profile_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_moderation_notes: {
@@ -483,6 +504,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_moderation_notes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -521,6 +549,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -631,6 +666,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -814,6 +856,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "verification_submissions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -877,7 +926,77 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      public_profiles: {
+        Row: {
+          about_me: string | null
+          age: number | null
+          canton: string | null
+          city: string | null
+          created_at: string | null
+          display_name: string | null
+          gender: string | null
+          id: string | null
+          is_adult: boolean | null
+          languages: string[] | null
+          listing_type: string | null
+          postal_code: string | null
+          premium_until: string | null
+          slug: string | null
+          status: string | null
+          top_ad_until: string | null
+          updated_at: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          about_me?: string | null
+          age?: number | null
+          canton?: string | null
+          city?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          gender?: string | null
+          id?: string | null
+          is_adult?: boolean | null
+          languages?: string[] | null
+          listing_type?: string | null
+          postal_code?: string | null
+          premium_until?: string | null
+          slug?: string | null
+          status?: string | null
+          top_ad_until?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          about_me?: string | null
+          age?: number | null
+          canton?: string | null
+          city?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          gender?: string | null
+          id?: string | null
+          is_adult?: boolean | null
+          languages?: string[] | null
+          listing_type?: string | null
+          postal_code?: string | null
+          premium_until?: string | null
+          slug?: string | null
+          status?: string | null
+          top_ad_until?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
