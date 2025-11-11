@@ -52,6 +52,17 @@ const AdminAccount = () => {
     setIsLoading(true);
 
     try {
+      // Check if password has been leaked
+      const { data: leakCheck, error: leakError } = await supabase.functions.invoke('check-leaked-password', {
+        body: { password: newPassword }
+      });
+
+      if (!leakError && leakCheck?.isLeaked) {
+        toast.error(`Dieses Passwort wurde in ${leakCheck.count.toLocaleString()} Datenlecks gefunden. Bitte wähle ein anderes Passwort.`);
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
