@@ -30,6 +30,9 @@ verify_jwt = false
 [functions.check-leaked-password]
 verify_jwt = false
 
+[functions.cleanup-orphaned-photos]
+verify_jwt = false
+
 # Admin account creation disabled after initial setup for security
 # [functions.create-admin-account]
 # verify_jwt = false

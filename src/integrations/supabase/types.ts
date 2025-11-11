@@ -1021,6 +1021,13 @@ export type Database = {
       cleanup_old_analytics: { Args: never; Returns: undefined }
       cleanup_old_auth_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_error_logs: { Args: never; Returns: undefined }
+      cleanup_orphaned_photos: {
+        Args: never
+        Returns: {
+          deleted_count: number
+          error_message: string
+        }[]
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
