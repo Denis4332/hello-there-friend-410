@@ -183,10 +183,12 @@ export const useSearchProfiles = (filters: {
   location?: string;
   categoryId?: string;
   keyword?: string;
+  enabled?: boolean;
 }) => {
   return useQuery<ProfileWithRelations[]>({
     queryKey: ['search-profiles', filters, 'v4'],
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: filters.enabled !== undefined ? filters.enabled : true,
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
       

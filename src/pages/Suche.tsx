@@ -44,22 +44,24 @@ const Suche = () => {
     }
   );
   
-  // Text-based search for profiles without GPS coordinates
+  // Text-based search for profiles without GPS coordinates (only when GPS not active)
   const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
     location: canton || searchParams.get('ort') || undefined,
     categoryId: searchParams.get('kategorie') || undefined,
     keyword: searchParams.get('stichwort') || undefined,
+    enabled: !userLat && !userLng, // Only run when GPS is NOT active
   });
   
-  // Merge GPS and text profiles when GPS is active (includes profiles without coordinates)
+  // GPS active: ONLY show profiles within radius (like xdate.ch)
+  // GPS inactive: Show canton-based text search results
   const profiles = useMemo(() => {
-    if (!userLat || !userLng) return textProfiles;
+    if (userLat && userLng) {
+      // GPS active → ONLY profiles within radius (including TOP only if in radius)
+      return gpsProfiles;
+    }
     
-    // Deduplicate: GPS profiles + text profiles not already in GPS results
-    const gpsIds = new Set(gpsProfiles.map(p => p.id));
-    const additionalTextProfiles = textProfiles.filter(p => !gpsIds.has(p.id));
-    
-    return [...gpsProfiles, ...additionalTextProfiles];
+    // GPS NOT active → Text-based canton search
+    return textProfiles;
   }, [userLat, userLng, gpsProfiles, textProfiles]);
   
   const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
