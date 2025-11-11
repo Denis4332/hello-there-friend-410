@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Download, Lock } from 'lucide-react';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const UserDashboard = () => {
@@ -18,6 +19,9 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: dashboardWelcome } = useSiteSetting('dashboard_welcome_text');
   const { data: createProfileButton } = useSiteSetting('dashboard_create_profile_button');
@@ -63,28 +67,92 @@ const UserDashboard = () => {
     }
   };
 
-  const handleDeleteProfile = async () => {
-    if (!profile) return;
+  const handleDeleteAccount = async () => {
+    if (!deleteConfirmed) {
+      toast({
+        title: 'Bestätigung erforderlich',
+        description: 'Bitte bestätige, dass du alle Daten löschen möchtest',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsDeleting(true);
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', profile.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Keine aktive Session');
+      }
+
+      const { error } = await supabase.functions.invoke('delete-user-account', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
       if (error) throw error;
 
       toast({
-        title: 'Profil gelöscht',
-        description: 'Dein Profil wurde erfolgreich gelöscht',
+        title: 'Account gelöscht',
+        description: 'Dein Account und alle Daten wurden dauerhaft gelöscht',
       });
+
+      // Logout and redirect
+      await supabase.auth.signOut();
       navigate('/');
     } catch (error: any) {
       toast({
-        title: 'Fehler',
+        title: 'Fehler beim Löschen',
         description: error.message,
         variant: 'destructive',
       });
+      setIsDeleting(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Keine aktive Session');
+      }
+
+      const { data, error } = await supabase.functions.invoke('export-user-data', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      // Create download
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `escoria-daten-${user?.id}-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: 'Daten exportiert',
+        description: 'Deine Daten wurden erfolgreich heruntergeladen',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Fehler beim Export',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -329,34 +397,124 @@ const UserDashboard = () => {
               </Card>
             </div>
 
-            <div className="flex gap-4 mt-8">
+            <Card className="mt-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Datenschutz & Sicherheit
+                </CardTitle>
+                <CardDescription>
+                  Verwalte deine persönlichen Daten gemäß DSGVO
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Deine Daten exportieren</p>
+                    <p className="text-sm text-muted-foreground">
+                      Lade alle deine gespeicherten Daten als JSON-Datei herunter
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleExportData}
+                    disabled={isExporting}
+                    variant="outline"
+                  >
+                    {isExporting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Exportieren
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/50">
+                  <div>
+                    <p className="font-medium text-destructive">Account vollständig löschen</p>
+                    <p className="text-sm text-muted-foreground">
+                      Lösche deinen Account und alle zugehörigen Daten dauerhaft
+                    </p>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Account löschen
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Account wirklich löschen?</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-4">
+                          <p className="font-semibold text-destructive">
+                            ⚠️ Diese Aktion kann NICHT rückgängig gemacht werden!
+                          </p>
+                          <p>
+                            Folgende Daten werden dauerhaft gelöscht:
+                          </p>
+                          <ul className="list-disc list-inside space-y-1 text-sm">
+                            <li>Dein Profil und alle Informationen</li>
+                            <li>Alle hochgeladenen Fotos</li>
+                            <li>Alle Kontaktinformationen</li>
+                            <li>Alle Statistiken und Analytics-Daten</li>
+                            <li>Dein Benutzer-Account</li>
+                          </ul>
+                          <div className="flex items-center space-x-2 pt-4">
+                            <Checkbox
+                              id="delete-confirm"
+                              checked={deleteConfirmed}
+                              onCheckedChange={(checked) => setDeleteConfirmed(checked as boolean)}
+                            />
+                            <label
+                              htmlFor="delete-confirm"
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              Ich verstehe, dass alle meine Daten dauerhaft gelöscht werden
+                            </label>
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setDeleteConfirmed(false)}>
+                          Abbrechen
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAccount}
+                          disabled={!deleteConfirmed || isDeleting}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Wird gelöscht...
+                            </>
+                          ) : (
+                            'Endgültig löschen'
+                          )}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    variant="link"
+                    onClick={() => navigate('/datenschutz')}
+                    className="text-sm"
+                  >
+                    Datenschutzerklärung lesen →
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-4 mt-6">
               <Button onClick={() => navigate('/profil/bearbeiten')} className="flex-1">
                 <Edit className="h-4 w-4 mr-2" />
                 {editProfileButton || 'Profil bearbeiten'}
               </Button>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="flex-1">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Profil löschen
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Bist du sicher?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Diese Aktion kann nicht rückgängig gemacht werden. Dein Profil und alle zugehörigen Daten werden dauerhaft gelöscht.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteProfile}>
-                      Endgültig löschen
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
             </div>
           </div>
         </div>
