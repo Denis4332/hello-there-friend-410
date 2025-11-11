@@ -11,6 +11,7 @@ import { useCategoryBySlug } from '@/hooks/useCategories';
 import { SEO } from '@/components/SEO';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
+import { sortProfilesByListingType } from '@/lib/profileUtils';
 
 const Kategorie = () => {
   const { slug } = useParams();
@@ -36,10 +37,15 @@ const Kategorie = () => {
     );
   }
 
+  // Sort profiles: TOP > Premium > Basic > Verified > Newest
+  const sortedProfiles = useMemo(() => {
+    return sortProfilesByListingType(categoryProfiles);
+  }, [categoryProfiles]);
+
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;
-  const totalPages = Math.ceil(categoryProfiles.length / ITEMS_PER_PAGE);
-  const paginatedProfiles = categoryProfiles.slice(
+  const totalPages = Math.ceil(sortedProfiles.length / ITEMS_PER_PAGE);
+  const paginatedProfiles = sortedProfiles.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );

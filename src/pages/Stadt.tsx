@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -11,6 +11,7 @@ import { useCityBySlug } from '@/hooks/useCities';
 import { SEO } from '@/components/SEO';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
+import { sortProfilesByListingType } from '@/lib/profileUtils';
 
 const Stadt = () => {
   const { slug } = useParams();
@@ -42,10 +43,15 @@ const Stadt = () => {
     );
   }
 
+  // Sort profiles: TOP > Premium > Basic > Verified > Newest
+  const sortedProfiles = useMemo(() => {
+    return sortProfilesByListingType(cityProfiles);
+  }, [cityProfiles]);
+
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;
-  const totalPages = Math.ceil(cityProfiles.length / ITEMS_PER_PAGE);
-  const paginatedProfiles = cityProfiles.slice(
+  const totalPages = Math.ceil(sortedProfiles.length / ITEMS_PER_PAGE);
+  const paginatedProfiles = sortedProfiles.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );

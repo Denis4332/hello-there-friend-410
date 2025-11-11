@@ -10,6 +10,8 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { ProfileWithRelations } from '@/types/common';
+import { sortProfilesByListingType } from '@/lib/profileUtils';
+import { useMemo } from 'react';
 
 interface FeaturedProfilesSectionProps {
   profiles: ProfileWithRelations[];
@@ -25,11 +27,16 @@ export const FeaturedProfilesSection = ({
   title,
   noProfilesText,
 }: FeaturedProfilesSectionProps) => {
+  // Sort profiles: TOP > Premium > Basic > Verified > Newest
+  const sortedProfiles = useMemo(() => {
+    return sortProfilesByListingType(profiles);
+  }, [profiles]);
+
   // Split profiles into chunks of 8
   const chunkSize = 8;
   const chunks = [];
-  for (let i = 0; i < profiles.length; i += chunkSize) {
-    chunks.push(profiles.slice(i, i + chunkSize));
+  for (let i = 0; i < sortedProfiles.length; i += chunkSize) {
+    chunks.push(sortedProfiles.slice(i, i + chunkSize));
   }
 
   return (

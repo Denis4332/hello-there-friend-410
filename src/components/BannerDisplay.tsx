@@ -1,6 +1,6 @@
 import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AdvertisementCTA } from './AdvertisementCTA';
 
 interface BannerDisplayProps {
@@ -10,6 +10,15 @@ interface BannerDisplayProps {
 
 export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) => {
   const { data: ads } = useAdvertisements(position);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+
+  // Random rotation for fair share among multiple advertisers
+  useEffect(() => {
+    if (ads && ads.length > 1) {
+      const randomIndex = Math.floor(Math.random() * ads.length);
+      setCurrentAdIndex(randomIndex);
+    }
+  }, [ads]);
 
   const handleClick = async (ad: Advertisement) => {
     try {
@@ -60,8 +69,8 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
     );
   }
 
-  // Show highest priority ad
-  const ad = ads[0];
+  // Show rotating ad for fair share
+  const ad = ads[currentAdIndex] || ads[0];
 
   return (
     <div className={className}>

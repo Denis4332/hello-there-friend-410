@@ -133,17 +133,6 @@ export const SearchFilters = ({
               </div>
             </div>
 
-            {locationAccuracy && (
-              <div className={`text-sm mb-2 flex items-center gap-2 ${locationAccuracy > 100 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                <MapPin className="h-3 w-3" />
-                Genauigkeit: ±{Math.round(locationAccuracy)}m
-                {locationAccuracy > 100 && (
-                  <span className="text-amber-600 text-xs">
-                    ⚠️ Ungenau - größerer Radius empfohlen
-                  </span>
-                )}
-              </div>
-            )}
 
             <Slider
               id="radius-slider"
@@ -162,6 +151,26 @@ export const SearchFilters = ({
               <span>100 km</span>
             </div>
           </div>
+
+          {/* GPS Signal Quality - Visually separated */}
+          {locationAccuracy && (
+            <div className={`p-3 rounded-lg border ${
+              locationAccuracy > 100 
+                ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' 
+                : 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800'
+            }`}>
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4" />
+                <span className="font-medium">GPS-Signal:</span>
+                <span>±{Math.round(locationAccuracy)}m Genauigkeit</span>
+              </div>
+              {locationAccuracy > 100 && (
+                <p className="text-xs mt-1 text-amber-700 dark:text-amber-400">
+                  ⚠️ Schwaches Signal - Standort kann ungenau sein
+                </p>
+              )}
+            </div>
+          )}
 
           <FilterPopover
             trigger={{ icon: <Tag className="h-4 w-4" />, label: 'Alle Kategorien' }}

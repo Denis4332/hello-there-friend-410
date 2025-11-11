@@ -12,6 +12,7 @@ import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchResults } from '@/components/search/SearchResults';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
+import { sortProfilesByListingType } from '@/lib/profileUtils';
 
 const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -43,15 +44,24 @@ const Suche = () => {
     }
   );
   
-  // Text-based search - canton only
+  // Text-based search for profiles without GPS coordinates
   const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
     location: canton || searchParams.get('ort') || undefined,
     categoryId: searchParams.get('kategorie') || undefined,
     keyword: searchParams.get('stichwort') || undefined,
   });
   
-  // Use GPS profiles if available, otherwise text search
-  const profiles = userLat && userLng ? gpsProfiles : textProfiles;
+  // Merge GPS and text profiles when GPS is active (includes profiles without coordinates)
+  const profiles = useMemo(() => {
+    if (!userLat || !userLng) return textProfiles;
+    
+    // Deduplicate: GPS profiles + text profiles not already in GPS results
+    const gpsIds = new Set(gpsProfiles.map(p => p.id));
+    const additionalTextProfiles = textProfiles.filter(p => !gpsIds.has(p.id));
+    
+    return [...gpsProfiles, ...additionalTextProfiles];
+  }, [userLat, userLng, gpsProfiles, textProfiles]);
+  
   const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
 
   const { data: searchTitle } = useSiteSetting('search_page_title');
@@ -60,20 +70,10 @@ const Suche = () => {
   const { data: searchButton } = useSiteSetting('search_button_text');
   const { data: searchNoResults } = useSiteSetting('search_no_results_text');
 
-  // Sort profiles (client-side for now)
+  // Sort profiles: TOP > Premium > Basic > Verified > Newest
   const sortedProfiles = useMemo(() => {
-    return [...profiles].sort((a, b) => {
-      switch (sort) {
-        case 'verified':
-          const aVerified = a.verified_at ? 1 : 0;
-          const bVerified = b.verified_at ? 1 : 0;
-          return bVerified - aVerified;
-        case 'newest':
-        default:
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }
-    });
-  }, [profiles, sort]);
+    return sortProfilesByListingType(profiles);
+  }, [profiles]);
 
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;
