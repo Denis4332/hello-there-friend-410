@@ -45,7 +45,7 @@ export const useProfileContacts = (profileId: string | undefined) => {
 
       return (data as unknown) as ProfileContacts | null;
     },
-    enabled: !!profileId && !!user, // Only run if user is authenticated
+    enabled: !!profileId, // Run for all visitors to show contact data
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 };
