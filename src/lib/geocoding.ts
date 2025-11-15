@@ -33,7 +33,9 @@ export async function geocodePlz(
     );
 
     if (!response.ok) {
-      console.error('Geocoding API error:', response.statusText);
+      if (import.meta.env.DEV) {
+        console.error('Geocoding API error:', response.statusText);
+      }
       return null;
     }
 
@@ -46,10 +48,14 @@ export async function geocodePlz(
       };
     }
 
-    console.warn('No geocoding results found for:', { postalCode, city });
+    if (import.meta.env.DEV) {
+      console.warn('No geocoding results found for:', { postalCode, city });
+    }
     return null;
   } catch (error) {
-    console.error('Geocoding failed:', error);
+    if (import.meta.env.DEV) {
+      console.error('Geocoding failed:', error);
+    }
     return null;
   }
 }

@@ -48,16 +48,18 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       onMouseLeave={handleMouseLeave}
       className={cn(
         "relative flex flex-col group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
-        isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03] active:scale-[1.01]",
-        isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02] active:scale-100",
+        isTop && "border-4 border-red-500 shadow-2xl shadow-red-500/50 hover:scale-[1.04] active:scale-[1.02] ring-2 ring-red-300 ring-offset-2",
+        isPremium && !isTop && "border-3 border-amber-400 shadow-xl shadow-amber-400/30 hover:scale-[1.03] active:scale-[1.01]",
         isBasic && "border-2 border-blue-400/50 hover:scale-[1.01] active:scale-100",
         !isTop && !isPremium && !isBasic && "border hover:scale-[1.01] active:scale-100"
       )}
     >
-      {/* TOP AD Banner */}
+      {/* TOP AD Banner - Enhanced */}
       {isTop && (
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-red-600 to-pink-600 text-white text-xs font-bold py-1.5 text-center z-20 animate-pulse">
-          ⭐ TOP INSERAT ⭐
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-red-600 via-pink-600 to-red-600 text-white text-sm font-extrabold py-2 text-center z-20 animate-pulse shadow-lg">
+          <span className="inline-flex items-center gap-1.5">
+            ⭐ TOP INSERAT ⭐
+          </span>
         </div>
       )}
       
@@ -66,7 +68,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
           <ResponsiveImage
             src={photoUrl}
             alt={profile.display_name}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            sizes="(max-width: 640px) 400px, (max-width: 1024px) 600px, 800px"
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -85,12 +87,12 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         )}>
           {isPremium && (
             <div className={cn(
-              "flex items-center gap-1.5 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl",
+              "flex items-center gap-1.5 text-white px-5 py-2 rounded-full text-base font-extrabold shadow-2xl border-2",
               isTop 
-                ? "bg-gradient-to-r from-red-600 to-pink-600 animate-pulse" 
-                : "bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600 animate-pulse"
+                ? "bg-gradient-to-r from-red-600 via-red-500 to-pink-600 animate-pulse border-yellow-300" 
+                : "bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600 border-amber-200"
             )}>
-              <Crown className="h-4 w-4" />
+              <Crown className="h-5 w-5" />
               {isTop ? 'TOP' : 'VIP'}
             </div>
           )}

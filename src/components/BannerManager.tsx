@@ -179,7 +179,9 @@ export const BannerManager = () => {
         }),
       });
     } catch (error) {
-      console.error('Failed to track impression:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to track impression:', error);
+      }
     }
   };
 
@@ -197,7 +199,9 @@ export const BannerManager = () => {
         }),
       });
     } catch (error) {
-      console.error('Failed to track click:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to track click:', error);
+      }
     }
   };
 
