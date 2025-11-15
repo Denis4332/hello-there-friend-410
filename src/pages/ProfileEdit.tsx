@@ -17,10 +17,51 @@ const ProfileEdit = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
-  const [photos, setPhotos] = useState<any[]>([]);
-  const [cantons, setCantons] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  // FIXED: Remove TypeScript any types
+  const [profile, setProfile] = useState<{
+    id: string;
+    user_id: string;
+    display_name: string;
+    age?: number;
+    is_adult: boolean;
+    gender?: string;
+    city: string;
+    canton: string;
+    postal_code?: string;
+    about_me?: string;
+    languages?: string[];
+    status?: string;
+    slug?: string;
+    listing_type?: string;
+    verified_at?: string;
+    profile_categories?: Array<{ category_id: string }>;
+    // Contact fields from profile_contacts table
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+    telegram?: string;
+    instagram?: string;
+    website?: string;
+    street_address?: string;
+    show_street?: boolean;
+  } | null>(null);
+  const [photos, setPhotos] = useState<Array<{
+    id: string;
+    profile_id: string;
+    storage_path: string;
+    is_primary: boolean;
+    created_at: string;
+  }>>([]);
+  const [cantons, setCantons] = useState<Array<{
+    id: string;
+    name: string;
+    abbreviation: string;
+  }>>([]);
+  const [categories, setCategories] = useState<Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>>([]);
 
   useEffect(() => {
     loadData();

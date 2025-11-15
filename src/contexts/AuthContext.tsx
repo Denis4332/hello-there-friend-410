@@ -29,37 +29,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { checkRateLimit, recordAttempt } = useAuthRateLimit();
 
+  // Initialize auth state - FIXED: No more race condition with setTimeout(0)
   useEffect(() => {
-    // Set up auth state listener
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (session) {
+          setUser(session.user);
+          setSession(session);
+          await loadUserRole(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
-        
-        // Load user role when session changes
+
         if (session?.user) {
-          setTimeout(() => {
-            loadUserRole(session.user.id);
-          }, 0);
+          await loadUserRole(session.user.id);
         } else {
-          setRole(null);
+          setRole('user');
+          setLoading(false);
         }
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        loadUserRole(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const loadUserRole = async (userId: string) => {
@@ -81,7 +96,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Password validation helper - FIXED: Stronger password requirements
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) return 'Passwort muss mindestens 8 Zeichen lang sein';
+    if (!/[A-Z]/.test(password)) return 'Passwort muss mindestens einen Großbuchstaben enthalten';
+    if (!/[a-z]/.test(password)) return 'Passwort muss mindestens einen Kleinbuchstaben enthalten';
+    if (!/[0-9]/.test(password)) return 'Passwort muss mindestens eine Zahl enthalten';
+    return null;
+  };
+
   const signUp = async (email: string, password: string) => {
+    // Validate password strength
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast({
+        title: 'Schwaches Passwort',
+        description: passwordError,
+        variant: 'destructive',
+      });
+      return { error: new Error(passwordError) };
+    }
+
     // Check rate limit before attempting signup
     const rateLimitCheck = await checkRateLimit(email, 'signup');
     
@@ -221,6 +256,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updatePassword = async (newPassword: string) => {
+    // Validate password strength
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      toast({
+        title: 'Schwaches Passwort',
+        description: passwordError,
+        variant: 'destructive',
+      });
+      return { error: new Error(passwordError) };
+    }
+
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
