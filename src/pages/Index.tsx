@@ -40,18 +40,25 @@ const Index = () => {
   const { data: localProfiles = [], isLoading: loadingLocal } = useLocalProfiles(userCanton, 5);
   const { data: fallbackProfiles = [], isLoading: loadingFallback } = useFeaturedProfiles(8);
   
-  // Merge und sortiere Profile
+  // FIXED: Merge und sortiere Profile - TOP immer sichtbar!
   const featuredProfiles = useMemo(() => {
     if (!geoDetectionAttempted) return [];
     
-    // Wenn Geo-Detection erfolgreich: TOP + Local
+    // WICHTIG: TOP-Profile IMMER als erstes zeigen
+    const combined = [...topProfiles];
+    
+    // Wenn Geo-Detection erfolgreich: + Local hinzufügen
     if (userCanton && localProfiles.length > 0) {
-      const combined = [...topProfiles, ...localProfiles];
-      return sortProfilesByListingType(combined);
+      combined.push(...localProfiles);
+    } else {
+      // Fallback: Weitere schweizweite Profile (ohne TOP, da schon drin)
+      const nonTopFallback = fallbackProfiles.filter(p => 
+        !topProfiles.some(top => top.id === p.id)
+      );
+      combined.push(...nonTopFallback.slice(0, 5));
     }
     
-    // Fallback: Alle schweizweit
-    return sortProfilesByListingType(fallbackProfiles);
+    return sortProfilesByListingType(combined).slice(0, 8); // Max 8 Profile
   }, [geoDetectionAttempted, userCanton, topProfiles, localProfiles, fallbackProfiles]);
   
   const loadingProfiles = !geoDetectionAttempted || loadingTop || loadingLocal || loadingFallback;
