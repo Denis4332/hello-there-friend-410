@@ -11,7 +11,6 @@ import { BannerDisplay } from '@/components/BannerDisplay';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
-import { Badge } from '@/components/ui/badge';
 import { detectLocation } from '@/lib/geolocation';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 
@@ -23,11 +22,9 @@ const Index = () => {
   
   const [userCanton, setUserCanton] = useState<string | null>(null);
   const [geoDetectionAttempted, setGeoDetectionAttempted] = useState(false);
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
-  // Geo-Detection beim Mount with loading state
+  // Geo-Detection beim Mount
   useEffect(() => {
-    setIsDetectingLocation(true);
     detectLocation()
       .then(location => {
         setUserCanton(location.canton);
@@ -35,9 +32,6 @@ const Index = () => {
       })
       .catch(() => {
         setGeoDetectionAttempted(true);
-      })
-      .finally(() => {
-        setIsDetectingLocation(false);
       });
   }, []);
   
@@ -60,7 +54,7 @@ const Index = () => {
     return sortProfilesByListingType(fallbackProfiles);
   }, [geoDetectionAttempted, userCanton, topProfiles, localProfiles, fallbackProfiles]);
   
-  const loadingProfiles = !geoDetectionAttempted || loadingTop || loadingLocal || loadingFallback || isDetectingLocation;
+  const loadingProfiles = !geoDetectionAttempted || loadingTop || loadingLocal || loadingFallback;
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();

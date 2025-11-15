@@ -112,9 +112,7 @@ const Auth = () => {
         return;
       }
     } catch (err) {
-      if (import.meta.env.DEV) {
-        console.error('Leaked password check failed:', err);
-      }
+      console.error('Leaked password check failed:', err);
       // Continue with signup if check fails
     }
 

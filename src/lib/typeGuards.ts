@@ -87,9 +87,7 @@ export function validateProfileResponse(data: unknown): ProfileWithRelations | n
   
   // Basic structure validation (relaxed for ProfileWithRelations)
   if (typeof data !== 'object') {
-    if (import.meta.env.DEV) {
-      console.error('❌ Invalid profile data received from API:', data);
-    }
+    console.error('❌ Invalid profile data received from API:', data);
     return null;
   }
   
@@ -102,9 +100,7 @@ export function validateProfileResponse(data: unknown): ProfileWithRelations | n
     typeof p.city !== 'string' ||
     typeof p.canton !== 'string'
   ) {
-    if (import.meta.env.DEV) {
-      console.error('❌ Profile missing required fields:', data);
-    }
+    console.error('❌ Profile missing required fields:', data);
     return null;
   }
   
@@ -120,15 +116,13 @@ export function validateProfileResponse(data: unknown): ProfileWithRelations | n
  */
 export function validateProfilesResponse(data: unknown): ProfileWithRelations[] {
   if (!Array.isArray(data)) {
-    if (import.meta.env.DEV) {
-      console.error('❌ Expected array of profiles, got:', typeof data);
-    }
+    console.error('❌ Expected array of profiles, got:', typeof data);
     return [];
   }
   
   const validProfiles = data.filter((item) => {
     const result = validateProfileResponse(item);
-    if (!result && import.meta.env.DEV) {
+    if (!result) {
       console.warn('⚠️ Skipping invalid profile:', item);
     }
     return result !== null;

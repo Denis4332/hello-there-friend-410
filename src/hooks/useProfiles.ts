@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { normalizeSlug } from '@/lib/stringUtils';
 import { ProfileWithRelations } from '@/types/common';
 import { validateProfileResponse, validateProfilesResponse } from '@/lib/typeGuards';
-import { sortProfilesByListingType } from '@/lib/profileUtils';
 
 // Cache admin user IDs to avoid repeated queries
 let adminUserIdsCache: string[] | null = null;
@@ -114,15 +113,13 @@ export const useLocalProfiles = (canton: string | null, limit: number = 5) => {
       }
       
       const result = await query
-        .eq('status', 'active')
+        .order('listing_type', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(limit * 3); // Fetch more, then sort client-side
+        .limit(limit);
       
       if (result.error) throw result.error;
       
-      // Client-side sorting by listing type priority
-      const profiles = validateProfilesResponse(result.data || []);
-      return sortProfilesByListingType(profiles).slice(0, limit);
+      return validateProfilesResponse(result.data || []);
     },
   });
 };

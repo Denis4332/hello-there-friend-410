@@ -39,13 +39,11 @@ export const useAuthRateLimit = () => {
         }
       });
 
-      if (error && import.meta.env.DEV) {
+      if (error) {
         console.error('Failed to record auth attempt:', error);
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Record attempt error:', error);
-      }
+      console.error('Record attempt error:', error);
     }
   };
 

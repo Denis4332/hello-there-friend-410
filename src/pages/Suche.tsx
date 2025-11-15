@@ -9,8 +9,7 @@ import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
 import { SearchFilters } from '@/components/search/SearchFilters';
-import { SearchResultsVirtualized } from '@/components/search/SearchResultsVirtualized';
-import { Badge } from '@/components/ui/badge';
+import { SearchResults } from '@/components/search/SearchResults';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
@@ -222,7 +221,7 @@ const Suche = () => {
             </p>
           </div>
 
-          <SearchResultsVirtualized
+          <SearchResults
             profiles={paginatedProfiles}
             isLoading={isLoading}
             currentPage={currentPage}

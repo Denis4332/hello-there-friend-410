@@ -35,13 +35,11 @@ export const useAnalytics = () => {
         }),
       });
 
-      if (!response.ok && import.meta.env.DEV) {
+      if (!response.ok) {
         console.error('Failed to track event');
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Analytics tracking error:', error);
-      }
+      console.error('Analytics tracking error:', error);
     }
   }, []);
 
@@ -65,13 +63,11 @@ export const useAnalytics = () => {
         }),
       });
 
-      if (!response.ok && import.meta.env.DEV) {
+      if (!response.ok) {
         console.error('Failed to track profile view');
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('Profile view tracking error:', error);
-      }
+      console.error('Profile view tracking error:', error);
     }
   }, []);
 
