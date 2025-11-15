@@ -48,15 +48,15 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       onMouseLeave={handleMouseLeave}
       className={cn(
         "relative flex flex-col group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
-        isTop && "border-4 border-red-500 shadow-2xl shadow-red-500/50 hover:scale-[1.04] active:scale-[1.02] ring-2 ring-red-300 ring-offset-2",
-        isPremium && !isTop && "border-3 border-amber-400 shadow-xl shadow-amber-400/30 hover:scale-[1.03] active:scale-[1.01]",
+        isTop && "border-4 border-red-500 shadow-2xl hover:scale-[1.04] active:scale-[1.02]",
+        isPremium && !isTop && "border-3 border-amber-400 shadow-xl hover:scale-[1.03] active:scale-[1.01]",
         isBasic && "border-2 border-blue-400/50 hover:scale-[1.01] active:scale-100",
         !isTop && !isPremium && !isBasic && "border hover:scale-[1.01] active:scale-100"
       )}
     >
       {/* TOP AD Banner - Enhanced */}
       {isTop && (
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-red-600 via-pink-600 to-red-600 text-white text-sm font-extrabold py-2 text-center z-20 animate-pulse shadow-lg">
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-red-600 via-pink-600 to-red-600 text-white text-sm font-bold py-2 text-center z-20">
           <span className="inline-flex items-center gap-1.5">
             ⭐ TOP INSERAT ⭐
           </span>
@@ -87,12 +87,12 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         )}>
           {isPremium && (
             <div className={cn(
-              "flex items-center gap-1.5 text-white px-5 py-2 rounded-full text-base font-extrabold shadow-2xl border-2",
+              "flex items-center gap-1.5 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-xl",
               isTop 
-                ? "bg-gradient-to-r from-red-600 via-red-500 to-pink-600 animate-pulse border-yellow-300" 
-                : "bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600 border-amber-200"
+                ? "bg-gradient-to-r from-red-600 via-red-500 to-pink-600" 
+                : "bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600"
             )}>
-              <Crown className="h-5 w-5" />
+              <Crown className="h-4 w-4" />
               {isTop ? 'TOP' : 'VIP'}
             </div>
           )}
