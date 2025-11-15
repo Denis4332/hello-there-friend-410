@@ -34,10 +34,13 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
       });
       window.open(ad.link_url, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      console.error('Failed to track click:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to track click:', error);
+      }
     }
   };
 
+  // Track impression only for the displayed ad
   useEffect(() => {
     const trackImpression = async (ad: Advertisement) => {
       try {
@@ -52,14 +55,17 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
           }),
         });
       } catch (error) {
-        console.error('Failed to track impression:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to track impression:', error);
+        }
       }
     };
 
     if (ads && ads.length > 0) {
-      ads.forEach(trackImpression);
+      // Only track the displayed ad (currentAdIndex)
+      trackImpression(ads[currentAdIndex] || ads[0]);
     }
-  }, [ads]);
+  }, [ads, currentAdIndex]);
 
   if (!ads || ads.length === 0) {
     return (
