@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Download, Lock } from 'lucide-react';
+import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Download, Lock, Heart } from 'lucide-react';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const UserDashboard = () => {
@@ -197,8 +197,17 @@ const UserDashboard = () => {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold">Mein Profil</h1>
-              {getStatusBadge(profile.status)}
+              <div className="flex gap-3">
+                <Button asChild variant="outline">
+                  <Link to="/favoriten">
+                    <Heart className="h-4 w-4 mr-2" />
+                    Favoriten
+                  </Link>
+                </Button>
+                {getStatusBadge(profile.status)}
+              </div>
             </div>
+
 
             {profile.status === 'pending' && (
               <Card className="mb-6 border-yellow-500/50 bg-yellow-500/5">

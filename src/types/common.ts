@@ -59,4 +59,6 @@ export type ProfileWithRelations = Profile & {
   show_street?: boolean;
   premium_until?: string;
   top_ad_until?: string;
+  availability_status?: string;
+  last_seen_at?: string;
 };

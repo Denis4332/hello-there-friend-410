@@ -123,31 +123,35 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
-      <main className="flex-1 py-8 bg-muted">
+      <main className="flex-1 py-8 bg-muted/30">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
           
           {isLoading ? (
-            <div className="grid md:grid-cols-6 gap-4 mb-8">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-card border rounded-lg p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <div key={i} className="bg-card border rounded-xl p-6">
                   <div className="h-4 bg-muted rounded w-24 mb-2 animate-pulse" />
                   <div className="h-8 bg-muted rounded w-12 animate-pulse" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid md:grid-cols-6 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats?.map((stat) => {
                 const Icon = stat.icon;
                 return (
-                  <Link key={stat.label} to={stat.link}>
-                    <div className={`${stat.bgColor} border-2 rounded-lg p-6 hover:border-primary transition-all hover:shadow-lg`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                        <Icon className={`h-5 w-5 ${stat.color}`} />
+                  <Link key={stat.label} to={stat.link} className="group">
+                    <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-primary/50">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                          <Icon className={`h-6 w-6 ${stat.color}`} />
+                        </div>
+                        <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
                       </div>
-                      <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+                      <div className="text-sm text-muted-foreground font-medium">
+                        {stat.label}
+                      </div>
                     </div>
                   </Link>
                 );

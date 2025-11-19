@@ -35,6 +35,7 @@ const Preise = lazy(() => import("./pages/Preise"));
 const Bannerpreise = lazy(() => import("./pages/Bannerpreise"));
 const ProfileCreate = lazy(() => import("./pages/ProfileCreate"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
+const UserFavorites = lazy(() => import("./pages/UserFavorites"));
 const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
 const ProfileUpgrade = lazy(() => import("./pages/ProfileUpgrade"));
 
@@ -124,6 +125,14 @@ const AppContent = () => {
               element={
                 <UserProtectedRoute>
                   <UserDashboard />
+                </UserProtectedRoute>
+              }
+            />
+            <Route
+              path="/favoriten"
+              element={
+                <UserProtectedRoute>
+                  <UserFavorites />
                 </UserProtectedRoute>
               }
             />
