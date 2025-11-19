@@ -43,42 +43,44 @@ export const HeroSection = ({
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryGpsOpen, setCategoryGpsOpen] = useState(false);
-  const [bgLoaded, setBgLoaded] = useState(false);
   const [webpSupported, setWebpSupported] = useState(false);
+  const [optimizedHeroImage, setOptimizedHeroImage] = useState('');
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     supportsWebP().then(setWebpSupported);
   }, []);
 
+  // Optimize and preload hero image with aggressive optimization
   useEffect(() => {
-    if (heroImageUrl) {
-      // Use smaller image for mobile devices
-      const isMobile = window.innerWidth < 768;
-      const width = isMobile ? 828 : 1920;
-      const quality = isMobile ? 70 : 80;
-      
-      const optimizedUrl = getOptimizedImageUrl(heroImageUrl, {
-        width,
-        quality,
-        format: webpSupported ? 'webp' : 'origin'
-      });
-      
-      // Preload critical hero image
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = optimizedUrl;
-      link.fetchPriority = 'high';
-      document.head.appendChild(link);
-      
-      const img = new Image();
-      img.src = optimizedUrl;
-      img.onload = () => setBgLoaded(true);
-      
-      return () => {
-        document.head.removeChild(link);
-      };
-    }
+    if (!heroImageUrl) return;
+
+    const isMobile = window.innerWidth < 768;
+    const optimizedImageUrl = getOptimizedImageUrl(heroImageUrl, {
+      width: isMobile ? 640 : 1200, // Smaller sizes for faster load
+      quality: isMobile ? 75 : 85,
+      format: webpSupported ? 'webp' : 'origin'
+    });
+
+    setOptimizedHeroImage(optimizedImageUrl);
+
+    // Preload with high priority
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = optimizedImageUrl;
+    link.fetchPriority = 'high';
+    document.head.appendChild(link);
+
+    const img = new Image();
+    img.src = optimizedImageUrl;
+    img.onload = () => {
+      setImageLoaded(true);
+    };
+    
+    return () => {
+      document.head.removeChild(link);
+    };
   }, [heroImageUrl, webpSupported]);
 
   const activeFiltersCount = [canton, category, keyword, useGPS].filter(Boolean).length;
@@ -124,30 +126,30 @@ export const HeroSection = ({
   };
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const optimizedBgUrl = heroImageUrl && bgLoaded 
-    ? getOptimizedImageUrl(heroImageUrl, { 
-        width: isMobile ? 828 : 1920, 
-        quality: isMobile ? 70 : 80, 
-        format: webpSupported ? 'webp' : 'origin' 
-      })
+  const optimizedBgUrl = heroImageUrl && imageLoaded 
+    ? optimizedHeroImage
     : undefined;
 
   return (
     <section 
       className="relative py-16"
       aria-label="Hero-Bereich mit Suchfunktion"
-      style={{
-        backgroundImage: optimizedBgUrl ? `url(${optimizedBgUrl})` : undefined,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundColor: !optimizedBgUrl ? 'hsl(var(--muted))' : undefined,
-      }}
     >
-      {heroImageUrl && (
-        <div 
-          className="absolute inset-0 bg-background"
-          style={{ opacity: heroOverlayOpacity || '0.7' }}
-        />
+      {optimizedHeroImage && (
+        <>
+          <img
+            src={optimizedHeroImage}
+            alt="Hero background"
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+            style={{ opacity: imageLoaded ? 1 : 0 }}
+            fetchPriority="high"
+            loading="eager"
+          />
+          <div 
+            className="absolute inset-0 bg-background"
+            style={{ opacity: heroOverlayOpacity || '0.7' }}
+          />
+        </>
       )}
       <div className="container mx-auto px-4 relative z-10">
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-8">
