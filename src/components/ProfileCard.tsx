@@ -47,7 +47,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative flex flex-col group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
+        "relative flex flex-col h-full group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
         isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03] active:scale-[1.01]",
         isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02] active:scale-100",
         isBasic && "border-2 border-blue-400/50 hover:scale-[1.01] active:scale-100",

@@ -82,14 +82,14 @@ const Stadt = () => {
           <AdvertisementCTA position="grid" className="mb-8" />
 
           {loadingProfiles ? (
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 auto-rows-fr">
               {Array.from({ length: 8 }).map((_, i) => (
                 <ProfileCardSkeleton key={i} />
               ))}
             </div>
           ) : paginatedProfiles.length > 0 ? (
             <>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-4 auto-rows-fr">
                 {paginatedProfiles.map((profile) => (
                   <ProfileCard key={profile.id} profile={profile} />
                 ))}
