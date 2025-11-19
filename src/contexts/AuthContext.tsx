@@ -102,6 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!/[A-Z]/.test(password)) return 'Passwort muss mindestens einen Großbuchstaben enthalten';
     if (!/[a-z]/.test(password)) return 'Passwort muss mindestens einen Kleinbuchstaben enthalten';
     if (!/[0-9]/.test(password)) return 'Passwort muss mindestens eine Zahl enthalten';
+    if (!/[^A-Za-z0-9]/.test(password)) return 'Passwort muss mindestens ein Sonderzeichen enthalten';
     return null;
   };
 

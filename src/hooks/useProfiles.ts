@@ -32,6 +32,25 @@ const getAdminUserIds = async (): Promise<string[]> => {
   return adminUserIdsCache;
 };
 
+// Reusable profile select query
+const PROFILE_SELECT_QUERY = `
+  id, slug, display_name, age, gender, city, canton, postal_code,
+  lat, lng, about_me, languages, is_adult, verified_at, status, 
+  listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
+  photos(storage_path, is_primary),
+  profile_categories(
+    categories(id, name, slug)
+  )
+`;
+
+// Helper to apply admin user filter
+const applyAdminFilter = async <T extends { not: (column: string, operator: string, value: string) => T }>(query: T): Promise<T> => {
+  const adminUserIds = await getAdminUserIds();
+  return adminUserIds.length > 0 
+    ? query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`)
+    : query;
+};
+
 /**
  * Fetches a limited number of featured active profiles for the homepage.
  * Profiles are sorted by listing_type (premium first) and creation date.
@@ -51,25 +70,13 @@ export const useTopProfiles = (limit: number = 3) => {
     queryKey: ['top-profiles', limit],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const adminUserIds = await getAdminUserIds();
-      
-      let query = (supabase as any)
+      let query = supabase
         .from('profiles')
-        .select(`
-          id, slug, display_name, age, gender, city, canton, postal_code,
-          lat, lng, about_me, languages, is_adult, verified_at, status, 
-          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
-          photos(storage_path, is_primary),
-          profile_categories(
-            categories(id, name, slug)
-          )
-        `)
+        .select(PROFILE_SELECT_QUERY)
         .eq('status', 'active')
         .eq('listing_type', 'top');
       
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
+      query = await applyAdminFilter(query);
       
       const result = await query
         .order('created_at', { ascending: false })
@@ -130,85 +137,12 @@ export const useFeaturedProfiles = (limit: number = 8) => {
     queryKey: ['featured-profiles', limit, 'v5'],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const adminUserIds = await getAdminUserIds();
-      
-      let query = (supabase as any)
+      let query = supabase
         .from('profiles')
-        .select(`
-          id, slug, display_name, age, gender, city, canton, postal_code,
-          lat, lng, about_me, languages, is_adult, verified_at, status, 
-          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
-          photos(storage_path, is_primary),
-          profile_categories(
-            categories(id, name, slug)
-          )
-        `)
+        .select(PROFILE_SELECT_QUERY)
         .eq('status', 'active');
       
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
-      
-      const result = await query
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      
-      if (result.error) throw result.error;
-      
-      return validateProfilesResponse(result.data || []);
-    },
-  });
-};
-
-/**
- * Searches profiles by location, category, and keyword.
- * Supports both canton-based and city/postal code-based searches.
- * 
- * @param {object} filters - Search filters
- * @param {string} [filters.location] - Canton code (e.g., "ZH") or city name/postal code
- * @param {string} [filters.categoryId] - Category UUID to filter by
- * @param {string} [filters.keyword] - Keyword to search in display_name and about_me
- * @returns {UseQueryResult<ProfileWithRelations[]>} React Query result with matching profiles
- * 
- * @example
- * ```typescript
- * const { data: profiles } = useSearchProfiles({
- *   location: "ZH",
- *   categoryId: "category-uuid",
- *   keyword: "massage"
- * });
- * ```
- */
-export const useSearchProfiles = (filters: {
-  location?: string;
-  categoryId?: string;
-  keyword?: string;
-  enabled?: boolean;
-}) => {
-  return useQuery<ProfileWithRelations[]>({
-    queryKey: ['search-profiles', filters, 'v4'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: filters.enabled !== undefined ? filters.enabled : true,
-    queryFn: async () => {
-      const adminUserIds = await getAdminUserIds();
-      
-      // SECURITY: Explicitly select only public fields (no contact data)
-      let query = (supabase as any)
-        .from('profiles')
-        .select(`
-          id, slug, display_name, age, gender, city, canton, postal_code,
-          lat, lng, about_me, languages, is_adult, verified_at, status, 
-          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
-          photos(storage_path, is_primary),
-          profile_categories(
-            categories(id, name, slug)
-          )
-        `)
-        .eq('status', 'active');
-      
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
+      query = await applyAdminFilter(query);
       
       if (filters.location) {
         // Check if location is a canton abbreviation (2-3 uppercase letters)
