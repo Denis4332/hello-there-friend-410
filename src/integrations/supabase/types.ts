@@ -24,7 +24,10 @@ export type Database = {
           image_url: string
           impressions: number | null
           link_url: string
+          payment_method: string | null
+          payment_reference: string | null
           payment_required: boolean | null
+          payment_status: string | null
           popup_delay_seconds: number | null
           popup_frequency: string | null
           position: string
@@ -44,7 +47,10 @@ export type Database = {
           image_url: string
           impressions?: number | null
           link_url: string
+          payment_method?: string | null
+          payment_reference?: string | null
           payment_required?: boolean | null
+          payment_status?: string | null
           popup_delay_seconds?: number | null
           popup_frequency?: string | null
           position: string
@@ -64,7 +70,10 @@ export type Database = {
           image_url?: string
           impressions?: number | null
           link_url?: string
+          payment_method?: string | null
+          payment_reference?: string | null
           payment_required?: boolean | null
+          payment_status?: string | null
           popup_delay_seconds?: number | null
           popup_frequency?: string | null
           position?: string
@@ -575,6 +584,9 @@ export type Database = {
           lat: number | null
           listing_type: string | null
           lng: number | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string | null
           postal_code: string | null
           premium_until: string | null
           slug: string | null
@@ -598,6 +610,9 @@ export type Database = {
           lat?: number | null
           listing_type?: string | null
           lng?: number | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
           postal_code?: string | null
           premium_until?: string | null
           slug?: string | null
@@ -621,6 +636,9 @@ export type Database = {
           lat?: number | null
           listing_type?: string | null
           lng?: number | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
           postal_code?: string | null
           premium_until?: string | null
           slug?: string | null

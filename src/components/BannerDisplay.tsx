@@ -1,6 +1,6 @@
 import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AdvertisementCTA } from './AdvertisementCTA';
 
 interface BannerDisplayProps {
@@ -12,13 +12,35 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
   const { data: ads } = useAdvertisements(position);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
-  // Random rotation for fair share among multiple advertisers
-  useEffect(() => {
-    if (ads && ads.length > 1) {
-      const randomIndex = Math.floor(Math.random() * ads.length);
-      setCurrentAdIndex(randomIndex);
+  // Weighted random selection based on priority
+  const getWeightedRandomAd = useCallback((ads: Advertisement[]) => {
+    const totalWeight = ads.reduce((sum, ad) => sum + (ad.priority || 1), 0);
+    let random = Math.random() * totalWeight;
+    
+    for (let i = 0; i < ads.length; i++) {
+      random -= (ads[i].priority || 1);
+      if (random <= 0) return i;
     }
-  }, [ads]);
+    return 0;
+  }, []);
+
+  // Initial weighted selection
+  useEffect(() => {
+    if (ads && ads.length > 0) {
+      setCurrentAdIndex(getWeightedRandomAd(ads));
+    }
+  }, [ads, getWeightedRandomAd]);
+
+  // Auto-rotation every 30 seconds for fair share
+  useEffect(() => {
+    if (!ads || ads.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentAdIndex(getWeightedRandomAd(ads));
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [ads, getWeightedRandomAd]);
 
   const handleClick = async (ad: Advertisement) => {
     try {
