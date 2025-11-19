@@ -64,7 +64,7 @@ const SearchResultsVirtualizedComponent = ({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-fr">
         {Array.from({ length: 24 }).map((_, i) => (
           <ProfileCardSkeleton key={i} />
         ))}
@@ -86,7 +86,7 @@ const SearchResultsVirtualizedComponent = ({
   if (profiles.length < 50) {
     return (
       <>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-fr">
           {profiles.map((profile) => (
             <ProfileCard key={profile.id} profile={profile} />
           ))}

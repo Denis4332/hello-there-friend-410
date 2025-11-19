@@ -54,7 +54,7 @@ export const FeaturedProfilesSection = ({
             {chunks.map((chunk, chunkIndex) => (
               <div key={`chunk-${chunkIndex}`}>
                 {/* Grid for up to 8 profiles */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-fr">
                   {chunk.map((profile) => (
                     <ProfileCard key={profile.id} profile={profile} />
                   ))}
