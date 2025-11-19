@@ -573,6 +573,7 @@ export type Database = {
         Row: {
           about_me: string | null
           age: number | null
+          availability_status: string | null
           canton: string
           city: string
           created_at: string | null
@@ -581,6 +582,7 @@ export type Database = {
           id: string
           is_adult: boolean
           languages: string[] | null
+          last_seen_at: string | null
           lat: number | null
           listing_type: string | null
           lng: number | null
@@ -599,6 +601,7 @@ export type Database = {
         Insert: {
           about_me?: string | null
           age?: number | null
+          availability_status?: string | null
           canton: string
           city: string
           created_at?: string | null
@@ -607,6 +610,7 @@ export type Database = {
           id?: string
           is_adult?: boolean
           languages?: string[] | null
+          last_seen_at?: string | null
           lat?: number | null
           listing_type?: string | null
           lng?: number | null
@@ -625,6 +629,7 @@ export type Database = {
         Update: {
           about_me?: string | null
           age?: number | null
+          availability_status?: string | null
           canton?: string
           city?: string
           created_at?: string | null
@@ -633,6 +638,7 @@ export type Database = {
           id?: string
           is_adult?: boolean
           languages?: string[] | null
+          last_seen_at?: string | null
           lat?: number | null
           listing_type?: string | null
           lng?: number | null
@@ -804,6 +810,42 @@ export type Database = {
           srtext?: string | null
         }
         Relationships: []
+      }
+      user_favorites: {
+        Row: {
+          created_at: string | null
+          id: string
+          profile_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          profile_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          profile_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_favorites_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
