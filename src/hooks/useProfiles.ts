@@ -43,14 +43,6 @@ const PROFILE_SELECT_QUERY = `
   )
 `;
 
-// Helper to apply admin user filter
-const applyAdminFilter = async <T extends { not: (column: string, operator: string, value: string) => T }>(query: T): Promise<T> => {
-  const adminUserIds = await getAdminUserIds();
-  return adminUserIds.length > 0 
-    ? query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`)
-    : query;
-};
-
 /**
  * Fetches a limited number of featured active profiles for the homepage.
  * Profiles are sorted by listing_type (premium first) and creation date.
@@ -70,13 +62,17 @@ export const useTopProfiles = (limit: number = 3) => {
     queryKey: ['top-profiles', limit],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
+      const adminUserIds = await getAdminUserIds();
+      
       let query = supabase
         .from('profiles')
         .select(PROFILE_SELECT_QUERY)
         .eq('status', 'active')
         .eq('listing_type', 'top');
       
-      query = await applyAdminFilter(query);
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
+      }
       
       const result = await query
         .order('created_at', { ascending: false })
@@ -100,17 +96,9 @@ export const useLocalProfiles = (canton: string | null, limit: number = 5) => {
       
       const adminUserIds = await getAdminUserIds();
       
-      let query = (supabase as any)
+      let query = supabase
         .from('profiles')
-        .select(`
-          id, slug, display_name, age, gender, city, canton, postal_code,
-          lat, lng, about_me, languages, is_adult, verified_at, status, 
-          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
-          photos(storage_path, is_primary),
-          profile_categories(
-            categories(id, name, slug)
-          )
-        `)
+        .select(PROFILE_SELECT_QUERY)
         .eq('status', 'active')
         .eq('canton', canton)
         .in('listing_type', ['premium', 'basic']);
@@ -137,22 +125,56 @@ export const useFeaturedProfiles = (limit: number = 8) => {
     queryKey: ['featured-profiles', limit, 'v5'],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
+      const adminUserIds = await getAdminUserIds();
+      
       let query = supabase
         .from('profiles')
         .select(PROFILE_SELECT_QUERY)
         .eq('status', 'active');
       
-      query = await applyAdminFilter(query);
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
+      }
+      
+      const result = await query
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (result.error) throw result.error;
+      
+      return validateProfilesResponse(result.data || []);
+    },
+  });
+};
+
+export const useSearchProfiles = (filters: {
+  location?: string;
+  categoryId?: string;
+  keyword?: string;
+  enabled?: boolean;
+}) => {
+  return useQuery<ProfileWithRelations[]>({
+    queryKey: ['search-profiles', filters, 'v7'],
+    staleTime: 1 * 60 * 1000,
+    enabled: filters.enabled ?? true,
+    queryFn: async () => {
+      const adminUserIds = await getAdminUserIds();
+      
+      let query = supabase
+        .from('profiles')
+        .select(PROFILE_SELECT_QUERY)
+        .eq('status', 'active');
+      
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
+      }
       
       if (filters.location) {
-        // Check if location is a canton abbreviation (2-3 uppercase letters)
         const isCantonCode = /^[A-Z]{2,3}$/.test(filters.location);
         
         if (isCantonCode) {
-          // Search by canton
           query = query.eq('canton', filters.location);
         } else {
-          // Search by city or postal code
           query = query.or(`city.ilike.%${filters.location}%,postal_code.ilike.%${filters.location}%`);
         }
       }
@@ -194,17 +216,12 @@ export const useProfileBySlug = (slug: string | undefined) => {
     queryFn: async () => {
       if (!slug) return null;
       
-      // SECURITY: Explicitly select only public fields (no contact data)
-      const result = await (supabase as any)
+      const normalizedSlug = normalizeSlug(slug);
+      
+      const result = await supabase
         .from('profiles')
-        .select(`
-          id, slug, display_name, age, gender, city, canton, postal_code,
-          lat, lng, about_me, languages, is_adult, verified_at, status, 
-          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
-          photos(storage_path, is_primary), 
-          profile_categories(category_id)
-        `)
-        .eq('slug', slug)
+        .select(PROFILE_SELECT_QUERY)
+        .eq('slug', normalizedSlug)
         .eq('status', 'active')
         .maybeSingle();
       
@@ -236,18 +253,9 @@ export const useCityProfiles = (cityName: string | undefined) => {
       
       const adminUserIds = await getAdminUserIds();
       
-      // SECURITY: Explicitly select only public fields (no contact data)
-      let query = (supabase as any)
+      let query = supabase
         .from('profiles')
-        .select(`
-          id, slug, display_name, age, gender, city, canton, postal_code,
-          lat, lng, about_me, languages, is_adult, verified_at, status, 
-          listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
-          photos(storage_path, is_primary),
-          profile_categories(
-            categories(id, name, slug)
-          )
-        `)
+        .select(PROFILE_SELECT_QUERY)
         .eq('status', 'active')
         .ilike('city', cityName);
       
@@ -283,8 +291,7 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
       
       const adminUserIds = await getAdminUserIds();
       
-      // SECURITY: Explicitly select only public fields (no contact data)
-      const result = await (supabase as any)
+      const result = await supabase
         .from('profile_categories')
         .select(`
           profile_id,
@@ -300,7 +307,7 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
       
       if (result.error) throw result.error;
       
-      let profiles = result.data?.map((p) => ({
+      let profiles = result.data?.map((p: any) => ({
         ...p.profiles,
         profile_categories: [{ category_id: categoryId }]
       })) || [];
