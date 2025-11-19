@@ -56,11 +56,75 @@ const PROFILE_SELECT_QUERY = `
  * const { data: profiles, isLoading } = useFeaturedProfiles(12);
  * ```
  */
-// TOP-Inserate schweizweit (für Homepage)
+/**
+ * OPTIMIZED: Fetches all homepage profiles in a single query for better performance.
+ * Returns profiles grouped by listing type for easy filtering on client-side.
+ * Cache time increased to 15 minutes for homepage.
+ * 
+ * @param {number} topLimit - Max TOP profiles (default: 3)
+ * @param {number} localLimit - Max local profiles (default: 5)
+ * @param {number} newestLimit - Max newest profiles (default: 8)
+ * @param {string | null} canton - Canton for local profiles
+ * @returns {UseQueryResult} React Query result with all homepage profiles
+ */
+export const useHomepageProfiles = (
+  topLimit: number = 3,
+  localLimit: number = 5, 
+  newestLimit: number = 8,
+  canton: string | null = null
+) => {
+  return useQuery({
+    queryKey: ['homepage-profiles', topLimit, localLimit, newestLimit, canton],
+    staleTime: 15 * 60 * 1000, // 15 minutes cache for homepage
+    queryFn: async () => {
+      const adminUserIds = await getAdminUserIds();
+      
+      // Single query to fetch ALL profiles needed for homepage
+      let query = supabase
+        .from('profiles')
+        .select(PROFILE_SELECT_QUERY)
+        .eq('status', 'active');
+      
+      if (adminUserIds.length > 0) {
+        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
+      }
+      
+      const result = await query
+        .order('created_at', { ascending: false })
+        .limit(50); // Fetch more than needed for client-side filtering
+      
+      if (result.error) throw result.error;
+      
+      const allProfiles = validateProfilesResponse(result.data || []);
+      
+      // Client-side filtering and limiting
+      const topProfiles = allProfiles
+        .filter(p => p.listing_type === 'top')
+        .slice(0, topLimit);
+        
+      const localProfiles = canton 
+        ? allProfiles
+            .filter(p => p.canton === canton && ['premium', 'basic'].includes(p.listing_type || ''))
+            .slice(0, localLimit)
+        : [];
+        
+      const newestProfiles = allProfiles.slice(0, newestLimit);
+      
+      return {
+        topProfiles,
+        localProfiles,
+        newestProfiles,
+        allProfiles, // For future use
+      };
+    },
+  });
+};
+
+// TOP-Inserate schweizweit (für Homepage) - DEPRECATED: Use useHomepageProfiles instead
 export const useTopProfiles = (limit: number = 3) => {
   return useQuery<ProfileWithRelations[]>({
     queryKey: ['top-profiles', limit],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000, // Increased from 5min to 15min
     queryFn: async () => {
       const adminUserIds = await getAdminUserIds();
       
@@ -85,11 +149,11 @@ export const useTopProfiles = (limit: number = 3) => {
   });
 };
 
-// Premium/Basic Inserate lokal (nach Kanton)
+// Premium/Basic Inserate lokal (nach Kanton) - DEPRECATED: Use useHomepageProfiles instead
 export const useLocalProfiles = (canton: string | null, limit: number = 5) => {
   return useQuery<ProfileWithRelations[]>({
     queryKey: ['local-profiles', canton, limit],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000, // Increased from 5min to 15min
     enabled: !!canton,
     queryFn: async () => {
       if (!canton) return [];

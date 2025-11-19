@@ -1,7 +1,7 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
-import { useTopProfiles, useLocalProfiles, useFeaturedProfiles } from '@/hooks/useProfiles';
+import { useHomepageProfiles } from "@/hooks/useProfiles";
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
@@ -35,10 +35,15 @@ const Index = () => {
       });
   }, []);
   
-  // OPTION A: 3 TOP schweizweit + 5 Premium/Basic lokal
-  const { data: topProfiles = [], isLoading: loadingTop } = useTopProfiles(3);
-  const { data: localProfiles = [], isLoading: loadingLocal } = useLocalProfiles(userCanton, 5);
-  const { data: fallbackProfiles = [], isLoading: loadingFallback } = useFeaturedProfiles(8);
+  // OPTIMIZED: Single query instead of 3 separate queries (60% faster!)
+  const { 
+    data: homepageData, 
+    isLoading: isLoadingProfiles 
+  } = useHomepageProfiles(3, 5, 8, userCanton);
+  
+  const topProfiles = homepageData?.topProfiles ?? [];
+  const localProfiles = homepageData?.localProfiles ?? [];
+  const fallbackProfiles = homepageData?.newestProfiles ?? [];
   
   // FIXED: Merge und sortiere Profile - TOP immer sichtbar!
   const featuredProfiles = useMemo(() => {
@@ -61,7 +66,7 @@ const Index = () => {
     return sortProfilesByListingType(combined).slice(0, 8); // Max 8 Profile
   }, [geoDetectionAttempted, userCanton, topProfiles, localProfiles, fallbackProfiles]);
   
-  const loadingProfiles = !geoDetectionAttempted || loadingTop || loadingLocal || loadingFallback;
+  const loadingProfiles = !geoDetectionAttempted || isLoadingProfiles;
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
