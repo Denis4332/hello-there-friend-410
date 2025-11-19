@@ -39,6 +39,10 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
   };
 
   useEffect(() => {
+    if (!ads || ads.length === 0) return;
+    
+    const displayedAd = ads[currentAdIndex] || ads[0];
+    
     const trackImpression = async (ad: Advertisement) => {
       try {
         await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
@@ -56,10 +60,8 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
       }
     };
 
-    if (ads && ads.length > 0) {
-      ads.forEach(trackImpression);
-    }
-  }, [ads]);
+    trackImpression(displayedAd);
+  }, [ads, currentAdIndex]);
 
   if (!ads || ads.length === 0) {
     return (
