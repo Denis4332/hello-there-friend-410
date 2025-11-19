@@ -58,7 +58,10 @@ const ProfileUpgrade = () => {
     if (!profile) return;
     
     try {
-      const updates: any = { listing_type: listingType };
+      const updates: any = { 
+        listing_type: listingType,
+        status: 'active'
+      };
       
       // Ablaufdatum setzen (heute + 30 Tage)
       const expiryDate = new Date();
@@ -71,7 +74,8 @@ const ProfileUpgrade = () => {
         updates.top_ad_until = expiryDate.toISOString();
         updates.premium_until = null;
       } else {
-        updates.premium_until = null;
+        // Basic hat auch Ablaufdatum (kostet auch Geld!)
+        updates.premium_until = expiryDate.toISOString();
         updates.top_ad_until = null;
       }
       
@@ -85,6 +89,124 @@ const ProfileUpgrade = () => {
       toast({
         title: 'Upgrade erfolgreich!',
         description: `Dein Profil wurde auf ${listingType.toUpperCase()} upgradet und ist 30 Tage gültig.`,
+      });
+      
+      await loadProfile();
+    } catch (error: any) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleReactivate = async (listingType: string) => {
+    if (!profile) return;
+    
+    try {
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      
+      const updates: any = {
+        status: 'active',
+        listing_type: listingType
+      };
+      
+      if (listingType === 'top') {
+        updates.top_ad_until = expiryDate.toISOString();
+      } else {
+        updates.premium_until = expiryDate.toISOString();
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Reaktivierung erfolgreich!',
+        description: `Dein ${listingType.toUpperCase()} Profil ist wieder aktiv für 30 Tage.`,
+      });
+      
+      await loadProfile();
+    } catch (error: any) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleExtend = async () => {
+    if (!profile) return;
+    
+    try {
+      const currentExpiry = profile.listing_type === 'top' 
+        ? new Date(profile.top_ad_until)
+        : new Date(profile.premium_until);
+      
+      currentExpiry.setDate(currentExpiry.getDate() + 30);
+      
+      const updates: any = {};
+      if (profile.listing_type === 'top') {
+        updates.top_ad_until = currentExpiry.toISOString();
+      } else {
+        updates.premium_until = currentExpiry.toISOString();
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Verlängerung erfolgreich!',
+        description: 'Dein Profil wurde um 30 Tage verlängert.',
+      });
+      
+      await loadProfile();
+    } catch (error: any) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDowngrade = async (newType: 'basic' | 'premium') => {
+    if (!profile) return;
+    
+    try {
+      const updates: any = {
+        listing_type: newType
+      };
+      
+      // Behalte aktuelles Ablaufdatum
+      if (newType === 'premium') {
+        updates.top_ad_until = null;
+        // Premium behält premium_until
+      } else {
+        // Basic behält premium_until, entfernt top_ad_until
+        updates.top_ad_until = null;
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Downgrade erfolgreich!',
+        description: `Dein Profil wurde zu ${newType.toUpperCase()} geändert.`,
       });
       
       await loadProfile();
@@ -194,6 +316,82 @@ const ProfileUpgrade = () => {
               Dein aktuelles Paket: <Badge variant={currentBadge.variant}>{currentBadge.label}</Badge>
             </p>
           </div>
+
+          {/* Current Package Status */}
+          <Card className="border-primary mb-8">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Aktuelles Paket</CardTitle>
+                  <CardDescription>
+                    Du nutzt aktuell das {getCurrentBadge().label}-Paket
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={getCurrentBadge().variant}>
+                    {getCurrentBadge().label}
+                  </Badge>
+                  <Badge variant={profile?.status === 'active' ? 'default' : 'destructive'}>
+                    {profile?.status === 'active' ? '✅ Aktiv' : '❌ Inaktiv'}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(profile?.premium_until || profile?.top_ad_until) && (
+                  <div className="text-sm">
+                    <span className="font-semibold">Gültig bis: </span>
+                    {new Date(
+                      profile.listing_type === 'top' ? profile.top_ad_until : profile.premium_until
+                    ).toLocaleDateString('de-CH', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      year: 'numeric' 
+                    })}
+                  </div>
+                )}
+                
+                {profile?.status === 'inactive' && (
+                  <Button 
+                    onClick={() => handleReactivate(profile.listing_type)} 
+                    className="w-full"
+                    variant="default"
+                  >
+                    Reaktivieren ({profile.listing_type.toUpperCase()})
+                  </Button>
+                )}
+                
+                {profile?.status === 'active' && (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={handleExtend} className="flex-1">
+                      Verlängern (+30 Tage)
+                    </Button>
+                    
+                    {profile.listing_type === 'top' && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleDowngrade('premium')}
+                        className="flex-1"
+                      >
+                        Downgrade zu Premium
+                      </Button>
+                    )}
+                    
+                    {profile.listing_type === 'premium' && (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleDowngrade('basic')}
+                        className="flex-1"
+                      >
+                        Downgrade zu Basic
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Upgrade Cards */}
           <div className="grid md:grid-cols-3 gap-6 mb-12">
