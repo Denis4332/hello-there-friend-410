@@ -127,6 +127,15 @@ export const AdminHeader = () => {
                 Banner
               </Link>
               <Link 
+                to="/admin/pending-payments" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/pending-payments") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
+                Zahlungen
+              </Link>
+              <Link 
                 to="/admin/settings"
                 className={cn(
                   "hover:text-primary transition-colors",
