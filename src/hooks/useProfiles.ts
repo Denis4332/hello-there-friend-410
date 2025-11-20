@@ -35,7 +35,7 @@ const getAdminUserIds = async (): Promise<string[]> => {
 // Reusable profile select query (without user_id for security)
 const PROFILE_SELECT_QUERY = `
   id, slug, display_name, age, gender, city, canton, postal_code,
-  lat, lng, about_me, languages, is_adult, verified_at, status, 
+  about_me, languages, is_adult, verified_at, status, 
   listing_type, premium_until, top_ad_until, created_at, updated_at,
   photos(storage_path, is_primary),
   profile_categories(
