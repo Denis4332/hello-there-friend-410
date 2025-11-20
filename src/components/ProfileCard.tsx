@@ -58,7 +58,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative flex flex-col group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
+        "relative flex flex-col h-[625px] group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
         isTop && "border-2 border-red-500/60 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 hover:scale-[1.02]",
         isPremium && !isTop && "border-2 border-amber-500/60 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-[1.02]",
         !isTop && !isPremium && "border border-border/40 hover:border-primary/40 hover:scale-[1.01]"
@@ -71,7 +71,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         </div>
       )}
       
-      <div className="relative w-full flex-shrink-0" style={{ paddingBottom: '125%' }}>
+      <div className="relative w-full h-[425px] flex-shrink-0">
         {photoUrl ? (
           <ResponsiveImage
             src={photoUrl}
@@ -96,14 +96,11 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
           </div>
         )}
 
-        {/* Favorite Heart - Top Right (below online badge if present) */}
+        {/* Favorite Heart - Bottom Right */}
         <button
           onClick={handleFavoriteClick}
           disabled={isToggling}
-          className={cn(
-            "absolute right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95",
-            isOnline ? "top-12" : "top-2"
-          )}
+          className="absolute bottom-4 right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95"
           aria-label={isFavorite(profile.id) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
         >
           <Heart 
