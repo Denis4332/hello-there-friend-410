@@ -1007,7 +1007,9 @@ export type Database = {
           id: string | null
           is_adult: boolean | null
           languages: string[] | null
+          lat: number | null
           listing_type: string | null
+          lng: number | null
           postal_code: string | null
           premium_until: string | null
           slug: string | null
@@ -1027,7 +1029,9 @@ export type Database = {
           id?: string | null
           is_adult?: boolean | null
           languages?: string[] | null
+          lat?: number | null
           listing_type?: string | null
+          lng?: number | null
           postal_code?: string | null
           premium_until?: string | null
           slug?: string | null
@@ -1047,7 +1051,9 @@ export type Database = {
           id?: string | null
           is_adult?: boolean | null
           languages?: string[] | null
+          lat?: number | null
           listing_type?: string | null
+          lng?: number | null
           postal_code?: string | null
           premium_until?: string | null
           slug?: string | null
