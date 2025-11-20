@@ -18,6 +18,8 @@ interface ProfileCardProps {
       };
     }>;
     listing_type?: string;
+    premium_until?: string | null;
+    top_ad_until?: string | null;
     street_address?: string;
     show_street?: boolean;
     availability_status?: string;
@@ -31,10 +33,18 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
     : null;
   
+  // Expired-Status erkennen: premium_until ist in der Vergangenheit
+  const now = new Date();
+  const premiumUntil = profile.premium_until ? new Date(profile.premium_until) : null;
+  const topAdUntil = profile.top_ad_until ? new Date(profile.top_ad_until) : null;
+  const isExpiredPremium = premiumUntil && premiumUntil < now;
+  const isExpiredTop = topAdUntil && topAdUntil < now;
+  
   const listingType = profile.listing_type || 'basic';
-  const isTop = listingType === 'top';
-  const isPremium = listingType === 'premium' || isTop;
+  const isTop = listingType === 'top' && !isExpiredTop;
+  const isPremium = (listingType === 'premium' || listingType === 'top') && !isExpiredPremium;
   const isBasic = listingType === 'basic';
+  const isExpired = isExpiredPremium || isExpiredTop;
   const isOnline = profile.availability_status === 'online';
 
   // Prefetch profile page on hover for faster navigation
@@ -61,8 +71,9 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
         "relative flex flex-col h-full group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
         isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03] active:scale-[1.01]",
         isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02] active:scale-100",
-        isBasic && "border-2 border-blue-400/50 hover:scale-[1.01] active:scale-100",
-        !isTop && !isPremium && !isBasic && "border hover:scale-[1.01] active:scale-100"
+        isExpired && "border-2 border-gray-400/60 opacity-75 hover:scale-[1.01] active:scale-100",
+        isBasic && !isExpired && "border-2 border-blue-400/50 hover:scale-[1.01] active:scale-100",
+        !isTop && !isPremium && !isBasic && !isExpired && "border hover:scale-[1.01] active:scale-100"
       )}
     >
       {/* TOP AD Banner */}
@@ -120,7 +131,12 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
           "absolute left-3 flex gap-3 z-10",
           isTop ? "top-9" : "top-3"
         )}>
-          {isPremium && (
+          {isExpired && (
+            <div className="flex items-center gap-1.5 bg-gray-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl">
+              🚫 ABGELAUFEN
+            </div>
+          )}
+          {isPremium && !isExpired && (
             <div className={cn(
               "flex items-center gap-1.5 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl",
               isTop 
