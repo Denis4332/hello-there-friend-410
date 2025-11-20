@@ -33,6 +33,7 @@ const AGB = lazy(() => import("./pages/AGB"));
 const Datenschutz = lazy(() => import("./pages/Datenschutz"));
 const Preise = lazy(() => import("./pages/Preise"));
 const Bannerpreise = lazy(() => import("./pages/Bannerpreise"));
+const BannerBuchen = lazy(() => import("./pages/BannerBuchen"));
 const ProfileCreate = lazy(() => import("./pages/ProfileCreate"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 const UserFavorites = lazy(() => import("./pages/UserFavorites"));
@@ -110,6 +111,7 @@ const AppContent = () => {
             <Route path="/agb" element={<AGB />} />
             <Route path="/datenschutz" element={<Datenschutz />} />
             <Route path="/bannerpreise" element={<Bannerpreise />} />
+            <Route path="/banner/buchen" element={<BannerBuchen />} />
             <Route path="/preise" element={<Preise />} />
             <Route path="/500" element={<ServerError />} />
             <Route
