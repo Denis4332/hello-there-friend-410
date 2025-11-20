@@ -1201,6 +1201,10 @@ export type Database = {
         Args: { _email: string; _type: string }
         Returns: Json
       }
+      check_auth_rate_limit_with_ip: {
+        Args: { _email: string; _ip_address: string; _type: string }
+        Returns: Json
+      }
       check_contact_rate_limit: { Args: { _email: string }; Returns: boolean }
       check_error_rate_limit: { Args: { _url: string }; Returns: boolean }
       cleanup_old_analytics: { Args: never; Returns: undefined }
