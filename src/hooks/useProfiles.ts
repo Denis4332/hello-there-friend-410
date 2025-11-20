@@ -470,10 +470,7 @@ export const useProfilesByRadius = (
       
       if (error) throw error;
       
-      let filteredData = data || [];
-      if (adminUserIds.length > 0) {
-        filteredData = filteredData.filter((p) => !adminUserIds.includes(p.user_id));
-      }
+      const filteredData = data || [];
       
       // Fetch photos and categories for each profile
       const profilesWithRelations = await Promise.all(
