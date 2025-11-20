@@ -133,3 +133,39 @@ export const useDeleteAdvertisement = () => {
     },
   });
 };
+
+export const useExtendAdvertisement = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, days }: { id: string; days: number }) => {
+      const { data: ad, error: fetchError } = await supabase
+        .from('advertisements')
+        .select('end_date')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
+      const currentEndDate = ad.end_date ? new Date(ad.end_date) : new Date();
+      const newEndDate = new Date(currentEndDate);
+      newEndDate.setDate(newEndDate.getDate() + days);
+
+      const { data, error } = await supabase
+        .from('advertisements')
+        .update({ 
+          end_date: newEndDate.toISOString(),
+          active: true 
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-advertisements'] });
+      queryClient.invalidateQueries({ queryKey: ['advertisements'] });
+    },
+  });
+};

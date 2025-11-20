@@ -9,9 +9,9 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useAllAdvertisements, useCreateAdvertisement, useUpdateAdvertisement, useDeleteAdvertisement } from '@/hooks/useAdvertisements';
+import { useAllAdvertisements, useCreateAdvertisement, useUpdateAdvertisement, useDeleteAdvertisement, useExtendAdvertisement } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
-import { Plus, Pencil, Trash2, Eye, MousePointerClick } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, MousePointerClick, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -20,6 +20,7 @@ export default function AdminAdvertisements() {
   const createAd = useCreateAdvertisement();
   const updateAd = useUpdateAdvertisement();
   const deleteAd = useDeleteAdvertisement();
+  const extendAd = useExtendAdvertisement();
   const { toast } = useToast();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -106,6 +107,20 @@ export default function AdminAdvertisements() {
     } catch (error) {
       toast({ title: 'Fehler', description: 'Banner konnte nicht gelöscht werden', variant: 'destructive' });
     }
+  };
+
+  const handleExtend = async (id: string, days: number) => {
+    try {
+      await extendAd.mutateAsync({ id, days });
+      toast({ title: 'Banner verlängert', description: `Banner um ${days} Tage verlängert` });
+    } catch (error) {
+      toast({ title: 'Fehler', description: 'Banner konnte nicht verlängert werden', variant: 'destructive' });
+    }
+  };
+
+  const isExpired = (endDate: string | null) => {
+    if (!endDate) return false;
+    return new Date(endDate) < new Date();
   };
 
   const positionLabels = {
@@ -311,9 +326,14 @@ export default function AdminAdvertisements() {
                         <Badge variant="outline">{positionLabels[ad.position]}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={ad.active ? 'default' : 'secondary'}>
-                          {ad.active ? 'Aktiv' : 'Inaktiv'}
-                        </Badge>
+                        <div className="flex gap-1">
+                          <Badge variant={ad.active ? 'default' : 'secondary'}>
+                            {ad.active ? 'Aktiv' : 'Inaktiv'}
+                          </Badge>
+                          {isExpired(ad.end_date) && (
+                            <Badge variant="destructive">ABGELAUFEN</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {ad.start_date || 'Sofort'} - {ad.end_date || 'Unbegrenzt'}
@@ -325,6 +345,17 @@ export default function AdminAdvertisements() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {isExpired(ad.end_date) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleExtend(ad.id, 30)}
+                              title="Banner um 30 Tage verlängern"
+                            >
+                              <Clock className="h-4 w-4 mr-1" />
+                              +30 Tage
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(ad)}>
                             <Pencil className="h-4 w-4" />
                           </Button>

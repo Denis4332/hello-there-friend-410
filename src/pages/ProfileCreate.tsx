@@ -129,11 +129,23 @@ const ProfileCreate = () => {
     if (!profileId) return;
 
     try {
+      // Calculate expiry date (30 days from now for all listing types)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+
+      const updateData: any = { 
+        listing_type: listingType,
+        premium_until: expiryDate.toISOString()
+      };
+
+      // For TOP ads, also set top_ad_until
+      if (listingType === 'top') {
+        updateData.top_ad_until = expiryDate.toISOString();
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({ 
-          listing_type: listingType
-        })
+        .update(updateData)
         .eq('id', profileId);
 
       if (error) throw error;
