@@ -61,4 +61,5 @@ export type ProfileWithRelations = Profile & {
   top_ad_until?: string;
   availability_status?: string;
   last_seen_at?: string;
+  distance_km?: number;
 };

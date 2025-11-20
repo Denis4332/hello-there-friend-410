@@ -128,7 +128,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
           {isPremium && !isTop && (
             <div className="flex items-center gap-1.5 bg-amber-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl">
               <Crown className="h-4 w-4" />
-              VIP ⭐
+              VIP
             </div>
           )}
           {profile.verified_at && (

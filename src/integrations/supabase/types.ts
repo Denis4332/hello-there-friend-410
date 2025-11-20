@@ -1444,29 +1444,28 @@ export type Database = {
         Returns: {
           about_me: string
           age: number
+          availability_status: string
           canton: string
           city: string
           created_at: string
           display_name: string
           distance_km: number
-          email: string
           gender: string
           id: string
-          instagram: string
-          is_premium: boolean
+          is_adult: boolean
           languages: string[]
           lat: number
+          listing_type: string
           lng: number
-          phone: string
           postal_code: string
+          premium_until: string
+          show_street: boolean
           slug: string
           status: string
-          telegram: string
+          street_address: string
+          top_ad_until: string
           updated_at: string
-          user_id: string
           verified_at: string
-          website: string
-          whatsapp: string
         }[]
       }
       st_3dclosestpoint: {
