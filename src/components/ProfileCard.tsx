@@ -58,7 +58,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "relative flex flex-col h-full group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
+        "relative flex flex-col group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
         isTop && "border-2 border-red-500/60 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 hover:scale-[1.02]",
         isPremium && !isTop && "border-2 border-amber-500/60 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-[1.02]",
         !isTop && !isPremium && "border border-border/40 hover:border-primary/40 hover:scale-[1.01]"
@@ -140,7 +140,7 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       </div>
       
       {/* White Info Bar */}
-      <div className="p-4 bg-card flex flex-col gap-3 min-h-[200px] max-h-[200px] overflow-hidden flex-shrink-0">
+      <div className="p-4 bg-card flex flex-col gap-3 h-[200px] overflow-hidden flex-shrink-0">
         <div className="flex flex-col gap-2">
           {profile.profile_categories?.[0]?.categories && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
