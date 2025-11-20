@@ -17,7 +17,7 @@ export function isProfile(value: unknown): value is Profile {
   
   return (
     typeof p.id === 'string' &&
-    typeof p.user_id === 'string' &&
+    // user_id removed for security (not exposed in public_profiles view)
     typeof p.display_name === 'string' &&
     typeof p.age === 'number' &&
     typeof p.city === 'string' &&

@@ -32,11 +32,11 @@ const getAdminUserIds = async (): Promise<string[]> => {
   return adminUserIdsCache;
 };
 
-// Reusable profile select query
+// Reusable profile select query (without user_id for security)
 const PROFILE_SELECT_QUERY = `
   id, slug, display_name, age, gender, city, canton, postal_code,
   lat, lng, about_me, languages, is_adult, verified_at, status, 
-  listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
+  listing_type, premium_until, top_ad_until, created_at, updated_at,
   photos(storage_path, is_primary),
   profile_categories(
     categories(id, name, slug)
@@ -77,19 +77,10 @@ export const useHomepageProfiles = (
     queryKey: ['homepage-profiles', topLimit, localLimit, newestLimit, canton],
     staleTime: 15 * 60 * 1000, // 15 minutes cache for homepage
     queryFn: async () => {
-      const adminUserIds = await getAdminUserIds();
-      
-      // Single query to fetch ALL profiles needed for homepage
-      let query = supabase
-        .from('profiles')
+      // Use public_profiles view (no user_id exposure)
+      const result = await supabase
+        .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-        .eq('status', 'active');
-      
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
-      
-      const result = await query
         .order('created_at', { ascending: false })
         .limit(50); // Fetch more than needed for client-side filtering
       
@@ -126,19 +117,10 @@ export const useTopProfiles = (limit: number = 3) => {
     queryKey: ['top-profiles', limit],
     staleTime: 15 * 60 * 1000, // Increased from 5min to 15min
     queryFn: async () => {
-      const adminUserIds = await getAdminUserIds();
-      
-      let query = supabase
-        .from('profiles')
+      const result = await supabase
+        .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-        .eq('status', 'active')
-        .eq('listing_type', 'top');
-      
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
-      
-      const result = await query
+        .eq('listing_type', 'top')
         .order('created_at', { ascending: false })
         .limit(limit);
       
@@ -158,20 +140,11 @@ export const useLocalProfiles = (canton: string | null, limit: number = 5) => {
     queryFn: async () => {
       if (!canton) return [];
       
-      const adminUserIds = await getAdminUserIds();
-      
-      let query = supabase
-        .from('profiles')
+      const result = await supabase
+        .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-        .eq('status', 'active')
         .eq('canton', canton)
-        .in('listing_type', ['premium', 'basic']);
-      
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
-      
-      const result = await query
+        .in('listing_type', ['premium', 'basic'])
         .order('listing_type', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -189,18 +162,9 @@ export const useFeaturedProfiles = (limit: number = 8) => {
     queryKey: ['featured-profiles', limit, 'v5'],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const adminUserIds = await getAdminUserIds();
-      
-      let query = supabase
-        .from('profiles')
+      const result = await supabase
+        .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-        .eq('status', 'active');
-      
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
-      
-      const result = await query
         .order('created_at', { ascending: false })
         .limit(limit);
       
@@ -222,16 +186,9 @@ export const useSearchProfiles = (filters: {
     staleTime: 1 * 60 * 1000,
     enabled: filters.enabled ?? true,
     queryFn: async () => {
-      const adminUserIds = await getAdminUserIds();
-      
       let query = supabase
-        .from('profiles')
-        .select(PROFILE_SELECT_QUERY)
-        .eq('status', 'active');
-      
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
+        .from('public_profiles')
+        .select(PROFILE_SELECT_QUERY);
       
       if (filters.location) {
         const isCantonCode = /^[A-Z]{2,3}$/.test(filters.location);
@@ -283,10 +240,9 @@ export const useProfileBySlug = (slug: string | undefined) => {
       const normalizedSlug = normalizeSlug(slug);
       
       const result = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
         .eq('slug', normalizedSlug)
-        .eq('status', 'active')
         .maybeSingle();
       
       if (result.error) throw result.error;
@@ -315,19 +271,10 @@ export const useCityProfiles = (cityName: string | undefined) => {
     queryFn: async () => {
       if (!cityName) return [];
       
-      const adminUserIds = await getAdminUserIds();
-      
-      let query = supabase
-        .from('profiles')
+      const result = await supabase
+        .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-        .eq('status', 'active')
         .ilike('city', cityName);
-      
-      if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.map(id => `"${id}"`).join(',')})`);
-      }
-      
-      const result = await query;
       if (result.error) throw result.error;
       return validateProfilesResponse(result.data || []);
     },
@@ -353,8 +300,6 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
     queryFn: async () => {
       if (!categoryId) return [];
       
-      const adminUserIds = await getAdminUserIds();
-      
       const result = await supabase
         .from('profile_categories')
         .select(`
@@ -362,7 +307,7 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
           profiles!inner(
             id, slug, display_name, age, gender, city, canton, postal_code,
             lat, lng, about_me, languages, is_adult, verified_at, status, 
-            listing_type, premium_until, top_ad_until, user_id, created_at, updated_at,
+            listing_type, premium_until, top_ad_until, created_at, updated_at,
             photos(storage_path, is_primary)
           )
         `)
@@ -371,14 +316,10 @@ export const useCategoryProfiles = (categoryId: string | undefined) => {
       
       if (result.error) throw result.error;
       
-      let profiles = result.data?.map((p: any) => ({
+      const profiles = result.data?.map((p: any) => ({
         ...p.profiles,
         profile_categories: [{ category_id: categoryId }]
       })) || [];
-      
-      if (adminUserIds.length > 0) {
-        profiles = profiles.filter((p) => !adminUserIds.includes(p.user_id));
-      }
       
       return validateProfilesResponse(profiles);
     },
