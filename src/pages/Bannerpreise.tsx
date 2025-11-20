@@ -136,7 +136,7 @@ export default function Bannerpreise() {
                       </ul>
 
                       <Button asChild className="w-full" size="lg">
-                        <Link to="/kontakt" state={{ subject: `Banner-Buchung: ${pkg.name}` }}>
+                        <Link to="/banner/buchen" state={{ selectedPosition: pkg.position }}>
                           Jetzt buchen
                         </Link>
                       </Button>

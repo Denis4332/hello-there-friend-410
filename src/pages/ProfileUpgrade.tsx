@@ -60,10 +60,12 @@ const ProfileUpgrade = () => {
     try {
       const updates: any = { 
         listing_type: listingType,
-        status: 'active'
+        payment_status: 'pending',
+        payment_method: 'pending',
+        status: 'pending'
       };
       
-      // Ablaufdatum setzen (heute + 30 Tage)
+      // Ablaufdatum setzen (heute + 30 Tage) - wird erst bei Genehmigung aktiv
       const expiryDate = new Date();
       expiryDate.setDate(expiryDate.getDate() + 30);
       
@@ -87,8 +89,14 @@ const ProfileUpgrade = () => {
       if (error) throw error;
       
       toast({
-        title: 'Upgrade erfolgreich!',
-        description: `Dein Profil wurde auf ${listingType.toUpperCase()} upgradet und ist 30 Tage gültig.`,
+        title: 'Upgrade-Anfrage gesendet!',
+        description: `Ihre ${listingType.toUpperCase()}-Anfrage wartet auf Admin-Genehmigung. Sie erhalten eine Bestätigung mit Zahlungsdetails per E-Mail.`,
+      });
+      
+      // Show payment instructions
+      toast({
+        title: 'Zahlungsinformationen',
+        description: 'Sie erhalten in Kürze eine E-Mail mit den Zahlungsdetails.',
       });
       
       await loadProfile();
