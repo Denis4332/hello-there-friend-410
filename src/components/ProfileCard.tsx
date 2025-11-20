@@ -33,18 +33,8 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
     : null;
   
-  // Expired-Status erkennen: premium_until ist in der Vergangenheit
-  const now = new Date();
-  const premiumUntil = profile.premium_until ? new Date(profile.premium_until) : null;
-  const topAdUntil = profile.top_ad_until ? new Date(profile.top_ad_until) : null;
-  const isExpiredPremium = premiumUntil && premiumUntil < now;
-  const isExpiredTop = topAdUntil && topAdUntil < now;
-  
-  const listingType = profile.listing_type || 'basic';
-  const isTop = listingType === 'top' && !isExpiredTop;
-  const isPremium = (listingType === 'premium' || listingType === 'top') && !isExpiredPremium;
-  const isBasic = listingType === 'basic';
-  const isExpired = isExpiredPremium || isExpiredTop;
+  const isTop = profile.listing_type === 'top';
+  const isPremium = profile.listing_type === 'premium' || profile.listing_type === 'top';
   const isOnline = profile.availability_status === 'online';
 
   // Prefetch profile page on hover for faster navigation
@@ -69,11 +59,9 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
       onMouseLeave={handleMouseLeave}
       className={cn(
         "relative flex flex-col h-full group overflow-hidden rounded-lg transition-all duration-300 hover:shadow-xl active:shadow-md bg-card touch-manipulation",
-        isTop && "border-2 border-red-500 shadow-lg shadow-red-500/30 hover:scale-[1.03] active:scale-[1.01]",
-        isPremium && !isTop && "border-2 border-amber-400 shadow-lg shadow-amber-400/20 hover:scale-[1.02] active:scale-100",
-        isExpired && "border-2 border-gray-400/60 opacity-75 hover:scale-[1.01] active:scale-100",
-        isBasic && !isExpired && "border-2 border-blue-400/50 hover:scale-[1.01] active:scale-100",
-        !isTop && !isPremium && !isBasic && !isExpired && "border hover:scale-[1.01] active:scale-100"
+        isTop && "border-2 border-red-500/60 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 hover:scale-[1.02]",
+        isPremium && !isTop && "border-2 border-amber-500/60 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-[1.02]",
+        !isTop && !isPremium && "border border-border/40 hover:border-primary/40 hover:scale-[1.01]"
       )}
     >
       {/* TOP AD Banner */}
@@ -131,20 +119,16 @@ const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
           "absolute left-3 flex gap-3 z-10",
           isTop ? "top-9" : "top-3"
         )}>
-          {isExpired && (
-            <div className="flex items-center gap-1.5 bg-gray-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl">
-              🚫 ABGELAUFEN
+          {isTop && (
+            <div className="flex items-center gap-1.5 bg-red-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl animate-pulse">
+              <Crown className="h-4 w-4" />
+              TOP 🔥
             </div>
           )}
-          {isPremium && !isExpired && (
-            <div className={cn(
-              "flex items-center gap-1.5 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl",
-              isTop 
-                ? "bg-gradient-to-r from-red-600 to-pink-600 animate-pulse" 
-                : "bg-gradient-to-r from-amber-400 via-pink-500 to-pink-600 animate-pulse"
-            )}>
+          {isPremium && !isTop && (
+            <div className="flex items-center gap-1.5 bg-amber-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-xl">
               <Crown className="h-4 w-4" />
-              {isTop ? 'TOP' : 'VIP'}
+              VIP ⭐
             </div>
           )}
           {profile.verified_at && (

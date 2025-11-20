@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { MapPin, Loader2 } from 'lucide-react';
 import { detectLocation } from '@/lib/geolocation';
+import { geocodePlz } from '@/lib/geocoding';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileFormData } from '../ProfileForm';
 
@@ -22,6 +23,23 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
   const { toast } = useToast();
   const [detectingLocation, setDetectingLocation] = useState(false);
   const selectedCanton = watch('canton') || '';
+  const currentCity = watch('city') || '';
+  const currentPostalCode = watch('postal_code') || '';
+
+  // Geocode when postal code and city are both available
+  const handleGeocodeUpdate = async () => {
+    if (currentPostalCode && currentCity) {
+      try {
+        const result = await geocodePlz(currentPostalCode, currentCity);
+        if (result) {
+          setValue('lat', result.lat);
+          setValue('lng', result.lng);
+        }
+      } catch (error) {
+        console.error('Geocoding failed:', error);
+      }
+    }
+  };
 
   const handleDetectLocation = async () => {
     setDetectingLocation(true);
@@ -136,7 +154,12 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
 
       <div>
         <Label htmlFor="postal_code">PLZ</Label>
-        <Input id="postal_code" {...register('postal_code')} placeholder="8000" />
+        <Input 
+          id="postal_code" 
+          {...register('postal_code')} 
+          placeholder="8000"
+          onBlur={handleGeocodeUpdate}
+        />
       </div>
 
       <div>
