@@ -12,6 +12,7 @@ interface SearchFiltersProps {
   category: string;
   keyword: string;
   radius: number;
+  tempRadius: number;
   userLat: number | null;
   userLng: number | null;
   locationAccuracy: number | null;
@@ -23,6 +24,7 @@ interface SearchFiltersProps {
   onCategoryChange: (value: string) => void;
   onKeywordChange: (value: string) => void;
   onRadiusChange: (value: number) => void;
+  onApplyRadius: () => void;
   onDetectLocation: () => void;
   onResetFilters: () => void;
   onResetGPS: () => void;
@@ -44,6 +46,7 @@ export const SearchFilters = ({
   category,
   keyword,
   radius,
+  tempRadius,
   userLat,
   userLng,
   locationAccuracy,
@@ -55,6 +58,7 @@ export const SearchFilters = ({
   onCategoryChange,
   onKeywordChange,
   onRadiusChange,
+  onApplyRadius,
   onDetectLocation,
   onResetFilters,
   onResetGPS,
@@ -111,7 +115,7 @@ export const SearchFilters = ({
           <div>
             <div className="flex items-center justify-between mb-3">
               <label htmlFor="radius-slider" className="text-sm font-medium">
-                Umkreis: {radius} km
+                Umkreis: {tempRadius} km
               </label>
               <div className="flex gap-2">
                 <Button
@@ -139,17 +143,25 @@ export const SearchFilters = ({
               </div>
             </div>
 
-
             <Slider
               id="radius-slider"
-              value={[radius]}
+              value={[tempRadius]}
               onValueChange={([value]) => onRadiusChange(value)}
               min={5}
               max={100}
               step={5}
               className="mt-2"
-              aria-label={`Suchradius einstellen, aktuell ${radius} Kilometer`}
+              aria-label={`Suchradius einstellen, aktuell ${tempRadius} Kilometer`}
             />
+            <Button
+              type="button"
+              onClick={onApplyRadius}
+              disabled={tempRadius === radius}
+              className="w-full mt-3"
+              size="lg"
+            >
+              Anwenden ({tempRadius} km)
+            </Button>
             <div className="flex justify-between text-xs text-muted-foreground mt-2">
               <span>5 km</span>
               <span>25 km</span>

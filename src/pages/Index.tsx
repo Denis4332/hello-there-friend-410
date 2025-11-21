@@ -20,53 +20,18 @@ const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedPro
 const Index = () => {
   useDesignSettings();
   
-  const [userCanton, setUserCanton] = useState<string | null>(null);
-  const [geoDetectionAttempted, setGeoDetectionAttempted] = useState(false);
-  
-  // Geo-Detection beim Mount
-  useEffect(() => {
-    detectLocation()
-      .then(location => {
-        setUserCanton(location.canton);
-        setGeoDetectionAttempted(true);
-      })
-      .catch(() => {
-        setGeoDetectionAttempted(true);
-      });
-  }, []);
-  
-  // OPTIMIZED: Single query instead of 3 separate queries (60% faster!)
+  // SIMPLIFIED: Nur TOP-Ads schweizweit anzeigen auf Homepage
   const { 
     data: homepageData, 
     isLoading: isLoadingProfiles 
-  } = useHomepageProfiles(3, 5, 8, userCanton);
+  } = useHomepageProfiles(100, 0, 0, null); // Alle TOP-Ads holen
   
   const topProfiles = homepageData?.topProfiles ?? [];
-  const localProfiles = homepageData?.localProfiles ?? [];
-  const fallbackProfiles = homepageData?.newestProfiles ?? [];
   
-  // FIXED: Merge und sortiere Profile - TOP immer sichtbar!
   const featuredProfiles = useMemo(() => {
-    if (!geoDetectionAttempted) return [];
-    
-    // WICHTIG: TOP-Profile IMMER als erstes zeigen
-    const combined = [...topProfiles];
-    
-    // Wenn Geo-Detection erfolgreich: + Local hinzufügen
-    if (userCanton && localProfiles.length > 0) {
-      combined.push(...localProfiles);
-    } else {
-      // Fallback: Weitere schweizweite Profile (ohne TOP, da schon drin)
-      const nonTopFallback = fallbackProfiles.filter(p => 
-        !topProfiles.some(top => top.id === p.id)
-      );
-      combined.push(...nonTopFallback.slice(0, 5));
-    }
-    
-    return sortProfilesByListingType(combined).slice(0, 8); // Max 8 Profile
-  }, [geoDetectionAttempted, userCanton, topProfiles, localProfiles, fallbackProfiles]);
-  
-  const loadingProfiles = !geoDetectionAttempted || isLoadingProfiles;
+    // Nur TOP-Ads anzeigen, sortiert nach created_at
+    return sortProfilesByListingType(topProfiles);
+  }, [topProfiles]);
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
@@ -117,7 +82,7 @@ const Index = () => {
         }>
           <FeaturedProfilesSection
             profiles={featuredProfiles}
-            isLoading={loadingProfiles}
+            isLoading={isLoadingProfiles}
             title={featuredProfilesTitle}
             noProfilesText={noProfilesText}
           />

@@ -19,7 +19,7 @@ const Preise = () => {
   const packages = [
     {
       id: 'basic',
-      title: basicTitle || 'Standard Inserat',
+      title: basicTitle || 'Basic Inserat',
       price: basicPrice || 'CHF 49/Monat',
       icon: Star,
       iconBg: 'bg-blue-100 dark:bg-blue-900',
@@ -27,9 +27,10 @@ const Preise = () => {
       border: 'border-blue-500/50',
       features: [
         'Erscheint in Suchergebnissen',
-        'Unbegrenzte Laufzeit',
-        'Bessere Platzierung',
-        'Hervorgehobene Darstellung',
+        'Sichtbar im gewählten Kanton/Radius',
+        'Standard-Platzierung',
+        'Profil-Seite',
+        'Foto-Upload',
       ],
     },
     {
@@ -42,10 +43,10 @@ const Preise = () => {
       border: 'border-amber-500',
       recommended: true,
       features: [
-        'Alles von Standard +',
+        'Alles von Basic +',
+        'Bessere Platzierung im gewählten Bereich',
         'Goldener VIP Badge',
-        'Größere Darstellung',
-        'Animation & Hervorhebung',
+        'Erscheint vor Basic-Inseraten',
         'Mehr Aufmerksamkeit',
       ],
     },
@@ -59,11 +60,11 @@ const Preise = () => {
       border: 'border-red-500',
       features: [
         'Alles von Premium +',
-        'Immer ganz oben (Priorität)',
+        '⭐ Schweizweite Sichtbarkeit auf Homepage',
+        'Beste Platzierung in allen Suchergebnissen',
         'TOP AD Banner',
+        'Immer an erster Position',
         'Maximale Sichtbarkeit',
-        'Beste Performance',
-        'Premium Support',
       ],
     },
   ];
@@ -148,11 +149,11 @@ const Preise = () => {
                     { name: 'In Suchergebnissen', basic: true, premium: true, top: true },
                     { name: 'Profil-Seite', basic: true, premium: true, top: true },
                     { name: 'Foto-Upload', basic: true, premium: true, top: true },
-                    { name: 'Bessere Platzierung', basic: true, premium: true, top: true },
-                    { name: 'Hervorgehoben', basic: true, premium: true, top: true },
+                    { name: 'Schweizweit auf Homepage', basic: false, premium: false, top: true },
+                    { name: 'Im gewählten Bereich', basic: true, premium: true, top: true },
+                    { name: 'Bessere Platzierung', basic: false, premium: true, top: true },
                     { name: 'VIP Badge', basic: false, premium: true, top: true },
-                    { name: 'Größere Darstellung', basic: false, premium: true, top: true },
-                    { name: 'TOP Position', basic: false, premium: false, top: true },
+                    { name: 'TOP Position (Priorität)', basic: false, premium: false, top: true },
                     { name: 'TOP Banner', basic: false, premium: false, top: true },
                   ].map((row, idx) => (
                     <tr key={idx} className="border-b hover:bg-muted/50">

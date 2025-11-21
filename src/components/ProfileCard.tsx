@@ -23,11 +23,12 @@ interface ProfileCardProps {
     street_address?: string;
     show_street?: boolean;
     availability_status?: string;
+    distance_km?: number;
   };
-  distance?: number;
 }
 
-const ProfileCardComponent = ({ profile, distance }: ProfileCardProps) => {
+const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
+  const distance = profile.distance_km;
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
   const photoUrl = primaryPhoto 
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl

@@ -45,7 +45,7 @@ const SearchResultsComponent = ({
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {profiles.map((profile) => (
-          <ProfileCard key={profile.id} profile={profile} distance={profile.distance_km} />
+          <ProfileCard key={profile.id} profile={profile} />
         ))}
       </div>
       
