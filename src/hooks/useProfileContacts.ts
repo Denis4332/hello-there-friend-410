@@ -17,7 +17,7 @@ interface ProfileContacts {
 
 /**
  * Hook to fetch contact information for a profile
- * Only returns data if user is the owner or an admin
+ * Returns data for all active profiles (public access)
  * SECURITY: Contact data is protected by RLS policies
  */
 export const useProfileContacts = (profileId: string | undefined) => {
@@ -28,7 +28,7 @@ export const useProfileContacts = (profileId: string | undefined) => {
     queryFn: async () => {
       if (!profileId) return null;
 
-      // SECURITY: RLS policies ensure only owner/admin can access contact data
+      // SECURITY: RLS policies ensure data access rules (public for active profiles)
       const { data, error } = await supabase
         .from('profile_contacts' as any)
         .select('*')
@@ -36,7 +36,7 @@ export const useProfileContacts = (profileId: string | undefined) => {
         .single();
 
       if (error) {
-        // If error is "not found" or "policy violation", user is not authorized
+        // If error is "not found" or "policy violation", return null
         if (error.code === 'PGRST116' || error.code === '42501') {
           return null;
         }
@@ -45,7 +45,7 @@ export const useProfileContacts = (profileId: string | undefined) => {
 
       return (data as unknown) as ProfileContacts | null;
     },
-    enabled: !!profileId && !!user, // Only run if user is authenticated
+    enabled: !!profileId, // Run for all users (public access for active profiles)
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 };
