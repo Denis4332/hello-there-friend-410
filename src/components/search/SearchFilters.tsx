@@ -2,8 +2,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { MapPin, Tag, X, RefreshCw, Search } from 'lucide-react';
 import { FilterPopover } from './FilterPopover';
 
@@ -37,8 +35,6 @@ interface SearchFiltersProps {
   setCantonOpen: (open: boolean) => void;
   setCategoryOpen: (open: boolean) => void;
   setCategoryGpsOpen: (open: boolean) => void;
-  onlineOnly?: boolean;
-  onOnlineOnlyChange?: (value: boolean) => void;
 }
 
 export const SearchFilters = ({
@@ -71,8 +67,6 @@ export const SearchFilters = ({
   setCantonOpen,
   setCategoryOpen,
   setCategoryGpsOpen,
-  onlineOnly = false,
-  onOnlineOnlyChange,
 }: SearchFiltersProps) => {
   return (
     <form onSubmit={onSubmit} className="bg-card border rounded-lg p-6 mb-6" role="search" aria-label="Suchfilter">
@@ -207,19 +201,6 @@ export const SearchFilters = ({
             className="h-12"
             aria-label="Suchbegriff eingeben"
           />
-          
-          {onOnlineOnlyChange && (
-            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
-              <Checkbox
-                id="online-only"
-                checked={onlineOnly}
-                onCheckedChange={onOnlineOnlyChange}
-              />
-              <Label htmlFor="online-only" className="text-sm font-medium cursor-pointer">
-                Nur Online-Profile anzeigen
-              </Label>
-            </div>
-          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -259,19 +240,6 @@ export const SearchFilters = ({
               {searchButtonText || 'Suchen'}
             </Button>
           </div>
-          
-          {onOnlineOnlyChange && (
-            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
-              <Checkbox
-                id="online-only-text"
-                checked={onlineOnly}
-                onCheckedChange={onOnlineOnlyChange}
-              />
-              <Label htmlFor="online-only-text" className="text-sm font-medium cursor-pointer">
-                Nur Online-Profile anzeigen
-              </Label>
-            </div>
-          )}
         </div>
       )}
     </form>

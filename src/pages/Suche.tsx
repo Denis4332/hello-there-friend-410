@@ -30,7 +30,6 @@ const Suche = () => {
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryGpsOpen, setCategoryGpsOpen] = useState(false);
-  const [onlineOnly, setOnlineOnly] = useState(false);
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
@@ -57,15 +56,8 @@ const Suche = () => {
   // GPS active: ONLY show profiles within radius (like xdate.ch)
   // GPS inactive: Show canton-based text search results
   const profiles = useMemo(() => {
-    let result = userLat && userLng ? gpsProfiles : textProfiles;
-    
-    // Filter by online status if selected
-    if (onlineOnly) {
-      result = result.filter(p => p.availability_status === 'online');
-    }
-    
-    return result;
-  }, [userLat, userLng, gpsProfiles, textProfiles, onlineOnly]);
+    return userLat && userLng ? gpsProfiles : textProfiles;
+  }, [userLat, userLng, gpsProfiles, textProfiles]);
   
   const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
 
@@ -226,8 +218,6 @@ const Suche = () => {
             setCantonOpen={setCantonOpen}
             setCategoryOpen={setCategoryOpen}
             setCategoryGpsOpen={setCategoryGpsOpen}
-            onlineOnly={onlineOnly}
-            onOnlineOnlyChange={setOnlineOnly}
           />
 
           <div className="flex justify-between items-center mb-4">
