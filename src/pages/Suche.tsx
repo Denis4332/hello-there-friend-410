@@ -25,6 +25,7 @@ const Suche = () => {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -103,6 +104,7 @@ const Suche = () => {
             setUserLat(lat);
             setUserLng(lng);
             setLocationAccuracy(accuracy);
+            setCurrentPage(1);
 
             // Get location name via reverse geocoding
             const result = await detectLocation();
@@ -113,11 +115,14 @@ const Suche = () => {
             );
             
             if (matchingCanton) {
-              setCanton(matchingCanton.abbreviation);
+              setDetectedLocation(`${result.city}, ${matchingCanton.abbreviation}`);
               toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation} (±${Math.round(accuracy)}m)`);
             } else {
-              toast.error('Kanton konnte nicht zugeordnet werden');
+              setDetectedLocation(result.city);
+              toast.success(`GPS-Suche aktiviert: ${result.city} (±${Math.round(accuracy)}m)`);
             }
+            
+            console.log('GPS aktiviert:', { lat, lng, accuracy, detectedCity: result.city, canton: matchingCanton?.abbreviation });
 
             setIsDetectingLocation(false);
           },
@@ -142,16 +147,18 @@ const Suche = () => {
     setUserLat(null);
     setUserLng(null);
     setLocationAccuracy(null);
+    setDetectedLocation(null);
     setRadius(25);
     setSearchParams({});
   };
 
   const activeFiltersCount = useMemo(() => {
+    const isGpsActive = userLat && userLng;
     return [
-      canton && 1,
+      (!isGpsActive && canton) && 1, // Canton nur ohne GPS zählen
       category && 1,
       keyword && 1,
-      (userLat && userLng) && 1
+      isGpsActive && 1 // GPS als 1 Filter zählen
     ].filter(Boolean).length;
   }, [canton, category, keyword, userLat, userLng]);
 
@@ -184,6 +191,7 @@ const Suche = () => {
             userLat={userLat}
             userLng={userLng}
             locationAccuracy={locationAccuracy}
+            detectedLocation={detectedLocation}
             isDetectingLocation={isDetectingLocation}
             activeFiltersCount={activeFiltersCount}
             cantons={cantons}
@@ -198,6 +206,7 @@ const Suche = () => {
               setUserLat(null);
               setUserLng(null);
               setLocationAccuracy(null);
+              setDetectedLocation(null);
             }}
             onSubmit={handleSearch}
             searchButtonText={searchButton}
