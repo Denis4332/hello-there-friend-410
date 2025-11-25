@@ -455,7 +455,9 @@ export const useProfilesByRadius = (
   return useQuery<(ProfileWithRelations & { distance_km: number })[]>({
     queryKey: ['profiles-by-radius', userLat, userLng, radiusKm, filters, 'v4'],
     staleTime: 0, // Always fetch fresh data for GPS search
+    gcTime: 0, // Prevent garbage collection of query data
     refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
     queryFn: async () => {
       if (!userLat || !userLng) return [];
       
