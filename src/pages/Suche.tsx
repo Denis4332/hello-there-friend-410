@@ -37,7 +37,11 @@ const Suche = () => {
   const { data: cantons = [] } = useCantons();
   
   // GPS-based search
-  const { data: gpsProfiles = [], isLoading: isLoadingGps } = useProfilesByRadius(
+  const { 
+    data: gpsProfiles = [], 
+    isLoading: isLoadingGps,
+    refetch: refetchGpsProfiles 
+  } = useProfilesByRadius(
     userLat,
     userLng,
     radius,
@@ -58,7 +62,16 @@ const Suche = () => {
   // GPS active: ONLY show profiles within radius (like xdate.ch)
   // GPS inactive: Show canton-based text search results
   const profiles = useMemo(() => {
-    return userLat && userLng ? gpsProfiles : textProfiles;
+    const selectedProfiles = userLat && userLng ? gpsProfiles : textProfiles;
+    console.log('Profile Selection:', {
+      hasGPS: !!userLat && !!userLng,
+      gpsProfilesCount: gpsProfiles.length,
+      textProfilesCount: textProfiles.length,
+      usingSource: userLat && userLng ? 'GPS' : 'TEXT',
+      selectedCount: selectedProfiles.length,
+      gpsProfiles: gpsProfiles.map(p => ({ name: p.display_name, city: p.city, distance: p.distance_km }))
+    });
+    return selectedProfiles;
   }, [userLat, userLng, gpsProfiles, textProfiles]);
   
   const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
@@ -105,6 +118,7 @@ const Suche = () => {
             
             // Clear old text search results from cache
             queryClient.removeQueries({ queryKey: ['search-profiles'] });
+            queryClient.removeQueries({ queryKey: ['profiles-by-radius'] });
             
             // Reset all text-based filters when GPS is activated
             setCanton('');
@@ -114,6 +128,11 @@ const Suche = () => {
             setUserLng(lng);
             setLocationAccuracy(accuracy);
             setCurrentPage(1);
+            
+            // Manually trigger GPS query refetch with small delay
+            setTimeout(() => {
+              refetchGpsProfiles();
+            }, 100);
 
             // Get location name via reverse geocoding
             const result = await detectLocation();
