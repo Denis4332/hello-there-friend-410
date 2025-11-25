@@ -18,7 +18,6 @@ const Suche = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
   const [radius, setRadius] = useState(parseInt(searchParams.get('umkreis') || '25'));
-  const [tempRadius, setTempRadius] = useState(parseInt(searchParams.get('umkreis') || '25')); // Lokaler Slider-Wert
   const [category, setCategory] = useState(searchParams.get('kategorie') || '');
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
   const [sort, setSort] = useState('newest');
@@ -144,14 +143,7 @@ const Suche = () => {
     setUserLng(null);
     setLocationAccuracy(null);
     setRadius(25);
-    setTempRadius(25);
     setSearchParams({});
-  };
-
-  const handleApplyRadius = () => {
-    setRadius(tempRadius);
-    setCurrentPage(1);
-    toast.success(`Suche im Umkreis von ${tempRadius} km gestartet`);
   };
 
   const activeFiltersCount = useMemo(() => {
@@ -189,7 +181,6 @@ const Suche = () => {
             category={category}
             keyword={keyword}
             radius={radius}
-            tempRadius={tempRadius}
             userLat={userLat}
             userLng={userLng}
             locationAccuracy={locationAccuracy}
@@ -200,8 +191,7 @@ const Suche = () => {
             onCantonChange={setCanton}
             onCategoryChange={setCategory}
             onKeywordChange={setKeyword}
-            onRadiusChange={setTempRadius}
-            onApplyRadius={handleApplyRadius}
+            onRadiusChange={setRadius}
             onDetectLocation={handleDetectLocation}
             onResetFilters={handleResetFilters}
             onResetGPS={() => {
