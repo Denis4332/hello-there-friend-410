@@ -13,6 +13,7 @@ interface SearchFiltersProps {
   userLat: number | null;
   userLng: number | null;
   locationAccuracy: number | null;
+  detectedLocation: string | null;
   isDetectingLocation: boolean;
   activeFiltersCount: number;
   cantons: Array<{ id: string; name: string; abbreviation: string }>;
@@ -43,6 +44,7 @@ export const SearchFilters = ({
   userLat,
   userLng,
   locationAccuracy,
+  detectedLocation,
   isDetectingLocation,
   activeFiltersCount,
   cantons,
@@ -102,6 +104,14 @@ export const SearchFilters = ({
       
       {userLat && userLng ? (
         <div className="space-y-4">
+          {detectedLocation && (
+            <div className="mb-3 p-3 bg-muted/50 rounded-lg border">
+              <p className="text-sm text-muted-foreground">
+                📍 Standort: <span className="font-medium text-foreground">{detectedLocation}</span>
+              </p>
+            </div>
+          )}
+          
           <div>
             <div className="flex items-center justify-between mb-3">
               <label htmlFor="radius-slider" className="text-sm font-medium">
