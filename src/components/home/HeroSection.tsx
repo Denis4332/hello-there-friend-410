@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -83,7 +83,22 @@ export const HeroSection = ({
     };
   }, [heroImageUrl, webpSupported]);
 
-  const activeFiltersCount = [canton, category, keyword, useGPS].filter(Boolean).length;
+  const activeFiltersCount = useMemo(() => {
+    if (useGPS) {
+      // GPS-Modus: GPS zählt als 1, plus optionale Filter
+      let count = 1; // GPS = 1
+      if (category) count++;
+      if (keyword) count++;
+      return count;
+    } else {
+      // Normal-Modus: Canton, Category, Keyword zählen
+      let count = 0;
+      if (canton) count++;
+      if (category) count++;
+      if (keyword) count++;
+      return count;
+    }
+  }, [canton, category, keyword, useGPS]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,6 +261,15 @@ export const HeroSection = ({
                 className="h-12"
                 aria-label="Suchbegriff eingeben"
               />
+
+              <Button 
+                type="submit" 
+                className="w-full h-12 mt-4"
+                aria-label="Suche starten"
+              >
+                <Search className="h-4 w-4 mr-2" aria-hidden="true" />
+                {searchButtonText || "Suchen"}
+              </Button>
             </div>
           ) : (
             <div className="space-y-4">
