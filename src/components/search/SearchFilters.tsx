@@ -201,6 +201,15 @@ export const SearchFilters = ({
             className="h-12"
             aria-label="Suchbegriff eingeben"
           />
+
+          <Button 
+            type="submit" 
+            className="w-full h-12" 
+            aria-label="Suche starten"
+          >
+            <Search className="h-4 w-4 mr-2" aria-hidden="true" />
+            {searchButtonText || 'Suchen'}
+          </Button>
         </div>
       ) : (
         <div className="space-y-4">
