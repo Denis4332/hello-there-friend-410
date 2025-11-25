@@ -201,7 +201,7 @@ export const SearchFilters = ({
 
           <Button 
             type="submit" 
-            className="w-full h-12" 
+            className="w-full h-12 mt-4" 
             aria-label="Suche starten"
           >
             <Search className="h-4 w-4 mr-2" aria-hidden="true" />
