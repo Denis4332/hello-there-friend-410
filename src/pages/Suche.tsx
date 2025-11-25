@@ -106,6 +106,10 @@ const Suche = () => {
             // Clear old text search results from cache
             queryClient.removeQueries({ queryKey: ['search-profiles'] });
             
+            // Reset all text-based filters when GPS is activated
+            setCanton('');
+            setSearchParams({});
+            
             setUserLat(lat);
             setUserLng(lng);
             setLocationAccuracy(accuracy);
@@ -158,13 +162,22 @@ const Suche = () => {
   };
 
   const activeFiltersCount = useMemo(() => {
-    const isGpsActive = userLat && userLng;
-    return [
-      (!isGpsActive && canton) && 1, // Canton nur ohne GPS zählen
-      category && 1,
-      keyword && 1,
-      isGpsActive && 1 // GPS als 1 Filter zählen
-    ].filter(Boolean).length;
+    if (userLat && userLng) {
+      // GPS-Modus: GPS zählt als 1, plus optionale Filter
+      let count = 1; // GPS = 1
+      if (category) count++;
+      if (keyword) count++;
+      console.log('Filter Debug (GPS):', { canton, category, keyword, userLat, userLng, activeFiltersCount: count });
+      return count;
+    } else {
+      // Normal-Modus: Canton, Category, Keyword zählen
+      let count = 0;
+      if (canton) count++;
+      if (category) count++;
+      if (keyword) count++;
+      console.log('Filter Debug (Normal):', { canton, category, keyword, userLat, userLng, activeFiltersCount: count });
+      return count;
+    }
   }, [canton, category, keyword, userLat, userLng]);
 
   // Dynamic radius adjustment based on GPS accuracy
