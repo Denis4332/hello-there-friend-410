@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
@@ -15,6 +16,7 @@ import { SEO } from '@/components/SEO';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 
 const Suche = () => {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
   const [radius, setRadius] = useState(parseInt(searchParams.get('umkreis') || '25'));
@@ -100,6 +102,9 @@ const Suche = () => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             const accuracy = position.coords.accuracy;
+            
+            // Clear old text search results from cache
+            queryClient.removeQueries({ queryKey: ['search-profiles'] });
             
             setUserLat(lat);
             setUserLng(lng);
