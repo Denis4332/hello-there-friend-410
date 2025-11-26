@@ -6,6 +6,70 @@ import { CheckCircle2, Crown, Star, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
+const FAQ = () => {
+  const { data: faq1Q } = useSiteSetting('pricing_faq1_question');
+  const { data: faq1A } = useSiteSetting('pricing_faq1_answer');
+  const { data: faq2Q } = useSiteSetting('pricing_faq2_question');
+  const { data: faq2A } = useSiteSetting('pricing_faq2_answer');
+  const { data: faq3Q } = useSiteSetting('pricing_faq3_question');
+  const { data: faq3A } = useSiteSetting('pricing_faq3_answer');
+
+  return (
+    <div className="space-y-4">
+      {faq1Q && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{faq1Q}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{faq1A}</p>
+          </CardContent>
+        </Card>
+      )}
+      {faq2Q && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{faq2Q}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{faq2A}</p>
+          </CardContent>
+        </Card>
+      )}
+      {faq3Q && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{faq3Q}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{faq3A}</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+const CTA = () => {
+  const { data: ctaTitle } = useSiteSetting('pricing_cta_title');
+  const { data: ctaSubtitle } = useSiteSetting('pricing_cta_subtitle');
+  const { data: ctaButton } = useSiteSetting('pricing_cta_button');
+
+  return (
+    <div className="text-center mt-16">
+      <h2 className="text-3xl font-bold mb-4">{ctaTitle || 'Bereit durchzustarten?'}</h2>
+      <p className="text-muted-foreground mb-6">
+        {ctaSubtitle || 'Erstelle jetzt dein Inserat und wähle das passende Paket.'}
+      </p>
+      <Button asChild size="lg" className="text-lg px-8">
+        <Link to="/auth?mode=signup">
+          {ctaButton || 'Jetzt Inserat erstellen'}
+        </Link>
+      </Button>
+    </div>
+  );
+};
+
 const Preise = () => {
   const { data: pageTitle } = useSiteSetting('pricing_page_title');
   const { data: pageSubtitle } = useSiteSetting('pricing_page_subtitle');
@@ -15,6 +79,7 @@ const Preise = () => {
   const { data: premiumPrice } = useSiteSetting('pricing_premium_price');
   const { data: topTitle } = useSiteSetting('pricing_top_title');
   const { data: topPrice } = useSiteSetting('pricing_top_price');
+  const { data: comparisonTitle } = useSiteSetting('pricing_feature_comparison_title');
 
   const packages = [
     {
@@ -133,7 +198,7 @@ const Preise = () => {
 
           {/* Feature Comparison Table */}
           <div className="mb-16">
-            <h2 className="text-2xl font-bold mb-6 text-center">Feature-Vergleich</h2>
+            <h2 className="text-2xl font-bold mb-6 text-center">{comparisonTitle || 'Feature-Vergleich'}</h2>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -177,52 +242,11 @@ const Preise = () => {
           {/* FAQ Section */}
           <div className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-center">Häufige Fragen</h2>
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Kann ich später upgraden?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Ja, du kannst jederzeit zu einem höheren Paket wechseln. Dein Inserat wird sofort mit den neuen Features aktualisiert.
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Wie funktioniert die Bezahlung?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Die Bezahlung erfolgt sicher über Stripe per Kreditkarte oder TWINT. Du kannst jederzeit kündigen.
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Was passiert nach Ablauf des Pakets?</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Dein Inserat bleibt online, wird aber deaktiviert. Du kannst jederzeit wieder ein Paket buchen.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            <FAQ />
           </div>
 
           {/* CTA */}
-          <div className="text-center mt-16">
-            <h2 className="text-3xl font-bold mb-4">Bereit durchzustarten?</h2>
-            <p className="text-muted-foreground mb-6">
-              Erstelle jetzt dein Inserat und wähle das passende Paket.
-            </p>
-            <Button asChild size="lg" className="text-lg px-8">
-              <Link to="/auth?mode=signup">
-                Jetzt Inserat erstellen
-              </Link>
-            </Button>
-          </div>
+          <CTA />
         </div>
       </main>
     </>

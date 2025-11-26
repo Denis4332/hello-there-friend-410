@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useExportCSV } from '@/hooks/useExportCSV';
 import { useExportJSON } from '@/hooks/useExportJSON';
-import { Download, Database, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -98,18 +98,111 @@ const AdminExport = () => {
     }
   };
 
+  const exportStorage = async () => {
+    setLoading('storage-export');
+    toast.info('Storage Export wird vorbereitet...');
+    try {
+      const buckets = ['profile-photos', 'site-assets', 'advertisements', 'verification-photos'];
+      const storageData: Record<string, any[]> = {};
+      
+      for (const bucket of buckets) {
+        const { data: files, error } = await supabase.storage.from(bucket).list();
+        if (error) {
+          console.error(`Error listing ${bucket}:`, error);
+          storageData[bucket] = [];
+          continue;
+        }
+        storageData[bucket] = files || [];
+      }
+
+      exportToJSON({
+        exported_at: new Date().toISOString(),
+        buckets: storageData,
+        note: 'Für vollständigen Export müssen Dateien manuell heruntergeladen werden. Diese JSON-Datei listet alle vorhandenen Dateien auf.',
+        migration_hint: 'Siehe MIGRATION.md für Anleitung zum programmatischen Download & Upload'
+      }, 'escoria_storage_index');
+      
+      toast.success('Storage-Index erfolgreich exportiert');
+    } catch (error: any) {
+      toast.error(`Fehler beim Storage-Export: ${error.message}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const exportSchema = async () => {
+    setLoading('schema-export');
+    toast.info('Datenbank-Schema wird vorbereitet...');
+    try {
+      const schemaDoc = `-- ESCORIA Database Schema Export
+-- Generated: ${new Date().toISOString()}
+-- 
+-- WICHTIG: Dieses Schema-Export ist eine Referenz für die Datenbank-Struktur.
+-- Für vollständige Migration müssen alle Supabase-Migrationen aus dem 
+-- supabase/migrations/ Verzeichnis verwendet werden.
+
+-- TABELLEN-ÜBERSICHT:
+-- Diese Tabellen sind in der Datenbank vorhanden:
+${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
+
+-- MIGRATIONS-VERZEICHNIS:
+-- Alle CREATE TABLE Statements, RLS Policies, Trigger und Functions
+-- befinden sich in: supabase/migrations/
+
+-- WICHTIGE HINWEISE FÜR MIGRATION:
+-- 1. Führe alle Migrations in chronologischer Reihenfolge aus
+-- 2. Nutze 'supabase db push' für automatisches Anwenden
+-- 3. Oder führe SQL-Files manuell im Supabase SQL Editor aus
+-- 4. RLS Policies MÜSSEN aktiviert sein für Sicherheit
+
+-- STORAGE BUCKETS:
+-- - profile-photos (public)
+-- - site-assets (public)
+-- - advertisements (public)
+-- - verification-photos (private)
+
+-- EDGE FUNCTIONS:
+-- Alle Backend-Logik in: supabase/functions/
+-- Deploy mit: supabase functions deploy FUNCTION_NAME
+
+-- FÜR DETAILLIERTE MIGRATIONS-ANLEITUNG:
+-- Siehe: MIGRATION.md im Projekt-Root
+
+-- END OF SCHEMA REFERENCE
+`;
+
+      const blob = new Blob([schemaDoc], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `escoria_schema_reference_${new Date().toISOString().split('T')[0]}.sql`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Schema-Referenz erfolgreich exportiert');
+    } catch (error: any) {
+      toast.error(`Fehler beim Schema-Export: ${error.message}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
       <main className="flex-1 py-8 bg-muted">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold">Daten exportieren</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Exportiere einzelne Tabellen oder erstelle ein vollständiges Backup
-              </p>
-            </div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">Daten exportieren</h1>
+            <p className="text-sm text-muted-foreground">
+              Exportiere einzelne Tabellen oder erstelle ein vollständiges Backup für Self-Hosting
+            </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-2 mb-6">
             <Button 
               onClick={exportAllData}
               disabled={loading === 'all-backup'}
@@ -117,10 +210,31 @@ const AdminExport = () => {
               className="gap-2"
             >
               <Download className="h-4 w-4" />
-              Vollständiges Backup (JSON)
+              {loading === 'all-backup' ? 'Wird exportiert...' : 'Full Backup (JSON)'}
+            </Button>
+            <Button 
+              onClick={exportStorage}
+              disabled={loading === 'storage-export'}
+              variant="outline"
+              size="lg"
+              className="gap-2"
+            >
+              <Archive className="h-4 w-4" />
+              {loading === 'storage-export' ? 'Wird exportiert...' : 'Storage Index (JSON)'}
+            </Button>
+            <Button 
+              onClick={exportSchema}
+              disabled={loading === 'schema-export'}
+              variant="outline"
+              size="lg"
+              className="gap-2"
+            >
+              <FileCode className="h-4 w-4" />
+              {loading === 'schema-export' ? 'Wird exportiert...' : 'Schema Export (SQL)'}
             </Button>
           </div>
 
+          {/* Individual Tables */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tables.map((table) => {
               const Icon = table.icon;
@@ -162,14 +276,32 @@ const AdminExport = () => {
             })}
           </div>
 
-          <div className="mt-8 p-4 bg-muted rounded-lg border">
-            <h3 className="font-semibold mb-2">💡 Hinweis</h3>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• CSV-Exporte sind gut für Excel/Tabellenprogramme</li>
-              <li>• JSON-Exporte enthalten die vollständige Datenstruktur</li>
-              <li>• Das vollständige Backup enthält alle Tabellen in einer Datei</li>
-              <li>• Exportdateien werden mit aktuellem Datum benannt</li>
-            </ul>
+          {/* Info Box */}
+          <div className="mt-8 p-6 bg-card rounded-lg border">
+            <h3 className="font-semibold mb-3 text-lg">📦 Export-Optionen Übersicht</h3>
+            <div className="space-y-3 text-sm">
+              <div>
+                <strong className="text-primary">Full Backup (JSON):</strong>
+                <p className="text-muted-foreground">Alle {tables.length} Tabellen in einer Datei. Ideal für komplettes Backup.</p>
+              </div>
+              <div>
+                <strong className="text-primary">Storage Index (JSON):</strong>
+                <p className="text-muted-foreground">Liste aller Dateien in allen Storage Buckets (profile-photos, site-assets, advertisements, verification-photos). Für programmatischen Download siehe MIGRATION.md</p>
+              </div>
+              <div>
+                <strong className="text-primary">Schema Export (SQL):</strong>
+                <p className="text-muted-foreground">Referenz-Datei mit Hinweisen zu Datenbank-Struktur, Migrations und Self-Hosting Setup.</p>
+              </div>
+              <div className="pt-2 border-t">
+                <strong>💡 Hinweise:</strong>
+                <ul className="text-muted-foreground space-y-1 ml-4 mt-1">
+                  <li>• CSV-Exporte sind gut für Excel/Tabellenprogramme</li>
+                  <li>• JSON-Exporte enthalten die vollständige Datenstruktur</li>
+                  <li>• Exportdateien werden mit aktuellem Datum benannt</li>
+                  <li>• Für Self-Hosting siehe <strong>MIGRATION.md</strong> im Projekt-Root</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </main>

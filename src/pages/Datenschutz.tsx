@@ -1,21 +1,28 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const Datenschutz = () => {
+  const { data: title } = useSiteSetting('legal_privacy_title');
+  const { data: intro } = useSiteSetting('legal_privacy_intro');
+  const { data: section1Title } = useSiteSetting('legal_privacy_section1_title');
+  const { data: section1Content } = useSiteSetting('legal_privacy_section1_content');
+  const { data: contactInfo } = useSiteSetting('legal_privacy_contact');
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-4xl">
-          <h1 className="text-3xl font-bold mb-6">Datenschutzerklärung</h1>
+          <h1 className="text-3xl font-bold mb-6">{title || 'Datenschutzerklärung'}</h1>
           <div className="prose max-w-none space-y-6">
             <p className="text-lg text-muted-foreground">
-              ESCORIA nimmt den Schutz Ihrer persönlichen Daten sehr ernst. Diese Datenschutzerklärung informiert Sie umfassend über die Verarbeitung Ihrer personenbezogenen Daten gemäss dem schweizerischen Datenschutzgesetz (DSG) und der EU-Datenschutz-Grundverordnung (DSGVO).
+              {intro || 'ESCORIA nimmt den Schutz Ihrer persönlichen Daten sehr ernst. Diese Datenschutzerklärung informiert Sie umfassend über die Verarbeitung Ihrer personenbezogenen Daten gemäss dem schweizerischen Datenschutzgesetz (DSG) und der EU-Datenschutz-Grundverordnung (DSGVO).'}
             </p>
 
-            <h2 className="text-2xl font-bold mt-8">1. Verantwortliche Stelle</h2>
+            <h2 className="text-2xl font-bold mt-8">{section1Title || '1. Verantwortliche Stelle'}</h2>
             <p>
-              Verantwortlich für die Datenverarbeitung auf dieser Website ist ESCORIA. Kontaktdaten finden Sie in unserem Impressum.
+              {section1Content || 'Verantwortlich für die Datenverarbeitung auf dieser Website ist ESCORIA. Kontaktdaten finden Sie in unserem Impressum.'}
             </p>
 
             <h2 className="text-2xl font-bold mt-8">2. Art der verarbeiteten Daten</h2>
@@ -105,7 +112,7 @@ const Datenschutz = () => {
             </div>
 
             <p className="mt-4">
-              <strong>Kontakt für Datenschutzanfragen:</strong> Bitte richten Sie alle Anfragen an die im Impressum genannte E-Mail-Adresse.
+              <strong>Kontakt für Datenschutzanfragen:</strong> {contactInfo || 'Bitte richten Sie alle Anfragen an die im Impressum genannte E-Mail-Adresse.'}
             </p>
 
             <h2 className="text-2xl font-bold mt-8">7. Datensicherheit</h2>
