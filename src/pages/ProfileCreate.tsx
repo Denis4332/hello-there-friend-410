@@ -27,6 +27,11 @@ const ProfileCreate = () => {
   const { data: createSubtitle } = useSiteSetting('profile_create_subtitle');
   const { data: photosTitle } = useSiteSetting('profile_photos_title');
   const { data: photosSubtitle } = useSiteSetting('profile_photos_subtitle');
+  const { data: tabData } = useSiteSetting('profile_tab_data');
+  const { data: tabListing } = useSiteSetting('profile_tab_listing');
+  const { data: tabPhotos } = useSiteSetting('profile_tab_photos');
+  const { data: tabVerification } = useSiteSetting('profile_tab_verification');
+  const { data: photosSaveButton } = useSiteSetting('profile_photos_save_button');
 
   useEffect(() => {
     loadData();
@@ -207,16 +212,16 @@ const ProfileCreate = () => {
             <Tabs value={currentStep} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="form" disabled={currentStep !== 'form'}>
-                  1. Profildaten
+                  {tabData || '1. Profildaten'}
                 </TabsTrigger>
                 <TabsTrigger value="listing-type" disabled={!profileId || currentStep === 'form'}>
-                  2. Inserat-Typ
+                  {tabListing || '2. Inserat-Typ'}
                 </TabsTrigger>
                 <TabsTrigger value="photos" disabled={currentStep === 'form' || currentStep === 'listing-type'}>
-                  3. Fotos
+                  {tabPhotos || '3. Fotos'}
                 </TabsTrigger>
                 <TabsTrigger value="verification" disabled={currentStep === 'form' || currentStep === 'listing-type'}>
-                  4. Verifizierung
+                  {tabVerification || '4. Verifizierung'}
                 </TabsTrigger>
               </TabsList>
 
@@ -255,7 +260,7 @@ const ProfileCreate = () => {
                       size="lg"
                       className="w-full"
                     >
-                      Fotos speichern und weiter
+                      {photosSaveButton || 'Fotos speichern und weiter'}
                     </Button>
                   </div>
                 )}

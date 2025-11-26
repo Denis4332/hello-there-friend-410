@@ -27,6 +27,14 @@ export const Header = () => {
   const { data: navLogout } = useSiteSetting('nav_logout');
   const { data: logoUrl } = useSiteSetting('design_logo_url');
   const { data: logoText } = useSiteSetting('design_logo_text');
+  const { data: navPrices } = useSiteSetting('nav_prices');
+  const { data: navCreateAd } = useSiteSetting('nav_create_ad');
+  const { data: navAgb } = useSiteSetting('nav_agb');
+  const { data: navPrivacy } = useSiteSetting('nav_privacy');
+  const { data: navSearch } = useSiteSetting('nav_search');
+  const { data: navAdmin } = useSiteSetting('nav_admin');
+  const { data: navAdminDashboard } = useSiteSetting('nav_admin_dashboard');
+  const { data: navWelcome } = useSiteSetting('nav_welcome_title');
 
   return (
     <header className="bg-primary text-primary-foreground" role="banner">
@@ -50,7 +58,7 @@ export const Header = () => {
               {navCategories || 'Kategorien'}
             </Link>
             <Link to="/preise" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              Preise & Pakete
+              {navPrices || 'Preise & Pakete'}
             </Link>
             <Link to="/bannerpreise" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navBanners || 'Werbung'}
@@ -61,16 +69,16 @@ export const Header = () => {
 
             {/* Quick Actions */}
             <Link to="/profil/erstellen">
-              <Button variant="secondary" size="sm" className="gap-2" aria-label="Inserat aufgeben">
+              <Button variant="secondary" size="sm" className="gap-2" aria-label={navCreateAd || 'Inserat aufgeben'}>
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden lg:inline">Inserat aufgeben</span>
+                <span className="hidden lg:inline">{navCreateAd || 'Inserat aufgeben'}</span>
               </Button>
             </Link>
             
             <Link to="/suche">
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Suche öffnen">
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label={navSearch || 'Suche'}>
                 <Search className="h-4 w-4" aria-hidden="true" />
-                <span className="sr-only">Suche</span>
+                <span className="sr-only">{navSearch || 'Suche'}</span>
               </Button>
             </Link>
 
@@ -110,7 +118,7 @@ export const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
-                    Admin Dashboard
+                    {navAdminDashboard || 'Admin Dashboard'}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => signOut()}>
                     {navLogout || 'Abmelden'}
@@ -123,9 +131,9 @@ export const Header = () => {
           {/* Mobile CTA Icons */}
           <div className="flex md:hidden items-center gap-4">
             <Link to="/profil/erstellen">
-              <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label="Inserat aufgeben">
+              <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label={navCreateAd || 'Inserat aufgeben'}>
                 <Plus className="h-6 w-6" aria-hidden="true" />
-                <span className="sr-only">Inserat aufgeben</span>
+                <span className="sr-only">{navCreateAd || 'Inserat aufgeben'}</span>
               </Button>
             </Link>
             
@@ -158,7 +166,7 @@ export const Header = () => {
                     {navCategories || 'Kategorien'}
                   </Link>
                   <Link to="/preise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
-                    Preise & Pakete
+                    {navPrices || 'Preise & Pakete'}
                   </Link>
                   <Link to="/bannerpreise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
                     {navBanners || 'Werbung'}
@@ -173,7 +181,7 @@ export const Header = () => {
                     className="flex items-center gap-3 text-lg font-semibold text-primary hover:text-primary/80 active:text-primary/60 py-3 transition-colors"
                   >
                     <Plus className="h-6 w-6" />
-                    Inserat aufgeben
+                    {navCreateAd || 'Inserat aufgeben'}
                   </Link>
                   <Link 
                     to="/suche" 
@@ -181,17 +189,17 @@ export const Header = () => {
                     className="flex items-center gap-3 text-lg font-medium hover:text-primary active:text-primary/80 py-3 transition-colors"
                   >
                     <Search className="h-6 w-6" />
-                    Suche
+                    {navSearch || 'Suche'}
                   </Link>
 
                   <Separator />
 
                   {/* Extended Links */}
                   <Link to="/agb" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
-                    AGB
+                    {navAgb || 'AGB'}
                   </Link>
                   <Link to="/datenschutz" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
-                    Datenschutzerklärung
+                    {navPrivacy || 'Datenschutzerklärung'}
                   </Link>
                   <Link to="/kontakt" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
                     {navContact || 'Kontakt'}
@@ -223,7 +231,7 @@ export const Header = () => {
                             className="flex items-center gap-3 text-lg font-medium text-primary hover:text-primary/80 active:text-primary/60 py-3 transition-colors"
                           >
                             <Shield className="h-6 w-6" />
-                            Admin Dashboard
+                            {navAdminDashboard || 'Admin Dashboard'}
                           </Link>
                         )}
                         <Button
