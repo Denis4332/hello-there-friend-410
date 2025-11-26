@@ -25,7 +25,7 @@ export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
       onClick={handleClose}
     >
       <Card 
-        className="relative w-[90vw] md:w-[500px] max-w-md border-dashed border-2 border-primary/50 bg-background animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-300"
+        className="relative w-[300px] max-w-[300px] border-dashed border-2 border-primary/50 bg-background animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <Button
