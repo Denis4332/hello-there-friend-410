@@ -13,7 +13,8 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
   const isTopPosition = position === 'top';
   
   return (
-    <Card className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${className}`}>
+    <div className={`${className} flex justify-center`}>
+      <Card className="relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 w-[300px] max-w-[300px]">
       <div 
         className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background"
         style={{
@@ -24,28 +25,29 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
         }}
       />
       
-      <div className={`relative text-center space-y-3 ${isTopPosition ? 'p-12' : 'p-6'}`}>
+      <div className="relative text-center space-y-3 p-6">
         <Badge variant="secondary" className="mb-2">
           <TrendingUp className="w-3 h-3 mr-1" />
           {isTopPosition ? 'Premium-Position verfügbar' : 'Werbeplatz verfügbar'}
         </Badge>
         
-        <h3 className={`font-bold text-foreground ${isTopPosition ? 'text-3xl' : 'text-xl'}`}>
+        <h3 className="font-bold text-foreground text-xl">
           {isTopPosition ? 'Hier könnte Ihre Werbung stehen!' : 'Ihre Anzeige hier'}
         </h3>
         
-        <p className={`text-muted-foreground mx-auto ${isTopPosition ? 'text-base max-w-md' : 'text-sm max-w-xs'}`}>
+        <p className="text-muted-foreground mx-auto text-sm max-w-xs">
           {isTopPosition 
             ? 'Erreichen Sie tausende potenzielle Kunden mit einer prominent platzierten Anzeige.'
             : 'Präsentieren Sie Ihr Angebot zwischen den Profilen.'}
         </p>
         
-        <Button asChild size={isTopPosition ? 'lg' : 'default'} className="font-semibold">
+        <Button asChild size="default" className="font-semibold">
           <Link to="/bannerpreise">
             {isTopPosition ? 'Jetzt Top-Position sichern!' : 'Banner buchen'}
           </Link>
         </Button>
       </div>
     </Card>
+    </div>
   );
 };

@@ -37,23 +37,23 @@ export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
           <X className="h-4 w-4" />
         </Button>
         
-        <CardContent className="pt-12 pb-8 text-center space-y-4">
+        <CardContent className="pt-8 pb-6 text-center space-y-4">
           <Badge variant="secondary" className="mb-2">
             <TrendingUp className="w-3 h-3 mr-1" />
             Pop-up Banner verfügbar
           </Badge>
           
-          <h2 className="text-3xl font-bold">
+          <h2 className="text-xl font-bold">
             Maximale Aufmerksamkeit mit Pop-up Bannern!
           </h2>
           
-          <p className="text-muted-foreground max-w-md mx-auto">
+          <p className="text-muted-foreground max-w-md mx-auto text-sm">
             Ihre Werbung erscheint als Vollbild-Overlay und kann nicht übersehen werden.
             Perfekt für wichtige Ankündigungen und maximale Reichweite!
           </p>
           
           <div className="flex flex-col gap-3 pt-4">
-            <div className="flex gap-3 justify-center">
+            <div className="flex flex-col gap-3 justify-center">
               <Link to="/bannerpreise">
                 <Button size="lg" onClick={handleClose}>
                   Banner buchen (ab CHF 50/Tag)
