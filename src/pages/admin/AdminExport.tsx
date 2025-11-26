@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useExportCSV } from '@/hooks/useExportCSV';
 import { useExportJSON } from '@/hooks/useExportJSON';
-import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket } from 'lucide-react';
+import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket, Users, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -303,6 +303,46 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
     }
   };
 
+  const exportAuthUsers = async () => {
+    setLoading('auth-users');
+    toast.info('Exportiere Auth-Users mit Passwort-Hashes...');
+    toast.warning('⚠️ Sensible Daten! Sicher aufbewahren!', { duration: 5000 });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Nicht angemeldet');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('export-auth-users', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `escoria_auth_users_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`${response.data.metadata.total_users} User mit Passwörtern exportiert! Import-Script enthalten.`);
+      toast.warning('Nach Import UNBEDINGT Datei löschen!', { duration: 10000 });
+    } catch (error: any) {
+      toast.error(`Fehler beim Auth-Export: ${error.message}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
@@ -323,11 +363,22 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                 🚀 Komplette Supabase-Migration
               </CardTitle>
               <CardDescription>
-                Exportiere ALLES für eine vollständige Migration zu eigenem Supabase-Projekt
+                Exportiere ALLES für eine vollständige Migration zu eigenem Supabase-Projekt - inkl. Auth Users mit Passwörtern!
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                <Button 
+                  onClick={exportAuthUsers}
+                  disabled={loading === 'auth-users'}
+                  size="lg"
+                  variant="destructive"
+                  className="gap-2 h-auto py-4 flex-col"
+                >
+                  <ShieldAlert className="h-5 w-5" />
+                  <span className="text-sm font-bold">Auth Users + Passwörter</span>
+                  <span className="text-xs opacity-70">⚠️ Sensible Daten!</span>
+                </Button>
                 <Button 
                   onClick={exportCompleteMigrations}
                   disabled={loading === 'complete-migrations'}
@@ -346,7 +397,7 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                 >
                   <Code className="h-5 w-5" />
                   <span className="text-sm">Edge Functions Code</span>
-                  <span className="text-xs opacity-70">14 Backend Functions</span>
+                  <span className="text-xs opacity-70">15 Backend Functions</span>
                 </Button>
                 <Button 
                   onClick={exportStorageUrls}
@@ -442,16 +493,27 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
           <div className="mt-8 p-6 bg-card rounded-lg border">
             <h3 className="font-semibold mb-3 text-lg">📦 Export-Optionen Übersicht</h3>
             <div className="space-y-3 text-sm">
+              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                <strong className="text-destructive flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4" />
+                  🔥 NEU: Auth Users + Passwörter:
+                </strong>
+                <p className="text-muted-foreground mt-1">
+                  Exportiert ALLE User inkl. verschlüsselter Passwort-Hashes (encrypted_password). 
+                  User müssen sich NICHT neu registrieren! Export enthält automatisch Import-Script für neues Supabase-Projekt. 
+                  ⚠️ SEHR sensibel - nach Import SOFORT löschen!
+                </p>
+              </div>
               <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <strong className="text-primary flex items-center gap-2">
                   <Rocket className="h-4 w-4" />
                   Komplette Supabase-Migration:
                 </strong>
                 <p className="text-muted-foreground mt-1">
-                  Exportiert ALLES für vollständige Unabhängigkeit: SQL-Schema (88+ Migrations kombiniert), 
-                  14 Edge Functions mit Code, Download-URLs für alle Storage-Dateien (7 Tage gültig), 
+                  Exportiert ALLES für vollständige Unabhängigkeit: Auth Users mit Passwörtern, SQL-Schema (88+ Migrations kombiniert), 
+                  15 Edge Functions mit Code, Download-URLs für alle Storage-Dateien (7 Tage gültig), 
                   und alle {tables.length} Tabellen als JSON. Nach dem Export kannst du komplett zu eigenem 
-                  Supabase-Projekt wechseln - 100% unabhängig von Lovable Cloud.
+                  Supabase-Projekt wechseln - 100% unabhängig von Lovable Cloud ohne User-Neu-Registrierung!
                 </p>
               </div>
               <div>

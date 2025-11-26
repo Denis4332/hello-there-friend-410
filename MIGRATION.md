@@ -64,9 +64,43 @@ supabase db push
 
 ### 4. Daten importieren
 
-#### 4.1 Tabellen-Daten (aus Admin-Export)
+⚠️ **WICHTIG: Reihenfolge beachten!** Auth Users ZUERST importieren, dann andere Tabellen!
 
-Exportiere alle Daten über Admin-Dashboard → Export → "Full Backup (JSON)".
+#### 4.1 Auth Users (mit Passwörtern) - ZUERST!
+
+Exportiere Auth Users via Admin-Dashboard → Export → "Auth Users + Passwörter" (roter Button).
+
+**⚠️ SICHERHEITSHINWEIS:** 
+- Diese Datei enthält verschlüsselte Passwort-Hashes
+- NIEMALS öffentlich machen oder in Git committen
+- Nach erfolgreichem Import SOFORT löschen
+
+**Import-Anleitung:**
+
+1. Export-JSON herunterladen (`escoria_auth_users_export_YYYY-MM-DD.json`)
+2. Import-Script ist bereits in der JSON-Datei enthalten (siehe `import_script` Feld)
+3. Import-Script in neue Datei `import-auth-users.mjs` kopieren
+4. Installiere Supabase JS: `npm install @supabase/supabase-js`
+5. Setze Umgebungsvariablen für NEUES Projekt:
+   ```bash
+   export SUPABASE_URL="https://NEUES-PROJEKT.supabase.co"
+   export SUPABASE_SERVICE_ROLE_KEY="eyJ..."
+   ```
+6. Script ausführen:
+   ```bash
+   node import-auth-users.mjs
+   ```
+7. **SOFORT NACH ERFOLG:** Export-JSON löschen!
+
+**Ergebnis:**
+- ✅ Alle User mit gleichen IDs importiert
+- ✅ Passwörter bleiben gültig (bcrypt-Hashes übernommen)
+- ✅ User können sich mit bestehenden Credentials einloggen
+- ✅ Foreign Key Relationships (profiles, etc.) bleiben intakt
+
+#### 4.2 Tabellen-Daten (aus Admin-Export) - DANACH!
+
+Exportiere alle Daten über Admin-Dashboard → Export → "Alle Daten (JSON)".
 
 **Import via Supabase Dashboard:**
 1. Öffne SQL Editor
@@ -82,7 +116,7 @@ VALUES
 
 **Tipp:** Nutze ein Tool wie [supabase-js](https://supabase.com/docs/reference/javascript/insert) für Batch-Inserts.
 
-#### 4.2 Storage-Dateien (Fotos, Assets)
+#### 4.3 Storage-Dateien (Fotos, Assets)
 
 Exportiere Storage-Index via Admin-Export → "Storage Index (JSON)".
 
@@ -146,6 +180,10 @@ supabase functions deploy check-subscription-expiry
 supabase functions deploy cleanup-orphaned-photos
 supabase functions deploy delete-user-account
 supabase functions deploy export-user-data
+supabase functions deploy export-auth-users
+supabase functions deploy export-migrations
+supabase functions deploy export-edge-functions
+supabase functions deploy export-storage-urls
 supabase functions deploy generate-sitemap
 supabase functions deploy geocode-all-profiles
 supabase functions deploy log-error
@@ -252,6 +290,21 @@ Deno.serve({
 });
 ```
 
+### "Auth User Import Failed"
+→ Häufige Probleme:
+1. **"User already exists"**: Email bereits im neuen Projekt vorhanden
+   - Lösung: Alte Test-User vorher löschen
+2. **"Invalid password format"**: Passwort-Hash nicht korrekt
+   - Lösung: Export neu herunterladen, `encrypted_password` muss vorhanden sein
+3. **"Service role required"**: Falsche API Keys
+   - Lösung: `SUPABASE_SERVICE_ROLE_KEY` verwenden (nicht anon key!)
+
+### "Users can't login after migration"
+→ Mögliche Ursachen:
+1. Auth Users wurden NICHT importiert → User müssen neu registrieren
+2. User IDs stimmen nicht überein → Profile-Tabelle user_id prüfen
+3. Email Confirmation erforderlich → In Supabase Auth Settings deaktivieren
+
 ---
 
 ## 📞 Support
@@ -299,11 +352,14 @@ jobs:
 
 ## 📝 Wichtige Hinweise
 
-1. **Backup vor Migration:** Exportiere ALLE Daten über Admin-Dashboard
-2. **DNS-Änderungen:** Plane 24-48h für DNS-Propagation ein
-3. **Downtime:** Plane 1-2 Stunden Wartungsfenster ein
-4. **Testing:** Teste auf Staging-Umgebung vor Production-Migration
-5. **Monitoring:** Nutze Supabase Dashboard für Echtzeit-Monitoring
+1. **Auth Users ZUERST:** Importiere Auth Users VOR allen anderen Tabellen
+2. **Backup vor Migration:** Exportiere ALLE Daten über Admin-Dashboard
+3. **Sicherheit:** Auth-Export nach Import SOFORT löschen (enthält Passwort-Hashes)
+4. **DNS-Änderungen:** Plane 24-48h für DNS-Propagation ein
+5. **Downtime:** Plane 1-2 Stunden Wartungsfenster ein
+6. **Testing:** Teste auf Staging-Umgebung vor Production-Migration
+7. **Monitoring:** Nutze Supabase Dashboard für Echtzeit-Monitoring
+8. **User Experience:** User müssen sich NICHT neu registrieren dank Passwort-Migration!
 
 ---
 
