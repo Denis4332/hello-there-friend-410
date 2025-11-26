@@ -14,7 +14,7 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
   
   return (
     <div className={`${className} flex justify-center`}>
-      <Card className="relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 w-[300px] max-w-[300px]">
+      <Card className="relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 w-full">
       <div 
         className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background"
         style={{
