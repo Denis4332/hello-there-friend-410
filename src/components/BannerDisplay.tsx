@@ -95,7 +95,6 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
 
   // Show rotating ad for fair share
   const ad = ads[currentAdIndex] || ads[0];
-  const isGridPosition = position === 'grid';
 
   return (
     <div className={className}>
@@ -106,7 +105,7 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
         <img
           src={ad.image_url}
           alt={ad.title}
-          className={`w-full object-cover ${isGridPosition ? 'h-[625px]' : 'h-auto'}`}
+          className="w-full h-auto object-cover"
         />
       </div>
     </div>
