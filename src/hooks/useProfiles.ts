@@ -81,8 +81,8 @@ export const useHomepageProfiles = (
       const result = await supabase
         .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-        .order('created_at', { ascending: false })
-        .limit(50); // Fetch more than needed for client-side filtering
+      .order('created_at', { ascending: false })
+      .limit(500); // Fetch enough for all TOP ads
       
       if (result.error) throw result.error;
       
