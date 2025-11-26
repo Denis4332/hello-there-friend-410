@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
@@ -15,8 +17,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Zap, Star, Grid3x3, Upload, Calendar, CreditCard } from 'lucide-react';
-import { BannerPackage } from '@/types/advertisement';
+import { Zap, Star, Grid3x3, Upload, Calendar, CreditCard, Info, Crop as CropIcon } from 'lucide-react';
+import { BannerPackage, BANNER_SIZES } from '@/types/advertisement';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const BANNER_PACKAGES: BannerPackage[] = [
   {
@@ -71,6 +74,10 @@ export default function BannerBuchen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [showCropTool, setShowCropTool] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -96,7 +103,6 @@ export default function BannerBuchen() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: 'Fehler',
@@ -106,7 +112,6 @@ export default function BannerBuchen() {
         return;
       }
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
           title: 'Fehler',
@@ -119,19 +124,86 @@ export default function BannerBuchen() {
       setSelectedImage(file);
       form.setValue('image', file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
+        setShowCropTool(true);
+        
+        // Set initial crop based on selected position
+        if (selectedPosition) {
+          const size = BANNER_SIZES[selectedPosition];
+          const aspectRatio = size.width / size.height;
+          setCrop({
+            unit: '%',
+            width: 90,
+            height: 90 / aspectRatio,
+            x: 5,
+            y: 5,
+          });
+        }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const getCroppedImg = async (): Promise<Blob> => {
+    if (!imgRef.current || !completedCrop) {
+      throw new Error('Crop not completed');
+    }
+
+    const image = imgRef.current;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('No 2d context');
+    }
+
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+
+    canvas.width = completedCrop.width;
+    canvas.height = completedCrop.height;
+
+    ctx.drawImage(
+      image,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
+      0,
+      0,
+      completedCrop.width,
+      completedCrop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Canvas is empty'));
+            return;
+          }
+          resolve(blob);
+        },
+        'image/jpeg',
+        0.95
+      );
+    });
   };
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
 
     try {
+      let imageFile: File | Blob = data.image;
+
+      // If crop is applied, get cropped image
+      if (completedCrop && showCropTool) {
+        const croppedBlob = await getCroppedImg();
+        imageFile = new File([croppedBlob], data.image.name, { type: 'image/jpeg' });
+      }
+
       // Upload image to storage
       const fileExt = data.image.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -139,16 +211,14 @@ export default function BannerBuchen() {
 
       const { error: uploadError } = await supabase.storage
         .from('advertisements')
-        .upload(filePath, data.image);
+        .upload(filePath, imageFile);
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('advertisements')
         .getPublicUrl(filePath);
 
-      // Calculate dates
       const startDate = new Date();
       const endDate = new Date();
       
@@ -164,7 +234,6 @@ export default function BannerBuchen() {
           break;
       }
 
-      // Create advertisement entry
       const { error: insertError } = await supabase
         .from('advertisements')
         .insert({
@@ -188,7 +257,6 @@ export default function BannerBuchen() {
         description: 'Ihr Banner wartet auf Admin-Genehmigung. Sie erhalten eine Bestätigung per E-Mail.',
       });
 
-      // Show payment instructions based on method
       if (data.payment_method === 'bank') {
         toast({
           title: 'Zahlungsinformationen',
@@ -201,7 +269,6 @@ export default function BannerBuchen() {
         });
       }
 
-      // Redirect after 3 seconds
       setTimeout(() => {
         navigate('/');
       }, 3000);
@@ -216,6 +283,8 @@ export default function BannerBuchen() {
       setIsSubmitting(false);
     }
   };
+
+  const bannerSize = selectedPosition ? BANNER_SIZES[selectedPosition] : null;
 
   return (
     <>
@@ -286,6 +355,19 @@ export default function BannerBuchen() {
                         </FormItem>
                       )}
                     />
+
+                    {bannerSize && (
+                      <Alert className="mt-4">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          <div className="space-y-1">
+                            <p className="font-semibold">Empfohlene Bildgröße für {selectedPosition}:</p>
+                            <p className="text-sm">{bannerSize.width} × {bannerSize.height} Pixel</p>
+                            <p className="text-xs text-muted-foreground">{bannerSize.description}</p>
+                          </div>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -375,12 +457,16 @@ export default function BannerBuchen() {
                   </CardContent>
                 </Card>
 
-                {/* Image Upload */}
+                {/* Image Upload with Crop Tool */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>4. Banner-Bild hochladen</CardTitle>
+                    <CardTitle>4. Banner-Bild hochladen & zuschneiden</CardTitle>
                     <CardDescription>
-                      Empfohlene Größe: 1200x628px (max. 5MB)
+                      {bannerSize ? (
+                        <>Empfohlene Größe: {bannerSize.width}×{bannerSize.height}px (max. 5MB)</>
+                      ) : (
+                        'Bitte wählen Sie zuerst eine Position'
+                      )}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -391,15 +477,9 @@ export default function BannerBuchen() {
                         <FormItem>
                           <FormControl>
                             <div className="space-y-4">
-                              <div className="flex items-center justify-center w-full">
-                                <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                                  {imagePreview ? (
-                                    <img 
-                                      src={imagePreview} 
-                                      alt="Preview" 
-                                      className="w-full h-full object-contain rounded-lg"
-                                    />
-                                  ) : (
+                              {!imagePreview ? (
+                                <div className="flex items-center justify-center w-full">
+                                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
                                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                       <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
                                       <p className="mb-2 text-sm text-muted-foreground">
@@ -409,16 +489,61 @@ export default function BannerBuchen() {
                                         PNG, JPG oder WebP (max. 5MB)
                                       </p>
                                     </div>
-                                  )}
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    {...field}
-                                  />
-                                </label>
-                              </div>
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      accept="image/*"
+                                      onChange={handleImageChange}
+                                      {...field}
+                                    />
+                                  </label>
+                                </div>
+                              ) : (
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <CropIcon className="h-4 w-4" />
+                                      <span className="text-sm font-medium">
+                                        Bild zuschneiden (optional)
+                                      </span>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setImagePreview('');
+                                        setSelectedImage(null);
+                                        setShowCropTool(false);
+                                        setCrop(undefined);
+                                        setCompletedCrop(undefined);
+                                      }}
+                                    >
+                                      Neues Bild
+                                    </Button>
+                                  </div>
+
+                                  <div className="border rounded-lg p-4 bg-muted/30">
+                                    <ReactCrop
+                                      crop={crop}
+                                      onChange={(c) => setCrop(c)}
+                                      onComplete={(c) => setCompletedCrop(c)}
+                                      aspect={bannerSize ? bannerSize.width / bannerSize.height : undefined}
+                                    >
+                                      <img
+                                        ref={imgRef}
+                                        src={imagePreview}
+                                        alt="Preview"
+                                        className="max-w-full h-auto"
+                                      />
+                                    </ReactCrop>
+                                  </div>
+
+                                  <p className="text-xs text-muted-foreground">
+                                    Ziehen Sie den Rahmen, um das Bild zuzuschneiden. Das Seitenverhältnis ist bereits optimal eingestellt.
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -450,14 +575,14 @@ export default function BannerBuchen() {
                                 <RadioGroupItem value="bank" id="bank" className="peer sr-only" />
                                 <Label
                                   htmlFor="bank"
-                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                                 >
                                   <div className="flex items-center gap-3">
                                     <CreditCard className="h-5 w-5" />
                                     <div>
                                       <div className="font-semibold">Banküberweisung</div>
                                       <div className="text-sm text-muted-foreground">
-                                        Sie erhalten die Bankdaten per E-Mail
+                                        Sie erhalten unsere Bankdaten per E-Mail
                                       </div>
                                     </div>
                                   </div>
@@ -468,14 +593,14 @@ export default function BannerBuchen() {
                                 <RadioGroupItem value="twint" id="twint" className="peer sr-only" />
                                 <Label
                                   htmlFor="twint"
-                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                                 >
                                   <div className="flex items-center gap-3">
                                     <CreditCard className="h-5 w-5" />
                                     <div>
                                       <div className="font-semibold">TWINT</div>
                                       <div className="text-sm text-muted-foreground">
-                                        Zahlung via TWINT
+                                        Schnelle Zahlung via TWINT
                                       </div>
                                     </div>
                                   </div>
@@ -486,14 +611,14 @@ export default function BannerBuchen() {
                                 <RadioGroupItem value="later" id="later" className="peer sr-only" />
                                 <Label
                                   htmlFor="later"
-                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
+                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                                 >
                                   <div className="flex items-center gap-3">
-                                    <CreditCard className="h-5 w-5" />
+                                    <Calendar className="h-5 w-5" />
                                     <div>
-                                      <div className="font-semibold">Später zahlen</div>
+                                      <div className="font-semibold">Später bezahlen</div>
                                       <div className="text-sm text-muted-foreground">
-                                        Wir kontaktieren Sie mit den Zahlungsdetails
+                                        Wir kontaktieren Sie mit Zahlungsdetails
                                       </div>
                                     </div>
                                   </div>
@@ -508,20 +633,14 @@ export default function BannerBuchen() {
                   </CardContent>
                 </Card>
 
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Wird gebucht...' : 'Jetzt verbindlich buchen'}
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? 'Wird verarbeitet...' : `Banner jetzt buchen (CHF ${calculatePrice()})`}
                 </Button>
               </form>
             </Form>
           </div>
         </main>
-
+        
         <Footer />
       </div>
     </>
