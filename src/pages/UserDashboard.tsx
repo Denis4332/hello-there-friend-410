@@ -26,6 +26,36 @@ const UserDashboard = () => {
   const { data: dashboardWelcome } = useSiteSetting('dashboard_welcome_text');
   const { data: createProfileButton } = useSiteSetting('dashboard_create_profile_button');
   const { data: editProfileButton } = useSiteSetting('dashboard_edit_profile_button');
+  const { data: favoritesButton } = useSiteSetting('dashboard_favorites_button');
+  const { data: statusPending } = useSiteSetting('dashboard_status_pending');
+  const { data: statusActive } = useSiteSetting('dashboard_status_active');
+  const { data: statusRejected } = useSiteSetting('dashboard_status_rejected');
+  const { data: noProfileTitle } = useSiteSetting('dashboard_no_profile_title');
+  const { data: noProfileText } = useSiteSetting('dashboard_no_profile_text');
+  const { data: noProfileButton } = useSiteSetting('dashboard_no_profile_button');
+  const { data: packageTitle } = useSiteSetting('dashboard_package_title');
+  const { data: packageBasic } = useSiteSetting('dashboard_package_basic_desc');
+  const { data: packagePremium } = useSiteSetting('dashboard_package_premium_desc');
+  const { data: packageTop } = useSiteSetting('dashboard_package_top_desc');
+  const { data: validUntil } = useSiteSetting('dashboard_valid_until');
+  const { data: upgradeButton } = useSiteSetting('dashboard_upgrade_button');
+  const { data: extendButton } = useSiteSetting('dashboard_extend_button');
+  const { data: profileDataTitle } = useSiteSetting('dashboard_profile_data_title');
+  const { data: labelName } = useSiteSetting('dashboard_label_name');
+  const { data: labelAge } = useSiteSetting('dashboard_label_age');
+  const { data: labelGender } = useSiteSetting('dashboard_label_gender');
+  const { data: labelLocation } = useSiteSetting('dashboard_label_location');
+  const { data: labelLanguages } = useSiteSetting('dashboard_label_languages');
+  const { data: labelAbout } = useSiteSetting('dashboard_label_about');
+  const { data: labelCategories } = useSiteSetting('dashboard_label_categories');
+  const { data: photosTitle } = useSiteSetting('dashboard_photos_title');
+  const { data: privacyTitle } = useSiteSetting('dashboard_privacy_title');
+  const { data: exportTitle } = useSiteSetting('dashboard_export_title');
+  const { data: exportText } = useSiteSetting('dashboard_export_text');
+  const { data: exportButton } = useSiteSetting('dashboard_export_button');
+  const { data: deleteTitle } = useSiteSetting('dashboard_delete_title');
+  const { data: deleteText } = useSiteSetting('dashboard_delete_text');
+  const { data: deleteButton } = useSiteSetting('dashboard_delete_button');
 
   useEffect(() => {
     loadProfile();
@@ -159,11 +189,11 @@ const UserDashboard = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary">In Prüfung</Badge>;
+        return <Badge variant="secondary">{statusPending || 'In Prüfung'}</Badge>;
       case 'active':
-        return <Badge variant="default">Aktiv</Badge>;
+        return <Badge variant="default">{statusActive || 'Aktiv'}</Badge>;
       case 'rejected':
-        return <Badge variant="destructive">Abgelehnt</Badge>;
+        return <Badge variant="destructive">{statusRejected || 'Abgelehnt'}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -191,13 +221,13 @@ const UserDashboard = () => {
         <Header />
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
-            <h1 className="text-2xl font-bold mb-4">Noch kein Inserat</h1>
+            <h1 className="text-2xl font-bold mb-4">{noProfileTitle || 'Noch kein Inserat'}</h1>
             <p className="text-muted-foreground mb-6">
-              Du hast noch kein Inserat erstellt. Starte jetzt und erreiche tausende potenzielle Kunden!
+              {noProfileText || 'Du hast noch kein Inserat erstellt. Starte jetzt und erreiche tausende potenzielle Kunden!'}
             </p>
             <Button onClick={() => navigate('/profil/erstellen')} size="lg">
               <Plus className="h-4 w-4 mr-2" />
-              Inserat aufgeben
+              {noProfileButton || 'Inserat aufgeben'}
             </Button>
           </div>
         </div>
@@ -217,7 +247,7 @@ const UserDashboard = () => {
                 <Button asChild variant="outline">
                   <Link to="/favoriten">
                     <Heart className="h-4 w-4 mr-2" />
-                    Favoriten
+                    {favoritesButton || 'Favoriten'}
                   </Link>
                 </Button>
                 {getStatusBadge(profile.status)}
@@ -271,7 +301,7 @@ const UserDashboard = () => {
                     {profile.listing_type === 'top' && <Star className="h-5 w-5 text-pink-600" />}
                     {profile.listing_type === 'premium' && <Crown className="h-5 w-5 text-amber-500" />}
                     {profile.listing_type === 'basic' && <Shield className="h-5 w-5 text-gray-500" />}
-                    Dein Inserat-Paket
+                    {packageTitle || 'Dein Inserat-Paket'}
                   </span>
                   {profile.listing_type === 'top' && (
                     <Badge className="bg-gradient-to-r from-red-600 to-pink-600 text-white">
@@ -293,15 +323,15 @@ const UserDashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">Aktuelles Paket:</p>
                     <p className="font-semibold">
-                      {profile.listing_type === 'basic' && '📋 Standard Inserat - Basis-Sichtbarkeit'}
-                      {profile.listing_type === 'premium' && '👑 Premium Inserat - VIP Badge, größere Darstellung, höhere Priorität'}
-                      {profile.listing_type === 'top' && '⭐ TOP AD - Maximale Sichtbarkeit, immer ganz oben, hervorgehoben'}
+                      {profile.listing_type === 'basic' && (packageBasic || '📋 Standard Inserat - Basis-Sichtbarkeit')}
+                      {profile.listing_type === 'premium' && (packagePremium || '👑 Premium Inserat - VIP Badge, größere Darstellung, höhere Priorität')}
+                      {profile.listing_type === 'top' && (packageTop || '⭐ TOP AD - Maximale Sichtbarkeit, immer ganz oben, hervorgehoben')}
                     </p>
                   </div>
                   
                   {(profile.premium_until || profile.top_ad_until) && (
                     <div className="pt-2 border-t">
-                      <p className="text-sm text-muted-foreground">Gültig bis:</p>
+                      <p className="text-sm text-muted-foreground">{validUntil || 'Gültig bis'}:</p>
                       <p className="font-medium text-green-600">
                         {new Date(profile.premium_until || profile.top_ad_until || '').toLocaleDateString('de-CH', {
                           day: '2-digit',
@@ -318,7 +348,7 @@ const UserDashboard = () => {
                       className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
                     >
                       <Crown className="h-4 w-4 mr-2" />
-                      Paket upgraden
+                      {upgradeButton || 'Paket upgraden'}
                     </Button>
                   )}
 
@@ -328,7 +358,7 @@ const UserDashboard = () => {
                       variant="outline"
                       className="w-full"
                     >
-                      Paket verlängern
+                      {extendButton || 'Paket verlängern'}
                     </Button>
                   )}
                 </div>
@@ -338,42 +368,42 @@ const UserDashboard = () => {
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Profildaten</CardTitle>
+                  <CardTitle>{profileDataTitle || 'Profildaten'}</CardTitle>
                   <CardDescription>Deine öffentlichen Informationen</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <div className="text-sm text-muted-foreground">Anzeigename</div>
+                    <div className="text-sm text-muted-foreground">{labelName || 'Anzeigename'}</div>
                     <div className="font-medium">{profile.display_name}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Alter</div>
+                    <div className="text-sm text-muted-foreground">{labelAge || 'Alter'}</div>
                     <div className="font-medium">{profile.age} Jahre</div>
                   </div>
                   {profile.gender && (
                     <div>
-                      <div className="text-sm text-muted-foreground">Geschlecht</div>
+                      <div className="text-sm text-muted-foreground">{labelGender || 'Geschlecht'}</div>
                       <div className="font-medium">{profile.gender}</div>
                     </div>
                   )}
                   <div>
-                    <div className="text-sm text-muted-foreground">Standort</div>
+                    <div className="text-sm text-muted-foreground">{labelLocation || 'Standort'}</div>
                     <div className="font-medium">
                       {profile.city}, {profile.canton}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Sprachen</div>
+                    <div className="text-sm text-muted-foreground">{labelLanguages || 'Sprachen'}</div>
                     <div className="font-medium">{profile.languages?.join(', ')}</div>
                   </div>
                   {profile.about_me && (
                     <div>
-                      <div className="text-sm text-muted-foreground">Über mich</div>
+                      <div className="text-sm text-muted-foreground">{labelAbout || 'Über mich'}</div>
                       <div className="font-medium text-sm">{profile.about_me}</div>
                     </div>
                   )}
                   <div>
-                    <div className="text-sm text-muted-foreground">Kategorien</div>
+                    <div className="text-sm text-muted-foreground">{labelCategories || 'Kategorien'}</div>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {profile.profile_categories?.map((pc: any) => (
                         <Badge key={pc.category_id} variant="secondary">
@@ -387,7 +417,7 @@ const UserDashboard = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Fotos ({photos.length})</CardTitle>
+                  <CardTitle>{photosTitle || 'Fotos'} ({photos.length})</CardTitle>
                   <CardDescription>Deine hochgeladenen Bilder</CardDescription>
                 </CardHeader>
                 <CardContent>

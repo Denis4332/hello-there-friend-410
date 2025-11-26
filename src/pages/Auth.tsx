@@ -40,6 +40,10 @@ const Auth = () => {
   const { data: passwordLabel } = useSiteSetting('auth_password_label');
   const { data: loginButton } = useSiteSetting('auth_login_button');
   const { data: registerButton } = useSiteSetting('auth_register_button');
+  const { data: welcomeTitle } = useSiteSetting('nav_welcome_title');
+  const { data: passwordHint } = useSiteSetting('auth_password_hint');
+  const { data: loadingLogin } = useSiteSetting('auth_loading_login');
+  const { data: loadingSignup } = useSiteSetting('auth_loading_signup');
 
   useEffect(() => {
     if (user) {
@@ -147,7 +151,7 @@ const Auth = () => {
         <div className="w-full max-w-md">
           <div className="bg-card border rounded-lg p-8">
             <h1 className="text-2xl font-bold text-center mb-6">
-              Willkommen bei ESCORIA
+              {welcomeTitle || 'Willkommen bei ESCORIA'}
             </h1>
 
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
@@ -191,7 +195,7 @@ const Auth = () => {
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? 'Wird angemeldet...' : (loginButton || 'Anmelden')}
+                    {isSubmitting ? (loadingLogin || 'Wird angemeldet...') : (loginButton || 'Anmelden')}
                   </Button>
                 </form>
               </TabsContent>
@@ -225,12 +229,12 @@ const Auth = () => {
                       <p className="text-sm text-destructive mt-1">{errors.password}</p>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
-                      Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen
+                      {passwordHint || 'Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen'}
                     </p>
                   </div>
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? 'Wird registriert...' : (registerButton || 'Registrieren')}
+                    {isSubmitting ? (loadingSignup || 'Wird registriert...') : (registerButton || 'Registrieren')}
                   </Button>
                 </form>
               </TabsContent>

@@ -10,6 +10,7 @@ import { detectLocation } from '@/lib/geolocation';
 import { getOptimizedImageUrl, supportsWebP } from '@/utils/imageOptimization';
 import { toast } from 'sonner';
 import { Canton } from '@/types/common';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 interface HeroSectionProps {
   siteTitle?: string;
@@ -46,6 +47,17 @@ export const HeroSection = ({
   const [webpSupported, setWebpSupported] = useState(false);
   const [optimizedHeroImage, setOptimizedHeroImage] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  // CMS Settings
+  const { data: heroSearchTitle } = useSiteSetting('hero_search_title');
+  const { data: heroResetButton } = useSiteSetting('hero_reset_button');
+  const { data: heroFiltersActive } = useSiteSetting('hero_filters_active');
+  const { data: heroGpsButton } = useSiteSetting('hero_gps_button');
+  const { data: heroGpsDetecting } = useSiteSetting('hero_gps_detecting');
+  const { data: heroRadiusLabel } = useSiteSetting('hero_radius_label');
+  const { data: heroBackToLocation } = useSiteSetting('hero_back_to_location');
+  const { data: heroCantonPlaceholder } = useSiteSetting('hero_canton_placeholder');
+  const { data: heroCategoryPlaceholder } = useSiteSetting('hero_category_placeholder');
 
   useEffect(() => {
     supportsWebP().then(setWebpSupported);
@@ -178,11 +190,11 @@ export const HeroSection = ({
         
         <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6" role="search" aria-label="Hauptsuche">
           <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
-            <h2 className="text-lg font-semibold" id="hero-search-heading">Suche</h2>
+            <h2 className="text-lg font-semibold" id="hero-search-heading">{heroSearchTitle || 'Suche'}</h2>
             {activeFiltersCount > 0 && (
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
-                  {activeFiltersCount} Filter aktiv
+                  {activeFiltersCount} {heroFiltersActive || 'Filter aktiv'}
                 </Badge>
                 <Button
                   type="button"
@@ -192,7 +204,7 @@ export const HeroSection = ({
                   className="h-8"
                 >
                   <X className="h-4 w-4 mr-1" />
-                  Zurücksetzen
+                  {heroResetButton || 'Zurücksetzen'}
                 </Button>
               </div>
             )}
@@ -207,7 +219,7 @@ export const HeroSection = ({
             aria-label="Standort automatisch erkennen"
           >
             <MapPin className="h-5 w-5" aria-hidden="true" />
-            {isDetectingLocation ? 'Erkenne Standort...' : 'In meiner Nähe suchen'}
+            {isDetectingLocation ? (heroGpsDetecting || 'Erkenne Standort...') : (heroGpsButton || 'In meiner Nähe suchen')}
           </Button>
           
           {useGPS ? (
@@ -215,7 +227,7 @@ export const HeroSection = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label htmlFor="hero-radius-slider" className="text-sm font-medium">
-                    Umkreis: {radius} km
+                    {heroRadiusLabel || 'Umkreis'}: {radius} km
                   </label>
                   <Button
                     type="button"
@@ -223,7 +235,7 @@ export const HeroSection = ({
                     size="sm"
                     onClick={() => setUseGPS(false)}
                   >
-                    Zurück zur Ortsauswahl
+                    {heroBackToLocation || 'Zurück zur Ortsauswahl'}
                   </Button>
                 </div>
                 <Slider
@@ -245,13 +257,13 @@ export const HeroSection = ({
               </div>
 
               <FilterPopover
-                trigger={{ icon: <Tag className="h-4 w-4" />, label: 'Alle Kategorien' }}
+                trigger={{ icon: <Tag className="h-4 w-4" />, label: heroCategoryPlaceholder || 'Alle Kategorien' }}
                 items={categories.map(c => ({ id: c.id, label: c.name }))}
                 selected={category}
                 onSelect={setCategory}
                 open={categoryGpsOpen}
                 onOpenChange={setCategoryGpsOpen}
-                allLabel="Alle Kategorien"
+                allLabel={heroCategoryPlaceholder || 'Alle Kategorien'}
               />
 
               <Input
@@ -275,7 +287,7 @@ export const HeroSection = ({
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <FilterPopover
-                  trigger={{ icon: <MapPin className="h-4 w-4" />, label: 'Kanton wählen' }}
+                  trigger={{ icon: <MapPin className="h-4 w-4" />, label: heroCantonPlaceholder || 'Kanton wählen' }}
                   items={cantons.map(c => ({ id: c.abbreviation, label: c.abbreviation }))}
                   selected={canton}
                   onSelect={setCanton}
@@ -286,13 +298,13 @@ export const HeroSection = ({
                 />
 
                 <FilterPopover
-                  trigger={{ icon: <Tag className="h-4 w-4" />, label: 'Alle Kategorien' }}
+                  trigger={{ icon: <Tag className="h-4 w-4" />, label: heroCategoryPlaceholder || 'Alle Kategorien' }}
                   items={categories.map(c => ({ id: c.id, label: c.name }))}
                   selected={category}
                   onSelect={setCategory}
                   open={categoryOpen}
                   onOpenChange={setCategoryOpen}
-                  allLabel="Alle Kategorien"
+                  allLabel={heroCategoryPlaceholder || 'Alle Kategorien'}
                 />
               </div>
 

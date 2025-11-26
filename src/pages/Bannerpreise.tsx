@@ -6,59 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Zap, Eye, Grid3x3, Star } from 'lucide-react';
-import { BannerPackage } from '@/types/advertisement';
-
-const BANNER_PACKAGES: BannerPackage[] = [
-  {
-    position: 'popup',
-    name: 'Pop-up Banner',
-    price_per_day: 80,
-    price_per_week: 504, // -10%
-    price_per_month: 2040, // -15%
-    description: 'Maximale Aufmerksamkeit garantiert! Ihr Banner erscheint als Vollbild-Overlay und kann nicht übersehen werden.',
-    features: [
-      'Vollbild-Anzeige',
-      'Garantierte Sichtbarkeit',
-      'Zeitsteuerung anpassbar',
-      'Frequenz-Kontrolle',
-      'Mobile-optimiert',
-      'Klick-Tracking inklusive',
-    ],
-    badge: 'EXKLUSIV',
-  },
-  {
-    position: 'top',
-    name: 'Top-Banner',
-    price_per_day: 50,
-    price_per_week: 315, // -10%
-    price_per_month: 1275, // -15%
-    description: 'Erste Position auf der Startseite. Sofortige Sichtbarkeit für jeden Besucher.',
-    features: [
-      'Top-Position Startseite',
-      'Immer sichtbar',
-      'Desktop & Mobile',
-      'Hohe Impressions',
-      'Klick-Tracking',
-    ],
-    badge: 'EXKLUSIV',
-  },
-  {
-    position: 'grid',
-    name: 'Grid-Banner',
-    price_per_day: 30,
-    price_per_week: 189, // -10%
-    price_per_month: 765, // -15%
-    description: 'Natürliche Integration in die Suchergebnisse. Erscheint nach jedem 8. Profil für organische Reichweite.',
-    features: [
-      'Organische Platzierung',
-      'Zwischen Profilen',
-      'Hohe Engagement-Rate',
-      'Mehrfache Sichtbarkeit',
-      'Klick-Tracking',
-    ],
-    badge: 'EXKLUSIV',
-  },
-];
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const positionIcons = {
   popup: Zap,
@@ -67,6 +15,112 @@ const positionIcons = {
 };
 
 export default function Bannerpreise() {
+  // Page content
+  const { data: pageTitle } = useSiteSetting('banner_page_title');
+  const { data: pageSubtitle } = useSiteSetting('banner_page_subtitle');
+  
+  // Popup banner
+  const { data: popupName } = useSiteSetting('banner_popup_name');
+  const { data: popupDescription } = useSiteSetting('banner_popup_description');
+  const { data: popupPriceDay } = useSiteSetting('banner_popup_price_day');
+  const { data: popupPriceWeek } = useSiteSetting('banner_popup_price_week');
+  const { data: popupPriceMonth } = useSiteSetting('banner_popup_price_month');
+  const { data: popupFeaturesRaw } = useSiteSetting('banner_popup_features');
+  
+  // Top banner
+  const { data: topName } = useSiteSetting('banner_top_name');
+  const { data: topDescription } = useSiteSetting('banner_top_description');
+  const { data: topPriceDay } = useSiteSetting('banner_top_price_day');
+  const { data: topPriceWeek } = useSiteSetting('banner_top_price_week');
+  const { data: topPriceMonth } = useSiteSetting('banner_top_price_month');
+  const { data: topFeaturesRaw } = useSiteSetting('banner_top_features');
+  
+  // Grid banner
+  const { data: gridName } = useSiteSetting('banner_grid_name');
+  const { data: gridDescription } = useSiteSetting('banner_grid_description');
+  const { data: gridPriceDay } = useSiteSetting('banner_grid_price_day');
+  const { data: gridPriceWeek } = useSiteSetting('banner_grid_price_week');
+  const { data: gridPriceMonth } = useSiteSetting('banner_grid_price_month');
+  const { data: gridFeaturesRaw } = useSiteSetting('banner_grid_features');
+  
+  // Info section
+  const { data: infoResultsTitle } = useSiteSetting('banner_info_results_title');
+  const { data: infoResultsText } = useSiteSetting('banner_info_results_text');
+  const { data: infoActivationTitle } = useSiteSetting('banner_info_activation_title');
+  const { data: infoActivationText } = useSiteSetting('banner_info_activation_text');
+  
+  // CTA section
+  const { data: ctaTitle } = useSiteSetting('banner_cta_title');
+  const { data: ctaText } = useSiteSetting('banner_cta_text');
+  const { data: ctaButton } = useSiteSetting('banner_cta_button');
+
+  // Parse features JSON
+  const parseFeatures = (raw: string | undefined, fallback: string[]) => {
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  };
+
+  const popupFeatures = parseFeatures(popupFeaturesRaw, [
+    'Erscheint beim Seitenaufruf',
+    'Volle Aufmerksamkeit',
+    'Anpassbare Anzeigerate',
+    'Exklusive Platzierung'
+  ]);
+
+  const topFeatures = parseFeatures(topFeaturesRaw, [
+    'Immer sichtbar',
+    'Hohe Reichweite',
+    'Desktop & Mobile',
+    'Exklusive Platzierung'
+  ]);
+
+  const gridFeatures = parseFeatures(gridFeaturesRaw, [
+    'Natürliche Integration',
+    'Kontextbezogen',
+    'Hohe Klickrate',
+    'Exklusive Platzierung'
+  ]);
+
+  const packages = [
+    {
+      position: 'popup',
+      icon: positionIcons.popup,
+      name: popupName || 'Pop-up Banner',
+      description: popupDescription || 'Maximale Aufmerksamkeit beim Seitenaufruf',
+      priceDay: popupPriceDay || 'CHF 80',
+      priceWeek: popupPriceWeek || 'CHF 504',
+      priceMonth: popupPriceMonth || 'CHF 2\'040',
+      features: popupFeatures,
+      badge: 'EXKLUSIV',
+    },
+    {
+      position: 'top',
+      icon: positionIcons.top,
+      name: topName || 'Top-Banner',
+      description: topDescription || 'Prominent im Kopfbereich jeder Seite',
+      priceDay: topPriceDay || 'CHF 50',
+      priceWeek: topPriceWeek || 'CHF 315',
+      priceMonth: topPriceMonth || 'CHF 1\'275',
+      features: topFeatures,
+      badge: 'EXKLUSIV',
+    },
+    {
+      position: 'grid',
+      icon: positionIcons.grid,
+      name: gridName || 'Grid-Banner',
+      description: gridDescription || 'Integriert zwischen den Suchergebnissen',
+      priceDay: gridPriceDay || 'CHF 30',
+      priceWeek: gridPriceWeek || 'CHF 189',
+      priceMonth: gridPriceMonth || 'CHF 765',
+      features: gridFeatures,
+      badge: 'EXKLUSIV',
+    },
+  ];
+
   return (
     <>
       <SEO
@@ -81,18 +135,18 @@ export default function Bannerpreise() {
           <div className="max-w-6xl mx-auto space-y-12">
             {/* Hero Section */}
             <div className="text-center space-y-4">
-              <h1 className="text-4xl md:text-5xl font-bold">Bannerpreise</h1>
+              <h1 className="text-4xl md:text-5xl font-bold">
+                {pageTitle || 'Werbebanner schalten'}
+              </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Werben Sie effektiv für Ihre Marke mit gut sichtbaren Bannerplatzierungen. 
-                Alle Preise sind in CHF (Schweizer Franken) angegeben und spiegeln 
-                wettbewerbsfähige Marktpreise für leistungsstarke Werbeflächen wider.
+                {pageSubtitle || 'Erreichen Sie tausende potenzielle Kunden mit unseren exklusiven Werbebannern'}
               </p>
             </div>
 
             {/* Banner Packages Grid */}
             <div className="grid md:grid-cols-3 gap-6">
-              {BANNER_PACKAGES.map((pkg) => {
-                const Icon = positionIcons[pkg.position];
+              {packages.map((pkg) => {
+                const Icon = pkg.icon;
                 return (
                   <Card 
                     key={pkg.position} 
@@ -118,18 +172,18 @@ export default function Bannerpreise() {
                       {/* Pricing */}
                       <div className="space-y-2 text-center border-t border-b py-4">
                         <div>
-                          <span className="text-3xl font-bold">CHF {pkg.price_per_day}</span>
+                          <span className="text-3xl font-bold">{pkg.priceDay}</span>
                           <span className="text-muted-foreground">/Tag</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          <div>CHF {pkg.price_per_week}/Woche</div>
-                          <div>CHF {pkg.price_per_month}/Monat</div>
+                          <div>{pkg.priceWeek}/Woche</div>
+                          <div>{pkg.priceMonth}/Monat</div>
                         </div>
                       </div>
 
                       {/* Features */}
                       <ul className="space-y-3">
-                        {pkg.features.map((feature, idx) => (
+                        {pkg.features.map((feature: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2">
                             <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                             <span className="text-sm">{feature}</span>
@@ -155,22 +209,24 @@ export default function Bannerpreise() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Eye className="h-5 w-5 text-primary" />
-                      <h3 className="text-lg font-semibold">Messbare Ergebnisse</h3>
+                      <h3 className="text-lg font-semibold">
+                        {infoResultsTitle || 'Messbare Ergebnisse'}
+                      </h3>
                     </div>
                     <p className="text-muted-foreground">
-                      Alle Bannerplatzierungen beinhalten detailliertes Tracking. 
-                      Sehen Sie genau wie viele Impressionen und Klicks Ihre Anzeige erhält.
+                      {infoResultsText || 'Detaillierte Statistiken zu Impressions und Klicks'}
                     </p>
                   </div>
                   
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Zap className="h-5 w-5 text-primary" />
-                      <h3 className="text-lg font-semibold">Schnelle Aktivierung</h3>
+                      <h3 className="text-lg font-semibold">
+                        {infoActivationTitle || 'Schnelle Aktivierung'}
+                      </h3>
                     </div>
                     <p className="text-muted-foreground">
-                      Nach Ihrer Buchung wird Ihr Banner innerhalb von 24 Stunden aktiviert. 
-                      Kontaktieren Sie uns für weitere Details.
+                      {infoActivationText || 'Ihr Banner ist innerhalb von 24 Stunden live'}
                     </p>
                   </div>
                 </div>
@@ -179,14 +235,15 @@ export default function Bannerpreise() {
 
             {/* CTA Section */}
             <div className="text-center space-y-4 py-8">
-              <h2 className="text-3xl font-bold">Bereit zu starten?</h2>
+              <h2 className="text-3xl font-bold">
+                {ctaTitle || 'Haben Sie Fragen?'}
+              </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Kontaktieren Sie uns noch heute und erreichen Sie tausende potenzielle Kunden 
-                mit einer strategisch platzierten Banneranzeige.
+                {ctaText || 'Kontaktieren Sie uns für eine individuelle Beratung und maßgeschneiderte Angebote.'}
               </p>
               <Button asChild size="lg" className="text-lg px-8">
                 <Link to="/kontakt">
-                  Jetzt Kontakt aufnehmen
+                  {ctaButton || 'Jetzt Kontakt aufnehmen'}
                 </Link>
               </Button>
             </div>

@@ -16,6 +16,13 @@ export const Footer = () => {
   const { data: instagramUrl } = useSiteSetting('footer_instagram_url');
   const { data: twitterUrl } = useSiteSetting('footer_twitter_url');
   const { data: linkedinUrl } = useSiteSetting('footer_linkedin_url');
+  const { data: sectionCantons } = useSiteSetting('footer_section_cantons');
+  const { data: sectionInfo } = useSiteSetting('footer_section_info');
+  const { data: sectionLegal } = useSiteSetting('footer_section_legal');
+  const { data: sectionCta } = useSiteSetting('footer_section_cta');
+  const { data: ctaDescription } = useSiteSetting('footer_cta_description');
+  const { data: linkPrices } = useSiteSetting('footer_link_prices');
+  const { data: linkAdvertising } = useSiteSetting('footer_link_advertising');
   
   const { data: cantons } = useCantons();
 
@@ -34,7 +41,7 @@ export const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Beliebte Kantone */}
           <div>
-            <h3 className="font-semibold mb-4">Beliebte Kantone</h3>
+            <h3 className="font-semibold mb-4">{sectionCantons || 'Beliebte Kantone'}</h3>
             <ul className="space-y-2">
               {topCantons.map((canton: Canton) => (
                 <li key={canton.id}>
@@ -51,16 +58,16 @@ export const Footer = () => {
 
           {/* Informationen */}
           <div>
-            <h3 className="font-semibold mb-4">Informationen</h3>
+            <h3 className="font-semibold mb-4">{sectionInfo || 'Informationen'}</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/preise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Preise & Pakete
+                  {linkPrices || 'Preise & Pakete'}
                 </Link>
               </li>
               <li>
                 <Link to="/bannerpreise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Werbung schalten
+                  {linkAdvertising || 'Werbung schalten'}
                 </Link>
               </li>
               <li>
@@ -73,7 +80,7 @@ export const Footer = () => {
 
           {/* Rechtliches */}
           <div>
-            <h3 className="font-semibold mb-4">Rechtliches</h3>
+            <h3 className="font-semibold mb-4">{sectionLegal || 'Rechtliches'}</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/agb" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -95,9 +102,9 @@ export const Footer = () => {
 
           {/* CTA */}
           <div>
-            <h3 className="font-semibold mb-4">Inserat erstellen</h3>
+            <h3 className="font-semibold mb-4">{sectionCta || 'Inserat erstellen'}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Erstelle jetzt dein kostenloses Inserat und erreiche tausende Nutzer.
+              {ctaDescription || 'Erstelle jetzt dein kostenloses Inserat und erreiche tausende potenzielle Interessenten in der ganzen Schweiz.'}
             </p>
             <Button asChild className="w-full">
               <Link to={ctaLink || '/auth?mode=signup'}>
