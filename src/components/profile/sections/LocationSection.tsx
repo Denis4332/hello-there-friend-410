@@ -119,7 +119,7 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="city">Stadt *</Label>
+          <Label htmlFor="city">Stadt</Label>
           <Button
             type="button"
             variant="outline"

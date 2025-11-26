@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { geocodePlz } from '@/lib/geocoding';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
+import { useToast } from '@/hooks/use-toast';
 import { BasicInfoSection } from './sections/BasicInfoSection';
 import { LocationSection } from './sections/LocationSection';
 import { AboutMeSection } from './sections/AboutMeSection';
@@ -18,7 +19,7 @@ const profileSchema = z.object({
     message: 'Du musst bestätigen, dass du volljährig bist',
   }),
   gender: z.string().optional(),
-  city: z.string().min(2, 'Stadt ist erforderlich'),
+  city: z.string().optional().or(z.literal("")),
   canton: z.string().min(1, 'Kanton ist erforderlich'),
   postal_code: z.string().optional(),
   street_address: z.string().optional(),
@@ -30,7 +31,7 @@ const profileSchema = z.object({
     })
     .optional(),
   languages: z.array(z.string()).min(1, 'Mindestens eine Sprache erforderlich'),
-  category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich'),
+  category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich').max(2, 'Maximal 2 Kategorien erlaubt'),
   // GPS coordinates (automatically geocoded from PLZ)
   lat: z.number().optional(),
   lng: z.number().optional(),
@@ -73,6 +74,7 @@ interface ProfileFormProps {
 export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
   const { data: languages = [] } = useDropdownOptions('languages');
   const { data: genders = [] } = useDropdownOptions('genders');
+  const { toast } = useToast();
 
   const {
     register,
@@ -104,8 +106,14 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     const current = selectedCategories;
     if (current.includes(catId)) {
       setValue('category_ids', current.filter((c) => c !== catId));
-    } else {
+    } else if (current.length < 2) {
       setValue('category_ids', [...current, catId]);
+    } else {
+      toast({
+        title: 'Maximal 2 Kategorien',
+        description: 'Du kannst maximal 2 Kategorien auswählen',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -127,6 +135,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
       <BasicInfoSection
         register={register}
         errors={errors}
+        setValue={setValue}
         genders={genders}
         onGenderChange={(value) => setValue('gender', value)}
       />
