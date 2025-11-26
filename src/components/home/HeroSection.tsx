@@ -58,7 +58,7 @@ export const HeroSection = ({
     const isMobile = window.innerWidth < 768;
     const optimizedImageUrl = getOptimizedImageUrl(heroImageUrl, {
       width: isMobile ? 640 : 1200, // Smaller sizes for faster load
-      quality: isMobile ? 75 : 85,
+      quality: isMobile ? 65 : 70, // Lower quality for better compression
       format: webpSupported ? 'webp' : 'origin'
     });
 
