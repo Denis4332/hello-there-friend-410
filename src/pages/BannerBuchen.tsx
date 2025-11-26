@@ -288,8 +288,8 @@ export default function BannerBuchen() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="day">1 Tag</SelectItem>
-                              <SelectItem value="week">1 Woche (-10%)</SelectItem>
-                              <SelectItem value="month">1 Monat (-15%)</SelectItem>
+              <SelectItem value="week">1 Woche</SelectItem>
+              <SelectItem value="month">1 Monat</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
