@@ -1,4 +1,4 @@
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,11 +8,12 @@ import { ProfileFormData } from '../ProfileForm';
 interface BasicInfoSectionProps {
   register: UseFormRegister<ProfileFormData>;
   errors: FieldErrors<ProfileFormData>;
+  setValue: UseFormSetValue<ProfileFormData>;
   genders: Array<{ value: string; label: string }>;
   onGenderChange: (value: string) => void;
 }
 
-export const BasicInfoSection = ({ register, errors, genders, onGenderChange }: BasicInfoSectionProps) => {
+export const BasicInfoSection = ({ register, errors, setValue, genders, onGenderChange }: BasicInfoSectionProps) => {
   return (
     <>
       <div>
@@ -30,7 +31,7 @@ export const BasicInfoSection = ({ register, errors, genders, onGenderChange }: 
       <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
         <Checkbox
           id="is_adult"
-          {...register('is_adult')}
+          onCheckedChange={(checked) => setValue('is_adult', checked === true)}
         />
         <div className="space-y-1 leading-none">
           <Label htmlFor="is_adult" className="cursor-pointer">

@@ -140,10 +140,12 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
       {/* White Info Bar */}
       <div className="p-4 bg-card flex flex-col gap-3 h-[200px] overflow-hidden flex-shrink-0">
         <div className="flex flex-col gap-2">
-          {profile.profile_categories?.[0]?.categories && (
+          {profile.profile_categories && profile.profile_categories.length > 0 && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Tag className="h-3.5 w-3.5" />
-              <span>{profile.profile_categories[0].categories.name}</span>
+              <span>
+                {profile.profile_categories.slice(0, 2).map(pc => pc.categories.name).join(' • ')}
+              </span>
             </div>
           )}
           <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
