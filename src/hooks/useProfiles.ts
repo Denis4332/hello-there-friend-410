@@ -201,7 +201,21 @@ export const useSearchProfiles = (filters: {
       }
       
       if (filters.categoryId) {
-        query = query.contains('profile_categories', [{ category_id: filters.categoryId }]);
+        // Get profile IDs that have this category
+        const { data: profileIds, error: categoryError } = await supabase
+          .from('profile_categories')
+          .select('profile_id')
+          .eq('category_id', filters.categoryId);
+        
+        if (categoryError) throw categoryError;
+        
+        if (profileIds && profileIds.length > 0) {
+          const ids = profileIds.map(p => p.profile_id);
+          query = query.in('id', ids);
+        } else {
+          // No profiles with this category - return empty array
+          return [];
+        }
       }
       
       if (filters.keyword) {
