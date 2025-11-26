@@ -43,12 +43,12 @@ export const AdminHeader = () => {
   return (
     <header className="bg-card border-b">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
-          <div className="flex items-center gap-6">
-            <Link to="/admin" className="text-lg font-bold text-primary">
+        <div className="flex items-center justify-between h-14 gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link to="/admin" className="text-lg font-bold text-primary shrink-0">
               ESCORIA Admin
             </Link>
-            <nav className="hidden md:flex items-center gap-4 text-sm">
+            <nav className="hidden lg:flex items-center gap-2 text-sm overflow-x-auto max-w-[calc(100vw-400px)]">
               <Link 
                 to="/admin" 
                 className={cn(
