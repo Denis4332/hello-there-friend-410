@@ -82,7 +82,7 @@ export const Header = () => {
                 </Button>
               </Link>
             )}
-            {user && role === 'user' && (
+            {user && (role === 'user' || role === null) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Mein Account Menü öffnen">

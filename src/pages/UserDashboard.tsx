@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Download, Lock, Heart } from 'lucide-react';
+import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Download, Lock, Heart, Plus } from 'lucide-react';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const UserDashboard = () => {
@@ -186,7 +186,23 @@ const UserDashboard = () => {
   }
 
   if (!profile) {
-    return null;
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <h1 className="text-2xl font-bold mb-4">Noch kein Inserat</h1>
+            <p className="text-muted-foreground mb-6">
+              Du hast noch kein Inserat erstellt. Starte jetzt und erreiche tausende potenzielle Kunden!
+            </p>
+            <Button onClick={() => navigate('/profil/erstellen')} size="lg">
+              <Plus className="h-4 w-4 mr-2" />
+              Inserat aufgeben
+            </Button>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (

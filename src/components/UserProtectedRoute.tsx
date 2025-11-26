@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -7,6 +8,21 @@ interface UserProtectedRouteProps {
 
 export const UserProtectedRoute = ({ children }: UserProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        setTimedOut(true);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  if (timedOut && loading) {
+    return <Navigate to="/auth" replace />;
+  }
 
   if (loading) {
     return (
