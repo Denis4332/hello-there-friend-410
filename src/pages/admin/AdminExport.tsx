@@ -28,6 +28,13 @@ const AdminExport = () => {
     { name: 'verification_submissions', label: 'Verifizierungen', icon: Database },
     { name: 'site_settings', label: 'Einstellungen', icon: Database },
     { name: 'dropdown_options', label: 'Dropdown-Optionen', icon: Database },
+    { name: 'user_favorites', label: 'Favoriten', icon: Database },
+    { name: 'profile_views', label: 'Profilaufrufe', icon: Database },
+    { name: 'profile_moderation_notes', label: 'Moderations-Notizen', icon: Database },
+    { name: 'analytics_events', label: 'Analytics Events', icon: Database },
+    { name: 'auth_rate_limits', label: 'Auth Rate Limits', icon: Database },
+    { name: 'error_logs', label: 'Fehler-Logs', icon: Database },
+    { name: 'search_queries', label: 'Suchanfragen', icon: Database },
   ];
 
   const exportTable = async (tableName: string, format: 'csv' | 'json') => {

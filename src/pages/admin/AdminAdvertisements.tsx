@@ -124,9 +124,9 @@ export default function AdminAdvertisements() {
   };
 
   const positionLabels = {
-    popup: 'Pop-up (CHF 50/Tag)',
-    top: 'Top-Banner (CHF 30/Tag)',
-    grid: 'Grid-Banner (CHF 20/Tag)',
+    popup: 'Pop-up (CHF 80/Tag)',
+    top: 'Top-Banner (CHF 50/Tag)',
+    grid: 'Grid-Banner (CHF 30/Tag)',
   };
 
   return (
@@ -196,9 +196,9 @@ export default function AdminAdvertisements() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="popup">Pop-up (CHF 50/Tag)</SelectItem>
-                      <SelectItem value="top">Top-Banner (CHF 30/Tag)</SelectItem>
-                      <SelectItem value="grid">Grid-Banner (CHF 20/Tag)</SelectItem>
+                      <SelectItem value="popup">Pop-up (CHF 80/Tag)</SelectItem>
+                      <SelectItem value="top">Top-Banner (CHF 50/Tag)</SelectItem>
+                      <SelectItem value="grid">Grid-Banner (CHF 30/Tag)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
