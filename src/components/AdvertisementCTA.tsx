@@ -13,7 +13,7 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
   const isTopPosition = position === 'top';
   
   return (
-    <Card className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${className}`}>
+    <Card className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${isTopPosition ? '' : 'h-[625px]'} ${className}`}>
       <div 
         className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background"
         style={{
@@ -24,7 +24,7 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
         }}
       />
       
-      <div className={`relative text-center space-y-3 ${isTopPosition ? 'p-12' : 'p-6'}`}>
+      <div className={`relative text-center space-y-3 ${isTopPosition ? 'p-12' : 'p-6 flex flex-col justify-center h-full'}`}>
         <Badge variant="secondary" className="mb-2">
           <TrendingUp className="w-3 h-3 mr-1" />
           {isTopPosition ? 'Premium-Position verfügbar' : 'Werbeplatz verfügbar'}

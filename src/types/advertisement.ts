@@ -29,3 +29,25 @@ export interface BannerPackage {
   features: string[];
   badge?: string;
 }
+
+// Banner size specifications
+export const BANNER_SIZES = {
+  grid: {
+    width: 430,
+    height: 625,
+    aspectRatio: '2/3',
+    description: 'Hochformat (2:3) - gleiche Größe wie Profilkarten',
+  },
+  top: {
+    width: 1200,
+    height: 300,
+    aspectRatio: '4/1',
+    description: 'Querformat (4:1) - breites Header-Banner',
+  },
+  popup: {
+    width: 800,
+    height: 600,
+    aspectRatio: '4/3',
+    description: 'Medium-Format (4:3) - Modal-Popup',
+  },
+} as const;
