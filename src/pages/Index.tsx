@@ -49,8 +49,8 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title={siteTitle || "Verifizierte Anbieter in der Schweiz"}
-        description={metaDescription || "Finde verifizierte Begleitservice-Anbieter in deiner Nähe. Escort Services in Zürich, Bern, Basel und weiteren Schweizer Städten."}
+        title={siteTitle || "Verifizierte Profile in der Schweiz"}
+        description={metaDescription || "Finde verifizierte Profile in deiner Nähe. Anbieter in Zürich, Bern, Basel und weiteren Schweizer Städten."}
         url="https://escoria.ch"
       />
       <Header />
