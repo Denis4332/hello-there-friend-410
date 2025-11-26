@@ -1,6 +1,6 @@
 import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect } from 'react';
 import { AdvertisementCTA } from './AdvertisementCTA';
 
 interface BannerDisplayProps {
@@ -10,37 +10,6 @@ interface BannerDisplayProps {
 
 export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) => {
   const { data: ads } = useAdvertisements(position);
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
-
-  // Weighted random selection based on priority
-  const getWeightedRandomAd = useCallback((ads: Advertisement[]) => {
-    const totalWeight = ads.reduce((sum, ad) => sum + (ad.priority || 1), 0);
-    let random = Math.random() * totalWeight;
-    
-    for (let i = 0; i < ads.length; i++) {
-      random -= (ads[i].priority || 1);
-      if (random <= 0) return i;
-    }
-    return 0;
-  }, []);
-
-  // Initial weighted selection
-  useEffect(() => {
-    if (ads && ads.length > 0) {
-      setCurrentAdIndex(getWeightedRandomAd(ads));
-    }
-  }, [ads, getWeightedRandomAd]);
-
-  // Auto-rotation every 30 seconds for fair share
-  useEffect(() => {
-    if (!ads || ads.length <= 1) return;
-    
-    const interval = setInterval(() => {
-      setCurrentAdIndex(getWeightedRandomAd(ads));
-    }, 30000);
-    
-    return () => clearInterval(interval);
-  }, [ads, getWeightedRandomAd]);
 
   const handleClick = async (ad: Advertisement) => {
     try {
@@ -63,7 +32,7 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
   useEffect(() => {
     if (!ads || ads.length === 0) return;
     
-    const displayedAd = ads[currentAdIndex] || ads[0];
+    const displayedAd = ads[0];
     
     const trackImpression = async (ad: Advertisement) => {
       try {
@@ -83,7 +52,7 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
     };
 
     trackImpression(displayedAd);
-  }, [ads, currentAdIndex]);
+  }, [ads]);
 
   if (!ads || ads.length === 0) {
     return (
@@ -93,8 +62,8 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
     );
   }
 
-  // Show rotating ad for fair share
-  const ad = ads[currentAdIndex] || ads[0];
+  // Show only the first ad (exclusive placement)
+  const ad = ads[0];
 
   return (
     <div className={`${className} flex justify-center`}>

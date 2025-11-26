@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           active: boolean | null
           clicks: number | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string | null
           end_date: string | null
           id: string
@@ -33,6 +35,7 @@ export type Database = {
           position: string
           price_per_day: number | null
           priority: number | null
+          requested_duration: string | null
           start_date: string | null
           stripe_payment_id: string | null
           title: string
@@ -41,6 +44,8 @@ export type Database = {
         Insert: {
           active?: boolean | null
           clicks?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           end_date?: string | null
           id?: string
@@ -56,6 +61,7 @@ export type Database = {
           position: string
           price_per_day?: number | null
           priority?: number | null
+          requested_duration?: string | null
           start_date?: string | null
           stripe_payment_id?: string | null
           title: string
@@ -64,6 +70,8 @@ export type Database = {
         Update: {
           active?: boolean | null
           clicks?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           end_date?: string | null
           id?: string
@@ -79,6 +87,7 @@ export type Database = {
           position?: string
           price_per_day?: number | null
           priority?: number | null
+          requested_duration?: string | null
           start_date?: string | null
           stripe_payment_id?: string | null
           title?: string

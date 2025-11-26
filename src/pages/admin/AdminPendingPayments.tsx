@@ -215,6 +215,30 @@ export default function AdminPendingPayments() {
                       <p className="font-medium">CHF {banner.price_per_day}</p>
                     </div>
                     <div>
+                      <span className="text-muted-foreground">Gewünschte Laufzeit:</span>
+                      <p className="font-medium">
+                        {banner.requested_duration === 'day' && '1 Tag'}
+                        {banner.requested_duration === 'week' && '1 Woche'}
+                        {banner.requested_duration === 'month' && '1 Monat'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">E-Mail:</span>
+                      <p className="font-medium">
+                        <a href={`mailto:${banner.contact_email}`} className="text-primary hover:underline">
+                          {banner.contact_email}
+                        </a>
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Telefon:</span>
+                      <p className="font-medium">
+                        <a href={`tel:${banner.contact_phone}`} className="text-primary hover:underline">
+                          {banner.contact_phone}
+                        </a>
+                      </p>
+                    </div>
+                    <div>
                       <span className="text-muted-foreground">Referenz:</span>
                       <p className="font-mono text-xs">{banner.payment_reference || '-'}</p>
                     </div>

@@ -22,29 +22,32 @@ const BANNER_PACKAGES: BannerPackage[] = [
   {
     position: 'popup',
     name: 'Pop-up Banner',
-    price_per_day: 50,
-    price_per_week: 315,
-    price_per_month: 1275,
+    price_per_day: 80,
+    price_per_week: 504,
+    price_per_month: 2040,
     description: 'Maximale Aufmerksamkeit garantiert!',
     features: [],
+    badge: 'EXKLUSIV',
   },
   {
     position: 'top',
     name: 'Top-Banner',
-    price_per_day: 30,
-    price_per_week: 189,
-    price_per_month: 765,
+    price_per_day: 50,
+    price_per_week: 315,
+    price_per_month: 1275,
     description: 'Erste Position auf der Startseite.',
     features: [],
+    badge: 'EXKLUSIV',
   },
   {
     position: 'grid',
     name: 'Grid-Banner',
-    price_per_day: 20,
-    price_per_week: 126,
-    price_per_month: 510,
+    price_per_day: 30,
+    price_per_week: 189,
+    price_per_month: 765,
     description: 'Natürliche Integration in die Suchergebnisse.',
     features: [],
+    badge: 'EXKLUSIV',
   },
 ];
 
@@ -53,6 +56,8 @@ const formSchema = z.object({
   duration: z.enum(['day', 'week', 'month'], { required_error: 'Bitte wählen Sie eine Laufzeit' }),
   title: z.string().min(3, 'Titel muss mindestens 3 Zeichen lang sein').max(100),
   link_url: z.string().url('Bitte geben Sie eine gültige URL ein'),
+  contact_email: z.string().email('Bitte geben Sie eine gültige E-Mail-Adresse ein'),
+  contact_phone: z.string().min(10, 'Bitte geben Sie eine gültige Telefonnummer ein'),
   payment_method: z.enum(['bank', 'twint', 'later'], { required_error: 'Bitte wählen Sie eine Zahlungsmethode' }),
   image: z.instanceof(File, { message: 'Bitte laden Sie ein Bild hoch' }),
 });
@@ -148,22 +153,6 @@ export default function BannerBuchen() {
         .from('advertisements')
         .getPublicUrl(filePath);
 
-      // Calculate dates
-      const startDate = new Date();
-      const endDate = new Date();
-      
-      switch (data.duration) {
-        case 'day':
-          endDate.setDate(endDate.getDate() + 1);
-          break;
-        case 'week':
-          endDate.setDate(endDate.getDate() + 7);
-          break;
-        case 'month':
-          endDate.setMonth(endDate.getMonth() + 1);
-          break;
-      }
-
       // Create advertisement entry
       const { error: insertError } = await supabase
         .from('advertisements')
@@ -172,8 +161,11 @@ export default function BannerBuchen() {
           image_url: publicUrl,
           link_url: data.link_url,
           position: data.position,
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString(),
+          start_date: null,
+          end_date: null,
+          requested_duration: data.duration,
+          contact_email: data.contact_email,
+          contact_phone: data.contact_phone,
           price_per_day: BANNER_PACKAGES.find(p => p.position === data.position)?.price_per_day,
           payment_status: 'pending',
           payment_method: data.payment_method,
@@ -184,22 +176,9 @@ export default function BannerBuchen() {
       if (insertError) throw insertError;
 
       toast({
-        title: 'Banner erfolgreich gebucht!',
-        description: 'Ihr Banner wartet auf Admin-Genehmigung. Sie erhalten eine Bestätigung per E-Mail.',
+        title: 'Vielen Dank für Ihre Anfrage!',
+        description: 'Wir melden uns innerhalb von 24 Stunden bei Ihnen.',
       });
-
-      // Show payment instructions based on method
-      if (data.payment_method === 'bank') {
-        toast({
-          title: 'Zahlungsinformationen',
-          description: 'Bitte überweisen Sie CHF ' + calculatePrice() + ' auf unser Bankkonto. Details wurden per E-Mail versendet.',
-        });
-      } else if (data.payment_method === 'twint') {
-        toast({
-          title: 'TWINT Zahlung',
-          description: 'Bitte zahlen Sie CHF ' + calculatePrice() + ' via TWINT. Details wurden per E-Mail versendet.',
-        });
-      }
 
       // Redirect after 3 seconds
       setTimeout(() => {
@@ -375,6 +354,43 @@ export default function BannerBuchen() {
                   </CardContent>
                 </Card>
 
+                {/* Contact Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>3.5. Ihre Kontaktdaten</CardTitle>
+                    <CardDescription>Damit wir Sie bezüglich der Buchung kontaktieren können</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="contact_email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>E-Mail-Adresse</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="ihre@email.ch" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="contact_phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefonnummer</FormLabel>
+                          <FormControl>
+                            <Input type="tel" placeholder="+41 79 123 45 67" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
                 {/* Image Upload */}
                 <Card>
                   <CardHeader>
@@ -515,7 +531,7 @@ export default function BannerBuchen() {
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Wird gebucht...' : 'Jetzt verbindlich buchen'}
+                  {isSubmitting ? 'Wird gesendet...' : 'Jetzt anfragen'}
                 </Button>
               </form>
             </Form>
