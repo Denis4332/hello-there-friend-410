@@ -97,15 +97,15 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
   const ad = ads[currentAdIndex] || ads[0];
 
   return (
-    <div className={className}>
+    <div className={`${className} flex justify-center`}>
       <div
         onClick={() => handleClick(ad)}
-        className="cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+        className="cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow w-[300px] max-w-[300px]"
       >
         <img
           src={ad.image_url}
           alt={ad.title}
-          className="w-full h-auto object-cover"
+          className="w-full h-auto max-h-[250px] object-contain"
         />
       </div>
     </div>
