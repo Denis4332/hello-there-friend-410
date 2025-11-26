@@ -39,6 +39,15 @@ verify_jwt = true
 [functions.export-user-data]
 verify_jwt = true
 
+[functions.export-migrations]
+verify_jwt = true
+
+[functions.export-edge-functions]
+verify_jwt = true
+
+[functions.export-storage-urls]
+verify_jwt = true
+
 # Admin account creation disabled after initial setup for security
 # [functions.create-admin-account]
 # verify_jwt = false

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useExportCSV } from '@/hooks/useExportCSV';
 import { useExportJSON } from '@/hooks/useExportJSON';
-import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode } from 'lucide-react';
+import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -189,6 +189,120 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
     }
   };
 
+  const exportCompleteMigrations = async () => {
+    setLoading('complete-migrations');
+    toast.info('Exportiere vollständiges SQL-Schema...');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Nicht angemeldet');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('export-migrations', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const blob = new Blob([response.data], { type: 'application/sql' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `escoria_complete_schema_${new Date().toISOString().split('T')[0]}.sql`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success('Komplettes SQL-Schema erfolgreich exportiert!');
+    } catch (error: any) {
+      toast.error(`Fehler beim SQL-Schema-Export: ${error.message}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const exportEdgeFunctions = async () => {
+    setLoading('edge-functions');
+    toast.info('Exportiere Edge Functions...');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Nicht angemeldet');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('export-edge-functions', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `escoria_edge_functions_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`${response.data.total_functions} Edge Functions erfolgreich exportiert!`);
+    } catch (error: any) {
+      toast.error(`Fehler beim Edge Functions-Export: ${error.message}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const exportStorageUrls = async () => {
+    setLoading('storage-urls');
+    toast.info('Generiere Download-URLs für alle Dateien...');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Nicht angemeldet');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('export-storage-urls', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `escoria_storage_download_urls_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Download-URLs für ${response.data.total_files} Dateien generiert! (Gültig für 7 Tage)`);
+    } catch (error: any) {
+      toast.error(`Fehler beim Generieren der Download-URLs: ${error.message}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
@@ -201,17 +315,65 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
             </p>
           </div>
 
+          {/* Complete Migration Package */}
+          <Card className="mb-6 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Rocket className="h-6 w-6 text-primary" />
+                🚀 Komplette Supabase-Migration
+              </CardTitle>
+              <CardDescription>
+                Exportiere ALLES für eine vollständige Migration zu eigenem Supabase-Projekt
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <Button 
+                  onClick={exportCompleteMigrations}
+                  disabled={loading === 'complete-migrations'}
+                  size="lg"
+                  className="gap-2 h-auto py-4 flex-col"
+                >
+                  <FileCode className="h-5 w-5" />
+                  <span className="text-sm">Komplettes SQL-Schema</span>
+                  <span className="text-xs opacity-70">88+ Migrations kombiniert</span>
+                </Button>
+                <Button 
+                  onClick={exportEdgeFunctions}
+                  disabled={loading === 'edge-functions'}
+                  size="lg"
+                  className="gap-2 h-auto py-4 flex-col"
+                >
+                  <Code className="h-5 w-5" />
+                  <span className="text-sm">Edge Functions Code</span>
+                  <span className="text-xs opacity-70">14 Backend Functions</span>
+                </Button>
+                <Button 
+                  onClick={exportStorageUrls}
+                  disabled={loading === 'storage-urls'}
+                  size="lg"
+                  className="gap-2 h-auto py-4 flex-col"
+                >
+                  <ImageIcon className="h-5 w-5" />
+                  <span className="text-sm">Storage Download-URLs</span>
+                  <span className="text-xs opacity-70">7 Tage gültig</span>
+                </Button>
+                <Button 
+                  onClick={exportAllData}
+                  disabled={loading === 'all-backup'}
+                  size="lg"
+                  className="gap-2 h-auto py-4 flex-col"
+                >
+                  <Database className="h-5 w-5" />
+                  <span className="text-sm">Alle Daten (JSON)</span>
+                  <span className="text-xs opacity-70">{tables.length} Tabellen</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Quick Actions */}
           <div className="flex flex-wrap gap-2 mb-6">
-            <Button 
-              onClick={exportAllData}
-              disabled={loading === 'all-backup'}
-              size="lg"
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              {loading === 'all-backup' ? 'Wird exportiert...' : 'Full Backup (JSON)'}
-            </Button>
             <Button 
               onClick={exportStorage}
               disabled={loading === 'storage-export'}
@@ -230,7 +392,7 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
               className="gap-2"
             >
               <FileCode className="h-4 w-4" />
-              {loading === 'schema-export' ? 'Wird exportiert...' : 'Schema Export (SQL)'}
+              {loading === 'schema-export' ? 'Wird exportiert...' : 'Schema Referenz (SQL)'}
             </Button>
           </div>
 
@@ -280,17 +442,33 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
           <div className="mt-8 p-6 bg-card rounded-lg border">
             <h3 className="font-semibold mb-3 text-lg">📦 Export-Optionen Übersicht</h3>
             <div className="space-y-3 text-sm">
+              <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <strong className="text-primary flex items-center gap-2">
+                  <Rocket className="h-4 w-4" />
+                  Komplette Supabase-Migration:
+                </strong>
+                <p className="text-muted-foreground mt-1">
+                  Exportiert ALLES für vollständige Unabhängigkeit: SQL-Schema (88+ Migrations kombiniert), 
+                  14 Edge Functions mit Code, Download-URLs für alle Storage-Dateien (7 Tage gültig), 
+                  und alle {tables.length} Tabellen als JSON. Nach dem Export kannst du komplett zu eigenem 
+                  Supabase-Projekt wechseln - 100% unabhängig von Lovable Cloud.
+                </p>
+              </div>
               <div>
-                <strong className="text-primary">Full Backup (JSON):</strong>
+                <strong className="text-primary">Komplettes SQL-Schema:</strong>
+                <p className="text-muted-foreground">Alle 88+ Migration-Files kombiniert in eine SQL-Datei. Enthält CREATE TABLE, RLS Policies, Triggers, Functions, Storage Buckets. Einfach im Supabase SQL-Editor ausführen.</p>
+              </div>
+              <div>
+                <strong className="text-primary">Edge Functions Code:</strong>
+                <p className="text-muted-foreground">Alle 14 Backend-Functions mit vollständigem TypeScript-Code als JSON. Inkl. Deployment-Anleitung für Supabase CLI.</p>
+              </div>
+              <div>
+                <strong className="text-primary">Storage Download-URLs:</strong>
+                <p className="text-muted-foreground">Signierte URLs (7 Tage gültig) für alle Dateien aus allen Buckets. Download mit Browser, wget, oder Skript möglich.</p>
+              </div>
+              <div>
+                <strong className="text-primary">Alle Daten (JSON):</strong>
                 <p className="text-muted-foreground">Alle {tables.length} Tabellen in einer Datei. Ideal für komplettes Backup.</p>
-              </div>
-              <div>
-                <strong className="text-primary">Storage Index (JSON):</strong>
-                <p className="text-muted-foreground">Liste aller Dateien in allen Storage Buckets (profile-photos, site-assets, advertisements, verification-photos). Für programmatischen Download siehe MIGRATION.md</p>
-              </div>
-              <div>
-                <strong className="text-primary">Schema Export (SQL):</strong>
-                <p className="text-muted-foreground">Referenz-Datei mit Hinweisen zu Datenbank-Struktur, Migrations und Self-Hosting Setup.</p>
               </div>
               <div className="pt-2 border-t">
                 <strong>💡 Hinweise:</strong>
@@ -298,6 +476,7 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                   <li>• CSV-Exporte sind gut für Excel/Tabellenprogramme</li>
                   <li>• JSON-Exporte enthalten die vollständige Datenstruktur</li>
                   <li>• Exportdateien werden mit aktuellem Datum benannt</li>
+                  <li>• Storage-URLs sind 7 Tage gültig, danach neu generieren</li>
                   <li>• Für Self-Hosting siehe <strong>MIGRATION.md</strong> im Projekt-Root</li>
                 </ul>
               </div>
