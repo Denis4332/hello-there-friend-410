@@ -31,10 +31,10 @@ Deno.serve(async (req) => {
     console.log(`Recording auth attempt for email: ${email}, type: ${type}, success: ${success}, ip: ${anonymizedIP}`);
 
     const { error } = await supabase.rpc('record_auth_attempt_with_ip', {
+      _attempt_type: type,
       _email: email.toLowerCase().trim(),
-      _type: type,
-      _success: success,
-      _ip_address: anonymizedIP
+      _ip_address: anonymizedIP,
+      _success: success
     });
 
     if (error) {
