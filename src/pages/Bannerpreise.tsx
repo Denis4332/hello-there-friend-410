@@ -12,9 +12,9 @@ const BANNER_PACKAGES: BannerPackage[] = [
   {
     position: 'popup',
     name: 'Pop-up Banner',
-    price_per_day: 50,
-    price_per_week: 315, // -10%
-    price_per_month: 1275, // -15%
+    price_per_day: 80,
+    price_per_week: 504, // -10%
+    price_per_month: 2040, // -15%
     description: 'Maximale Aufmerksamkeit garantiert! Ihr Banner erscheint als Vollbild-Overlay und kann nicht übersehen werden.',
     features: [
       'Vollbild-Anzeige',
@@ -24,14 +24,14 @@ const BANNER_PACKAGES: BannerPackage[] = [
       'Mobile-optimiert',
       'Klick-Tracking inklusive',
     ],
-    badge: 'Höchste Aufmerksamkeit',
+    badge: 'EXKLUSIV',
   },
   {
     position: 'top',
     name: 'Top-Banner',
-    price_per_day: 30,
-    price_per_week: 189, // -10%
-    price_per_month: 765, // -15%
+    price_per_day: 50,
+    price_per_week: 315, // -10%
+    price_per_month: 1275, // -15%
     description: 'Erste Position auf der Startseite. Sofortige Sichtbarkeit für jeden Besucher.',
     features: [
       'Top-Position Startseite',
@@ -40,13 +40,14 @@ const BANNER_PACKAGES: BannerPackage[] = [
       'Hohe Impressions',
       'Klick-Tracking',
     ],
+    badge: 'EXKLUSIV',
   },
   {
     position: 'grid',
     name: 'Grid-Banner',
-    price_per_day: 20,
-    price_per_week: 126, // -10%
-    price_per_month: 510, // -15%
+    price_per_day: 30,
+    price_per_week: 189, // -10%
+    price_per_month: 765, // -15%
     description: 'Natürliche Integration in die Suchergebnisse. Erscheint nach jedem 8. Profil für organische Reichweite.',
     features: [
       'Organische Platzierung',
@@ -55,6 +56,7 @@ const BANNER_PACKAGES: BannerPackage[] = [
       'Mehrfache Sichtbarkeit',
       'Klick-Tracking',
     ],
+    badge: 'EXKLUSIV',
   },
 ];
 
