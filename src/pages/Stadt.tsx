@@ -59,7 +59,7 @@ const Stadt = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title={`Escort ${city.name} - Verifizierte Profile & Agenturen`}
+        title={`${city.name} - Verifizierte Profile & Agenturen`}
         description={city.intro_text || `Finde verifizierte Profile in ${city.name}`}
         url={`https://escoria.ch/stadt/${slug}`}
       />

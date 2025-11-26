@@ -186,6 +186,15 @@ export const AdminHeader = () => {
                   </Badge>
                 )}
               </Link>
+              <Link 
+                to="/admin/export" 
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/admin/export") && "text-primary font-semibold border-b-2 border-primary pb-1"
+                )}
+              >
+                Export
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">
