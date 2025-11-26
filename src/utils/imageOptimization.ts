@@ -34,8 +34,8 @@ export const createPlaceholder = (width: number = 400, height: number = 500): st
 };
 
 /**
- * Get optimized Supabase Storage URL with transformation parameters
- * Note: Supabase Storage supports image transformations
+ * Get optimized image URL with transformation parameters
+ * Handles both Supabase Storage and external URLs (e.g., Unsplash)
  * @param baseUrl - Original image URL
  * @param options - Transformation options
  * @returns Optimized image URL
@@ -51,16 +51,35 @@ export const getOptimizedImageUrl = (
 ): string => {
   if (!options) return baseUrl;
 
-  // Supabase Storage supports URL parameters for transformations
-  const params = new URLSearchParams();
-  
-  if (options.width) params.append('width', options.width.toString());
-  if (options.height) params.append('height', options.height.toString());
-  if (options.quality) params.append('quality', options.quality.toString());
-  if (options.format) params.append('format', options.format);
-
-  const queryString = params.toString();
-  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  try {
+    const url = new URL(baseUrl);
+    
+    // Handle Unsplash URLs specifically
+    if (url.hostname.includes('unsplash.com')) {
+      // Modify existing Unsplash parameters for better compression
+      if (options.quality) {
+        url.searchParams.set('q', Math.min(options.quality, 70).toString());
+      }
+      if (options.width) {
+        url.searchParams.set('w', options.width.toString());
+      }
+      if (options.format === 'webp') {
+        url.searchParams.set('fm', 'webp');
+      }
+      return url.toString();
+    }
+    
+    // Handle Supabase Storage and other URLs
+    if (options.width) url.searchParams.set('width', options.width.toString());
+    if (options.height) url.searchParams.set('height', options.height.toString());
+    if (options.quality) url.searchParams.set('quality', options.quality.toString());
+    if (options.format) url.searchParams.set('format', options.format);
+    
+    return url.toString();
+  } catch (e) {
+    // Fallback for invalid URLs
+    return baseUrl;
+  }
 };
 
 /**
