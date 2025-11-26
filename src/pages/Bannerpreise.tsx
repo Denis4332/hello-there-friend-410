@@ -122,8 +122,8 @@ export default function Bannerpreise() {
                           <span className="text-muted-foreground">/Tag</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          <div>CHF {pkg.price_per_week}/Woche (-10%)</div>
-                          <div>CHF {pkg.price_per_month}/Monat (-15%)</div>
+                          <div>CHF {pkg.price_per_week}/Woche</div>
+                          <div>CHF {pkg.price_per_month}/Monat</div>
                         </div>
                       </div>
 
