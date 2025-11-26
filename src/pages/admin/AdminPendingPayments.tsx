@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AdminHeader } from '@/components/layout/AdminHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -168,11 +169,13 @@ export default function AdminPendingPayments() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Ausstehende Zahlungen</h1>
-        <p className="text-muted-foreground">Verwalte ausstehende Banner- und Profil-Zahlungen</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <AdminHeader />
+      <main className="container mx-auto p-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Ausstehende Zahlungen</h1>
+          <p className="text-muted-foreground">Verwalte ausstehende Banner- und Profil-Zahlungen</p>
+        </div>
 
       <Tabs defaultValue="banners" className="space-y-4">
         <TabsList>
@@ -369,6 +372,7 @@ export default function AdminPendingPayments() {
           )}
         </TabsContent>
       </Tabs>
+      </main>
     </div>
   );
 }

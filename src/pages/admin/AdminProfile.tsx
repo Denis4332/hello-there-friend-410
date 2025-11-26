@@ -18,6 +18,8 @@ const AdminProfile = () => {
   const [dialogNote, setDialogNote] = useState('');
   const [dialogListingType, setDialogListingType] = useState('');
   const [dialogExpiryDate, setDialogExpiryDate] = useState('');
+  const [freeListingType, setFreeListingType] = useState('basic');
+  const [freeDuration, setFreeDuration] = useState('30');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -139,6 +141,58 @@ const AdminProfile = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       setSelectedProfile(null);
       setDialogNote('');
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: 'Fehler', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    }
+  });
+
+  const activateFreeMutation = useMutation({
+    mutationFn: async (data: { 
+      profileId: string; 
+      listingType: string; 
+      durationDays: number | null;
+    }) => {
+      const updates: any = {
+        status: 'active',
+        payment_status: 'free',
+        listing_type: data.listingType,
+      };
+      
+      if (data.durationDays) {
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + data.durationDays);
+        
+        if (data.listingType === 'premium') {
+          updates.premium_until = expiryDate.toISOString();
+          updates.top_ad_until = null;
+        } else if (data.listingType === 'top') {
+          updates.top_ad_until = expiryDate.toISOString();
+          updates.premium_until = null;
+        }
+      } else {
+        updates.premium_until = null;
+        updates.top_ad_until = null;
+      }
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', data.profileId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ 
+        title: '✅ Gratis aktiviert!',
+        description: 'Profil wurde kostenlos freigeschaltet.'
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      setSelectedProfile(null);
     },
     onError: (error: any) => {
       toast({ 
@@ -419,11 +473,70 @@ const AdminProfile = () => {
                                         </p>
                                       </div>
                                     )}
-                                  </div>
-                                </div>
-                                
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">Moderator-Notiz</label>
+                                   </div>
+                                 </div>
+                                 
+                                 <div className="border-t pt-4 mt-4 bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
+                                   <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
+                                     🎁 Gratis Aktivierung (Schnell-Aktion)
+                                   </h3>
+                                   
+                                   <div className="grid grid-cols-2 gap-4 mb-4">
+                                     <div>
+                                       <label className="block text-sm font-medium mb-1">Inserat-Typ</label>
+                                       <select 
+                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                         value={freeListingType}
+                                         onChange={(e) => setFreeListingType(e.target.value)}
+                                       >
+                                         <option value="basic">Basic</option>
+                                         <option value="premium">Premium</option>
+                                         <option value="top">TOP AD</option>
+                                       </select>
+                                     </div>
+                                     
+                                     <div>
+                                       <label className="block text-sm font-medium mb-1">Laufzeit</label>
+                                       <select 
+                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                         value={freeDuration}
+                                         onChange={(e) => setFreeDuration(e.target.value)}
+                                       >
+                                         <option value="7">7 Tage</option>
+                                         <option value="30">30 Tage</option>
+                                         <option value="90">90 Tage</option>
+                                         <option value="unlimited">Unbegrenzt</option>
+                                       </select>
+                                     </div>
+                                   </div>
+                                   
+                                   <Button 
+                                     className="w-full bg-green-600 hover:bg-green-700"
+                                     onClick={() => {
+                                       if (!selectedProfile) return;
+                                       activateFreeMutation.mutate({
+                                         profileId: selectedProfile.id,
+                                         listingType: freeListingType,
+                                         durationDays: freeDuration === 'unlimited' ? null : parseInt(freeDuration),
+                                       });
+                                     }}
+                                     disabled={
+                                       activateFreeMutation.isPending ||
+                                       (!selectedProfile?.photos || selectedProfile.photos.length === 0)
+                                     }
+                                   >
+                                     {activateFreeMutation.isPending ? 'Aktiviere...' : '🎁 Gratis freischalten'}
+                                   </Button>
+                                   
+                                   {(!selectedProfile?.photos || selectedProfile.photos.length === 0) && (
+                                     <p className="text-xs text-destructive mt-2">
+                                       ⚠️ Kann nicht aktiviert werden - Fotos fehlen!
+                                     </p>
+                                   )}
+                                 </div>
+                                 
+                                 <div>
+                                   <label className="block text-sm font-medium mb-1">Moderator-Notiz</label>
                                   <Textarea 
                                     rows={3} 
                                     placeholder="Interne Notiz..." 
