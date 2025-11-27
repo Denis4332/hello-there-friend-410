@@ -129,7 +129,6 @@ const ProfileEdit = () => {
         .from('profiles')
         .update({
           display_name: data.display_name,
-          age: data.age,
           is_adult: data.is_adult,
           gender: data.gender,
           city: data.city,
@@ -272,7 +271,6 @@ const ProfileEdit = () => {
 
   const defaultValues: ProfileFormData = {
     display_name: profile.display_name,
-    age: profile.age || 18,
     is_adult: true,
     gender: profile.gender,
     city: profile.city,
