@@ -61,7 +61,6 @@
 ### 2.1 Profil-Erstellung (Multi-Step)
 - [ ] Step 1: Basis-Infos eingeben
   - [ ] Display Name (Pflicht)
-  - [ ] Alter (Pflicht, 18+)
   - [ ] Geschlecht auswählen
   - [ ] Sprachen auswählen
   - [ ] Über mich Text

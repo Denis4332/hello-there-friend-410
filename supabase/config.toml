@@ -10,7 +10,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.track-ad-event]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-subscription-expiry]
 verify_jwt = false
