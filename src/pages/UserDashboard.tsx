@@ -42,7 +42,6 @@ const UserDashboard = () => {
   const { data: extendButton } = useSiteSetting('dashboard_extend_button');
   const { data: profileDataTitle } = useSiteSetting('dashboard_profile_data_title');
   const { data: labelName } = useSiteSetting('dashboard_label_name');
-  const { data: labelAge } = useSiteSetting('dashboard_label_age');
   const { data: labelGender } = useSiteSetting('dashboard_label_gender');
   const { data: labelLocation } = useSiteSetting('dashboard_label_location');
   const { data: labelLanguages } = useSiteSetting('dashboard_label_languages');
@@ -375,10 +374,6 @@ const UserDashboard = () => {
                   <div>
                     <div className="text-sm text-muted-foreground">{labelName || 'Anzeigename'}</div>
                     <div className="font-medium">{profile.display_name}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">{labelAge || 'Alter'}</div>
-                    <div className="font-medium">{profile.age} Jahre</div>
                   </div>
                   {profile.gender && (
                     <div>
