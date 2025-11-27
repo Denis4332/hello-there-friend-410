@@ -29,6 +29,13 @@
 - [ ] Validierung: Zu kurzes Passwort wird abgelehnt
 - [ ] Toast-Nachricht erscheint (CMS-gesteuert)
 
+### 1.2 E-Mail-Bestätigung (Anti-Fake)
+- [ ] Bestätigungs-E-Mail wird gesendet nach Registrierung
+- [ ] Link in E-Mail funktioniert
+- [ ] Account erst nach Bestätigung aktiv
+- [ ] Erneut senden Button funktioniert
+- [ ] Unbestätigte Accounts können sich nicht einloggen
+
 ### 1.2 Login
 - [ ] Erfolgreicher Login mit korrekten Daten
 - [ ] Fehlgeschlagener Login mit falschen Daten
@@ -146,7 +153,11 @@
 
 ## IV. 👤 Profil-Ansicht (Public)
 
-### 4.1 Daten-Anzeige
+> ⚠️ **KRITISCH: Profile müssen für ALLE sichtbar sein - auch ohne Login!**  
+> Anonyme Besucher (nicht eingeloggt) müssen alle Profil-Infos und Kontaktdaten sehen können.
+
+### 4.1 Daten-Anzeige (OHNE Login testen!)
+- [ ] **Als NICHT eingeloggter User testen**
 - [ ] Display-Name korrekt
 - [ ] Alter korrekt
 - [ ] Geschlecht korrekt
@@ -155,13 +166,15 @@
 - [ ] Über mich Text korrekt
 - [ ] Kategorien korrekt (max. 2)
 
-### 4.2 Kontakt-Sichtbarkeit
-- [ ] E-Mail sichtbar (für alle, nicht nur eingeloggte)
-- [ ] Telefon sichtbar
-- [ ] WhatsApp klickbar
-- [ ] Website klickbar
-- [ ] Instagram klickbar
-- [ ] Telegram klickbar
+### 4.2 Kontakt-Sichtbarkeit (OHNE Login testen!)
+> ⚠️ **KRITISCH: Kontaktdaten für ALLE sichtbar - Business-Requirement!**
+- [ ] **Als NICHT eingeloggter User alle Kontakte sichtbar:**
+- [ ] E-Mail sichtbar (anon + auth)
+- [ ] Telefon sichtbar (anon + auth)
+- [ ] WhatsApp klickbar (anon + auth)
+- [ ] Website klickbar (anon + auth)
+- [ ] Instagram klickbar (anon + auth)
+- [ ] Telegram klickbar (anon + auth)
 - [ ] Strasse nur wenn "show_street = true"
 
 ### 4.3 Badges
@@ -407,12 +420,13 @@
 
 ### Muss vor Launch funktionieren:
 1. ✅ Registrierung & Login
-2. ✅ Profil erstellen mit Fotos
-3. ✅ Suche & Filter (inkl. GPS)
-4. ✅ Kontaktdaten sichtbar
-5. ✅ Admin kann Profile aktivieren
-6. ✅ Banner-System
-7. ⏳ Saferpay Payment (nach diesen Tests)
+2. ⏳ **E-Mail-Bestätigung (Anti-Fake) - NOCH IMPLEMENTIEREN**
+3. ✅ Profil erstellen mit Fotos
+4. ✅ Suche & Filter (inkl. GPS)
+5. ✅ **Kontaktdaten sichtbar für ALLE (auch ohne Login!)**
+6. ✅ Admin kann Profile aktivieren
+7. ✅ Banner-System
+8. ⏳ Saferpay Payment (nach diesen Tests)
 
 ---
 
