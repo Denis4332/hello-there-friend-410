@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
+import { useToastMessages } from '@/hooks/useToastMessages';
 
 type UserRole = 'admin' | 'user' | null;
 
@@ -26,8 +26,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
   const { checkRateLimit, recordAttempt } = useAuthRateLimit();
+  const { showSuccess, showError, showCustomError, getMessage } = useToastMessages();
 
   // Initialize auth state - FIXED: No more race condition with setTimeout(0)
   useEffect(() => {
@@ -113,11 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Validate password strength
     const passwordError = validatePassword(password);
     if (passwordError) {
-      toast({
-        title: 'Schwaches Passwort',
-        description: passwordError,
-        variant: 'destructive',
-      });
+      showCustomError(passwordError);
       return { error: new Error(passwordError) };
     }
 
@@ -128,14 +124,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const lockedUntil = rateLimitCheck.locked_until ? new Date(rateLimitCheck.locked_until) : null;
       const minutesRemaining = lockedUntil ? Math.ceil((lockedUntil.getTime() - Date.now()) / 60000) : 0;
       
-      toast({
-        title: 'Zu viele Anmeldeversuche',
-        description: minutesRemaining > 0 
-          ? `Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
-          : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
-        variant: 'destructive',
-      });
+      const errorMsg = minutesRemaining > 0 
+        ? `Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
+        : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.';
       
+      showCustomError(errorMsg);
       return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
     }
     
@@ -153,11 +146,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await recordAttempt(email, 'signup', !error);
 
     if (error) {
-      toast({
-        title: 'Registrierung fehlgeschlagen',
-        description: error.message,
-        variant: 'destructive',
-      });
+      showError('toast_register_error', error.message);
+    } else {
+      showSuccess('toast_register_success');
     }
 
     return { error };
@@ -171,14 +162,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const lockedUntil = rateLimitCheck.locked_until ? new Date(rateLimitCheck.locked_until) : null;
       const minutesRemaining = lockedUntil ? Math.ceil((lockedUntil.getTime() - Date.now()) / 60000) : 0;
       
-      toast({
-        title: 'Zu viele Anmeldeversuche',
-        description: minutesRemaining > 0 
-          ? `Account wurde vorübergehend gesperrt. Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
-          : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
-        variant: 'destructive',
-      });
+      const errorMsg = minutesRemaining > 0 
+        ? `Account wurde vorübergehend gesperrt. Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
+        : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.';
       
+      showCustomError(errorMsg);
       return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
     }
     
@@ -192,14 +180,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       const remaining = rateLimitCheck.remaining_attempts ? rateLimitCheck.remaining_attempts - 1 : 0;
+      const errorMsg = remaining > 0 
+        ? `${error.message} Noch ${remaining} Versuche übrig.`
+        : error.message;
       
-      toast({
-        title: 'Login fehlgeschlagen',
-        description: remaining > 0 
-          ? `${error.message} Noch ${remaining} Versuche übrig.`
-          : error.message,
-        variant: 'destructive',
-      });
+      showError('toast_login_error', errorMsg);
+    } else {
+      showSuccess('toast_login_success');
     }
 
     return { error };
@@ -209,11 +196,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.auth.signOut();
     
     if (error) {
-      toast({
-        title: 'Abmeldung fehlgeschlagen',
-        description: error.message,
-        variant: 'destructive',
-      });
+      showCustomError(error.message);
+    } else {
+      showSuccess('toast_logout_success');
     }
   };
 
@@ -225,14 +210,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const lockedUntil = rateLimitCheck.locked_until ? new Date(rateLimitCheck.locked_until) : null;
       const minutesRemaining = lockedUntil ? Math.ceil((lockedUntil.getTime() - Date.now()) / 60000) : 0;
       
-      toast({
-        title: 'Zu viele Anfragen',
-        description: minutesRemaining > 0 
-          ? `Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
-          : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
-        variant: 'destructive',
-      });
+      const errorMsg = minutesRemaining > 0 
+        ? `Bitte versuchen Sie es in ${minutesRemaining} Minuten erneut.`
+        : rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.';
       
+      showCustomError(errorMsg);
       return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
     }
 
@@ -244,16 +226,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await recordAttempt(email, 'password_reset', !error);
 
     if (error) {
-      toast({
-        title: 'Fehler',
-        description: error.message,
-        variant: 'destructive',
-      });
+      showCustomError(error.message);
     } else {
-      toast({
-        title: 'E-Mail gesendet',
-        description: 'Bitte überprüfen Sie Ihr E-Mail-Postfach für den Passwort-Reset-Link.',
-      });
+      showSuccess('toast_password_reset_sent');
     }
 
     return { error };
@@ -263,11 +238,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Validate password strength
     const passwordError = validatePassword(newPassword);
     if (passwordError) {
-      toast({
-        title: 'Schwaches Passwort',
-        description: passwordError,
-        variant: 'destructive',
-      });
+      showCustomError(passwordError);
       return { error: new Error(passwordError) };
     }
 
@@ -276,16 +247,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     if (error) {
-      toast({
-        title: 'Fehler',
-        description: error.message,
-        variant: 'destructive',
-      });
+      showCustomError(error.message);
     } else {
-      toast({
-        title: 'Erfolg',
-        description: 'Ihr Passwort wurde erfolgreich geändert.',
-      });
+      showSuccess('toast_password_changed');
     }
 
     return { error };

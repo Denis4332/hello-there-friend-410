@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useToastMessages } from '@/hooks/useToastMessages';
 
 export const useFavorites = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showSuccess, showError, showCustomError } = useToastMessages();
   
   // Fetch all favorites for current user
   const { data: favorites = [], isLoading } = useQuery({
@@ -28,7 +29,7 @@ export const useFavorites = () => {
   const toggleFavorite = useMutation({
     mutationFn: async (profileId: string) => {
       if (!user) {
-        toast.error('Bitte melde dich an, um Profile zu speichern');
+        showCustomError('Bitte melde dich an, um Profile zu speichern');
         throw new Error('Not authenticated');
       }
       
@@ -54,11 +55,15 @@ export const useFavorites = () => {
     },
     onSuccess: (wasRemoved) => {
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
-      toast.success(wasRemoved ? 'Favorit entfernt' : 'Zu Favoriten hinzugefügt');
+      if (wasRemoved) {
+        showSuccess('toast_favorite_removed');
+      } else {
+        showSuccess('toast_favorite_added');
+      }
     },
     onError: (error) => {
       console.error('Toggle favorite error:', error);
-      toast.error('Fehler beim Speichern');
+      showError('toast_generic_error');
     },
   });
   
