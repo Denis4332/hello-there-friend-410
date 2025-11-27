@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { geocodePlz } from '@/lib/geocoding';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
-import { useToast } from '@/hooks/use-toast';
+import { useToastMessages } from '@/hooks/useToastMessages';
 import { BasicInfoSection } from './sections/BasicInfoSection';
 import { LocationSection } from './sections/LocationSection';
 import { AboutMeSection } from './sections/AboutMeSection';
@@ -74,7 +74,7 @@ interface ProfileFormProps {
 export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
   const { data: languages = [] } = useDropdownOptions('languages');
   const { data: genders = [] } = useDropdownOptions('genders');
-  const { toast } = useToast();
+  const { showCustomError } = useToastMessages();
 
   const {
     register,
@@ -109,11 +109,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     } else if (current.length < 2) {
       setValue('category_ids', [...current, catId]);
     } else {
-      toast({
-        title: 'Maximal 2 Kategorien',
-        description: 'Du kannst maximal 2 Kategorien auswählen',
-        variant: 'destructive',
-      });
+      showCustomError('Du kannst maximal 2 Kategorien auswählen');
     }
   };
 

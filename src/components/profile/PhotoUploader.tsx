@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useToastMessages } from '@/hooks/useToastMessages';
 
 interface PhotoUploaderProps {
   profileId: string;
@@ -13,7 +13,7 @@ interface PhotoUploaderProps {
 export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
-  const { toast } = useToast();
+  const { showSuccess, showError, showCustomError } = useToastMessages();
   
   const { data: maxFileSize } = useSiteSetting('upload_max_file_size_mb');
   const { data: maxPhotos } = useSiteSetting('upload_max_photos_per_profile');
@@ -29,11 +29,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
 
     // Validation
     if (previews.length + files.length > maxPhotosCount) {
-      toast({
-        title: 'Zu viele Fotos',
-        description: `Maximal ${maxPhotosCount} Fotos erlaubt`,
-        variant: 'destructive',
-      });
+      showCustomError(`Maximal ${maxPhotosCount} Fotos erlaubt`);
       return;
     }
 
@@ -115,21 +111,12 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
         return [...withoutLocalPreviews, ...uploadedUrls];
       });
 
-      toast({
-        title: 'Fotos hochgeladen',
-        description: `${files.length} Foto(s) erfolgreich hochgeladen`,
-      });
-
+      showSuccess('toast_photo_uploaded');
       onUploadComplete?.();
     } catch (error) {
       // Bei Fehler lokale Previews entfernen
       setPreviews(prev => prev.slice(0, prev.length - files.length));
-      
-      toast({
-        title: 'Upload fehlgeschlagen',
-        description: error.message || 'Fehler beim Hochladen der Fotos',
-        variant: 'destructive',
-      });
+      showError('toast_photo_error', error.message || 'Fehler beim Hochladen der Fotos');
     } finally {
       setUploading(false);
     }
