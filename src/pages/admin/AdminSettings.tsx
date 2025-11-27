@@ -30,6 +30,8 @@ export default function AdminSettings() {
   const { data: indexingSettings, isLoading: indexingLoading } = useSiteSettings('indexing');
   const { data: socialSettings, isLoading: socialLoading } = useSiteSettings('social');
   const { data: advancedSeoSettings, isLoading: advancedSeoLoading } = useSiteSettings('advanced_seo');
+  const { data: legalSettings, isLoading: legalLoading } = useSiteSettings('legal');
+  const { data: messagesSettings, isLoading: messagesLoading } = useSiteSettings('messages');
   const updateMutation = useUpdateSiteSetting();
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({});
@@ -326,6 +328,8 @@ export default function AdminSettings() {
               <TabsTrigger value="indexing">Indexierung</TabsTrigger>
               <TabsTrigger value="social">Social Media</TabsTrigger>
               <TabsTrigger value="advanced_seo">SEO Erweitert</TabsTrigger>
+              <TabsTrigger value="legal">Rechtliches</TabsTrigger>
+              <TabsTrigger value="messages">Meldungen</TabsTrigger>
             </TabsList>
 
             <TabsContent value="content" className="space-y-6">
@@ -668,6 +672,46 @@ export default function AdminSettings() {
                     </div>
                   ) : (
                     advancedSeoSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="legal" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Rechtliche Texte</CardTitle>
+                  <CardDescription>
+                    Datenschutz, AGB und rechtliche Hinweise bearbeiten
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {legalLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    legalSettings?.map(renderSettingField)
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="messages" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Toast-Meldungen</CardTitle>
+                  <CardDescription>
+                    Erfolgs- und Fehlermeldungen der Plattform anpassen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {messagesLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    messagesSettings?.map(renderSettingField)
                   )}
                 </CardContent>
               </Card>

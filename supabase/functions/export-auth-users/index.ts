@@ -142,7 +142,7 @@ async function importUsers() {
       const { data, error } = await supabase.auth.admin.createUser({
         id: user.id,
         email: user.email,
-        password: user.encrypted_password,
+        password_hash: user.encrypted_password,
         email_confirm: !!user.email_confirmed_at,
         phone: user.phone,
         phone_confirm: !!user.phone_confirmed_at,
