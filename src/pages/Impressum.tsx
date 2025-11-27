@@ -1,0 +1,64 @@
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
+
+const Impressum = () => {
+  const { data: title } = useSiteSetting('impressum_title');
+  const { data: companyName } = useSiteSetting('impressum_company_name');
+  const { data: address } = useSiteSetting('impressum_address');
+  const { data: email } = useSiteSetting('impressum_email');
+  const { data: phone } = useSiteSetting('impressum_phone');
+  const { data: additionalInfo } = useSiteSetting('impressum_additional_info');
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">{title || 'Impressum'}</h1>
+        
+        <div className="prose prose-sm max-w-none space-y-6">
+          {companyName && (
+            <section>
+              <h2 className="text-xl font-semibold mb-2">Angaben gemäss Schweizer Recht</h2>
+              <p className="text-muted-foreground whitespace-pre-line">{companyName}</p>
+            </section>
+          )}
+
+          {address && (
+            <section>
+              <h2 className="text-xl font-semibold mb-2">Adresse</h2>
+              <p className="text-muted-foreground whitespace-pre-line">{address}</p>
+            </section>
+          )}
+
+          {(email || phone) && (
+            <section>
+              <h2 className="text-xl font-semibold mb-2">Kontakt</h2>
+              {email && <p className="text-muted-foreground">E-Mail: {email}</p>}
+              {phone && <p className="text-muted-foreground">Telefon: {phone}</p>}
+            </section>
+          )}
+
+          {additionalInfo && (
+            <section>
+              <h2 className="text-xl font-semibold mb-2">Weitere Informationen</h2>
+              <div 
+                className="text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: additionalInfo }}
+              />
+            </section>
+          )}
+
+          {!companyName && !address && !email && !phone && !additionalInfo && (
+            <p className="text-muted-foreground">
+              Impressum-Inhalt wird vom Administrator gepflegt.
+            </p>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default Impressum;
