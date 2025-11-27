@@ -171,9 +171,6 @@ export const HeroSection = ({
       }} />
         </>}
       <div className="container mx-auto px-4 relative z-10">
-        
-        {heroSubtitle}
-        
         <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6" role="search" aria-label="Hauptsuche">
           <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
             <h2 className="text-lg font-semibold" id="hero-search-heading">{heroSearchTitle || 'Suche'}</h2>
