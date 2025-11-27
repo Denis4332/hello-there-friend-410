@@ -31,6 +31,7 @@ const Categories = lazy(() => import("./pages/Categories"));
 const Kontakt = lazy(() => import("./pages/Kontakt"));
 const AGB = lazy(() => import("./pages/AGB"));
 const Datenschutz = lazy(() => import("./pages/Datenschutz"));
+const Impressum = lazy(() => import("./pages/Impressum"));
 const Preise = lazy(() => import("./pages/Preise"));
 const Bannerpreise = lazy(() => import("./pages/Bannerpreise"));
 const BannerBuchen = lazy(() => import("./pages/BannerBuchen"));
@@ -111,6 +112,7 @@ const AppContent = () => {
             <Route path="/kontakt" element={<Kontakt />} />
             <Route path="/agb" element={<AGB />} />
             <Route path="/datenschutz" element={<Datenschutz />} />
+            <Route path="/impressum" element={<Impressum />} />
             <Route path="/bannerpreise" element={<Bannerpreise />} />
             <Route path="/banner/buchen" element={<BannerBuchen />} />
             <Route path="/preise" element={<Preise />} />

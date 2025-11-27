@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
-import { useCantons, Canton } from '@/hooks/useCantons';
 import { Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 
 export const Footer = () => {
@@ -16,15 +15,13 @@ export const Footer = () => {
   const { data: instagramUrl } = useSiteSetting('footer_instagram_url');
   const { data: twitterUrl } = useSiteSetting('footer_twitter_url');
   const { data: linkedinUrl } = useSiteSetting('footer_linkedin_url');
-  const { data: sectionCantons } = useSiteSetting('footer_section_cantons');
   const { data: sectionInfo } = useSiteSetting('footer_section_info');
   const { data: sectionLegal } = useSiteSetting('footer_section_legal');
   const { data: sectionCta } = useSiteSetting('footer_section_cta');
   const { data: ctaDescription } = useSiteSetting('footer_cta_description');
   const { data: linkPrices } = useSiteSetting('footer_link_prices');
   const { data: linkAdvertising } = useSiteSetting('footer_link_advertising');
-  
-  const { data: cantons } = useCantons();
+  const { data: impressumText } = useSiteSetting('footer_impressum');
 
   const socialLinks = [
     { url: facebookUrl, icon: Facebook, label: 'Facebook' },
@@ -33,29 +30,10 @@ export const Footer = () => {
     { url: linkedinUrl, icon: Linkedin, label: 'LinkedIn' },
   ].filter(link => link.url && link.url.trim() !== '');
 
-  const topCantons = cantons?.slice(0, 8) || [];
-
   return (
     <footer className="bg-muted mt-auto py-12 content-visibility-auto">
       <div className="container mx-auto px-4">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
-          {/* Beliebte Kantone */}
-          <div>
-            <h3 className="font-semibold mb-4">{sectionCantons || 'Beliebte Kantone'}</h3>
-            <ul className="space-y-2">
-              {topCantons.map((canton: Canton) => (
-                <li key={canton.id}>
-                  <Link 
-                    to={`/suche?canton=${canton.abbreviation}`}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {canton.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
+        <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Informationen */}
           <div>
             <h3 className="font-semibold mb-4">{sectionInfo || 'Informationen'}</h3>
@@ -93,6 +71,11 @@ export const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/impressum" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {impressumText || 'Impressum'}
+                </Link>
+              </li>
+              <li>
                 <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {adminText || 'Admin'}
                 </Link>
@@ -104,7 +87,7 @@ export const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">{sectionCta || 'Inserat erstellen'}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              {ctaDescription || 'Erstelle jetzt dein kostenloses Inserat und erreiche tausende potenzielle Interessenten in der ganzen Schweiz.'}
+              {ctaDescription || 'Erstelle jetzt dein Inserat und erreiche tausende potenzielle Interessenten in der ganzen Schweiz.'}
             </p>
             <Button asChild className="w-full">
               <Link to={ctaLink || '/auth?mode=signup'}>
