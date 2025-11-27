@@ -140,7 +140,7 @@ const Auth = () => {
     setIsSubmitting(false);
 
     if (!error) {
-      navigate('/profil/bearbeiten');
+      navigate('/profil/erstellen');
     }
   };
 

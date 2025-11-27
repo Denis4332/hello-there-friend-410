@@ -366,10 +366,6 @@ const AdminProfile = () => {
                                     <p>{selectedProfile.display_name}</p>
                                   </div>
                                   <div>
-                                    <label className="text-sm font-medium">Alter</label>
-                                    <p>{selectedProfile.age}</p>
-                                  </div>
-                                  <div>
                                     <label className="text-sm font-medium">Stadt</label>
                                     <p>{selectedProfile.city}</p>
                                   </div>
