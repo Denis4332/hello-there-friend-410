@@ -3,6 +3,17 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -202,6 +213,39 @@ const AdminProfile = () => {
     onError: (error: any) => {
       toast({ 
         title: 'Fehler', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    }
+  });
+
+  const deleteProfileMutation = useMutation({
+    mutationFn: async (profileId: string) => {
+      // Erst abhängige Daten löschen (Reihenfolge wichtig wegen Foreign Keys)
+      await supabase.from('profile_categories').delete().eq('profile_id', profileId);
+      await supabase.from('profile_contacts').delete().eq('profile_id', profileId);
+      await supabase.from('photos').delete().eq('profile_id', profileId);
+      await supabase.from('profile_moderation_notes').delete().eq('profile_id', profileId);
+      await supabase.from('profile_views').delete().eq('profile_id', profileId);
+      await supabase.from('reports').delete().eq('profile_id', profileId);
+      await supabase.from('user_favorites').delete().eq('profile_id', profileId);
+      
+      // Dann das Profil selbst löschen
+      const { error } = await supabase.from('profiles').delete().eq('id', profileId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ 
+        title: '🗑️ Profil gelöscht',
+        description: 'Profil und alle zugehörigen Daten wurden entfernt.'
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      setSelectedProfile(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: 'Fehler beim Löschen', 
         description: error.message, 
         variant: 'destructive' 
       });
@@ -572,6 +616,42 @@ const AdminProfile = () => {
                                   >
                                     {updateProfileMutation.isPending ? 'Speichert...' : 'Speichern'}
                                   </Button>
+                                </div>
+                                
+                                {/* Profil löschen Section */}
+                                <div className="border-t pt-4 mt-4">
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button 
+                                        variant="destructive" 
+                                        className="w-full"
+                                        disabled={deleteProfileMutation.isPending}
+                                      >
+                                        {deleteProfileMutation.isPending ? 'Lösche...' : '🗑️ Profil dauerhaft löschen'}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Profil wirklich löschen?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Diese Aktion kann nicht rückgängig gemacht werden. Das Profil von <strong>{selectedProfile?.display_name}</strong> wird dauerhaft gelöscht, inklusive aller Fotos, Kontaktdaten und Statistiken.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                          onClick={() => {
+                                            if (selectedProfile) {
+                                              deleteProfileMutation.mutate(selectedProfile.id);
+                                            }
+                                          }}
+                                        >
+                                          Ja, endgültig löschen
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </div>
                               </div>
                             )}
