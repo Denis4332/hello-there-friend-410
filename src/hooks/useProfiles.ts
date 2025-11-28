@@ -74,9 +74,20 @@ export const useHomepageProfiles = (
   canton: string | null = null
 ) => {
   return useQuery({
-    queryKey: ['homepage-profiles', topLimit, localLimit, newestLimit, canton],
+    queryKey: ['homepage-profiles', topLimit, localLimit, newestLimit, canton, 'v2'],
     staleTime: 15 * 60 * 1000, // 15 minutes cache for homepage
     queryFn: async () => {
+      // ROBUST FIX: Get full canton name if abbreviation provided
+      let cantonFullName: string | null = null;
+      if (canton) {
+        const { data: cantonData } = await supabase
+          .from('cantons')
+          .select('name')
+          .eq('abbreviation', canton)
+          .maybeSingle();
+        cantonFullName = cantonData?.name || null;
+      }
+      
       // Use public_profiles view (no user_id exposure)
       const result = await supabase
         .from('public_profiles')
@@ -92,10 +103,14 @@ export const useHomepageProfiles = (
       const topProfiles = allProfiles
         .filter(p => p.listing_type === 'top')
         .slice(0, topLimit);
-        
+      
+      // ROBUST FIX: Filter for BOTH abbreviation AND full canton name
       const localProfiles = canton 
         ? allProfiles
-            .filter(p => p.canton === canton && ['premium', 'basic'].includes(p.listing_type || ''))
+            .filter(p => 
+              (p.canton === canton || p.canton === cantonFullName) && 
+              ['premium', 'basic'].includes(p.listing_type || '')
+            )
             .slice(0, localLimit)
         : [];
         
@@ -134,21 +149,35 @@ export const useTopProfiles = (limit: number = 3) => {
 // Premium/Basic Inserate lokal (nach Kanton) - DEPRECATED: Use useHomepageProfiles instead
 export const useLocalProfiles = (canton: string | null, limit: number = 5) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['local-profiles', canton, limit],
+    queryKey: ['local-profiles', canton, limit, 'v2'],
     staleTime: 15 * 60 * 1000, // Increased from 5min to 15min
     enabled: !!canton,
     queryFn: async () => {
       if (!canton) return [];
       
-      const result = await supabase
+      // ROBUST FIX: Get full canton name to search both
+      const { data: cantonData } = await supabase
+        .from('cantons')
+        .select('name')
+        .eq('abbreviation', canton)
+        .maybeSingle();
+      
+      let query = supabase
         .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-        .eq('canton', canton)
         .in('listing_type', ['premium', 'basic'])
         .order('listing_type', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(limit);
       
+      // Search for BOTH abbreviation AND full name
+      if (cantonData?.name) {
+        query = query.or(`canton.eq.${canton},canton.eq.${cantonData.name}`);
+      } else {
+        query = query.eq('canton', canton);
+      }
+      
+      const result = await query;
       if (result.error) throw result.error;
       
       return validateProfilesResponse(result.data || []);
@@ -175,6 +204,18 @@ export const useFeaturedProfiles = (limit: number = 8) => {
   });
 };
 
+/**
+ * Helper function to get canton full name from abbreviation
+ */
+const getCantonFullName = async (abbreviation: string): Promise<string | null> => {
+  const { data } = await supabase
+    .from('cantons')
+    .select('name')
+    .eq('abbreviation', abbreviation)
+    .maybeSingle();
+  return data?.name || null;
+};
+
 export const useSearchProfiles = (filters: {
   location?: string;
   categoryId?: string;
@@ -182,7 +223,7 @@ export const useSearchProfiles = (filters: {
   enabled?: boolean;
 }) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['search-profiles', filters, 'v7'],
+    queryKey: ['search-profiles', filters, 'v8'],
     staleTime: 1 * 60 * 1000,
     enabled: filters.enabled ?? true,
     queryFn: async () => {
@@ -194,7 +235,13 @@ export const useSearchProfiles = (filters: {
         const isCantonCode = /^[A-Z]{2,3}$/.test(filters.location);
         
         if (isCantonCode) {
-          query = query.eq('canton', filters.location);
+          // ROBUST FIX: Search for BOTH abbreviation AND full canton name
+          const fullName = await getCantonFullName(filters.location);
+          if (fullName) {
+            query = query.or(`canton.eq.${filters.location},canton.eq.${fullName}`);
+          } else {
+            query = query.eq('canton', filters.location);
+          }
         } else {
           query = query.or(`city.ilike.%${filters.location}%,postal_code.ilike.%${filters.location}%`);
         }
