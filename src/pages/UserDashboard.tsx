@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Download, Lock, Heart, Plus } from 'lucide-react';
+import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Lock, Heart, Plus } from 'lucide-react';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const UserDashboard = () => {
@@ -21,7 +21,6 @@ const UserDashboard = () => {
   const [photos, setPhotos] = useState<any[]>([]);
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
   const { data: dashboardWelcome } = useSiteSetting('dashboard_welcome_text');
   const { data: createProfileButton } = useSiteSetting('dashboard_create_profile_button');
@@ -49,9 +48,6 @@ const UserDashboard = () => {
   const { data: labelCategories } = useSiteSetting('dashboard_label_categories');
   const { data: photosTitle } = useSiteSetting('dashboard_photos_title');
   const { data: privacyTitle } = useSiteSetting('dashboard_privacy_title');
-  const { data: exportTitle } = useSiteSetting('dashboard_export_title');
-  const { data: exportText } = useSiteSetting('dashboard_export_text');
-  const { data: exportButton } = useSiteSetting('dashboard_export_button');
   const { data: deleteTitle } = useSiteSetting('dashboard_delete_title');
   const { data: deleteText } = useSiteSetting('dashboard_delete_text');
   const { data: deleteButton } = useSiteSetting('dashboard_delete_button');
@@ -138,50 +134,6 @@ const UserDashboard = () => {
         variant: 'destructive',
       });
       setIsDeleting(false);
-    }
-  };
-
-  const handleExportData = async () => {
-    setIsExporting(true);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Keine aktive Session');
-      }
-
-      const { data, error } = await supabase.functions.invoke('export-user-data', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-
-      // Create download
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `escoria-daten-${user?.id}-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: 'Daten exportiert',
-        description: 'Deine Daten wurden erfolgreich heruntergeladen',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Fehler beim Export',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -458,27 +410,6 @@ const UserDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Deine Daten exportieren</p>
-                    <p className="text-sm text-muted-foreground">
-                      Lade alle deine gespeicherten Daten als JSON-Datei herunter
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleExportData}
-                    disabled={isExporting}
-                    variant="outline"
-                  >
-                    {isExporting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4 mr-2" />
-                    )}
-                    Exportieren
-                  </Button>
-                </div>
-
                 <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/50">
                   <div>
                     <p className="font-medium text-destructive">Account vollständig löschen</p>
