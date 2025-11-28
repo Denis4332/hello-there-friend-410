@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
+import { AdminProfileCreateDialog } from '@/components/admin/AdminProfileCreateDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -61,9 +62,10 @@ const AdminProfile = () => {
         `)
         .order('created_at', { ascending: false });
       
-      // Admins ausschließen
+      // Admins ausschließen (aber Admin-erstellte Profile mit user_id=NULL behalten)
       if (adminUserIds.length > 0) {
-        query = query.not('user_id', 'in', `(${adminUserIds.join(',')})`);
+        // Filter: user_id ist NULL (admin-erstellt) ODER user_id ist nicht in adminUserIds
+        query = query.or(`user_id.is.null,user_id.not.in.(${adminUserIds.join(',')})`);
       }
       
       if (statusFilter) {
@@ -294,7 +296,10 @@ const AdminProfile = () => {
       <AdminHeader />
       <main className="flex-1 py-8 bg-muted">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-6">Profile verwalten</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Profile verwalten</h1>
+            <AdminProfileCreateDialog />
+          </div>
 
           <div className="bg-card border rounded-lg p-4 mb-4">
             <div className="flex gap-4 flex-wrap">
@@ -359,7 +364,12 @@ const AdminProfile = () => {
                           <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm font-bold">
                             {profile.display_name.charAt(0)}
                           </div>
-                          <span className="font-medium">{profile.display_name}</span>
+                          <div>
+                            <span className="font-medium">{profile.display_name}</span>
+                            {!profile.user_id && (
+                              <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="p-3 text-sm">{profile.city}</td>
