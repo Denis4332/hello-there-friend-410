@@ -127,10 +127,22 @@ export const HeroSection = ({
       return count;
     }
   }, [canton, category, keyword, useGPS]);
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLng, setUserLng] = useState<number | null>(null);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (canton) params.set('kanton', canton);
+    
+    // GPS-Modus: Pass GPS coordinates to search page
+    if (useGPS && userLat && userLng) {
+      params.set('lat', userLat.toString());
+      params.set('lng', userLng.toString());
+      params.set('radius', radius.toString());
+    } else if (canton) {
+      params.set('kanton', canton);
+    }
+    
     if (category) params.set('kategorie', category);
     if (keyword) params.set('stichwort', keyword);
     navigate(`/suche?${params.toString()}`);
@@ -143,6 +155,8 @@ export const HeroSection = ({
       if (matchingCanton) {
         setUseGPS(true);
         setCanton(matchingCanton.abbreviation);
+        setUserLat(result.lat);
+        setUserLng(result.lng);
         toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation}`);
       } else {
         toast.error('Kanton konnte nicht zugeordnet werden');
@@ -158,6 +172,8 @@ export const HeroSection = ({
     setCategory('');
     setKeyword('');
     setUseGPS(false);
+    setUserLat(null);
+    setUserLng(null);
   };
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const optimizedBgUrl = heroImageUrl && imageLoaded ? optimizedHeroImage : undefined;

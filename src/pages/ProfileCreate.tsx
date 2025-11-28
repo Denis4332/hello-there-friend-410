@@ -62,6 +62,23 @@ const ProfileCreate = () => {
 
     setIsSubmitting(true);
     try {
+      // Check if user already has a profile (prevent duplicates on page reload)
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast({
+          title: 'Profil existiert bereits',
+          description: 'Du hast bereits ein Profil. Bearbeite es im Dashboard.',
+          variant: 'destructive',
+        });
+        navigate('/mein-profil');
+        return;
+      }
+
       // SECURITY: Create profile without contact data
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
