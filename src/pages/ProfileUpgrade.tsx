@@ -310,7 +310,7 @@ const ProfileUpgrade = () => {
           {/* Back Button */}
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/user/dashboard')}
+            onClick={() => navigate('/mein-profil')}
             className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

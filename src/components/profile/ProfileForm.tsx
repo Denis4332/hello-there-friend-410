@@ -18,7 +18,7 @@ const profileSchema = z.object({
     message: 'Du musst bestätigen, dass du volljährig bist',
   }),
   gender: z.string().optional(),
-  city: z.string().optional().or(z.literal("")),
+  city: z.string().min(1, 'Stadt ist erforderlich'),
   canton: z.string().min(1, 'Kanton ist erforderlich'),
   postal_code: z.string().optional(),
   street_address: z.string().optional(),
