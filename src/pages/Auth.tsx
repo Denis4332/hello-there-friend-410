@@ -47,6 +47,10 @@ const Auth = () => {
   const { data: passwordHint } = useSiteSetting('auth_password_hint');
   const { data: loadingLogin } = useSiteSetting('auth_loading_login');
   const { data: loadingSignup } = useSiteSetting('auth_loading_signup');
+  const { data: allowSelfRegistration } = useSiteSetting('config_allow_self_registration');
+  
+  // Check if registration is enabled (default: true)
+  const isRegistrationEnabled = allowSelfRegistration !== 'false';
 
   useEffect(() => {
     if (user) {
@@ -162,9 +166,11 @@ const Auth = () => {
             </h1>
 
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className={`grid w-full mb-6 ${isRegistrationEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 <TabsTrigger value="login">{loginTitle || 'Anmelden'}</TabsTrigger>
-                <TabsTrigger value="signup">{registerTitle || 'Registrieren'}</TabsTrigger>
+                {isRegistrationEnabled && (
+                  <TabsTrigger value="signup">{registerTitle || 'Registrieren'}</TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="login">
@@ -207,44 +213,46 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div>
-                    <Label htmlFor="signup-email">{emailLabel || 'E-Mail'}</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="deine@email.ch"
-                    />
-                    {errors.email && (
-                      <p className="text-sm text-destructive mt-1">{errors.email}</p>
-                    )}
-                  </div>
+              {isRegistrationEnabled && (
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignup} className="space-y-4">
+                    <div>
+                      <Label htmlFor="signup-email">{emailLabel || 'E-Mail'}</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="deine@email.ch"
+                      />
+                      {errors.email && (
+                        <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                      )}
+                    </div>
 
-                  <div>
-                    <Label htmlFor="signup-password">{passwordLabel || 'Passwort'}</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                    />
-                    {errors.password && (
-                      <p className="text-sm text-destructive mt-1">{errors.password}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {passwordHint || 'Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen'}
-                    </p>
-                  </div>
+                    <div>
+                      <Label htmlFor="signup-password">{passwordLabel || 'Passwort'}</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                      />
+                      {errors.password && (
+                        <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {passwordHint || 'Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen'}
+                      </p>
+                    </div>
 
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (loadingSignup || 'Wird registriert...') : (registerButton || 'Registrieren')}
-                  </Button>
-                </form>
-              </TabsContent>
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? (loadingSignup || 'Wird registriert...') : (registerButton || 'Registrieren')}
+                    </Button>
+                  </form>
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </div>
