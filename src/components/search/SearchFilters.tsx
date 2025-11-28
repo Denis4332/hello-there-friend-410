@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { MapPin, Tag, X, RefreshCw, Search } from 'lucide-react';
 import { FilterPopover } from './FilterPopover';
@@ -191,15 +190,7 @@ export const SearchFilters = ({
             allLabel="Alle Kategorien"
           />
 
-          <Input
-            placeholder={searchKeywordLabel || "Stichwort eingeben..."}
-            value={keyword}
-            onChange={(e) => onKeywordChange(e.target.value)}
-            className="h-12"
-            aria-label="Suchbegriff eingeben"
-          />
-
-          <Button 
+          <Button
             type="submit" 
             className="w-full h-12 mt-4" 
             aria-label="Suche starten"
@@ -233,19 +224,10 @@ export const SearchFilters = ({
             />
           </div>
 
-          <div className="flex gap-2">
-            <Input
-              placeholder="Stichwort eingeben..."
-              value={keyword}
-              onChange={(e) => onKeywordChange(e.target.value)}
-              className="flex-1 h-12"
-              aria-label="Suchbegriff eingeben"
-            />
-            <Button type="submit" className="h-12 px-8" aria-label="Suche starten">
-              <Search className="h-4 w-4 mr-2" aria-hidden="true" />
-              {searchButtonText || 'Suchen'}
-            </Button>
-          </div>
+          <Button type="submit" className="w-full h-12 mt-4" aria-label="Suche starten">
+            <Search className="h-4 w-4 mr-2" aria-hidden="true" />
+            {searchButtonText || 'Suchen'}
+          </Button>
         </div>
       )}
     </form>
