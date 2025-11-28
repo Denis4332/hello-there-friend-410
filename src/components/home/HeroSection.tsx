@@ -172,18 +172,15 @@ export const HeroSection = ({
         </>}
       <div className="container mx-auto px-4 relative z-10">
         <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6" role="search" aria-label="Hauptsuche">
-          <div className="sticky top-0 z-10 bg-card pb-4 -mt-6 pt-6 -mx-6 px-6 mb-4 flex items-center justify-between border-b md:border-0">
-            <h2 className="text-lg font-semibold" id="hero-search-heading">{heroSearchTitle || 'Suche'}</h2>
-            {activeFiltersCount > 0 && <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  {activeFiltersCount} {heroFiltersActive || 'Filter aktiv'}
-                </Badge>
-                <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters} className="h-8">
-                  <X className="h-4 w-4 mr-1" />
-                  {heroResetButton || 'Zurücksetzen'}
-                </Button>
-              </div>}
-          </div>
+          {activeFiltersCount > 0 && <div className="flex items-center justify-end gap-2 mb-4">
+              <Badge variant="secondary" className="text-xs">
+                {activeFiltersCount} {heroFiltersActive || 'Filter aktiv'}
+              </Badge>
+              <Button type="button" variant="ghost" size="sm" onClick={handleResetFilters} className="h-8">
+                <X className="h-4 w-4 mr-1" />
+                {heroResetButton || 'Zurücksetzen'}
+              </Button>
+            </div>}
           
           <Button type="button" size="lg" onClick={handleDetectLocation} disabled={isDetectingLocation} className="w-full mb-6 gap-2 text-lg h-14" aria-label="Standort automatisch erkennen">
             <MapPin className="h-5 w-5" aria-hidden="true" />
@@ -217,8 +214,6 @@ export const HeroSection = ({
             label: c.name
           }))} selected={category} onSelect={setCategory} open={categoryGpsOpen} onOpenChange={setCategoryGpsOpen} allLabel={heroCategoryPlaceholder || 'Alle Kategorien'} />
 
-              <Input placeholder={searchKeywordPlaceholder || "Stichwort eingeben..."} value={keyword} onChange={e => setKeyword(e.target.value)} className="h-12" aria-label="Suchbegriff eingeben" />
-
               <Button type="submit" className="w-full h-12 mt-4" aria-label="Suche starten">
                 <Search className="h-4 w-4 mr-2" aria-hidden="true" />
                 {searchButtonText || "Suchen"}
@@ -242,13 +237,10 @@ export const HeroSection = ({
             }))} selected={category} onSelect={setCategory} open={categoryOpen} onOpenChange={setCategoryOpen} allLabel={heroCategoryPlaceholder || 'Alle Kategorien'} />
               </div>
 
-              <div className="flex gap-2">
-                <Input placeholder={searchKeywordPlaceholder || "Stichwort eingeben..."} value={keyword} onChange={e => setKeyword(e.target.value)} className="flex-1 h-12" aria-label="Suchbegriff eingeben" />
-                <Button type="submit" className="h-12 px-8" aria-label="Suche starten">
-                  <Search className="h-4 w-4 mr-2" aria-hidden="true" />
-                  {searchButtonText || "Suchen"}
-                </Button>
-              </div>
+              <Button type="submit" className="w-full h-12 mt-4" aria-label="Suche starten">
+                <Search className="h-4 w-4 mr-2" aria-hidden="true" />
+                {searchButtonText || "Suchen"}
+              </Button>
             </div>}
         </form>
       </div>
