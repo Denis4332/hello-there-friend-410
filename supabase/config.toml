@@ -51,6 +51,8 @@ verify_jwt = true
 [functions.export-auth-users]
 verify_jwt = true
 
-# Admin account creation disabled after initial setup for security
-# [functions.create-admin-account]
-# verify_jwt = false
+[functions.admin-delete-user]
+verify_jwt = true
+
+[functions.geocode-all-profiles]
+verify_jwt = true
