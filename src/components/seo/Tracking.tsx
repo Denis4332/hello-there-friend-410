@@ -8,6 +8,7 @@ export const Tracking = () => {
   const { data: googleVerify } = useSiteSetting('google_site_verification');
   const { data: bingVerify } = useSiteSetting('bing_site_verification');
   const { data: yandexVerify } = useSiteSetting('yandex_verification');
+  const { data: pinterestVerify } = useSiteSetting('pinterest_verification');
 
   return (
     <Helmet>
@@ -72,6 +73,11 @@ export const Tracking = () => {
       {/* Yandex Webmaster Verification */}
       {yandexVerify && (
         <meta name="yandex-verification" content={yandexVerify} />
+      )}
+
+      {/* Pinterest Verification */}
+      {pinterestVerify && (
+        <meta name="p:domain_verify" content={pinterestVerify} />
       )}
     </Helmet>
   );

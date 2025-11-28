@@ -1,9 +1,12 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const AGB = () => {
   const { data: title } = useSiteSetting('legal_agb_title');
+  const { data: seoTitle } = useSiteSetting('seo_agb_title');
+  const { data: seoDescription } = useSiteSetting('seo_agb_description');
   const { data: section1Title } = useSiteSetting('legal_agb_section1_title');
   const { data: section1Content } = useSiteSetting('legal_agb_section1_content');
   const { data: section2Title } = useSiteSetting('legal_agb_section2_title');
@@ -17,6 +20,10 @@ const AGB = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={seoTitle || title || 'AGB'}
+        description={seoDescription || 'Allgemeine Geschäftsbedingungen'}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-4xl">

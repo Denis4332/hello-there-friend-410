@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
+import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,6 +35,8 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { data: seoTitle } = useSiteSetting('seo_auth_title');
+  const { data: seoDescription } = useSiteSetting('seo_auth_description');
   const { data: loginTitle } = useSiteSetting('auth_login_title');
   const { data: registerTitle } = useSiteSetting('auth_register_title');
   const { data: emailLabel } = useSiteSetting('auth_email_label');
@@ -146,6 +149,10 @@ const Auth = () => {
 
   return (
     <>
+      <SEO 
+        title={seoTitle || 'Anmelden'}
+        description={seoDescription || 'Anmelden oder registrieren bei der Plattform'}
+      />
       <Header />
       <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md">

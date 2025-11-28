@@ -15,6 +15,10 @@ const positionIcons = {
 };
 
 export default function Bannerpreise() {
+  // SEO settings
+  const { data: seoTitle } = useSiteSetting('seo_bannerpreise_title');
+  const { data: seoDescription } = useSiteSetting('seo_bannerpreise_description');
+  
   // Page content
   const { data: pageTitle } = useSiteSetting('banner_page_title');
   const { data: pageSubtitle } = useSiteSetting('banner_page_subtitle');
@@ -124,8 +128,8 @@ export default function Bannerpreise() {
   return (
     <>
       <SEO
-        title="Bannerpreise"
-        description="Werben Sie effektiv mit gut sichtbaren Bannerplatzierungen. Alle Preise in CHF - wettbewerbsfähige Marktpreise für leistungsstarke Werbeflächen."
+        title={seoTitle || pageTitle || 'Bannerpreise'}
+        description={seoDescription || pageSubtitle || 'Werben Sie effektiv mit gut sichtbaren Bannerplatzierungen.'}
       />
       
       <div className="min-h-screen flex flex-col">

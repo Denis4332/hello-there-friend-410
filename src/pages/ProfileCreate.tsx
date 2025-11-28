@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/Header';
+import { SEO } from '@/components/SEO';
 import { ProfileForm, ProfileFormData } from '@/components/profile/ProfileForm';
 import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { VerificationUploader } from '@/components/profile/VerificationUploader';
@@ -23,6 +24,7 @@ const ProfileCreate = () => {
   const [listingType, setListingType] = useState<'basic' | 'premium' | 'top'>('basic');
   const [currentStep, setCurrentStep] = useState<'form' | 'listing-type' | 'photos' | 'verification'>('form');
 
+  const { data: seoTitle } = useSiteSetting('seo_profile_create_title');
   const { data: createTitle } = useSiteSetting('profile_create_title');
   const { data: createSubtitle } = useSiteSetting('profile_create_subtitle');
   const { data: photosTitle } = useSiteSetting('profile_photos_title');
@@ -199,6 +201,7 @@ const ProfileCreate = () => {
 
   return (
     <>
+      <SEO title={seoTitle || createTitle || 'Inserat erstellen'} description="Erstelle dein Inserat" />
       <Header />
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">

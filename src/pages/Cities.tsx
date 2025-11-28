@@ -9,6 +9,8 @@ import { SEO } from '@/components/SEO';
 
 const Cities = () => {
   const { data: cities = [], isLoading } = useCities();
+  const { data: seoTitle } = useSiteSetting('seo_cities_title');
+  const { data: seoDescription } = useSiteSetting('seo_cities_description');
   const { data: pageTitle } = useSiteSetting('cities_page_title');
   const { data: pageDescription } = useSiteSetting('cities_page_subtitle');
   const { data: loadingText } = useSiteSetting('cities_loading_text');
@@ -17,8 +19,8 @@ const Cities = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title={pageTitle || 'Alle Städte'}
-        description={pageDescription || 'Finden Sie verifizierte Anbieter in Ihrer Region'}
+        title={seoTitle || pageTitle || 'Alle Städte'}
+        description={seoDescription || pageDescription || 'Finden Sie verifizierte Anbieter in Ihrer Region'}
       />
       <Header />
       <main className="flex-1 py-8">
