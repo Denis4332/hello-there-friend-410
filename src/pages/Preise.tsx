@@ -2,10 +2,208 @@ import { Header } from '@/components/layout/Header';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, Crown, Star, Zap } from 'lucide-react';
+import { CheckCircle2, Crown, Star, Zap, UserPlus, Camera, CreditCard, Sparkles, Globe, MapPin, BadgeCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
+// How it works - 4 step process
+const HowItWorks = () => {
+  const { data: title } = useSiteSetting('pricing_howto_title');
+  const { data: step1Title } = useSiteSetting('pricing_howto_step1_title');
+  const { data: step1Text } = useSiteSetting('pricing_howto_step1_text');
+  const { data: step2Title } = useSiteSetting('pricing_howto_step2_title');
+  const { data: step2Text } = useSiteSetting('pricing_howto_step2_text');
+  const { data: step3Title } = useSiteSetting('pricing_howto_step3_title');
+  const { data: step3Text } = useSiteSetting('pricing_howto_step3_text');
+  const { data: step4Title } = useSiteSetting('pricing_howto_step4_title');
+  const { data: step4Text } = useSiteSetting('pricing_howto_step4_text');
+
+  const steps = [
+    { icon: UserPlus, title: step1Title || 'Account erstellen', text: step1Text || 'Registriere dich kostenlos mit deiner E-Mail-Adresse.' },
+    { icon: Camera, title: step2Title || 'Inserat erstellen', text: step2Text || 'Fülle dein Profil aus und lade attraktive Fotos hoch.' },
+    { icon: CreditCard, title: step3Title || 'Paket wählen', text: step3Text || 'Wähle das passende Paket für deine Bedürfnisse.' },
+    { icon: Sparkles, title: step4Title || 'Freischaltung', text: step4Text || 'Nach kurzer Prüfung wird dein Inserat freigeschaltet.' },
+  ];
+
+  return (
+    <div className="mb-16">
+      <h2 className="text-2xl font-bold mb-8 text-center">{title || "So funktioniert's"}</h2>
+      <div className="grid md:grid-cols-4 gap-6">
+        {steps.map((step, idx) => {
+          const Icon = step.icon;
+          return (
+            <div key={idx} className="relative">
+              <div className="flex flex-col items-center text-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 relative">
+                  <Icon className="h-8 w-8 text-primary" />
+                  <span className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                    {idx + 1}
+                  </span>
+                </div>
+                <h3 className="font-semibold mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground">{step.text}</p>
+              </div>
+              {idx < 3 && (
+                <div className="hidden md:block absolute top-8 left-[calc(50%+40px)] w-[calc(100%-80px)] border-t-2 border-dashed border-muted-foreground/30" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Visibility explanation
+const VisibilityExplanation = () => {
+  const { data: title } = useSiteSetting('pricing_visibility_title');
+  const { data: intro } = useSiteSetting('pricing_visibility_intro');
+  const { data: topTitle } = useSiteSetting('pricing_visibility_top_title');
+  const { data: topText } = useSiteSetting('pricing_visibility_top_text');
+  const { data: premiumTitle } = useSiteSetting('pricing_visibility_premium_title');
+  const { data: premiumText } = useSiteSetting('pricing_visibility_premium_text');
+  const { data: basicTitle } = useSiteSetting('pricing_visibility_basic_title');
+  const { data: basicText } = useSiteSetting('pricing_visibility_basic_text');
+
+  const tiers = [
+    {
+      title: topTitle || 'TOP AD',
+      text: topText || 'Schweizweit auf der Homepage sichtbar + in allen Suchergebnissen immer an erster Stelle',
+      icon: Globe,
+      iconBg: 'bg-gradient-to-r from-red-600 to-pink-600',
+      badge: 'Schweizweit',
+      badgeColor: 'bg-red-600',
+    },
+    {
+      title: premiumTitle || 'Premium',
+      text: premiumText || 'Im gewählten Kanton oder GPS-Radius sichtbar, wird vor Basic-Inseraten angezeigt',
+      icon: MapPin,
+      iconBg: 'bg-gradient-to-r from-amber-400 to-pink-500',
+      badge: 'Kanton/Radius',
+      badgeColor: 'bg-amber-500',
+    },
+    {
+      title: basicTitle || 'Basic',
+      text: basicText || 'Im gewählten Kanton oder GPS-Radius sichtbar, Standard-Platzierung',
+      icon: MapPin,
+      iconBg: 'bg-blue-500',
+      badge: 'Kanton/Radius',
+      badgeColor: 'bg-blue-500',
+    },
+  ];
+
+  return (
+    <div className="mb-16">
+      <h2 className="text-2xl font-bold mb-4 text-center">{title || 'Wo erscheint mein Inserat?'}</h2>
+      <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+        {intro || 'Je höher dein Paket, desto mehr Sichtbarkeit und bessere Platzierung erhältst du.'}
+      </p>
+      
+      <div className="grid md:grid-cols-3 gap-6">
+        {tiers.map((tier, idx) => {
+          const Icon = tier.icon;
+          return (
+            <Card key={idx} className="relative overflow-hidden">
+              <div className={`absolute top-0 left-0 right-0 h-1 ${tier.iconBg}`} />
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <div className={`h-10 w-10 rounded-full ${tier.iconBg} flex items-center justify-center`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{tier.title}</CardTitle>
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full text-white ${tier.badgeColor}`}>
+                      {tier.badge}
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{tier.text}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Visual diagram */}
+      <div className="mt-8 p-6 bg-muted/50 rounded-lg">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Globe className="h-4 w-4" /> Homepage
+            </h4>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm">
+                <Zap className="h-4 w-4 text-red-600" />
+                <span>TOP AD Inserate (max. 4)</span>
+              </div>
+              <p className="text-xs text-muted-foreground pl-2">Schweizweit für alle Besucher sichtbar</p>
+            </div>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <MapPin className="h-4 w-4" /> Suche (z.B. Zürich)
+            </h4>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm">
+                <span className="font-medium">1.</span> TOP AD
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-amber-100 dark:bg-amber-900/30 rounded text-sm">
+                <span className="font-medium">2.</span> Premium
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-blue-100 dark:bg-blue-900/30 rounded text-sm">
+                <span className="font-medium">3.</span> Basic
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Verification info box
+const VerificationInfo = () => {
+  const { data: title } = useSiteSetting('pricing_verification_title');
+  const { data: text } = useSiteSetting('pricing_verification_text');
+
+  return (
+    <div className="mb-16">
+      <Card className="border-green-500/50 bg-green-50/50 dark:bg-green-900/10">
+        <CardContent className="pt-6">
+          <div className="flex gap-4">
+            <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center flex-shrink-0">
+              <BadgeCheck className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2">{title || 'Verifizierung – Mehr Vertrauen'}</h3>
+              <p className="text-muted-foreground">
+                {text || 'Verifizierte Profile erhalten ein Vertrauens-Badge und werden innerhalb ihrer Stufe bevorzugt angezeigt. Lade ein Foto hoch, das dich mit einem Zettel zeigt, auf dem unser Plattformname steht.'}
+              </p>
+              <ul className="mt-3 space-y-1 text-sm">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span>Blaues Verifiziert-Badge</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span>Bessere Platzierung innerhalb deiner Stufe</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span>Mehr Vertrauen von Besuchern</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Extended FAQ (8 questions)
 const FAQ = () => {
   const { data: faq1Q } = useSiteSetting('pricing_faq1_question');
   const { data: faq1A } = useSiteSetting('pricing_faq1_answer');
@@ -13,39 +211,40 @@ const FAQ = () => {
   const { data: faq2A } = useSiteSetting('pricing_faq2_answer');
   const { data: faq3Q } = useSiteSetting('pricing_faq3_question');
   const { data: faq3A } = useSiteSetting('pricing_faq3_answer');
+  const { data: faq4Q } = useSiteSetting('pricing_faq4_question');
+  const { data: faq4A } = useSiteSetting('pricing_faq4_answer');
+  const { data: faq5Q } = useSiteSetting('pricing_faq5_question');
+  const { data: faq5A } = useSiteSetting('pricing_faq5_answer');
+  const { data: faq6Q } = useSiteSetting('pricing_faq6_question');
+  const { data: faq6A } = useSiteSetting('pricing_faq6_answer');
+  const { data: faq7Q } = useSiteSetting('pricing_faq7_question');
+  const { data: faq7A } = useSiteSetting('pricing_faq7_answer');
+  const { data: faq8Q } = useSiteSetting('pricing_faq8_question');
+  const { data: faq8A } = useSiteSetting('pricing_faq8_answer');
+
+  const faqs = [
+    { q: faq1Q, a: faq1A },
+    { q: faq2Q, a: faq2A },
+    { q: faq3Q, a: faq3A },
+    { q: faq4Q, a: faq4A },
+    { q: faq5Q, a: faq5A },
+    { q: faq6Q, a: faq6A },
+    { q: faq7Q, a: faq7A },
+    { q: faq8Q, a: faq8A },
+  ].filter(faq => faq.q);
 
   return (
-    <div className="space-y-4">
-      {faq1Q && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{faq1Q}</CardTitle>
+    <div className="grid md:grid-cols-2 gap-4">
+      {faqs.map((faq, idx) => (
+        <Card key={idx}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">{faq.q}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">{faq1A}</p>
+            <p className="text-sm text-muted-foreground">{faq.a}</p>
           </CardContent>
         </Card>
-      )}
-      {faq2Q && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{faq2Q}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{faq2A}</p>
-          </CardContent>
-        </Card>
-      )}
-      {faq3Q && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{faq3Q}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{faq3A}</p>
-          </CardContent>
-        </Card>
-      )}
+      ))}
     </div>
   );
 };
@@ -151,6 +350,9 @@ const Preise = () => {
             </p>
           </div>
 
+          {/* How it works */}
+          <HowItWorks />
+
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-3 gap-6 mb-16">
             {packages.map((pkg) => {
@@ -196,6 +398,9 @@ const Preise = () => {
             })}
           </div>
 
+          {/* Visibility Explanation */}
+          <VisibilityExplanation />
+
           {/* Feature Comparison Table */}
           <div className="mb-16">
             <h2 className="text-2xl font-bold mb-6 text-center">{comparisonTitle || 'Feature-Vergleich'}</h2>
@@ -239,8 +444,11 @@ const Preise = () => {
             </div>
           </div>
 
+          {/* Verification Info */}
+          <VerificationInfo />
+
           {/* FAQ Section */}
-          <div className="max-w-3xl mx-auto">
+          <div className="mb-16">
             <h2 className="text-2xl font-bold mb-6 text-center">Häufige Fragen</h2>
             <FAQ />
           </div>
