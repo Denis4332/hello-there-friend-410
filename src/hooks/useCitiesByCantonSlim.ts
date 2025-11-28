@@ -1,8 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface CityWithCoordinates {
+  id: string;
+  name: string;
+  slug: string | null;
+  postal_code: string | null;
+  lat: number | null;
+  lng: number | null;
+}
+
 export const useCitiesByCantonSlim = (cantonAbbreviation: string | undefined) => {
-  return useQuery({
+  return useQuery<CityWithCoordinates[]>({
     queryKey: ['cities-by-canton', cantonAbbreviation],
     queryFn: async () => {
       if (!cantonAbbreviation) return [];
@@ -17,7 +26,7 @@ export const useCitiesByCantonSlim = (cantonAbbreviation: string | undefined) =>
       
       const { data, error } = await supabase
         .from('cities')
-        .select('name, slug')
+        .select('id, name, slug, postal_code, lat, lng')
         .eq('canton_id', cantonData.id)
         .order('name');
       
