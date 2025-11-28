@@ -62,16 +62,7 @@ const Suche = () => {
   // GPS active: ONLY show profiles within radius (like xdate.ch)
   // GPS inactive: Show canton-based text search results
   const profiles = useMemo(() => {
-    const selectedProfiles = userLat && userLng ? gpsProfiles : textProfiles;
-    console.log('Profile Selection:', {
-      hasGPS: !!userLat && !!userLng,
-      gpsProfilesCount: gpsProfiles.length,
-      textProfilesCount: textProfiles.length,
-      usingSource: userLat && userLng ? 'GPS' : 'TEXT',
-      selectedCount: selectedProfiles.length,
-      gpsProfiles: gpsProfiles.map(p => ({ name: p.display_name, city: p.city, distance: p.distance_km }))
-    });
-    return selectedProfiles;
+    return userLat && userLng ? gpsProfiles : textProfiles;
   }, [userLat, userLng, gpsProfiles, textProfiles]);
   
   const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
@@ -150,8 +141,6 @@ const Suche = () => {
               toast.success(`GPS-Suche aktiviert: ${result.city} (±${Math.round(accuracy)}m)`);
             }
             
-            console.log('GPS aktiviert:', { lat, lng, accuracy, detectedCity: result.city, canton: matchingCanton?.abbreviation });
-
             setIsDetectingLocation(false);
           },
           (error) => {
@@ -182,19 +171,15 @@ const Suche = () => {
 
   const activeFiltersCount = useMemo(() => {
     if (userLat && userLng) {
-      // GPS-Modus: GPS zählt als 1, plus optionale Filter
       let count = 1; // GPS = 1
       if (category) count++;
       if (keyword) count++;
-      console.log('Filter Debug (GPS):', { canton, category, keyword, userLat, userLng, activeFiltersCount: count });
       return count;
     } else {
-      // Normal-Modus: Canton, Category, Keyword zählen
       let count = 0;
       if (canton) count++;
       if (category) count++;
       if (keyword) count++;
-      console.log('Filter Debug (Normal):', { canton, category, keyword, userLat, userLng, activeFiltersCount: count });
       return count;
     }
   }, [canton, category, keyword, userLat, userLng]);

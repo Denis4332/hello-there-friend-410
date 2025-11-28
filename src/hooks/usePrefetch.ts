@@ -46,7 +46,6 @@ export const usePrefetch = (
 
     // Skip in development to avoid unnecessary requests
     if (import.meta.env.DEV) {
-      console.log('[Prefetch] Would prefetch:', url);
       return;
     }
 
@@ -61,8 +60,6 @@ export const usePrefetch = (
     
     // Mark as prefetched
     prefetchedUrls.current.add(url);
-
-    console.log('[Prefetch] Prefetched:', url);
   }, []);
 
   const handleMouseEnter = useCallback(() => {
