@@ -223,13 +223,19 @@ export const useSearchProfiles = (filters: {
   enabled?: boolean;
 }) => {
   return useQuery<ProfileWithRelations[]>({
-    queryKey: ['search-profiles', filters, 'v8'],
+    queryKey: ['search-profiles', filters, 'v9'],
     staleTime: 1 * 60 * 1000,
     enabled: filters.enabled ?? true,
     queryFn: async () => {
       let query = supabase
         .from('public_profiles')
         .select(PROFILE_SELECT_QUERY);
+      
+      // NEUE LOGIK: Ohne Filter (kein Kanton, keine Kategorie, kein Keyword) → NUR TOP-Profile
+      const hasNoFilters = !filters.location && !filters.categoryId && !filters.keyword;
+      if (hasNoFilters) {
+        query = query.eq('listing_type', 'top');
+      }
       
       if (filters.location) {
         const isCantonCode = /^[A-Z]{2,3}$/.test(filters.location);

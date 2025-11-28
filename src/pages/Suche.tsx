@@ -245,9 +245,20 @@ const Suche = () => {
             setCategoryGpsOpen={setCategoryGpsOpen}
           />
 
+          {/* Info-Banner wenn keine Filter aktiv */}
+          {!userLat && !userLng && !canton && !category && !keyword && (
+            <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Zeigt TOP-Profile schweizweit.</span>{' '}
+                Wähle einen Kanton oder aktiviere GPS für mehr Ergebnisse.
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
               {sortedProfiles.length} {sortedProfiles.length === 1 ? 'Ergebnis' : 'Ergebnisse'}
+              {!userLat && !userLng && !canton && !category && !keyword && ' (nur TOP)'}
             </p>
           </div>
 
