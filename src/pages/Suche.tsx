@@ -19,13 +19,17 @@ const Suche = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
-  const [radius, setRadius] = useState(parseInt(searchParams.get('umkreis') || '25'));
+  const [radius, setRadius] = useState(parseInt(searchParams.get('radius') || searchParams.get('umkreis') || '25'));
   const [category, setCategory] = useState(searchParams.get('kategorie') || '');
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
   const [sort, setSort] = useState('newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const [userLat, setUserLat] = useState<number | null>(null);
-  const [userLng, setUserLng] = useState<number | null>(null);
+  
+  // Initialize GPS coords from URL params (coming from HeroSection)
+  const urlLat = searchParams.get('lat');
+  const urlLng = searchParams.get('lng');
+  const [userLat, setUserLat] = useState<number | null>(urlLat ? parseFloat(urlLat) : null);
+  const [userLng, setUserLng] = useState<number | null>(urlLng ? parseFloat(urlLng) : null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);

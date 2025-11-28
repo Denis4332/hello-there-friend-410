@@ -28,7 +28,7 @@ export const useCategoryBySlug = (slug: string | undefined) => {
         .select('*')
         .eq('slug', slug)
         .eq('active', true)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
