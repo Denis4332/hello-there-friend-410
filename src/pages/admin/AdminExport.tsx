@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useExportCSV } from '@/hooks/useExportCSV';
 import { useExportJSON } from '@/hooks/useExportJSON';
-import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket, Users, ShieldAlert, Github, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket, Users, ShieldAlert, Github, ExternalLink, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -12,8 +13,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 const AdminExport = () => {
   const { exportToCSV } = useExportCSV();
   const { exportToJSON } = useExportJSON();
+  const { data: githubRepoUrl } = useSiteSetting('config_github_repo_url');
   const [loading, setLoading] = useState<string | null>(null);
   const [copiedGithub, setCopiedGithub] = useState(false);
+  
+  const hasGithubUrl = githubRepoUrl && githubRepoUrl.trim() !== '';
 
   const tables = [
     { name: 'profiles', label: 'Profile', icon: Database },
@@ -291,8 +295,11 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
   };
 
   const copyGitCloneCommand = () => {
-    // This is a placeholder - actual repo URL should be configured
-    const command = 'git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git';
+    if (!hasGithubUrl) {
+      toast.error('GitHub Repository URL nicht konfiguriert. Bitte unter Einstellungen > Navigation eintragen.');
+      return;
+    }
+    const command = `git clone ${githubRepoUrl}`;
     navigator.clipboard.writeText(command);
     setCopiedGithub(true);
     toast.success('Git Clone Befehl kopiert!');
@@ -300,9 +307,11 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
   };
 
   const openGitHub = () => {
-    toast.info('Öffne dein GitHub Repository in den Projekteinstellungen');
-    // In a real scenario, this would link to the actual repository
-    window.open('https://github.com', '_blank');
+    if (!hasGithubUrl) {
+      toast.error('GitHub Repository URL nicht konfiguriert. Bitte unter Einstellungen > Navigation eintragen.');
+      return;
+    }
+    window.open(githubRepoUrl, '_blank');
   };
 
   return (
@@ -328,20 +337,38 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                 <strong>SQL-Migrationen</strong> und <strong>Edge Functions Code</strong> werden direkt aus dem 
                 GitHub Repository bezogen. Diese Dateien ändern sich selten und sind immer aktuell im Repository verfügbar.
               </p>
+              {!hasGithubUrl && (
+                <div className="flex items-center gap-2 p-2 bg-destructive/10 border border-destructive/30 rounded-md text-sm text-destructive mb-3">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>GitHub URL nicht konfiguriert. Bitte unter <strong>Einstellungen → Navigation</strong> eintragen.</span>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={openGitHub} className="gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={openGitHub} 
+                  className="gap-2"
+                  disabled={!hasGithubUrl}
+                >
                   <Github className="h-4 w-4" />
                   GitHub öffnen
                   <ExternalLink className="h-3 w-3" />
                 </Button>
-                <Button variant="outline" size="sm" onClick={copyGitCloneCommand} className="gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={copyGitCloneCommand} 
+                  className="gap-2"
+                  disabled={!hasGithubUrl}
+                >
                   {copiedGithub ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                   git clone kopieren
                 </Button>
               </div>
               <div className="mt-3 p-3 bg-background/50 rounded-md font-mono text-xs">
                 <p className="text-muted-foreground mb-1"># Repository klonen und Supabase einrichten:</p>
-                <p>git clone [DEIN_REPO_URL]</p>
+                <p>git clone {hasGithubUrl ? githubRepoUrl : '[DEIN_REPO_URL]'}</p>
                 <p>cd [PROJEKT_NAME]</p>
                 <p>supabase link --project-ref [DEIN_PROJECT_REF]</p>
                 <p>supabase db push</p>
