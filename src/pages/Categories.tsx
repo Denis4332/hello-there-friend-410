@@ -9,6 +9,8 @@ import { SEO } from '@/components/SEO';
 
 const Categories = () => {
   const { data: categories = [], isLoading } = useCategories();
+  const { data: seoTitle } = useSiteSetting('seo_categories_title');
+  const { data: seoDescription } = useSiteSetting('seo_categories_description');
   const { data: pageTitle } = useSiteSetting('categories_page_title');
   const { data: pageDescription } = useSiteSetting('categories_page_subtitle');
   const { data: loadingText } = useSiteSetting('categories_loading_text');
@@ -17,8 +19,8 @@ const Categories = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title={pageTitle || 'Alle Kategorien'}
-        description={pageDescription || 'Entdecken Sie verifizierte Profile nach Kategorie'}
+        title={seoTitle || pageTitle || 'Alle Kategorien'}
+        description={seoDescription || pageDescription || 'Entdecken Sie verifizierte Profile nach Kategorie'}
       />
       <Header />
       <main className="flex-1 py-8">

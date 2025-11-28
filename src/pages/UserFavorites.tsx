@@ -1,16 +1,19 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 const UserFavorites = () => {
   const { user } = useAuth();
+  const { data: seoTitle } = useSiteSetting('seo_favorites_title');
   
   const { data: favoriteProfiles = [], isLoading } = useQuery({
     queryKey: ['favorite-profiles', user?.id],
@@ -49,6 +52,7 @@ const UserFavorites = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <SEO title={seoTitle || 'Favoriten'} description="Deine gespeicherten Profile" />
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-8">

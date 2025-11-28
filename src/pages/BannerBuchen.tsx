@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Zap, Star, Grid3x3, Upload, Calendar, CreditCard } from 'lucide-react';
 import { BannerPackage } from '@/types/advertisement';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const BANNER_PACKAGES: BannerPackage[] = [
   {
@@ -74,6 +75,8 @@ export default function BannerBuchen() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: seoTitle } = useSiteSetting('seo_banner_title');
+  const { data: seoDescription } = useSiteSetting('seo_banner_description');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
 
@@ -199,8 +202,8 @@ export default function BannerBuchen() {
   return (
     <>
       <SEO
-        title="Banner buchen"
-        description="Buchen Sie Ihre Banneranzeige und erreichen Sie tausende potenzielle Kunden."
+        title={seoTitle || 'Banner buchen'}
+        description={seoDescription || 'Buchen Sie Ihre Banneranzeige und erreichen Sie tausende potenzielle Kunden.'}
       />
       
       <div className="min-h-screen flex flex-col">

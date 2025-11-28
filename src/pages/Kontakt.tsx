@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,8 @@ const Kontakt = () => {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { data: seoTitle } = useSiteSetting('seo_contact_title');
+  const { data: seoDescription } = useSiteSetting('seo_contact_description');
   const { data: pageTitle } = useSiteSetting('contact_page_title');
   const { data: pageSubtitle } = useSiteSetting('contact_page_subtitle');
   const { data: nameLabel } = useSiteSetting('contact_form_name_label');
@@ -87,6 +90,10 @@ const Kontakt = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={seoTitle || pageTitle || 'Kontakt'}
+        description={seoDescription || pageSubtitle || 'Kontaktieren Sie uns'}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-2xl">

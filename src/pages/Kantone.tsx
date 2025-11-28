@@ -8,12 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { useSearchProfiles } from '@/hooks/useProfiles';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { MapPin, Search } from 'lucide-react';
 
 const Kantone = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { data: cantons = [] } = useCantons();
   const { data: allProfiles = [] } = useSearchProfiles({});
+  const { data: seoTitle } = useSiteSetting('seo_kantone_title');
+  const { data: seoDescription } = useSiteSetting('seo_kantone_description');
 
   // Count profiles per canton
   const cantonCounts = cantons.map((canton) => ({
@@ -31,8 +34,8 @@ const Kantone = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title="Kantone" 
-        description="Durchsuchen Sie Profile nach Schweizer Kantonen"
+        title={seoTitle || 'Kantone'} 
+        description={seoDescription || 'Durchsuchen Sie Profile nach Schweizer Kantonen'}
       />
       <Header />
       <main className="flex-1 py-8">

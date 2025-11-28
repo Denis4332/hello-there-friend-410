@@ -14,6 +14,7 @@ interface SEOProps {
   url?: string;
   type?: 'website' | 'profile' | 'article';
   schemaType?: 'Organization' | 'LocalBusiness' | 'WebSite' | 'Person';
+  keywords?: string;
 }
 
 export const SEO = ({ 
@@ -23,7 +24,8 @@ export const SEO = ({
   imageAlt,
   url,
   type = 'website',
-  schemaType = 'Organization'
+  schemaType,
+  keywords
 }: SEOProps) => {
   const { data: siteName } = useSiteSetting('site_name');
   const { data: author } = useSiteSetting('seo_author');
@@ -35,6 +37,7 @@ export const SEO = ({
   const { data: geoPosition } = useSiteSetting('seo_geo_position');
   const { data: canonicalBase } = useSiteSetting('seo_canonical_base');
   const { data: noindexPages } = useSiteSetting('noindex_pages');
+  const { data: globalKeywords } = useSiteSetting('meta_keywords');
   
   const fullTitle = `${title} | ${siteName || 'ESCORIA'}`;
   const currentUrl = url || window.location.href;
@@ -51,6 +54,11 @@ export const SEO = ({
         {/* Basic Meta Tags */}
         <title>{fullTitle}</title>
         <meta name="description" content={metaDescription} />
+        
+        {/* Keywords */}
+        {(keywords || globalKeywords) && (
+          <meta name="keywords" content={keywords || globalKeywords} />
+        )}
         
         {/* Extended Meta Tags */}
         {author && <meta name="author" content={author} />}

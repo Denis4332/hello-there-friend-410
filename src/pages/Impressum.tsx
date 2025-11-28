@@ -1,9 +1,12 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const Impressum = () => {
   const { data: title } = useSiteSetting('impressum_title');
+  const { data: seoTitle } = useSiteSetting('seo_impressum_title');
+  const { data: seoDescription } = useSiteSetting('seo_impressum_description');
   const { data: companyName } = useSiteSetting('impressum_company_name');
   const { data: address } = useSiteSetting('impressum_address');
   const { data: email } = useSiteSetting('impressum_email');
@@ -12,6 +15,10 @@ const Impressum = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={seoTitle || title || 'Impressum'}
+        description={seoDescription || 'Impressum und rechtliche Informationen'}
+      />
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">{title || 'Impressum'}</h1>

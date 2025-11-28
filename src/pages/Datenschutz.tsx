@@ -1,8 +1,13 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 const Datenschutz = () => {
+  // SEO Settings
+  const { data: seoTitle } = useSiteSetting('seo_datenschutz_title');
+  const { data: seoDescription } = useSiteSetting('seo_datenschutz_description');
+  
   // Section 1 - Verantwortliche Stelle
   const { data: title } = useSiteSetting('legal_privacy_title');
   const { data: intro } = useSiteSetting('legal_privacy_intro');
@@ -56,6 +61,10 @@ const Datenschutz = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={seoTitle || title || 'Datenschutz'}
+        description={seoDescription || 'Datenschutzerklärung - Erfahre wie wir deine Daten schützen.'}
+      />
       <Header />
       <main className="flex-1 py-8">
         <div className="container mx-auto px-4 max-w-4xl">

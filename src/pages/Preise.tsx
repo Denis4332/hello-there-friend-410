@@ -272,6 +272,8 @@ const CTA = () => {
 const Preise = () => {
   const { data: pageTitle } = useSiteSetting('pricing_page_title');
   const { data: pageSubtitle } = useSiteSetting('pricing_page_subtitle');
+  const { data: seoTitle } = useSiteSetting('seo_pricing_title');
+  const { data: seoDescription } = useSiteSetting('seo_pricing_description');
   const { data: basicTitle } = useSiteSetting('pricing_basic_title');
   const { data: basicPrice } = useSiteSetting('pricing_basic_price');
   const { data: premiumTitle } = useSiteSetting('pricing_premium_title');
@@ -336,8 +338,8 @@ const Preise = () => {
   return (
     <>
       <SEO 
-        title={pageTitle || 'Preise & Pakete'}
-        description={pageSubtitle || 'Wähle das passende Paket für dein Inserat. Von kostenlos bis Premium - für jeden das Richtige.'}
+        title={seoTitle || pageTitle || 'Preise & Pakete'}
+        description={seoDescription || pageSubtitle || 'Wähle das passende Paket für dein Inserat. Von kostenlos bis Premium - für jeden das Richtige.'}
       />
       <Header />
       <main className="container mx-auto px-4 py-12">

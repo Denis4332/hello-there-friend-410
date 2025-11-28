@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/Header';
+import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ const UserDashboard = () => {
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const { data: seoTitle } = useSiteSetting('seo_dashboard_title');
   const { data: dashboardWelcome } = useSiteSetting('dashboard_welcome_text');
   const { data: createProfileButton } = useSiteSetting('dashboard_create_profile_button');
   const { data: editProfileButton } = useSiteSetting('dashboard_edit_profile_button');
@@ -158,6 +160,7 @@ const UserDashboard = () => {
   if (loading) {
     return (
       <>
+        <SEO title={seoTitle || 'Dashboard'} description="Verwalte dein Profil und Inserate" />
         <Header />
         <div className="min-h-screen flex items-center justify-center bg-background">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -169,6 +172,7 @@ const UserDashboard = () => {
   if (!profile) {
     return (
       <>
+        <SEO title={seoTitle || 'Dashboard'} description="Verwalte dein Profil und Inserate" />
         <Header />
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
@@ -188,6 +192,7 @@ const UserDashboard = () => {
 
   return (
     <>
+      <SEO title={seoTitle || 'Dashboard'} description="Verwalte dein Profil und Inserate" />
       <Header />
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
