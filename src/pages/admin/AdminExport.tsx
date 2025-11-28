@@ -4,14 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useExportCSV } from '@/hooks/useExportCSV';
 import { useExportJSON } from '@/hooks/useExportJSON';
-import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket, Users, ShieldAlert } from 'lucide-react';
+import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket, Users, ShieldAlert, Github, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const AdminExport = () => {
   const { exportToCSV } = useExportCSV();
   const { exportToJSON } = useExportJSON();
   const [loading, setLoading] = useState<string | null>(null);
+  const [copiedGithub, setCopiedGithub] = useState(false);
 
   const tables = [
     { name: 'profiles', label: 'Profile', icon: Database },
@@ -35,6 +37,27 @@ const AdminExport = () => {
     { name: 'auth_rate_limits', label: 'Auth Rate Limits', icon: Database },
     { name: 'error_logs', label: 'Fehler-Logs', icon: Database },
     { name: 'search_queries', label: 'Suchanfragen', icon: Database },
+  ];
+
+  // List of edge functions in the project (for reference display)
+  const edgeFunctions = [
+    'admin-delete-user',
+    'check-auth-rate-limit',
+    'check-leaked-password',
+    'check-subscription-expiry',
+    'cleanup-orphaned-photos',
+    'delete-user-account',
+    'export-auth-users',
+    'export-storage-urls',
+    'export-user-data',
+    'generate-sitemap',
+    'geocode-all-profiles',
+    'log-error',
+    'record-auth-attempt',
+    'track-ad-event',
+    'track-event',
+    'track-profile-view',
+    'validate-image',
   ];
 
   const exportTable = async (tableName: string, format: 'csv' | 'json') => {
@@ -139,31 +162,31 @@ const AdminExport = () => {
 -- 
 -- WICHTIG: Dieses Schema-Export ist eine Referenz für die Datenbank-Struktur.
 -- Für vollständige Migration müssen alle Supabase-Migrationen aus dem 
--- supabase/migrations/ Verzeichnis verwendet werden.
+-- GitHub Repository geklont werden: supabase/migrations/
 
 -- TABELLEN-ÜBERSICHT:
 -- Diese Tabellen sind in der Datenbank vorhanden:
 ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
 
--- MIGRATIONS-VERZEICHNIS:
+-- MIGRATIONS-VERZEICHNIS (GitHub Repository):
 -- Alle CREATE TABLE Statements, RLS Policies, Trigger und Functions
 -- befinden sich in: supabase/migrations/
+-- 
+-- Klone das Repository und führe aus:
+-- $ supabase link --project-ref YOUR_PROJECT_REF
+-- $ supabase db push
 
--- WICHTIGE HINWEISE FÜR MIGRATION:
--- 1. Führe alle Migrations in chronologischer Reihenfolge aus
--- 2. Nutze 'supabase db push' für automatisches Anwenden
--- 3. Oder führe SQL-Files manuell im Supabase SQL Editor aus
--- 4. RLS Policies MÜSSEN aktiviert sein für Sicherheit
+-- EDGE FUNCTIONS (GitHub Repository):
+-- Alle Backend-Logik in: supabase/functions/
+-- Deploy mit: supabase functions deploy --all
+--
+-- Funktionen: ${edgeFunctions.join(', ')}
 
 -- STORAGE BUCKETS:
 -- - profile-photos (public)
 -- - site-assets (public)
 -- - advertisements (public)
 -- - verification-photos (private)
-
--- EDGE FUNCTIONS:
--- Alle Backend-Logik in: supabase/functions/
--- Deploy mit: supabase functions deploy FUNCTION_NAME
 
 -- FÜR DETAILLIERTE MIGRATIONS-ANLEITUNG:
 -- Siehe: MIGRATION.md im Projekt-Root
@@ -184,82 +207,6 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
       toast.success('Schema-Referenz erfolgreich exportiert');
     } catch (error: any) {
       toast.error(`Fehler beim Schema-Export: ${error.message}`);
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const exportCompleteMigrations = async () => {
-    setLoading('complete-migrations');
-    toast.info('Exportiere vollständiges SQL-Schema...');
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Nicht angemeldet');
-        return;
-      }
-
-      const response = await supabase.functions.invoke('export-migrations', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      const blob = new Blob([response.data], { type: 'application/sql' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `escoria_complete_schema_${new Date().toISOString().split('T')[0]}.sql`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast.success('Komplettes SQL-Schema erfolgreich exportiert!');
-    } catch (error: any) {
-      toast.error(`Fehler beim SQL-Schema-Export: ${error.message}`);
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const exportEdgeFunctions = async () => {
-    setLoading('edge-functions');
-    toast.info('Exportiere Edge Functions...');
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Nicht angemeldet');
-        return;
-      }
-
-      const response = await supabase.functions.invoke('export-edge-functions', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `escoria_edge_functions_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      toast.success(`${response.data.total_functions} Edge Functions erfolgreich exportiert!`);
-    } catch (error: any) {
-      toast.error(`Fehler beim Edge Functions-Export: ${error.message}`);
     } finally {
       setLoading(null);
     }
@@ -343,6 +290,21 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
     }
   };
 
+  const copyGitCloneCommand = () => {
+    // This is a placeholder - actual repo URL should be configured
+    const command = 'git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git';
+    navigator.clipboard.writeText(command);
+    setCopiedGithub(true);
+    toast.success('Git Clone Befehl kopiert!');
+    setTimeout(() => setCopiedGithub(false), 2000);
+  };
+
+  const openGitHub = () => {
+    toast.info('Öffne dein GitHub Repository in den Projekteinstellungen');
+    // In a real scenario, this would link to the actual repository
+    window.open('https://github.com', '_blank');
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
@@ -351,23 +313,56 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
           <div className="mb-6">
             <h1 className="text-3xl font-bold mb-2">Daten exportieren</h1>
             <p className="text-sm text-muted-foreground">
-              Exportiere einzelne Tabellen oder erstelle ein vollständiges Backup für Self-Hosting
+              Exportiere Daten für Self-Hosting. Code (Migrations + Edge Functions) kommt aus dem GitHub Repository.
             </p>
           </div>
 
-          {/* Complete Migration Package */}
-          <Card className="mb-6 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+          {/* GitHub Info Alert */}
+          <Alert className="mb-6 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+            <Github className="h-5 w-5" />
+            <AlertTitle className="flex items-center gap-2">
+              📂 Code-Export via GitHub Repository
+            </AlertTitle>
+            <AlertDescription className="mt-2">
+              <p className="mb-3">
+                <strong>SQL-Migrationen</strong> und <strong>Edge Functions Code</strong> werden direkt aus dem 
+                GitHub Repository bezogen. Diese Dateien ändern sich selten und sind immer aktuell im Repository verfügbar.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={openGitHub} className="gap-2">
+                  <Github className="h-4 w-4" />
+                  GitHub öffnen
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={copyGitCloneCommand} className="gap-2">
+                  {copiedGithub ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  git clone kopieren
+                </Button>
+              </div>
+              <div className="mt-3 p-3 bg-background/50 rounded-md font-mono text-xs">
+                <p className="text-muted-foreground mb-1"># Repository klonen und Supabase einrichten:</p>
+                <p>git clone [DEIN_REPO_URL]</p>
+                <p>cd [PROJEKT_NAME]</p>
+                <p>supabase link --project-ref [DEIN_PROJECT_REF]</p>
+                <p>supabase db push</p>
+                <p>supabase functions deploy --all</p>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          {/* Complete Migration Package - Data Only */}
+          <Card className="mb-6 border-primary/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Rocket className="h-6 w-6 text-primary" />
-                🚀 Komplette Supabase-Migration
+                🚀 Daten-Export für Migration
               </CardTitle>
               <CardDescription>
-                Exportiere ALLES für eine vollständige Migration zu eigenem Supabase-Projekt - inkl. Auth Users mit Passwörtern!
+                Exportiere alle Daten (Users, Tabellen, Storage) - Code kommt aus GitHub!
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <Button 
                   onClick={exportAuthUsers}
                   disabled={loading === 'auth-users'}
@@ -378,26 +373,6 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                   <ShieldAlert className="h-5 w-5" />
                   <span className="text-sm font-bold">Auth Users + Passwörter</span>
                   <span className="text-xs opacity-70">⚠️ Sensible Daten!</span>
-                </Button>
-                <Button 
-                  onClick={exportCompleteMigrations}
-                  disabled={loading === 'complete-migrations'}
-                  size="lg"
-                  className="gap-2 h-auto py-4 flex-col"
-                >
-                  <FileCode className="h-5 w-5" />
-                  <span className="text-sm">Komplettes SQL-Schema</span>
-                  <span className="text-xs opacity-70">88+ Migrations kombiniert</span>
-                </Button>
-                <Button 
-                  onClick={exportEdgeFunctions}
-                  disabled={loading === 'edge-functions'}
-                  size="lg"
-                  className="gap-2 h-auto py-4 flex-col"
-                >
-                  <Code className="h-5 w-5" />
-                  <span className="text-sm">Edge Functions Code</span>
-                  <span className="text-xs opacity-70">15 Backend Functions</span>
                 </Button>
                 <Button 
                   onClick={exportStorageUrls}
@@ -419,6 +394,50 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                   <span className="text-sm">Alle Daten (JSON)</span>
                   <span className="text-xs opacity-70">{tables.length} Tabellen</span>
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Code Reference Card */}
+          <Card className="mb-6 border-dashed">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Github className="h-5 w-5" />
+                📁 Code aus GitHub Repository
+              </CardTitle>
+              <CardDescription>
+                Diese Dateien befinden sich im GitHub Repository und müssen nicht separat exportiert werden
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileCode className="h-4 w-4 text-primary" />
+                    <strong>SQL-Migrationen</strong>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    97 Migration-Dateien in <code className="bg-background px-1 rounded">supabase/migrations/</code>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Enthält: CREATE TABLE, RLS Policies, Triggers, Functions, Storage Buckets
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Code className="h-4 w-4 text-primary" />
+                    <strong>Edge Functions</strong>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {edgeFunctions.length} Functions in <code className="bg-background px-1 rounded">supabase/functions/</code>
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {edgeFunctions.slice(0, 6).map(fn => (
+                      <span key={fn} className="text-xs bg-background px-1.5 py-0.5 rounded">{fn}</span>
+                    ))}
+                    <span className="text-xs bg-background px-1.5 py-0.5 rounded">+{edgeFunctions.length - 6} mehr</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -491,39 +510,32 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
 
           {/* Info Box */}
           <div className="mt-8 p-6 bg-card rounded-lg border">
-            <h3 className="font-semibold mb-3 text-lg">📦 Export-Optionen Übersicht</h3>
+            <h3 className="font-semibold mb-3 text-lg">📦 Migration Übersicht</h3>
             <div className="space-y-3 text-sm">
               <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
                 <strong className="text-destructive flex items-center gap-2">
                   <ShieldAlert className="h-4 w-4" />
-                  🔥 NEU: Auth Users + Passwörter:
+                  🔥 Auth Users + Passwörter:
                 </strong>
                 <p className="text-muted-foreground mt-1">
-                  Exportiert ALLE User inkl. verschlüsselter Passwort-Hashes (encrypted_password). 
-                  User müssen sich NICHT neu registrieren! Export enthält automatisch Import-Script für neues Supabase-Projekt. 
+                  Exportiert ALLE User inkl. verschlüsselter Passwort-Hashes. 
+                  User müssen sich NICHT neu registrieren! Export enthält automatisch Import-Script. 
                   ⚠️ SEHR sensibel - nach Import SOFORT löschen!
                 </p>
               </div>
+              
               <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
                 <strong className="text-primary flex items-center gap-2">
-                  <Rocket className="h-4 w-4" />
-                  Komplette Supabase-Migration:
+                  <Github className="h-4 w-4" />
+                  GitHub Repository = Code-Quelle:
                 </strong>
                 <p className="text-muted-foreground mt-1">
-                  Exportiert ALLES für vollständige Unabhängigkeit: Auth Users mit Passwörtern, SQL-Schema (88+ Migrations kombiniert), 
-                  15 Edge Functions mit Code, Download-URLs für alle Storage-Dateien (7 Tage gültig), 
-                  und alle {tables.length} Tabellen als JSON. Nach dem Export kannst du komplett zu eigenem 
-                  Supabase-Projekt wechseln - 100% unabhängig von Lovable Cloud ohne User-Neu-Registrierung!
+                  SQL-Migrationen und Edge Functions Code befinden sich im GitHub Repository und werden 
+                  mit <code className="bg-background px-1 rounded">supabase db push</code> und 
+                  <code className="bg-background px-1 rounded">supabase functions deploy</code> deployed.
                 </p>
               </div>
-              <div>
-                <strong className="text-primary">Komplettes SQL-Schema:</strong>
-                <p className="text-muted-foreground">Alle 88+ Migration-Files kombiniert in eine SQL-Datei. Enthält CREATE TABLE, RLS Policies, Triggers, Functions, Storage Buckets. Einfach im Supabase SQL-Editor ausführen.</p>
-              </div>
-              <div>
-                <strong className="text-primary">Edge Functions Code:</strong>
-                <p className="text-muted-foreground">Alle 14 Backend-Functions mit vollständigem TypeScript-Code als JSON. Inkl. Deployment-Anleitung für Supabase CLI.</p>
-              </div>
+
               <div>
                 <strong className="text-primary">Storage Download-URLs:</strong>
                 <p className="text-muted-foreground">Signierte URLs (7 Tage gültig) für alle Dateien aus allen Buckets. Download mit Browser, wget, oder Skript möglich.</p>
@@ -533,14 +545,23 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                 <p className="text-muted-foreground">Alle {tables.length} Tabellen in einer Datei. Ideal für komplettes Backup.</p>
               </div>
               <div className="pt-2 border-t">
-                <strong>💡 Hinweise:</strong>
-                <ul className="text-muted-foreground space-y-1 ml-4 mt-1">
-                  <li>• CSV-Exporte sind gut für Excel/Tabellenprogramme</li>
-                  <li>• JSON-Exporte enthalten die vollständige Datenstruktur</li>
-                  <li>• Exportdateien werden mit aktuellem Datum benannt</li>
-                  <li>• Storage-URLs sind 7 Tage gültig, danach neu generieren</li>
-                  <li>• Für Self-Hosting siehe <strong>MIGRATION.md</strong> im Projekt-Root</li>
-                </ul>
+                <strong>💡 Migration-Schritte:</strong>
+                <ol className="text-muted-foreground space-y-1 ml-4 mt-1 list-decimal">
+                  <li>GitHub Repository klonen</li>
+                  <li>Neues Supabase-Projekt erstellen</li>
+                  <li><code className="bg-background px-1 rounded">supabase link</code> + <code className="bg-background px-1 rounded">supabase db push</code></li>
+                  <li>Auth Users importieren (mit Import-Script)</li>
+                  <li>Tabellen-Daten importieren</li>
+                  <li>Storage-Dateien herunterladen & hochladen</li>
+                  <li>Edge Functions deployen</li>
+                  <li>Frontend auf Netlify/Vercel deployen</li>
+                </ol>
+              </div>
+              <div className="pt-2 border-t">
+                <strong>📚 Dokumentation:</strong>
+                <p className="text-muted-foreground">
+                  Ausführliche Anleitung: <strong>MIGRATION.md</strong> im Projekt-Root
+                </p>
               </div>
             </div>
           </div>
