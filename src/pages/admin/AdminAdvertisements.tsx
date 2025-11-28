@@ -40,6 +40,18 @@ export default function AdminAdvertisements() {
     stripe_payment_id: null as string | null,
     payment_required: false,
   });
+  
+  // Gratis Promo Banner State
+  const [isPromo, setIsPromo] = useState(false);
+  const [promoDuration, setPromoDuration] = useState<'7' | '30' | '90' | 'unlimited'>('30');
+  
+  const calculatePromoEndDate = (duration: string) => {
+    if (duration === 'unlimited') return '';
+    const days = parseInt(duration);
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + days);
+    return endDate.toISOString().split('T')[0];
+  };
 
   const resetForm = () => {
     setFormData({
@@ -58,18 +70,35 @@ export default function AdminAdvertisements() {
       payment_required: false,
     });
     setEditingAd(null);
+    setIsPromo(false);
+    setPromoDuration('30');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      // Build submission data
+      const submitData = { ...formData };
+      
+      // If promo banner, set dates and payment_required = false
+      if (isPromo) {
+        const today = new Date().toISOString().split('T')[0];
+        submitData.start_date = today;
+        submitData.end_date = calculatePromoEndDate(promoDuration);
+        submitData.payment_required = false;
+        submitData.price_per_day = 0;
+      }
+      
       if (editingAd) {
-        await updateAd.mutateAsync({ id: editingAd.id, ...formData });
+        await updateAd.mutateAsync({ id: editingAd.id, ...submitData });
         toast({ title: 'Banner aktualisiert' });
       } else {
-        await createAd.mutateAsync(formData);
-        toast({ title: 'Banner erstellt' });
+        await createAd.mutateAsync(submitData);
+        toast({ 
+          title: isPromo ? '🎁 Gratis Promo-Banner erstellt' : 'Banner erstellt',
+          description: isPromo ? `Läuft ${promoDuration === 'unlimited' ? 'unbegrenzt' : promoDuration + ' Tage'}` : undefined
+        });
       }
       setIsDialogOpen(false);
       resetForm();
@@ -235,27 +264,67 @@ export default function AdminAdvertisements() {
                   </>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start_date">Startdatum</Label>
-                    <Input
-                      id="start_date"
-                      type="date"
-                      value={formData.start_date}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                {/* Gratis Promo Banner Section */}
+                <div className="border border-dashed border-primary/50 rounded-lg p-4 bg-primary/5">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Switch
+                      id="isPromo"
+                      checked={isPromo}
+                      onCheckedChange={setIsPromo}
                     />
+                    <Label htmlFor="isPromo" className="font-semibold text-primary">
+                      🎁 Gratis Promo-Banner (Admin)
+                    </Label>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="end_date">Enddatum</Label>
-                    <Input
-                      id="end_date"
-                      type="date"
-                      value={formData.end_date}
-                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    />
-                  </div>
+                  
+                  {isPromo && (
+                    <div className="space-y-2">
+                      <Label>Laufzeit wählen</Label>
+                      <Select
+                        value={promoDuration}
+                        onValueChange={(value: '7' | '30' | '90' | 'unlimited') => setPromoDuration(value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">7 Tage</SelectItem>
+                          <SelectItem value="30">30 Tage</SelectItem>
+                          <SelectItem value="90">90 Tage</SelectItem>
+                          <SelectItem value="unlimited">Unbegrenzt</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Startet sofort, endet {promoDuration === 'unlimited' ? 'nie' : `nach ${promoDuration} Tagen`}
+                      </p>
+                    </div>
+                  )}
                 </div>
+
+                {/* Manual date selection (hidden when promo is active) */}
+                {!isPromo && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="start_date">Startdatum</Label>
+                      <Input
+                        id="start_date"
+                        type="date"
+                        value={formData.start_date}
+                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="end_date">Enddatum</Label>
+                      <Input
+                        id="end_date"
+                        type="date"
+                        value={formData.end_date}
+                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="priority">Priorität (höher = wichtiger)</Label>
@@ -326,10 +395,15 @@ export default function AdminAdvertisements() {
                         <Badge variant="outline">{positionLabels[ad.position]}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
                           <Badge variant={ad.active ? 'default' : 'secondary'}>
                             {ad.active ? 'Aktiv' : 'Inaktiv'}
                           </Badge>
+                          {!ad.payment_required && (
+                            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                              🎁 GRATIS
+                            </Badge>
+                          )}
                           {isExpired(ad.end_date) && (
                             <Badge variant="destructive">ABGELAUFEN</Badge>
                           )}
