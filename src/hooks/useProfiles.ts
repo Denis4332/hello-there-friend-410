@@ -536,14 +536,6 @@ export const useProfilesByRadius = (
       
       const filteredData = data || [];
       
-      console.log('GPS-Suche:', { 
-        userLat, 
-        userLng, 
-        radiusKm, 
-        profileCount: filteredData.length,
-        filters 
-      });
-      
       // Fetch photos and categories for each profile
       const profilesWithRelations = await Promise.all(
         filteredData.map(async (profile) => {
