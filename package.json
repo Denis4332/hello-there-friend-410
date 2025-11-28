@@ -57,6 +57,7 @@
     "husky": "^9.1.7",
     "input-otp": "^1.4.2",
     "jsdom": "^27.1.0",
+    "jszip": "^3.10.1",
     "lint-staged": "^16.2.6",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",

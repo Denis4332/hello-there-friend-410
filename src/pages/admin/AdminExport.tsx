@@ -5,15 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useExportCSV } from '@/hooks/useExportCSV';
 import { useExportJSON } from '@/hooks/useExportJSON';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
-import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket, Users, ShieldAlert, Github, ExternalLink, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useStorageDownload } from '@/hooks/useStorageDownload';
+import { Download, Database, FileJson, FileSpreadsheet, Archive, FileCode, Code, ImageIcon, Rocket, Users, ShieldAlert, Github, ExternalLink, Copy, CheckCircle2, AlertCircle, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 const AdminExport = () => {
   const { exportToCSV } = useExportCSV();
   const { exportToJSON } = useExportJSON();
   const { data: githubRepoUrl } = useSiteSetting('config_github_repo_url');
+  const { downloadStorageAsZip, progress: zipProgress, isDownloading: isZipDownloading } = useStorageDownload();
   const [loading, setLoading] = useState<string | null>(null);
   const [copiedGithub, setCopiedGithub] = useState(false);
   
@@ -389,10 +392,10 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <Button 
                   onClick={exportAuthUsers}
-                  disabled={loading === 'auth-users'}
+                  disabled={loading === 'auth-users' || isZipDownloading}
                   size="lg"
                   variant="destructive"
                   className="gap-2 h-auto py-4 flex-col"
@@ -402,18 +405,30 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                   <span className="text-xs opacity-70">⚠️ Sensible Daten!</span>
                 </Button>
                 <Button 
-                  onClick={exportStorageUrls}
-                  disabled={loading === 'storage-urls'}
+                  onClick={downloadStorageAsZip}
+                  disabled={isZipDownloading || loading !== null}
                   size="lg"
+                  variant="default"
+                  className="gap-2 h-auto py-4 flex-col bg-gradient-to-br from-primary to-primary/80"
+                >
+                  <Package className="h-5 w-5" />
+                  <span className="text-sm font-bold">📦 Storage als ZIP</span>
+                  <span className="text-xs opacity-70">Alle Dateien automatisch</span>
+                </Button>
+                <Button 
+                  onClick={exportStorageUrls}
+                  disabled={loading === 'storage-urls' || isZipDownloading}
+                  size="lg"
+                  variant="outline"
                   className="gap-2 h-auto py-4 flex-col"
                 >
                   <ImageIcon className="h-5 w-5" />
-                  <span className="text-sm">Storage Download-URLs</span>
+                  <span className="text-sm">Storage URLs (JSON)</span>
                   <span className="text-xs opacity-70">7 Tage gültig</span>
                 </Button>
                 <Button 
                   onClick={exportAllData}
-                  disabled={loading === 'all-backup'}
+                  disabled={loading === 'all-backup' || isZipDownloading}
                   size="lg"
                   className="gap-2 h-auto py-4 flex-col"
                 >
@@ -422,6 +437,29 @@ ${tables.map(t => `-- - ${t.name} (${t.label})`).join('\n')}
                   <span className="text-xs opacity-70">{tables.length} Tabellen</span>
                 </Button>
               </div>
+
+              {/* ZIP Download Progress */}
+              {isZipDownloading && (
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">{zipProgress.status}</span>
+                    {zipProgress.total > 0 && (
+                      <span className="text-sm text-muted-foreground">
+                        {zipProgress.current} / {zipProgress.total} Dateien
+                      </span>
+                    )}
+                  </div>
+                  <Progress 
+                    value={zipProgress.total > 0 ? (zipProgress.current / zipProgress.total) * 100 : 0} 
+                    className="h-2"
+                  />
+                  {zipProgress.currentFile && (
+                    <p className="text-xs text-muted-foreground mt-2 truncate">
+                      📄 {zipProgress.currentFile}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
