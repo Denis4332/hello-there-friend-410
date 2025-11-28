@@ -8,6 +8,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useDesignSettings } from "./hooks/useDesignSettings";
+import { useCustomCodeInjection } from "./hooks/useCustomCodeInjection";
+import { useFaviconSetting } from "./hooks/useFaviconSetting";
 import { BannerManager } from "./components/BannerManager";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
@@ -86,7 +88,9 @@ const PageViewTracker = () => {
 };
 
 const AppContent = () => {
-  useDesignSettings(); // Load dynamic colors from database
+  useDesignSettings(); // Load dynamic colors, font, border-radius from database
+  useCustomCodeInjection(); // Inject custom CSS/JS from CMS
+  useFaviconSetting(); // Load dynamic favicon from CMS
   
   return (
     <AuthProvider>

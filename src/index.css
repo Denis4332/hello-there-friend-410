@@ -17,6 +17,9 @@ All colors MUST be HSL.
   :root {
     --background: 0 0% 98%;
     --foreground: 0 0% 10%;
+    
+    /* Dynamic font family - can be overridden via CMS */
+    --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
@@ -108,6 +111,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-family);
   }
 }
 
