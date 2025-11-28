@@ -7,9 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 import type { Profile } from '@/types/dating';
 
 const AdminProfile = () => {
+  // CMS Preise laden
+  const { data: basicPrice } = useSiteSetting('pricing_basic_price');
+  const { data: premiumPrice } = useSiteSetting('pricing_premium_price');
+  const { data: topPrice } = useSiteSetting('pricing_top_price');
   const [statusFilter, setStatusFilter] = useState('');
   const [verifiedFilter, setVerifiedFilter] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
@@ -208,7 +213,7 @@ const AdminProfile = () => {
     setDialogStatus(profile.status);
     setDialogVerified(!!profile.verified_at);
     setDialogNote('');
-    setDialogListingType(profile.listing_type || 'free');
+    setDialogListingType(profile.listing_type || 'basic');
     
     // Set expiry date if exists
     const expiryDate = profile.listing_type === 'premium' 
@@ -294,6 +299,8 @@ const AdminProfile = () => {
                     <tr>
                       <th className="text-left p-3 text-sm font-medium">Name</th>
                       <th className="text-left p-3 text-sm font-medium">Stadt</th>
+                      <th className="text-left p-3 text-sm font-medium">Typ</th>
+                      <th className="text-left p-3 text-sm font-medium">Fotos</th>
                       <th className="text-left p-3 text-sm font-medium">Status</th>
                       <th className="text-left p-3 text-sm font-medium">Verifiziert</th>
                       <th className="text-left p-3 text-sm font-medium">Erstellt</th>
@@ -312,6 +319,20 @@ const AdminProfile = () => {
                         </div>
                       </td>
                       <td className="p-3 text-sm">{profile.city}</td>
+                      <td className="p-3">
+                        <Badge 
+                          variant={profile.listing_type === 'top' ? 'destructive' : 
+                                   profile.listing_type === 'premium' ? 'default' : 'secondary'}
+                          className={profile.listing_type === 'top' ? 'bg-red-600 text-white' : 
+                                     profile.listing_type === 'premium' ? 'bg-amber-500 text-white' : ''}
+                        >
+                          {profile.listing_type === 'top' ? '🔥 TOP' : 
+                           profile.listing_type === 'premium' ? '⭐ Premium' : 'Basic'}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-sm">
+                        {profile.photos?.length || 0} 📷
+                      </td>
                       <td className="p-3">
                         <Badge variant="outline">{profile.status}</Badge>
                       </td>
@@ -448,10 +469,9 @@ const AdminProfile = () => {
                                         value={dialogListingType}
                                         onChange={(e) => setDialogListingType(e.target.value)}
                                       >
-                                        <option value="free">Free (Standard)</option>
-                                        <option value="basic">Basic (CHF 49)</option>
-                                        <option value="premium">Premium (CHF 99)</option>
-                                        <option value="top">TOP AD (CHF 199)</option>
+                                        <option value="basic">Basic ({basicPrice || 'CHF 49/Monat'})</option>
+                                        <option value="premium">Premium ({premiumPrice || 'CHF 99/Monat'})</option>
+                                        <option value="top">TOP AD ({topPrice || 'CHF 199/Monat'})</option>
                                       </select>
                                     </div>
 
