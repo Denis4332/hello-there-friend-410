@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,9 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useAllAdvertisements, useCreateAdvertisement, useUpdateAdvertisement, useDeleteAdvertisement, useExtendAdvertisement } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
-import { Plus, Pencil, Trash2, Eye, MousePointerClick, Clock, ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, MousePointerClick, Clock, ImageIcon, Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ImageCropper } from '@/components/admin/ImageCropper';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminAdvertisements() {
   const { data: ads, isLoading } = useAllAdvertisements();
@@ -45,12 +47,86 @@ export default function AdminAdvertisements() {
   const [isPromo, setIsPromo] = useState(false);
   const [promoDuration, setPromoDuration] = useState<'7' | '30' | '90' | 'unlimited'>('30');
   
+  // Image upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  
   const calculatePromoEndDate = (duration: string) => {
     if (duration === 'unlimited') return '';
     const days = parseInt(duration);
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + days);
     return endDate.toISOString().split('T')[0];
+  };
+
+  // Handle file selection for cropping
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast({ title: 'Fehler', description: 'Nur JPEG, PNG oder WebP erlaubt', variant: 'destructive' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Fehler', description: 'Maximale Dateigröße: 5MB', variant: 'destructive' });
+      return;
+    }
+
+    // Create object URL for cropper
+    const imageUrl = URL.createObjectURL(file);
+    setCropperImage(imageUrl);
+    setIsCropperOpen(true);
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle cropped image upload
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setIsCropperOpen(false);
+    setIsUploading(true);
+
+    try {
+      // Generate unique filename
+      const filename = `banner_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('advertisements')
+        .upload(filename, croppedBlob, {
+          contentType: 'image/jpeg',
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('advertisements')
+        .getPublicUrl(filename);
+
+      // Set the image URL in form
+      setFormData({ ...formData, image_url: urlData.publicUrl });
+      toast({ title: 'Bild hochgeladen', description: 'Das Bild wurde erfolgreich zugeschnitten und hochgeladen' });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({ title: 'Upload fehlgeschlagen', description: 'Bild konnte nicht hochgeladen werden', variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+      // Clean up object URL
+      if (cropperImage) {
+        URL.revokeObjectURL(cropperImage);
+        setCropperImage(null);
+      }
+    }
   };
 
   const resetForm = () => {
@@ -194,21 +270,64 @@ export default function AdminAdvertisements() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="image_url">Bild-URL</Label>
+                  <Label>Banner-Bild</Label>
+                  
+                  {/* Upload Section */}
+                  <div 
+                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    {isUploading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">Wird hochgeladen...</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm font-medium">Klicken zum Hochladen</p>
+                        <p className="text-xs text-muted-foreground">
+                          JPEG, PNG, WebP • Max 5MB • Wird automatisch zugeschnitten für {formData.position === 'popup' ? 'Pop-up (3:4)' : formData.position === 'top' ? 'Top-Banner (6:1)' : 'Grid (16:9)'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Divider */}
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">oder URL eingeben</span>
+                    </div>
+                  </div>
+
+                  {/* URL Input */}
                   <Input
                     id="image_url"
                     type="url"
+                    placeholder="https://example.com/banner.jpg"
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     required
                   />
+
+                  {/* Preview */}
                   {formData.image_url && (
-                    <div className="mt-2">
-                      <p className="text-xs text-muted-foreground mb-1">Vorschau:</p>
+                    <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-2">Vorschau:</p>
                       <img 
                         src={formData.image_url} 
                         alt="Vorschau"
-                        className="max-w-[200px] max-h-[150px] rounded border object-contain"
+                        className="max-w-full max-h-[200px] rounded border object-contain mx-auto"
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
                     </div>
@@ -473,6 +592,23 @@ export default function AdminAdvertisements() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Image Cropper Dialog */}
+      {cropperImage && (
+        <ImageCropper
+          image={cropperImage}
+          open={isCropperOpen}
+          onClose={() => {
+            setIsCropperOpen(false);
+            if (cropperImage) {
+              URL.revokeObjectURL(cropperImage);
+              setCropperImage(null);
+            }
+          }}
+          onCropComplete={handleCropComplete}
+          position={formData.position}
+        />
+      )}
     </div>
   );
 }
