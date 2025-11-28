@@ -186,7 +186,7 @@ const ProfileCreate = () => {
       title: 'Inserat eingereicht!',
       description: 'Dein Inserat wird in den nächsten 24 Stunden geprüft und freigeschaltet.',
     });
-    navigate('/user/dashboard');
+    navigate('/mein-profil');
   };
 
   const handleVerificationSkip = () => {
@@ -194,7 +194,7 @@ const ProfileCreate = () => {
       title: 'Inserat eingereicht!',
       description: 'Dein Inserat wird in den nächsten 24 Stunden geprüft und freigeschaltet.',
     });
-    navigate('/user/dashboard');
+    navigate('/mein-profil');
   };
 
   return (
