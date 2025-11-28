@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.geocode-all-profiles]
 verify_jwt = true
+
+[functions.import-swiss-cities]
+verify_jwt = true

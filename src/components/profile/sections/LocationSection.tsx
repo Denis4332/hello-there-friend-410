@@ -5,11 +5,14 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { MapPin, Loader2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { MapPin, Loader2, ChevronsUpDown, Check } from 'lucide-react';
 import { detectLocation } from '@/lib/geolocation';
-import { geocodePlz } from '@/lib/geocoding';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileFormData } from '../ProfileForm';
+import { useCitiesByCantonSlim, CityWithCoordinates } from '@/hooks/useCitiesByCantonSlim';
+import { cn } from '@/lib/utils';
 
 interface LocationSectionProps {
   register: UseFormRegister<ProfileFormData>;
@@ -22,23 +25,26 @@ interface LocationSectionProps {
 export const LocationSection = ({ register, errors, setValue, watch, cantons }: LocationSectionProps) => {
   const { toast } = useToast();
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
+  
   const selectedCanton = watch('canton') || '';
   const currentCity = watch('city') || '';
   const currentPostalCode = watch('postal_code') || '';
 
-  // Geocode when postal code and city are both available
-  const handleGeocodeUpdate = async () => {
-    if (currentPostalCode && currentCity) {
-      try {
-        const result = await geocodePlz(currentPostalCode, currentCity);
-        if (result) {
-          setValue('lat', result.lat);
-          setValue('lng', result.lng);
-        }
-      } catch (error) {
-        console.error('Geocoding failed:', error);
-      }
+  // Fetch cities for selected canton
+  const { data: cities = [], isLoading: citiesLoading } = useCitiesByCantonSlim(selectedCanton);
+
+  // Handle city selection from combobox
+  const handleCitySelect = (city: CityWithCoordinates) => {
+    setValue('city', city.name);
+    if (city.postal_code) {
+      setValue('postal_code', city.postal_code);
     }
+    if (city.lat && city.lng) {
+      setValue('lat', city.lat);
+      setValue('lng', city.lng);
+    }
+    setCityOpen(false);
   };
 
   const handleDetectLocation = async () => {
@@ -95,8 +101,12 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
         <Select 
           onValueChange={(value) => {
             setValue('canton', value);
-            if (watch('city') && selectedCanton !== value) {
+            // Reset city when canton changes
+            if (selectedCanton !== value) {
               setValue('city', '');
+              setValue('postal_code', '');
+              setValue('lat', undefined);
+              setValue('lng', undefined);
             }
           }}
           value={selectedCanton}
@@ -141,12 +151,56 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
             )}
           </Button>
         </div>
-        <Input
-          id="city"
-          {...register('city')}
-          placeholder={selectedCanton ? "Stadt eingeben (z.B. Zürich)" : "Zuerst Kanton wählen"}
-          disabled={!selectedCanton}
-        />
+        
+        {/* City Combobox with Search */}
+        <Popover open={cityOpen} onOpenChange={setCityOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={cityOpen}
+              className="w-full justify-between font-normal"
+              disabled={!selectedCanton || citiesLoading}
+            >
+              {citiesLoading ? (
+                <span className="text-muted-foreground">Lade Städte...</span>
+              ) : currentCity ? (
+                <span>{currentCity}</span>
+              ) : (
+                <span className="text-muted-foreground">
+                  {selectedCanton ? "Stadt wählen..." : "Zuerst Kanton wählen"}
+                </span>
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full min-w-[300px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Stadt suchen..." />
+              <CommandList>
+                <CommandEmpty>Keine Stadt gefunden</CommandEmpty>
+                <CommandGroup className="max-h-[300px] overflow-y-auto">
+                  {cities.map((city) => (
+                    <CommandItem
+                      key={city.id}
+                      value={city.name}
+                      onSelect={() => handleCitySelect(city)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          currentCity === city.name ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {city.name} {city.postal_code && `(${city.postal_code})`}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        
         {errors.city && (
           <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
         )}
@@ -157,9 +211,13 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
         <Input 
           id="postal_code" 
           {...register('postal_code')} 
-          placeholder="8000"
-          onBlur={handleGeocodeUpdate}
+          placeholder="Wird automatisch gesetzt"
+          readOnly
+          className="bg-muted"
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          Wird automatisch aus der Stadt übernommen
+        </p>
       </div>
 
       <div>
