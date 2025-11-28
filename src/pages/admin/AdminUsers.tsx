@@ -14,6 +14,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Trash2 } from 'lucide-react';
 
 type UserRole = 'admin' | 'user';
 type UserStatus = 'active' | 'suspended';
@@ -38,6 +49,7 @@ interface User {
 const AdminUsers = () => {
   const queryClient = useQueryClient();
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<UserRole>('user');
 
@@ -123,6 +135,31 @@ const AdminUsers = () => {
     },
   });
 
+  // Mutation to delete user completely
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId }
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      toast.success('Nutzer und alle Daten erfolgreich gelöscht');
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error) => {
+      toast.error('Fehler beim Löschen: ' + error.message);
+    },
+  });
+
   const handleRoleChange = () => {
     if (selectedUser) {
       updateRoleMutation.mutate({ userId: selectedUser.id, role: newRole });
@@ -137,6 +174,11 @@ const AdminUsers = () => {
     setSelectedUser(user);
     setNewRole(user.role);
     setRoleDialogOpen(true);
+  };
+
+  const openDeleteDialog = (user: User) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
   };
 
   if (isLoading) {
@@ -221,6 +263,16 @@ const AdminUsers = () => {
                           >
                             {user.status === 'active' ? 'Sperren' : 'Entsperren'}
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => openDeleteDialog(user)}
+                            disabled={user.role === 'admin'}
+                            title={user.role === 'admin' ? 'Admins können nicht gelöscht werden' : 'Nutzer löschen'}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -277,6 +329,45 @@ const AdminUsers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete User Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Nutzer endgültig löschen?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Diese Aktion kann <strong>NICHT</strong> rückgängig gemacht werden!
+              </p>
+              <p>
+                Der Nutzer <strong>{selectedUser?.email}</strong> wird komplett gelöscht, inklusive:
+              </p>
+              <ul className="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>Alle Profile ({selectedUser?.profile_count || 0})</li>
+                <li>Alle Fotos</li>
+                <li>Alle Kontaktdaten</li>
+                <li>Alle Favoriten</li>
+                <li>Alle Statistiken</li>
+                <li>Account-Daten</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (selectedUser) {
+                  deleteUserMutation.mutate(selectedUser.id);
+                }
+              }}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? 'Lösche...' : 'Ja, endgültig löschen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { AdminProfileCreateDialog } from '@/components/admin/AdminProfileCreateDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -20,6 +21,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { Trash2, X, Pencil } from 'lucide-react';
 import type { Profile } from '@/types/dating';
 
 const AdminProfile = () => {
@@ -37,6 +39,22 @@ const AdminProfile = () => {
   const [dialogExpiryDate, setDialogExpiryDate] = useState('');
   const [freeListingType, setFreeListingType] = useState('basic');
   const [freeDuration, setFreeDuration] = useState('30');
+  
+  // Edit mode states
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editAboutMe, setEditAboutMe] = useState('');
+  const [editContact, setEditContact] = useState({
+    phone: '',
+    whatsapp: '',
+    email: '',
+    website: '',
+    telegram: '',
+    instagram: '',
+    street_address: '',
+  });
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -64,7 +82,6 @@ const AdminProfile = () => {
       
       // Admins ausschließen (aber Admin-erstellte Profile mit user_id=NULL behalten)
       if (adminUserIds.length > 0) {
-        // Filter: user_id ist NULL (admin-erstellt) ODER user_id ist nicht in adminUserIds
         query = query.or(`user_id.is.null,user_id.not.in.(${adminUserIds.join(',')})`);
       }
       
@@ -169,6 +186,134 @@ const AdminProfile = () => {
     }
   });
 
+  // Update profile text (display_name, about_me)
+  const updateProfileTextMutation = useMutation({
+    mutationFn: async (data: { profileId: string; display_name: string; about_me: string }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          display_name: data.display_name,
+          about_me: data.about_me 
+        })
+        .eq('id', data.profileId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: '✅ Profiltext aktualisiert' });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      setIsEditingProfile(false);
+      // Update local state
+      if (selectedProfile) {
+        setSelectedProfile({
+          ...selectedProfile,
+          display_name: editDisplayName,
+          about_me: editAboutMe
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  // Update contact data
+  const updateContactMutation = useMutation({
+    mutationFn: async (data: { profileId: string; contact: typeof editContact }) => {
+      // Check if contact exists
+      const { data: existingContact } = await supabase
+        .from('profile_contacts')
+        .select('id')
+        .eq('profile_id', data.profileId)
+        .maybeSingle();
+
+      if (existingContact) {
+        const { error } = await supabase
+          .from('profile_contacts')
+          .update({
+            phone: data.contact.phone || null,
+            whatsapp: data.contact.whatsapp || null,
+            email: data.contact.email || null,
+            website: data.contact.website || null,
+            telegram: data.contact.telegram || null,
+            instagram: data.contact.instagram || null,
+            street_address: data.contact.street_address || null,
+          })
+          .eq('profile_id', data.profileId);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('profile_contacts')
+          .insert({
+            profile_id: data.profileId,
+            phone: data.contact.phone || null,
+            whatsapp: data.contact.whatsapp || null,
+            email: data.contact.email || null,
+            website: data.contact.website || null,
+            telegram: data.contact.telegram || null,
+            instagram: data.contact.instagram || null,
+            street_address: data.contact.street_address || null,
+          });
+        
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: '✅ Kontaktdaten aktualisiert' });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      setIsEditingContact(false);
+      // Update local state
+      if (selectedProfile) {
+        setSelectedProfile({
+          ...selectedProfile,
+          contact: editContact
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  // Delete single photo
+  const deletePhotoMutation = useMutation({
+    mutationFn: async (data: { photoId: string; storagePath: string }) => {
+      // Delete from storage
+      const { error: storageError } = await supabase
+        .storage
+        .from('profile-photos')
+        .remove([data.storagePath]);
+      
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+        // Continue anyway - storage might already be deleted
+      }
+      
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('photos')
+        .delete()
+        .eq('id', data.photoId);
+      
+      if (dbError) throw dbError;
+    },
+    onSuccess: () => {
+      toast({ title: '🗑️ Foto gelöscht' });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      // Update local state
+      if (selectedProfile) {
+        setSelectedProfile({
+          ...selectedProfile,
+          photos: selectedProfile.photos.filter((p: any) => p.id !== deletePhotoMutation.variables?.photoId)
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: 'Fehler beim Löschen', description: error.message, variant: 'destructive' });
+    }
+  });
+
   const activateFreeMutation = useMutation({
     mutationFn: async (data: { 
       profileId: string; 
@@ -260,6 +405,21 @@ const AdminProfile = () => {
     setDialogVerified(!!profile.verified_at);
     setDialogNote('');
     setDialogListingType(profile.listing_type || 'basic');
+    
+    // Set edit fields
+    setEditDisplayName(profile.display_name || '');
+    setEditAboutMe(profile.about_me || '');
+    setEditContact({
+      phone: profile.contact?.phone || '',
+      whatsapp: profile.contact?.whatsapp || '',
+      email: profile.contact?.email || '',
+      website: profile.contact?.website || '',
+      telegram: profile.contact?.telegram || '',
+      instagram: profile.contact?.instagram || '',
+      street_address: profile.contact?.street_address || '',
+    });
+    setIsEditingProfile(false);
+    setIsEditingContact(false);
     
     // Set expiry date if exists
     const expiryDate = profile.listing_type === 'premium' 
@@ -411,51 +571,132 @@ const AdminProfile = () => {
                               Prüfen
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
+                          <DialogContent className="max-w-3xl max-h-[90vh]">
                             <DialogHeader>
                               <DialogTitle>Profil prüfen: {selectedProfile?.display_name}</DialogTitle>
                             </DialogHeader>
                             {selectedProfile && (
-                              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                              <div className="space-y-4 overflow-y-auto max-h-[70vh] pr-2">
+                                {/* Photos Section with Delete */}
                                 {selectedProfile.photos && selectedProfile.photos.length > 0 && (
                                   <div>
-                                    <label className="text-sm font-medium mb-2 block">Fotos</label>
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <label className="text-sm font-medium mb-2 block">Fotos ({selectedProfile.photos.length})</label>
+                                    <div className="grid grid-cols-4 gap-2">
                                       {selectedProfile.photos.map((photo: any) => (
-                                        <img 
-                                          key={photo.id}
-                                          src={getPhotoUrl(photo.storage_path)}
-                                          alt=""
-                                          className={`rounded aspect-square object-cover ${
-                                            photo.is_primary ? 'ring-2 ring-primary' : ''
-                                          }`}
-                                        />
+                                        <div key={photo.id} className="relative group">
+                                          <img 
+                                            src={getPhotoUrl(photo.storage_path)}
+                                            alt=""
+                                            className={`rounded aspect-square object-cover ${
+                                              photo.is_primary ? 'ring-2 ring-primary' : ''
+                                            }`}
+                                          />
+                                          <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                              <Button
+                                                size="icon"
+                                                variant="destructive"
+                                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                              </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                                <AlertDialogTitle>Foto löschen?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                  Dieses Foto wird dauerhaft gelöscht.
+                                                </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                  className="bg-destructive text-destructive-foreground"
+                                                  onClick={() => deletePhotoMutation.mutate({ 
+                                                    photoId: photo.id, 
+                                                    storagePath: photo.storage_path 
+                                                  })}
+                                                >
+                                                  Löschen
+                                                </AlertDialogAction>
+                                              </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
+                                          {photo.is_primary && (
+                                            <span className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-xs px-1 rounded">
+                                              Haupt
+                                            </span>
+                                          )}
+                                        </div>
                                       ))}
                                     </div>
                                   </div>
                                 )}
                                 
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="text-sm font-medium">Name</label>
-                                    <p>{selectedProfile.display_name}</p>
+                                {/* Profile Text Section - Editable */}
+                                <div className="border rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <label className="text-sm font-medium">Profildaten</label>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      onClick={() => setIsEditingProfile(!isEditingProfile)}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-1" />
+                                      {isEditingProfile ? 'Abbrechen' : 'Bearbeiten'}
+                                    </Button>
                                   </div>
-                                  <div>
-                                    <label className="text-sm font-medium">Stadt</label>
-                                    <p>{selectedProfile.city}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium">Kanton</label>
-                                    <p>{selectedProfile.canton}</p>
-                                  </div>
+                                  
+                                  {isEditingProfile ? (
+                                    <div className="space-y-3">
+                                      <div>
+                                        <label className="text-xs text-muted-foreground">Name</label>
+                                        <Input
+                                          value={editDisplayName}
+                                          onChange={(e) => setEditDisplayName(e.target.value)}
+                                          placeholder="Display Name"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-muted-foreground">Über mich</label>
+                                        <Textarea
+                                          value={editAboutMe}
+                                          onChange={(e) => setEditAboutMe(e.target.value)}
+                                          rows={3}
+                                          placeholder="Beschreibung..."
+                                        />
+                                      </div>
+                                      <Button 
+                                        size="sm"
+                                        onClick={() => updateProfileTextMutation.mutate({
+                                          profileId: selectedProfile.id,
+                                          display_name: editDisplayName,
+                                          about_me: editAboutMe
+                                        })}
+                                        disabled={updateProfileTextMutation.isPending}
+                                      >
+                                        {updateProfileTextMutation.isPending ? 'Speichere...' : 'Speichern'}
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-muted-foreground">Name:</span>
+                                        <p className="font-medium">{selectedProfile.display_name}</p>
+                                      </div>
+                                      <div>
+                                        <span className="text-muted-foreground">Stadt:</span>
+                                        <p>{selectedProfile.city}, {selectedProfile.canton}</p>
+                                      </div>
+                                      {selectedProfile.about_me && (
+                                        <div className="col-span-2">
+                                          <span className="text-muted-foreground">Über mich:</span>
+                                          <p className="text-sm">{selectedProfile.about_me}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                                
-                                {selectedProfile.about_me && (
-                                  <div>
-                                    <label className="text-sm font-medium">Beschreibung</label>
-                                    <p className="text-sm">{selectedProfile.about_me}</p>
-                                  </div>
-                                )}
                                 
                                 {(!selectedProfile.photos || selectedProfile.photos.length === 0) && (
                                   <div className="bg-destructive/10 border border-destructive text-destructive text-sm p-3 rounded-lg flex items-start gap-2">
@@ -467,19 +708,183 @@ const AdminProfile = () => {
                                   </div>
                                 )}
                                 
-                                <div>
-                                  <label className="text-sm font-medium mb-2 block">Kontaktdaten</label>
-                                  <div className="space-y-1 text-sm">
-                                    {selectedProfile.contact?.phone && <p>📞 Telefon: {selectedProfile.contact.phone}</p>}
-                                    {selectedProfile.contact?.whatsapp && <p>💬 WhatsApp: {selectedProfile.contact.whatsapp}</p>}
-                                    {selectedProfile.contact?.email && <p>📧 Email: {selectedProfile.contact.email}</p>}
-                                    {selectedProfile.contact?.website && <p>🌐 Website: {selectedProfile.contact.website}</p>}
-                                    {selectedProfile.contact?.telegram && <p>✈️ Telegram: {selectedProfile.contact.telegram}</p>}
-                                    {selectedProfile.contact?.instagram && <p>📷 Instagram: {selectedProfile.contact.instagram}</p>}
-                                    {selectedProfile.contact?.street_address && (
-                                      <p>🏠 Adresse: {selectedProfile.contact.street_address}</p>
-                                    )}
+                                {/* Contact Section - Editable */}
+                                <div className="border rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <label className="text-sm font-medium">Kontaktdaten</label>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost"
+                                      onClick={() => setIsEditingContact(!isEditingContact)}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-1" />
+                                      {isEditingContact ? 'Abbrechen' : 'Bearbeiten'}
+                                    </Button>
                                   </div>
+                                  
+                                  {isEditingContact ? (
+                                    <div className="space-y-2">
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <label className="text-xs text-muted-foreground">📞 Telefon</label>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              value={editContact.phone}
+                                              onChange={(e) => setEditContact({...editContact, phone: e.target.value})}
+                                              placeholder="Telefon"
+                                              className="h-8 text-sm"
+                                            />
+                                            <Button 
+                                              size="icon" 
+                                              variant="ghost" 
+                                              className="h-8 w-8"
+                                              onClick={() => setEditContact({...editContact, phone: ''})}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-muted-foreground">💬 WhatsApp</label>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              value={editContact.whatsapp}
+                                              onChange={(e) => setEditContact({...editContact, whatsapp: e.target.value})}
+                                              placeholder="WhatsApp"
+                                              className="h-8 text-sm"
+                                            />
+                                            <Button 
+                                              size="icon" 
+                                              variant="ghost" 
+                                              className="h-8 w-8"
+                                              onClick={() => setEditContact({...editContact, whatsapp: ''})}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-muted-foreground">📧 Email</label>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              value={editContact.email}
+                                              onChange={(e) => setEditContact({...editContact, email: e.target.value})}
+                                              placeholder="Email"
+                                              className="h-8 text-sm"
+                                            />
+                                            <Button 
+                                              size="icon" 
+                                              variant="ghost" 
+                                              className="h-8 w-8"
+                                              onClick={() => setEditContact({...editContact, email: ''})}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-muted-foreground">🌐 Website</label>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              value={editContact.website}
+                                              onChange={(e) => setEditContact({...editContact, website: e.target.value})}
+                                              placeholder="Website"
+                                              className="h-8 text-sm"
+                                            />
+                                            <Button 
+                                              size="icon" 
+                                              variant="ghost" 
+                                              className="h-8 w-8"
+                                              onClick={() => setEditContact({...editContact, website: ''})}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-muted-foreground">✈️ Telegram</label>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              value={editContact.telegram}
+                                              onChange={(e) => setEditContact({...editContact, telegram: e.target.value})}
+                                              placeholder="Telegram"
+                                              className="h-8 text-sm"
+                                            />
+                                            <Button 
+                                              size="icon" 
+                                              variant="ghost" 
+                                              className="h-8 w-8"
+                                              onClick={() => setEditContact({...editContact, telegram: ''})}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-muted-foreground">📷 Instagram</label>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              value={editContact.instagram}
+                                              onChange={(e) => setEditContact({...editContact, instagram: e.target.value})}
+                                              placeholder="Instagram"
+                                              className="h-8 text-sm"
+                                            />
+                                            <Button 
+                                              size="icon" 
+                                              variant="ghost" 
+                                              className="h-8 w-8"
+                                              onClick={() => setEditContact({...editContact, instagram: ''})}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-muted-foreground">🏠 Adresse</label>
+                                        <div className="flex gap-1">
+                                          <Input
+                                            value={editContact.street_address}
+                                            onChange={(e) => setEditContact({...editContact, street_address: e.target.value})}
+                                            placeholder="Straße, PLZ Ort"
+                                            className="h-8 text-sm"
+                                          />
+                                          <Button 
+                                            size="icon" 
+                                            variant="ghost" 
+                                            className="h-8 w-8"
+                                            onClick={() => setEditContact({...editContact, street_address: ''})}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                      <Button 
+                                        size="sm"
+                                        onClick={() => updateContactMutation.mutate({
+                                          profileId: selectedProfile.id,
+                                          contact: editContact
+                                        })}
+                                        disabled={updateContactMutation.isPending}
+                                      >
+                                        {updateContactMutation.isPending ? 'Speichere...' : 'Kontakte speichern'}
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-1 text-sm">
+                                      {selectedProfile.contact?.phone && <p>📞 {selectedProfile.contact.phone}</p>}
+                                      {selectedProfile.contact?.whatsapp && <p>💬 {selectedProfile.contact.whatsapp}</p>}
+                                      {selectedProfile.contact?.email && <p>📧 {selectedProfile.contact.email}</p>}
+                                      {selectedProfile.contact?.website && <p>🌐 {selectedProfile.contact.website}</p>}
+                                      {selectedProfile.contact?.telegram && <p>✈️ {selectedProfile.contact.telegram}</p>}
+                                      {selectedProfile.contact?.instagram && <p>📷 {selectedProfile.contact.instagram}</p>}
+                                      {selectedProfile.contact?.street_address && <p>🏠 {selectedProfile.contact.street_address}</p>}
+                                      {!selectedProfile.contact?.phone && !selectedProfile.contact?.email && 
+                                       !selectedProfile.contact?.whatsapp && !selectedProfile.contact?.website && (
+                                        <p className="text-muted-foreground italic">Keine Kontaktdaten</p>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                                 
                                 <div>
