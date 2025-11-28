@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
+import { useSiteSetting } from '@/hooks/useSiteSettings';
 
 interface DemoPopupBannerProps {
   onClose: () => void;
 }
 
 export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
+  const { data: popupPrice } = useSiteSetting('banner_popup_price_day');
+  
   const handleClose = () => {
     localStorage.setItem('demo_popup_last_shown', new Date().toISOString());
     onClose();
@@ -56,7 +59,7 @@ export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
             <div className="flex flex-col gap-3 justify-center">
               <Link to="/bannerpreise" className="w-full">
                 <Button size="default" className="w-full" onClick={handleClose}>
-                  Banner buchen (ab CHF 30/Tag)
+                  Banner buchen (ab {popupPrice || 'CHF 80'}/Tag)
                 </Button>
               </Link>
               <Button variant="outline" className="w-full" onClick={handleClose}>
