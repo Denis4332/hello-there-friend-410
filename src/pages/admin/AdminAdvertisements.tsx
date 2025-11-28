@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useAllAdvertisements, useCreateAdvertisement, useUpdateAdvertisement, useDeleteAdvertisement, useExtendAdvertisement } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
-import { Plus, Pencil, Trash2, Eye, MousePointerClick, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, MousePointerClick, Clock, ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -202,6 +202,17 @@ export default function AdminAdvertisements() {
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     required
                   />
+                  {formData.image_url && (
+                    <div className="mt-2">
+                      <p className="text-xs text-muted-foreground mb-1">Vorschau:</p>
+                      <img 
+                        src={formData.image_url} 
+                        alt="Vorschau"
+                        className="max-w-[200px] max-h-[150px] rounded border object-contain"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -371,6 +382,7 @@ export default function AdminAdvertisements() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-20">Bild</TableHead>
                     <TableHead>Titel</TableHead>
                     <TableHead>Position</TableHead>
                     <TableHead>Status</TableHead>
@@ -390,6 +402,21 @@ export default function AdminAdvertisements() {
                 <TableBody>
                   {ads.map((ad) => (
                     <TableRow key={ad.id}>
+                      <TableCell>
+                        <div className="w-16 h-12 rounded overflow-hidden bg-muted">
+                          {ad.image_url ? (
+                            <img 
+                              src={ad.image_url} 
+                              alt={ad.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">{ad.title}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{positionLabels[ad.position]}</Badge>
