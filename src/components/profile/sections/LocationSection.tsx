@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -52,10 +51,6 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
     try {
       const location = await detectLocation();
       
-      if (location.street) {
-        setValue('street_address', location.street);
-      }
-      
       setValue('city', location.city);
       setValue('postal_code', location.postalCode);
       setValue('lat', location.lat);
@@ -71,16 +66,12 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
         setValue('canton', matchingCanton.abbreviation);
         toast({
           title: 'Standort erkannt',
-          description: location.street 
-            ? `${location.street}, ${location.city}, ${matchingCanton.abbreviation}` 
-            : `${location.city}, ${matchingCanton.abbreviation}`,
+          description: `${location.city}, ${matchingCanton.abbreviation}`,
         });
       } else {
         toast({
           title: 'Standort erkannt',
-          description: location.street 
-            ? `${location.street}, ${location.city} (Kanton bitte manuell wählen)` 
-            : `${location.city} (Kanton bitte manuell wählen)`,
+          description: `${location.city} (Kanton bitte manuell wählen)`,
         });
       }
     } catch (error) {
@@ -220,28 +211,6 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
         </p>
       </div>
 
-      <div>
-        <Label htmlFor="street_address">Straße (optional)</Label>
-        <Input 
-          id="street_address" 
-          {...register('street_address')} 
-          placeholder="Musterstrasse 123" 
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Die Straße wird nur angezeigt, wenn du das unten erlaubst
-        </p>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="show_street"
-          checked={watch('show_street')}
-          onCheckedChange={(checked) => setValue('show_street', checked as boolean)}
-        />
-        <label htmlFor="show_street" className="text-sm cursor-pointer">
-          Straße öffentlich anzeigen (empfohlen: nur Stadt zeigen für mehr Privatsphäre)
-        </label>
-      </div>
     </>
   );
 };
