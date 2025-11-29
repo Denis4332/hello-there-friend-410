@@ -210,6 +210,35 @@ const UserDashboard = () => {
               </div>
             </div>
 
+            {/* Payment Status Display */}
+            {profile.payment_status === 'paid' && profile.status === 'pending' && (
+              <Card className="mb-6 border-green-500/50 bg-green-500/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-600">✅ Bezahlt</Badge>
+                    <span className="text-sm">
+                      Dein Inserat wird innerhalb von 24 Stunden geprüft und freigeschaltet.
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {profile.payment_status === 'pending' && profile.status === 'pending' && (
+              <Card className="mb-6 border-orange-500/50 bg-orange-500/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="destructive">⏳ Zahlung ausstehend</Badge>
+                    <span className="text-sm">
+                      Bitte schliesse die Zahlung ab, um dein Inserat zur Prüfung freizugeben.
+                    </span>
+                    <Button size="sm" onClick={() => navigate('/user/upgrade')}>
+                      Jetzt bezahlen
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {profile.status === 'pending' && (
               <Card className="mb-6 border-yellow-500/50 bg-yellow-500/5">
