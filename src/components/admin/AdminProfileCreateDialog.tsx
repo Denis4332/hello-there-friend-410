@@ -31,6 +31,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useCantons } from '@/hooks/useCantons';
 import { useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
+import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
 import { Plus, ChevronsUpDown, Check, MapPin, Upload, X, Star, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -75,6 +76,10 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
   // Photo upload state
   const [photoPreviews, setPhotoPreviews] = useState<PhotoPreview[]>([]);
   const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState(0);
+
+  // AGB acceptance state
+  const [agbAccepted, setAgbAccepted] = useState(false);
+  const [customerEmail, setCustomerEmail] = useState('');
   
   // Data hooks
   const { data: categories } = useCategories();
@@ -104,6 +109,8 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     setInstagram('');
     setPhotoPreviews([]);
     setPrimaryPhotoIndex(0);
+    setAgbAccepted(false);
+    setCustomerEmail('');
   };
 
   // Handle canton change - reset city when canton changes
@@ -273,7 +280,16 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
         if (contactError) throw contactError;
       }
 
-      // 6. Upload photos
+      // 6. Record AGB acceptance
+      await recordAgbAcceptance({
+        email: customerEmail,
+        profileId: profile.id,
+        acceptanceType: 'admin_created',
+        createdByAdmin: true,
+        agbVersion: '1.0',
+      });
+
+      // 7. Upload photos
       if (photoPreviews.length > 0) {
         for (let i = 0; i < photoPreviews.length; i++) {
           const preview = photoPreviews[i];
@@ -368,8 +384,8 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     );
   };
 
-  // Validation: require city selection with GPS
-  const isValid = displayName.trim() && city.trim() && canton.trim() && lat !== null && lng !== null;
+  // Validation: require city selection with GPS AND AGB acceptance with customer email
+  const isValid = displayName.trim() && city.trim() && canton.trim() && lat !== null && lng !== null && agbAccepted && customerEmail.trim();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -732,6 +748,48 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
               Admin-erstellte Profile werden als "Gratis" markiert und sofort aktiviert.
             </p>
           </div>
+
+          {/* AGB Bestätigung - WICHTIG für rechtliche Absicherung */}
+          <div className="space-y-4 bg-amber-50 dark:bg-amber-950/30 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              📜 AGB-Akzeptanz (Pflicht)
+            </h3>
+            
+            <div>
+              <Label>Kunden-E-Mail *</Label>
+              <Input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                placeholder="kunde@example.com"
+                className="bg-background"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                E-Mail des Kunden für rechtlichen Nachweis
+              </p>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="admin-agb-acceptance"
+                checked={agbAccepted}
+                onCheckedChange={(checked) => setAgbAccepted(checked === true)}
+                className="mt-0.5"
+              />
+              <div className="grid gap-1 leading-none">
+                <label
+                  htmlFor="admin-agb-acceptance"
+                  className="text-sm font-medium leading-snug cursor-pointer"
+                >
+                  Kunde hat AGB akzeptiert *
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Der Kunde hat die AGB telefonisch, per E-Mail oder persönlich bestätigt.
+                  Dies wird als rechtlicher Nachweis mit Zeitstempel gespeichert.
+                </p>
+              </div>
+            </div>
+          </div>
           
           {/* Info Box */}
           <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg text-sm">
@@ -741,6 +799,7 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
               <li>• <strong>GPS-Koordinaten werden direkt von der Stadt-Auswahl übernommen</strong></li>
               <li>• <strong>Fotos werden direkt hochgeladen - ⭐ Stern = Hauptfoto</strong></li>
               <li>• Das Profil ist sofort aktiv und sichtbar</li>
+              <li>• <strong>AGB-Akzeptanz wird mit Kunden-E-Mail und Zeitstempel protokolliert</strong></li>
             </ul>
           </div>
           

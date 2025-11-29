@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,11 +8,13 @@ import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
 import { useToast } from '@/hooks/use-toast';
+import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
 
 const authSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
@@ -32,6 +34,7 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agbAccepted, setAgbAccepted] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,6 +111,16 @@ const Auth = () => {
     e.preventDefault();
     if (!validate()) return;
 
+    // Check AGB acceptance
+    if (!agbAccepted) {
+      toast({
+        title: 'AGB nicht akzeptiert',
+        description: 'Bitte akzeptiere die AGB und Datenschutzbestimmungen.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Check if password is leaked
     try {
       const { data: leakCheck, error: leakError } = await supabase.functions.invoke('check-leaked-password', {
@@ -143,6 +156,25 @@ const Auth = () => {
     
     // Record attempt
     await recordAttempt(email, 'signup', !error);
+
+    // Record AGB acceptance if signup successful
+    if (!error) {
+      try {
+        // Get the newly created user
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await recordAgbAcceptance({
+            userId: newUser.id,
+            email: email,
+            acceptanceType: 'registration',
+            agbVersion: '1.0',
+          });
+        }
+      } catch (agbError) {
+        console.error('Failed to record AGB acceptance:', agbError);
+        // Continue anyway - user is already registered
+      }
+    }
     
     setIsSubmitting(false);
 
@@ -247,7 +279,35 @@ const Auth = () => {
                       </p>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {/* AGB Checkbox */}
+                    <div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border">
+                      <Checkbox
+                        id="agb-acceptance"
+                        checked={agbAccepted}
+                        onCheckedChange={(checked) => setAgbAccepted(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <label
+                          htmlFor="agb-acceptance"
+                          className="text-sm font-medium leading-snug cursor-pointer"
+                        >
+                          Ich akzeptiere die AGB und Datenschutzbestimmungen *
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          Mit der Registrierung akzeptierst du unsere{' '}
+                          <Link to="/agb" className="text-primary underline hover:no-underline" target="_blank">
+                            AGB
+                          </Link>{' '}
+                          und{' '}
+                          <Link to="/datenschutz" className="text-primary underline hover:no-underline" target="_blank">
+                            Datenschutzbestimmungen
+                          </Link>.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={isSubmitting || !agbAccepted}>
                       {isSubmitting ? (loadingSignup || 'Wird registriert...') : (registerButton || 'Registrieren')}
                     </Button>
                   </form>
