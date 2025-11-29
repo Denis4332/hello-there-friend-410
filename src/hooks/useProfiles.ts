@@ -552,7 +552,7 @@ export const useProfilesByRadius = (
               .eq('profile_id', profile.id),
             supabase
               .from('profile_categories')
-              .select('category_id')
+              .select('category_id, categories(id, name, slug)')
               .eq('profile_id', profile.id),
           ]);
           
