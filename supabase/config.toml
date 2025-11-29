@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.import-all-swiss-cities]
 verify_jwt = false
+
+[functions.import-geonames-cities]
+verify_jwt = false
