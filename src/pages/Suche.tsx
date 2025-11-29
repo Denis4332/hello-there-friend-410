@@ -28,10 +28,11 @@ const Suche = () => {
   // Initialize GPS coords from URL params (coming from HeroSection)
   const urlLat = searchParams.get('lat');
   const urlLng = searchParams.get('lng');
+  const urlLocation = searchParams.get('location');
   const [userLat, setUserLat] = useState<number | null>(urlLat ? parseFloat(urlLat) : null);
   const [userLng, setUserLng] = useState<number | null>(urlLng ? parseFloat(urlLng) : null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
-  const [detectedLocation, setDetectedLocation] = useState<string | null>(null);
+  const [detectedLocation, setDetectedLocation] = useState<string | null>(urlLocation);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
