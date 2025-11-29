@@ -22,6 +22,7 @@ export const Footer = () => {
   const { data: linkPrices } = useSiteSetting('footer_link_prices');
   const { data: linkAdvertising } = useSiteSetting('footer_link_advertising');
   const { data: impressumText } = useSiteSetting('footer_impressum');
+  const { data: agbNotice } = useSiteSetting('footer_agb_notice');
 
   const socialLinks = [
     { url: facebookUrl, icon: Facebook, label: 'Facebook' },
@@ -119,6 +120,14 @@ export const Footer = () => {
             <p className="text-sm text-muted-foreground">
               {copyright || '© 2025 Escoria'}
             </p>
+            {agbNotice && (
+              <p className="text-xs text-muted-foreground/70 mt-2">
+                {agbNotice}{' '}
+                <Link to="/agb" className="underline hover:text-foreground transition-colors">
+                  AGB lesen
+                </Link>
+              </p>
+            )}
           </div>
         </div>
       </div>
