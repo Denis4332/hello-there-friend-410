@@ -152,8 +152,6 @@ const ProfileEdit = () => {
           telegram: data.telegram,
           instagram: data.instagram,
           website: data.website,
-          street_address: data.street_address,
-          show_street: data.show_street,
         });
 
       if (contactError) throw contactError;
@@ -276,8 +274,6 @@ const ProfileEdit = () => {
     city: profile.city,
     canton: profile.canton,
     postal_code: profile.postal_code || '',
-    street_address: profile.street_address || '',
-    show_street: profile.show_street ?? false,
     about_me: profile.about_me || '',
     languages: profile.languages || [],
     category_ids: profile.profile_categories?.map((pc) => pc.category_id) || [],

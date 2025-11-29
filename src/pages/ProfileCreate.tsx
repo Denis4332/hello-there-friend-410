@@ -112,8 +112,6 @@ const ProfileCreate = () => {
           telegram: data.telegram,
           instagram: data.instagram,
           website: data.website,
-          street_address: data.street_address,
-          show_street: data.show_street,
         });
 
       if (contactError) throw contactError;
