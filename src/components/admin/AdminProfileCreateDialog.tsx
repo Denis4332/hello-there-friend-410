@@ -11,13 +11,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCategories } from '@/hooks/useCategories';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useCantons } from '@/hooks/useCantons';
-import { Plus } from 'lucide-react';
+import { useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
+import { Plus, ChevronsUpDown, Check, MapPin } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AdminProfileCreateDialogProps {
   onSuccess?: () => void;
@@ -25,14 +40,18 @@ interface AdminProfileCreateDialogProps {
 
 export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   // Form state
   const [displayName, setDisplayName] = useState('');
+  const [cityId, setCityId] = useState('');
   const [city, setCity] = useState('');
   const [canton, setCanton] = useState('');
   const [postalCode, setPostalCode] = useState('');
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
   const [aboutMe, setAboutMe] = useState('');
   const [gender, setGender] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -52,12 +71,16 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
   const { data: categories } = useCategories();
   const { data: languages } = useDropdownOptions('languages');
   const { data: cantons } = useCantons();
+  const { data: cities, isLoading: citiesLoading } = useCitiesByCantonSlim(canton);
 
   const resetForm = () => {
     setDisplayName('');
+    setCityId('');
     setCity('');
     setCanton('');
     setPostalCode('');
+    setLat(null);
+    setLng(null);
     setAboutMe('');
     setGender('');
     setSelectedCategories([]);
@@ -72,8 +95,35 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     setInstagram('');
   };
 
+  // Handle canton change - reset city when canton changes
+  const handleCantonChange = (newCanton: string) => {
+    setCanton(newCanton);
+    setCityId('');
+    setCity('');
+    setPostalCode('');
+    setLat(null);
+    setLng(null);
+  };
+
+  // Handle city selection - set all location fields
+  const handleCitySelect = (selectedCity: typeof cities extends (infer T)[] ? T : never) => {
+    if (!selectedCity) return;
+    
+    setCityId(selectedCity.id);
+    setCity(selectedCity.name);
+    setPostalCode(selectedCity.postal_code || '');
+    setLat(selectedCity.lat);
+    setLng(selectedCity.lng);
+    setCityPopoverOpen(false);
+  };
+
   const createProfileMutation = useMutation({
     mutationFn: async () => {
+      // Validate GPS coordinates
+      if (!lat || !lng) {
+        throw new Error('Bitte wählen Sie eine Stadt aus der Liste für garantierte GPS-Koordinaten.');
+      }
+
       // 1. Generate slug from display name
       const slug = displayName
         .toLowerCase()
@@ -98,7 +148,7 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
         }
       }
 
-      // 3. Create profile (without user_id for admin-created profiles)
+      // 3. Create profile with GPS coordinates directly
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -107,6 +157,8 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
           city,
           canton,
           postal_code: postalCode || null,
+          lat, // GPS directly from city selection
+          lng, // GPS directly from city selection
           about_me: aboutMe || null,
           gender: gender || null,
           languages: selectedLanguages,
@@ -160,7 +212,7 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     onSuccess: (profile) => {
       toast({
         title: '✅ Profil erstellt!',
-        description: `Profil "${profile.display_name}" wurde erfolgreich erstellt. GPS-Koordinaten werden automatisch gesetzt.`,
+        description: `Profil "${profile.display_name}" wurde mit GPS-Koordinaten (${lat?.toFixed(4)}, ${lng?.toFixed(4)}) erstellt.`,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
@@ -202,7 +254,8 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     );
   };
 
-  const isValid = displayName.trim() && city.trim() && canton.trim();
+  // Validation: require city selection with GPS
+  const isValid = displayName.trim() && city.trim() && canton.trim() && lat !== null && lng !== null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -247,21 +300,14 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
               </div>
             </div>
             
+            {/* Location Section with Combobox */}
             <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Stadt *</Label>
-                <Input
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="z.B. Zürich"
-                />
-              </div>
               <div>
                 <Label>Kanton *</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={canton}
-                  onChange={(e) => setCanton(e.target.value)}
+                  onChange={(e) => handleCantonChange(e.target.value)}
                 >
                   <option value="">-- Wählen --</option>
                   {cantons?.map((c) => (
@@ -271,15 +317,75 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
                   ))}
                 </select>
               </div>
+              
+              <div>
+                <Label>Stadt *</Label>
+                <Popover open={cityPopoverOpen} onOpenChange={setCityPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={cityPopoverOpen}
+                      className="w-full justify-between h-10 font-normal"
+                      disabled={!canton}
+                    >
+                      {city || (canton ? "Stadt wählen..." : "Erst Kanton wählen")}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Stadt suchen..." />
+                      <CommandList>
+                        <CommandEmpty>
+                          {citiesLoading ? 'Laden...' : 'Keine Stadt gefunden.'}
+                        </CommandEmpty>
+                        <CommandGroup className="max-h-[200px] overflow-auto">
+                          {cities?.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={`${c.name} ${c.postal_code || ''}`}
+                              onSelect={() => handleCitySelect(c)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  cityId === c.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <span>{c.name}</span>
+                              {c.postal_code && (
+                                <span className="ml-auto text-xs text-muted-foreground">
+                                  {c.postal_code}
+                                </span>
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
               <div>
                 <Label>PLZ</Label>
                 <Input
                   value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="z.B. 8001"
+                  readOnly
+                  placeholder="Auto"
+                  className="bg-muted"
                 />
               </div>
             </div>
+
+            {/* GPS Indicator */}
+            {lat && lng && (
+              <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-md">
+                <MapPin className="h-3 w-3" />
+                GPS: {lat.toFixed(4)}, {lng.toFixed(4)} ✓
+              </div>
+            )}
             
             <div>
               <Label>Beschreibung</Label>
@@ -426,7 +532,7 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
             <p className="font-medium mb-1">ℹ️ Hinweis</p>
             <ul className="text-muted-foreground text-xs space-y-1">
               <li>• Das Profil wird ohne User-Account erstellt (für Agenturen/Promos)</li>
-              <li>• GPS-Koordinaten werden automatisch von der Stadt übernommen</li>
+              <li>• <strong>GPS-Koordinaten werden direkt von der Stadt-Auswahl übernommen</strong></li>
               <li>• Fotos können nach Erstellung im Profil-Dialog hochgeladen werden</li>
               <li>• Das Profil ist sofort aktiv und sichtbar</li>
             </ul>
