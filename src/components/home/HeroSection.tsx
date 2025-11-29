@@ -152,18 +152,18 @@ export const HeroSection = ({
     try {
       const result = await detectLocation();
       const matchingCanton = cantons.find(c => c.name.toLowerCase() === result.canton.toLowerCase() || c.abbreviation.toLowerCase() === result.canton.toLowerCase());
-      if (matchingCanton) {
-        setUseGPS(true);
-        setCanton(matchingCanton.abbreviation);
-        setUserLat(result.lat);
-        setUserLng(result.lng);
-        toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation}`);
-      } else {
-        toast.error('Kanton konnte nicht zugeordnet werden');
-      }
+      
+      // Direkt zur Suche navigieren mit GPS-Koordinaten
+      const params = new URLSearchParams();
+      params.set('lat', result.lat.toString());
+      params.set('lng', result.lng.toString());
+      params.set('radius', radius.toString());
+      params.set('location', `${result.city}, ${matchingCanton?.abbreviation || result.canton}`);
+      if (category) params.set('kategorie', category);
+      
+      navigate(`/suche?${params.toString()}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Standort konnte nicht ermittelt werden');
-    } finally {
       setIsDetectingLocation(false);
     }
   };
