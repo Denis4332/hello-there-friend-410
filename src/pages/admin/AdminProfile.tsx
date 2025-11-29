@@ -135,15 +135,35 @@ const AdminProfile = () => {
       };
       
       // Handle expiry dates based on listing type
-      if (data.listingType === 'premium' && data.expiryDate) {
-        updates.premium_until = new Date(data.expiryDate).toISOString();
-        updates.top_ad_until = null;
-      } else if (data.listingType === 'top' && data.expiryDate) {
-        updates.top_ad_until = new Date(data.expiryDate).toISOString();
-        updates.premium_until = null;
-      } else if (data.listingType === 'basic' || data.listingType === 'free') {
-        updates.premium_until = null;
-        updates.top_ad_until = null;
+      if (data.expiryDate) {
+        // Manual expiry date provided
+        if (data.listingType === 'premium') {
+          updates.premium_until = new Date(data.expiryDate).toISOString();
+          updates.top_ad_until = null;
+        } else if (data.listingType === 'top') {
+          updates.top_ad_until = new Date(data.expiryDate).toISOString();
+          updates.premium_until = null;
+        }
+      } else if (data.status === 'active') {
+        // Auto-set 30 days when activating without manual expiry date
+        const autoExpiry = new Date();
+        autoExpiry.setDate(autoExpiry.getDate() + 30);
+        
+        if (data.listingType === 'premium' || data.listingType === 'basic') {
+          updates.premium_until = autoExpiry.toISOString();
+          updates.top_ad_until = null;
+        } else if (data.listingType === 'top') {
+          updates.top_ad_until = autoExpiry.toISOString();
+          updates.premium_until = null;
+        }
+      }
+      
+      if (data.listingType === 'basic' || data.listingType === 'free') {
+        // Basic/Free have no special expiry (unless set above for activation)
+        if (!data.expiryDate && data.status !== 'active') {
+          updates.premium_until = null;
+          updates.top_ad_until = null;
+        }
       }
       
       // Update profile
@@ -512,6 +532,7 @@ const AdminProfile = () => {
                       <th className="text-left p-3 text-sm font-medium">Typ</th>
                       <th className="text-left p-3 text-sm font-medium">Fotos</th>
                       <th className="text-left p-3 text-sm font-medium">Status</th>
+                      <th className="text-left p-3 text-sm font-medium">Zahlung</th>
                       <th className="text-left p-3 text-sm font-medium">Verifiziert</th>
                       <th className="text-left p-3 text-sm font-medium">Erstellt</th>
                       <th className="text-left p-3 text-sm font-medium">Aktionen</th>
@@ -552,6 +573,17 @@ const AdminProfile = () => {
                         <Badge variant="outline">{profile.status}</Badge>
                       </td>
                       <td className="p-3">
+                        <Badge 
+                          variant={profile.payment_status === 'paid' ? 'default' : 
+                                   profile.payment_status === 'free' ? 'secondary' : 'destructive'}
+                          className={profile.payment_status === 'paid' ? 'bg-green-600 text-white' : 
+                                     profile.payment_status === 'free' ? 'bg-blue-500 text-white' : ''}
+                        >
+                          {profile.payment_status === 'paid' ? '✅ Bezahlt' : 
+                           profile.payment_status === 'free' ? '🎁 Gratis' : '⏳ Offen'}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
                         {profile.verified_at ? (
                           <Badge className="bg-success text-success-foreground">Ja</Badge>
                         ) : (
@@ -578,6 +610,25 @@ const AdminProfile = () => {
                             </DialogHeader>
                             {selectedProfile && (
                               <div className="space-y-4 overflow-y-auto max-h-[70vh] pr-2">
+                                {/* Payment Status - Prominent at top */}
+                                <div className={`p-3 rounded-lg ${
+                                  selectedProfile.payment_status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 border border-green-500' :
+                                  selectedProfile.payment_status === 'free' ? 'bg-blue-100 dark:bg-blue-900/30 border border-blue-500' :
+                                  'bg-red-100 dark:bg-red-900/30 border border-red-500'
+                                }`}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-semibold">
+                                      {selectedProfile.payment_status === 'paid' ? '✅ BEZAHLT' :
+                                       selectedProfile.payment_status === 'free' ? '🎁 GRATIS (Admin/Promo)' :
+                                       '⚠️ NICHT BEZAHLT'}
+                                    </span>
+                                    {selectedProfile.payment_reference && (
+                                      <span className="text-xs text-muted-foreground">
+                                        Ref: {selectedProfile.payment_reference}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                                 {/* Photos Section with Delete */}
                                 {selectedProfile.photos && selectedProfile.photos.length > 0 && (
                                   <div>

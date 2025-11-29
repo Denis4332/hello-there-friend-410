@@ -38,6 +38,40 @@ const ProfileCreate = () => {
   const { data: tabVerification } = useSiteSetting('profile_tab_verification');
   const { data: photosSaveButton } = useSiteSetting('profile_photos_save_button');
 
+  // Check for existing profile on page load (handles page reload during creation)
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkExistingProfile = async () => {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, status, listing_type, payment_status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (existingProfile) {
+        setProfileId(existingProfile.id);
+        
+        // Check photos to determine correct step
+        const { data: photos } = await supabase
+          .from('photos')
+          .select('id')
+          .eq('profile_id', existingProfile.id);
+        
+        // Determine correct step based on profile state
+        if (!existingProfile.listing_type) {
+          setCurrentStep('listing-type');
+        } else if (!photos || photos.length === 0) {
+          setCurrentStep('photos');
+        } else {
+          setCurrentStep('verification');
+        }
+      }
+    };
+    
+    checkExistingProfile();
+  }, [user]);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -177,19 +211,10 @@ const ProfileCreate = () => {
     if (!profileId) return;
 
     try {
-      // Calculate expiry date (30 days from now for all listing types)
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30);
-
-      const updateData: any = { 
-        listing_type: listingType,
-        premium_until: expiryDate.toISOString()
+      // Only save listing_type - premium_until will be set by admin on activation
+      const updateData = { 
+        listing_type: listingType
       };
-
-      // For TOP ads, also set top_ad_until
-      if (listingType === 'top') {
-        updateData.top_ad_until = expiryDate.toISOString();
-      }
 
       const { error } = await supabase
         .from('profiles')
