@@ -31,11 +31,16 @@ import { useCategories } from '@/hooks/useCategories';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useCantons } from '@/hooks/useCantons';
 import { useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
-import { Plus, ChevronsUpDown, Check, MapPin } from 'lucide-react';
+import { Plus, ChevronsUpDown, Check, MapPin, Upload, X, Star, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AdminProfileCreateDialogProps {
   onSuccess?: () => void;
+}
+
+interface PhotoPreview {
+  url: string;
+  file: File;
 }
 
 export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialogProps) => {
@@ -66,6 +71,10 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
   const [website, setWebsite] = useState('');
   const [telegram, setTelegram] = useState('');
   const [instagram, setInstagram] = useState('');
+
+  // Photo upload state
+  const [photoPreviews, setPhotoPreviews] = useState<PhotoPreview[]>([]);
+  const [primaryPhotoIndex, setPrimaryPhotoIndex] = useState(0);
   
   // Data hooks
   const { data: categories } = useCategories();
@@ -93,6 +102,8 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     setWebsite('');
     setTelegram('');
     setInstagram('');
+    setPhotoPreviews([]);
+    setPrimaryPhotoIndex(0);
   };
 
   // Handle canton change - reset city when canton changes
@@ -115,6 +126,61 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     setLat(selectedCity.lat);
     setLng(selectedCity.lng);
     setCityPopoverOpen(false);
+  };
+
+  // Photo handling
+  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const maxPhotos = 5;
+    if (photoPreviews.length + files.length > maxPhotos) {
+      toast({
+        title: 'Zu viele Fotos',
+        description: `Maximal ${maxPhotos} Fotos erlaubt`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const newPreviews: PhotoPreview[] = [];
+    for (const file of Array.from(files)) {
+      // Basic validation
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Datei zu groß',
+          description: `${file.name} ist zu groß (max. 5MB)`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        toast({
+          title: 'Ungültiges Format',
+          description: `${file.name} ist kein erlaubtes Bildformat`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+      newPreviews.push({
+        url: URL.createObjectURL(file),
+        file,
+      });
+    }
+
+    setPhotoPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotoPreviews(prev => {
+      const newPreviews = prev.filter((_, i) => i !== index);
+      if (primaryPhotoIndex >= newPreviews.length) {
+        setPrimaryPhotoIndex(Math.max(0, newPreviews.length - 1));
+      } else if (index < primaryPhotoIndex) {
+        setPrimaryPhotoIndex(primaryPhotoIndex - 1);
+      }
+      return newPreviews;
+    });
   };
 
   const createProfileMutation = useMutation({
@@ -207,12 +273,60 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
         if (contactError) throw contactError;
       }
 
+      // 6. Upload photos
+      if (photoPreviews.length > 0) {
+        for (let i = 0; i < photoPreviews.length; i++) {
+          const preview = photoPreviews[i];
+          const file = preview.file;
+
+          // Generate random filename
+          const fileExt = file.name.split('.').pop();
+          const randomBytes = new Uint8Array(16);
+          crypto.getRandomValues(randomBytes);
+          const randomName = Array.from(randomBytes)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+          const fileName = `${randomName}.${fileExt}`;
+
+          // Upload via edge function
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('profileId', profile.id);
+          formData.append('fileName', fileName);
+
+          const { data, error } = await supabase.functions.invoke('validate-image', {
+            body: formData,
+          });
+
+          if (error) {
+            console.error('Photo upload error:', error);
+            continue; // Continue with other photos even if one fails
+          }
+
+          if (!data?.success) {
+            console.error('Photo validation failed:', data?.error);
+            continue;
+          }
+
+          // Insert photo record - use primaryPhotoIndex for is_primary
+          const { error: photoDbError } = await supabase.from('photos').insert({
+            profile_id: profile.id,
+            storage_path: data.path,
+            is_primary: i === primaryPhotoIndex,
+          });
+
+          if (photoDbError) {
+            console.error('Photo DB insert error:', photoDbError);
+          }
+        }
+      }
+
       return profile;
     },
     onSuccess: (profile) => {
       toast({
         title: '✅ Profil erstellt!',
-        description: `Profil "${profile.display_name}" wurde mit GPS-Koordinaten (${lat?.toFixed(4)}, ${lng?.toFixed(4)}) erstellt.`,
+        description: `Profil "${profile.display_name}" wurde mit GPS-Koordinaten und ${photoPreviews.length} Foto(s) erstellt.`,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
@@ -397,6 +511,98 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
               />
             </div>
           </div>
+
+          {/* Photo Upload Section */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm border-b pb-2">📷 Fotos</h3>
+            
+            {/* Upload area */}
+            <label
+              htmlFor="admin-photo-upload"
+              className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex flex-col items-center justify-center py-4">
+                <Upload className="w-6 h-6 mb-1 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Fotos auswählen (max. 5)
+                </p>
+              </div>
+              <input
+                id="admin-photo-upload"
+                type="file"
+                className="hidden"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={handlePhotoSelect}
+                disabled={photoPreviews.length >= 5}
+              />
+            </label>
+
+            {/* Photo previews with star selection */}
+            {photoPreviews.length > 0 && (
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-3">
+                  {photoPreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={preview.url}
+                        alt={`Foto ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                      
+                      {/* Star icon for primary selection */}
+                      <button
+                        type="button"
+                        onClick={() => setPrimaryPhotoIndex(index)}
+                        className={cn(
+                          "absolute top-1 left-1 p-1 rounded-full transition-all",
+                          index === primaryPhotoIndex
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-black/50 text-white/70 hover:text-yellow-400"
+                        )}
+                        title={index === primaryPhotoIndex ? "Hauptfoto" : "Als Hauptfoto setzen"}
+                      >
+                        <Star 
+                          className={cn(
+                            "w-3 h-3",
+                            index === primaryPhotoIndex && "fill-current"
+                          )} 
+                        />
+                      </button>
+
+                      {/* Remove button */}
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+
+                      {/* Primary badge */}
+                      {index === primaryPhotoIndex && (
+                        <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-primary text-primary-foreground text-[10px] rounded">
+                          Hauptfoto
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ⭐ Klicke auf den Stern, um das Hauptfoto zu wählen
+                </p>
+              </div>
+            )}
+
+            {photoPreviews.length === 0 && (
+              <div className="flex items-center justify-center h-16 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="text-sm">Keine Fotos ausgewählt</span>
+                </div>
+              </div>
+            )}
+          </div>
           
           {/* Kategorien */}
           <div className="space-y-3">
@@ -533,7 +739,7 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
             <ul className="text-muted-foreground text-xs space-y-1">
               <li>• Das Profil wird ohne User-Account erstellt (für Agenturen/Promos)</li>
               <li>• <strong>GPS-Koordinaten werden direkt von der Stadt-Auswahl übernommen</strong></li>
-              <li>• Fotos können nach Erstellung im Profil-Dialog hochgeladen werden</li>
+              <li>• <strong>Fotos werden direkt hochgeladen - ⭐ Stern = Hauptfoto</strong></li>
               <li>• Das Profil ist sofort aktiv und sichtbar</li>
             </ul>
           </div>

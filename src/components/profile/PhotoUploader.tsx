@@ -1,18 +1,26 @@
 import { useState } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useToastMessages } from '@/hooks/useToastMessages';
+import { cn } from '@/lib/utils';
 
 interface PhotoUploaderProps {
   profileId: string;
   onUploadComplete?: () => void;
 }
 
+interface PhotoPreview {
+  url: string;
+  file?: File;
+  uploaded: boolean;
+}
+
 export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<PhotoPreview[]>([]);
+  const [primaryIndex, setPrimaryIndex] = useState(0);
   const { showSuccess, showError, showCustomError } = useToastMessages();
   
   const { data: maxFileSize } = useSiteSetting('upload_max_file_size_mb');
@@ -33,9 +41,35 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
       return;
     }
 
-    // Sofort lokale Previews erstellen für instant feedback
-    const localPreviews = Array.from(files).map(file => URL.createObjectURL(file));
-    setPreviews([...previews, ...localPreviews]);
+    // Validate each file before adding to previews
+    const validFiles: File[] = [];
+    for (const file of Array.from(files)) {
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        showCustomError(`${file.name} ist zu groß (max. ${maxSizeMB}MB)`);
+        continue;
+      }
+      if (!allowedFormatsList.includes(file.type)) {
+        showCustomError(`${file.name} ist kein erlaubtes Bildformat`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) return;
+
+    // Create local previews with file reference
+    const newPreviews: PhotoPreview[] = validFiles.map(file => ({
+      url: URL.createObjectURL(file),
+      file,
+      uploaded: false,
+    }));
+    
+    setPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleUpload = async () => {
+    const filesToUpload = previews.filter(p => !p.uploaded && p.file);
+    if (filesToUpload.length === 0) return;
 
     setUploading(true);
 
@@ -54,15 +88,9 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
 
       const existingPhotosCount = existingPhotos?.length || 0;
 
-      const uploadPromises = Array.from(files).map(async (file, index) => {
-        // Client-side validation (for UX)
-        if (file.size > maxSizeMB * 1024 * 1024) {
-          throw new Error(`${file.name} ist zu groß (max. ${maxSizeMB}MB)`);
-        }
-
-        if (!allowedFormatsList.includes(file.type)) {
-          throw new Error(`${file.name} ist kein erlaubtes Bildformat`);
-        }
+      const uploadPromises = filesToUpload.map(async (preview, uploadIndex) => {
+        const file = preview.file!;
+        const previewIndex = previews.findIndex(p => p.url === preview.url);
 
         // Generate cryptographically random filename
         const fileExt = file.name.split('.').pop();
@@ -91,31 +119,37 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
           throw new Error(data.error || 'Validierung fehlgeschlagen');
         }
 
+        // Determine if this should be primary based on user selection
+        // If no existing photos: the selected primaryIndex becomes primary
+        // If existing photos exist: none of the new uploads are primary
+        const shouldBePrimary = existingPhotosCount === 0 && previewIndex === primaryIndex;
+
         // Insert photo record into database
         const { error: dbError } = await supabase.from('photos').insert({
           profile_id: profileId,
           storage_path: data.path,
-          is_primary: existingPhotosCount === 0 && index === 0,
+          is_primary: shouldBePrimary,
         });
 
         if (dbError) throw dbError;
 
-        return data.url;
+        return { previewUrl: preview.url, uploadedUrl: data.url };
       });
 
-      const uploadedUrls = await Promise.all(uploadPromises);
+      const results = await Promise.all(uploadPromises);
       
-      // Lokale Previews durch echte URLs ersetzen
-      setPreviews(prev => {
-        const withoutLocalPreviews = prev.slice(0, prev.length - files.length);
-        return [...withoutLocalPreviews, ...uploadedUrls];
-      });
+      // Update previews to mark as uploaded
+      setPreviews(prev => prev.map(p => {
+        const result = results.find(r => r.previewUrl === p.url);
+        if (result) {
+          return { ...p, url: result.uploadedUrl, uploaded: true, file: undefined };
+        }
+        return p;
+      }));
 
       showSuccess('toast_photo_uploaded');
       onUploadComplete?.();
-    } catch (error) {
-      // Bei Fehler lokale Previews entfernen
-      setPreviews(prev => prev.slice(0, prev.length - files.length));
+    } catch (error: any) {
       showError('toast_photo_error', error.message || 'Fehler beim Hochladen der Fotos');
     } finally {
       setUploading(false);
@@ -123,8 +157,23 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
   };
 
   const removePreview = (index: number) => {
-    setPreviews(previews.filter((_, i) => i !== index));
+    setPreviews(prev => {
+      const newPreviews = prev.filter((_, i) => i !== index);
+      // Adjust primaryIndex if needed
+      if (primaryIndex >= newPreviews.length) {
+        setPrimaryIndex(Math.max(0, newPreviews.length - 1));
+      } else if (index < primaryIndex) {
+        setPrimaryIndex(primaryIndex - 1);
+      }
+      return newPreviews;
+    });
   };
+
+  const setPrimary = (index: number) => {
+    setPrimaryIndex(index);
+  };
+
+  const hasUnuploadedFiles = previews.some(p => !p.uploaded && p.file);
 
   return (
     <div className="space-y-4">
@@ -136,7 +185,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              {uploading ? 'Wird hochgeladen...' : 'Klicken zum Hochladen'}
+              {uploading ? 'Wird hochgeladen...' : 'Klicken zum Auswählen'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Max. {maxPhotosCount} Fotos, je max. {maxSizeMB}MB
@@ -155,29 +204,77 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
       </div>
 
       {previews.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {previews.map((url, index) => (
-            <div key={index} className="relative group">
-              <img
-                src={url}
-                alt={`Preview ${index + 1}`}
-                className="w-full h-32 object-cover rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={() => removePreview(index)}
-                className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              {index === 0 && (
-                <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
-                  Hauptfoto
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {previews.map((preview, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={preview.url}
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                
+                {/* Star icon for primary selection */}
+                <button
+                  type="button"
+                  onClick={() => setPrimary(index)}
+                  className={cn(
+                    "absolute top-2 left-2 p-1.5 rounded-full transition-all",
+                    index === primaryIndex
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-black/50 text-white/70 hover:text-yellow-400"
+                  )}
+                  title={index === primaryIndex ? "Hauptfoto" : "Als Hauptfoto setzen"}
+                >
+                  <Star 
+                    className={cn(
+                      "w-4 h-4",
+                      index === primaryIndex && "fill-current"
+                    )} 
+                  />
+                </button>
+
+                {/* Remove button */}
+                <button
+                  type="button"
+                  onClick={() => removePreview(index)}
+                  className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                {/* Primary badge */}
+                {index === primaryIndex && (
+                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
+                    Hauptfoto
+                  </div>
+                )}
+
+                {/* Upload status indicator */}
+                {preview.uploaded && (
+                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-green-600 text-white text-xs rounded">
+                    ✓
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Upload button */}
+          {hasUnuploadedFiles && (
+            <Button 
+              onClick={handleUpload} 
+              disabled={uploading}
+              className="w-full"
+            >
+              {uploading ? 'Wird hochgeladen...' : `${previews.filter(p => !p.uploaded).length} Foto(s) hochladen`}
+            </Button>
+          )}
+
+          <p className="text-xs text-muted-foreground text-center">
+            ⭐ Klicke auf den Stern, um das Hauptfoto zu wählen
+          </p>
+        </>
       )}
 
       {previews.length === 0 && (
@@ -185,7 +282,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
           <div className="text-center">
             <ImageIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Noch keine Fotos hochgeladen
+              Noch keine Fotos ausgewählt
             </p>
           </div>
         </div>
