@@ -95,6 +95,63 @@ export type Database = {
         }
         Relationships: []
       }
+      agb_acceptances: {
+        Row: {
+          acceptance_type: string
+          accepted_at: string
+          agb_version: string
+          created_at: string
+          created_by_admin: boolean
+          email: string
+          id: string
+          ip_address: string | null
+          profile_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acceptance_type: string
+          accepted_at?: string
+          agb_version?: string
+          created_at?: string
+          created_by_admin?: boolean
+          email: string
+          id?: string
+          ip_address?: string | null
+          profile_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acceptance_type?: string
+          accepted_at?: string
+          agb_version?: string
+          created_at?: string
+          created_by_admin?: boolean
+          email?: string
+          id?: string
+          ip_address?: string | null
+          profile_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agb_acceptances_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agb_acceptances_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           created_at: string | null

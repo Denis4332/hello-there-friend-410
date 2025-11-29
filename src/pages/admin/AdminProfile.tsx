@@ -21,7 +21,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
-import { Trash2, X, Pencil } from 'lucide-react';
+import { useAgbAcceptances } from '@/hooks/useAgbAcceptances';
+import { Trash2, X, Pencil, FileCheck } from 'lucide-react';
 import type { Profile } from '@/types/dating';
 
 const AdminProfile = () => {
@@ -886,10 +887,13 @@ const AdminProfile = () => {
                                     </div>
                                   )}
                                 </div>
+
+                                {/* AGB-Akzeptanz Nachweis */}
+                                <AgbAcceptanceSection profileId={selectedProfile.id} />
                                 
                                 <div>
                                   <label className="block text-sm font-medium mb-1">Status</label>
-                                  <select 
+                                  <select
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                     value={dialogStatus}
                                     onChange={(e) => setDialogStatus(e.target.value)}
@@ -1082,6 +1086,85 @@ const AdminProfile = () => {
           </div>
         </div>
       </main>
+    </div>
+  );
+};
+
+// AGB-Akzeptanz Anzeige Komponente
+const AgbAcceptanceSection = ({ profileId }: { profileId: string }) => {
+  const { data: acceptances, isLoading } = useAgbAcceptances(profileId);
+
+  if (isLoading) {
+    return (
+      <div className="border rounded-lg p-3">
+        <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+          <FileCheck className="h-4 w-4" />
+          AGB-Akzeptanz
+        </label>
+        <p className="text-sm text-muted-foreground">Laden...</p>
+      </div>
+    );
+  }
+
+  const hasAcceptances = acceptances && acceptances.length > 0;
+
+  return (
+    <div className="border rounded-lg p-3 bg-muted/30">
+      <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+        <FileCheck className="h-4 w-4" />
+        📜 AGB-Akzeptanz (Rechtlicher Nachweis)
+      </label>
+      
+      {hasAcceptances ? (
+        <div className="space-y-2">
+          {acceptances.map((acc) => (
+            <div 
+              key={acc.id} 
+              className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-700 dark:text-green-400 flex items-center gap-1">
+                    ✅ {acc.acceptance_type === 'registration' ? 'Registrierung' : 
+                        acc.acceptance_type === 'profile_creation' ? 'Inserat-Erstellung' : 
+                        'Admin-Erstellung'}
+                  </p>
+                  <p className="text-sm mt-1">
+                    <span className="text-muted-foreground">E-Mail:</span>{' '}
+                    <strong>{acc.email}</strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Datum: {new Date(acc.accepted_at).toLocaleString('de-CH', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })} Uhr
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    AGB-Version: {acc.agb_version}
+                  </p>
+                  {acc.created_by_admin && (
+                    <Badge variant="outline" className="mt-1 text-xs">
+                      Admin-erfasst
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+          <p className="text-sm text-amber-700 dark:text-amber-400">
+            ⚠️ Keine AGB-Akzeptanz gefunden
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Dieses Profil wurde möglicherweise vor Einführung der AGB-Erfassung erstellt.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
