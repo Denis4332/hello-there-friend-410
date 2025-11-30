@@ -7,11 +7,11 @@ interface EscoriaLogoProps {
 
 export const EscoriaLogo = ({ className }: EscoriaLogoProps) => {
   return (
-    <span className={cn('font-bold tracking-tight flex items-baseline text-xl', className)}>
+    <span className={cn('font-bold tracking-tight flex items-baseline text-2xl', className)}>
       ESCOR
-      <span className="relative inline-flex flex-col items-center mx-[1px]">
-        <Heart className="w-[0.35em] h-[0.35em] fill-current" />
-        <span className="w-[0.13em] h-[0.55em] bg-current rounded-[1px]" />
+      <span className="relative inline-flex flex-col items-center mx-[2px]">
+        <Heart className="w-[0.6em] h-[0.6em] fill-current" />
+        <span className="w-[0.15em] h-[0.5em] bg-current rounded-[1px]" />
       </span>
       A
     </span>
