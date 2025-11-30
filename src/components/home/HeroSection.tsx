@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { MapPin, Tag, Search, X } from 'lucide-react';
 import { FilterPopover } from '@/components/search/FilterPopover';
 import { detectLocation } from '@/lib/geolocation';
-import { getOptimizedImageUrl, supportsWebP } from '@/utils/imageOptimization';
+import { getOptimizedImageUrl } from '@/utils/imageOptimization';
 import { toast } from 'sonner';
 import { Canton } from '@/types/common';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -46,7 +45,6 @@ export const HeroSection = ({
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryGpsOpen, setCategoryGpsOpen] = useState(false);
-  const [webpSupported, setWebpSupported] = useState(false);
   const [optimizedHeroImage, setOptimizedHeroImage] = useState('');
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -78,39 +76,19 @@ export const HeroSection = ({
   const {
     data: heroCategoryPlaceholder
   } = useSiteSetting('hero_category_placeholder');
-  useEffect(() => {
-    supportsWebP().then(setWebpSupported);
-  }, []);
-
-  // Optimize and preload hero image with aggressive optimization
+  // Set optimized hero image immediately without waiting for webP check
   useEffect(() => {
     if (!heroImageUrl) return;
-    const isMobile = window.innerWidth < 768;
+    
+    // Use optimized URL immediately - browser handles format
     const optimizedImageUrl = getOptimizedImageUrl(heroImageUrl, {
-      width: isMobile ? 640 : 1200,
-      // Smaller sizes for faster load
-      quality: isMobile ? 65 : 70,
-      // Lower quality for better compression
-      format: webpSupported ? 'webp' : 'origin'
+      width: 1200,
+      quality: 70,
+      format: 'webp' // Modern browsers support webp
     });
     setOptimizedHeroImage(optimizedImageUrl);
-
-    // Preload with high priority
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = optimizedImageUrl;
-    link.fetchPriority = 'high';
-    document.head.appendChild(link);
-    const img = new Image();
-    img.src = optimizedImageUrl;
-    img.onload = () => {
-      setImageLoaded(true);
-    };
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, [heroImageUrl, webpSupported]);
+    setImageLoaded(true); // Show immediately, don't wait for onload
+  }, [heroImageUrl]);
   const activeFiltersCount = useMemo(() => {
     if (useGPS) {
       // GPS-Modus: GPS zählt als 1, plus optionale Filter
@@ -175,8 +153,6 @@ export const HeroSection = ({
     setUserLat(null);
     setUserLng(null);
   };
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const optimizedBgUrl = heroImageUrl && imageLoaded ? optimizedHeroImage : undefined;
   return <section className="relative py-16" aria-label="Hero-Bereich mit Suchfunktion">
       {optimizedHeroImage && <>
           <img src={optimizedHeroImage} alt="Hero background" className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700" style={{
