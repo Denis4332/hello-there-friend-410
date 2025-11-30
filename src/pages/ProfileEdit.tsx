@@ -310,7 +310,22 @@ const ProfileEdit = () => {
               Aktualisiere deine Profildaten und Fotos
             </p>
 
-            {profile.display_name === 'Neuer Nutzer' && (
+            {/* Draft Status Warning */}
+            {profile.status === 'draft' && (
+              <Card className="border-orange-500/50 bg-orange-500/5 mb-6">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-orange-600 font-medium">📝 Profil unvollständig</span>
+                  </div>
+                  <p className="text-sm mt-2">
+                    Lade mindestens 1 Foto hoch, um dein Inserat zur Prüfung freizugeben. 
+                    Ohne Foto bleibt dein Profil im Entwurf-Status und wird nicht veröffentlicht.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {profile.display_name === 'Neuer Nutzer' && profile.status !== 'draft' && (
               <Card className="border-blue-500/50 bg-blue-500/5 mb-6">
                 <CardContent className="pt-6">
                   <p className="text-sm">

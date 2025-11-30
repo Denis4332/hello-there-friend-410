@@ -141,6 +141,8 @@ const UserDashboard = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'draft':
+        return <Badge variant="outline" className="border-orange-500 text-orange-600">📝 Unvollständig</Badge>;
       case 'pending':
         return <Badge variant="secondary">{statusPending || 'In Prüfung'}</Badge>;
       case 'active':
@@ -209,6 +211,23 @@ const UserDashboard = () => {
                 {getStatusBadge(profile.status)}
               </div>
             </div>
+
+            {/* Draft Status Warning - Photo required */}
+            {profile.status === 'draft' && (
+              <Card className="mb-6 border-orange-500/50 bg-orange-500/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Badge variant="outline" className="border-orange-500 text-orange-600">📝 Unvollständig</Badge>
+                    <span className="text-sm">
+                      Dein Profil ist unvollständig. Bitte lade mindestens 1 Foto hoch, um dein Inserat zur Prüfung freizugeben.
+                    </span>
+                    <Button size="sm" onClick={() => navigate('/profil/bearbeiten')}>
+                      Profil vervollständigen
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Payment Status Display */}
             {profile.payment_status === 'paid' && profile.status === 'pending' && (
