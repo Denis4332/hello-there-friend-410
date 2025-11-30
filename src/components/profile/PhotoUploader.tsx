@@ -45,7 +45,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
     const validFiles: File[] = [];
     for (const file of Array.from(files)) {
       if (file.size > maxSizeMB * 1024 * 1024) {
-        showCustomError(`${file.name} ist zu groß (max. ${maxSizeMB}MB)`);
+        showCustomError(`${file.name} ist zu groß (max. ${maxSizeMB}MB). Tipp: Verkleinere das Bild mit einem Online-Tool wie tinypng.com`);
         continue;
       }
       if (!allowedFormatsList.includes(file.type)) {
