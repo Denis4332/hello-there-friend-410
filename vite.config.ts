@@ -120,39 +120,22 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Disable module preload polyfill to prevent unnecessary preloading
-    modulePreload: {
-      polyfill: false, // Don't polyfill for older browsers
-    },
     // Optimize bundle size
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          // Core vendor chunks - always needed
-          if (id.includes('node_modules/react/') || 
-              id.includes('node_modules/react-dom/') || 
-              id.includes('node_modules/react-router-dom/')) {
-            return 'react-vendor';
-          }
-          if (id.includes('node_modules/@tanstack/react-query')) {
-            return 'query-vendor';
-          }
-          // Supabase - only load when needed for API calls
-          if (id.includes('node_modules/@supabase/')) {
-            return 'supabase-vendor';
-          }
-          // Charts - admin only, load lazily
-          if (id.includes('node_modules/recharts/') || 
-              id.includes('node_modules/d3-') ||
-              id.includes('node_modules/victory-')) {
-            return 'charts';
-          }
-          // Split Radix UI - load as needed
-          if (id.includes('@radix-ui/react-dialog')) return 'radix-dialog';
-          if (id.includes('@radix-ui/react-select')) return 'radix-select';
-          if (id.includes('@radix-ui/react-dropdown-menu')) return 'radix-dropdown';
-          if (id.includes('@radix-ui/react-popover')) return 'radix-popover';
-          if (id.includes('@radix-ui/react-tabs')) return 'radix-tabs';
+        manualChunks: {
+          // Separate vendor chunks for better caching
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          // Split Radix UI into separate chunks
+          'radix-dialog': ['@radix-ui/react-dialog'],
+          'radix-select': ['@radix-ui/react-select'],
+          'radix-dropdown': ['@radix-ui/react-dropdown-menu'],
+          'radix-popover': ['@radix-ui/react-popover'],
+          'radix-tabs': ['@radix-ui/react-tabs'],
+          // Charts loaded separately
+          'charts': ['recharts'],
         },
       },
     },
