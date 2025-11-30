@@ -46,11 +46,14 @@ const Profil = () => {
   const { data: reportButton } = useSiteSetting('profile_report_button');
   const { data: reportDialogTitle } = useSiteSetting('profile_report_dialog_title');
   
-  // Get all photos
+  // Get all photos and videos with media type
   const photos = profile?.photos || [];
-  const photoUrls = photos.map((p) => 
-    supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl
-  );
+  const mediaItems = photos.map((p) => ({
+    url: supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl,
+    mediaType: (p as any).media_type || 'image',
+    isVideo: (p as any).media_type === 'video',
+  }));
+  const photoUrls = mediaItems.map(m => m.url);
   
   // Get category names
   const categoryNames = profile?.profile_categories
@@ -135,16 +138,28 @@ const Profil = () => {
                 <div className="bg-card border rounded-lg overflow-hidden">
                   <Carousel className="w-full">
                     <CarouselContent>
-                      {photoUrls.map((url: string, index: number) => (
+                      {mediaItems.map((item, index: number) => (
                         <CarouselItem key={index}>
                           <div className="relative aspect-[3/4]">
-                            <img
-                              src={url}
-                              alt={`${profile.display_name} - Foto ${index + 1}`}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                              decoding="async"
-                            />
+                            {item.isVideo ? (
+                              <video
+                                src={item.url}
+                                className="w-full h-full object-cover"
+                                controls
+                                preload="metadata"
+                                playsInline
+                              >
+                                Dein Browser unterstützt keine Videos.
+                              </video>
+                            ) : (
+                              <img
+                                src={item.url}
+                                alt={`${profile.display_name} - Foto ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            )}
                           </div>
                         </CarouselItem>
                       ))}

@@ -417,6 +417,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_primary: boolean | null
+          media_type: string | null
           profile_id: string
           storage_path: string
         }
@@ -424,6 +425,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
+          media_type?: string | null
           profile_id: string
           storage_path: string
         }
@@ -431,6 +433,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
+          media_type?: string | null
           profile_id?: string
           storage_path?: string
         }
