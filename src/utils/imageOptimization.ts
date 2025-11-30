@@ -54,18 +54,21 @@ export const getOptimizedImageUrl = (
   try {
     const url = new URL(baseUrl);
     
-    // Handle Unsplash URLs specifically
+    // Handle Unsplash URLs specifically - clean params for optimal compression
     if (url.hostname.includes('unsplash.com')) {
-      // Modify existing Unsplash parameters for better compression
-      if (options.quality) {
-        url.searchParams.set('q', Math.min(options.quality, 70).toString());
-      }
+      // Remove old Unsplash auto params for explicit control
+      url.searchParams.delete('auto');
+      url.searchParams.delete('fit');
+      
+      // Set quality - use lower for better compression (50 is good balance)
+      url.searchParams.set('q', Math.min(options.quality || 50, 50).toString());
+      
       if (options.width) {
         url.searchParams.set('w', options.width.toString());
       }
-      if (options.format === 'webp') {
-        url.searchParams.set('fm', 'webp');
-      }
+      // Always use webp for Unsplash as it provides best compression
+      url.searchParams.set('fm', 'webp');
+      
       return url.toString();
     }
     
