@@ -75,6 +75,14 @@ Deno.serve(async (req) => {
       
       if (!verificationError) deletionLog.push('verification_submissions deleted');
 
+      // 2b. Delete AGB acceptances
+      const { error: agbError } = await supabaseAdmin
+        .from('agb_acceptances')
+        .delete()
+        .in('profile_id', profileIds);
+      
+      if (!agbError) deletionLog.push('agb_acceptances deleted');
+
       // 3. Delete profile views
       const { error: viewsError } = await supabaseAdmin
         .from('profile_views')
