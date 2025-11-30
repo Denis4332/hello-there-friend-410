@@ -6,10 +6,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/layout/Header';
 import { ProfileForm, ProfileFormData } from '@/components/profile/ProfileForm';
 import { PhotoUploader } from '@/components/profile/PhotoUploader';
+import { VerificationUploader } from '@/components/profile/VerificationUploader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Trash2, Star } from 'lucide-react';
+import { Loader2, Trash2, Star, Play, CheckCircle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
+// Media limits per listing type
+const MEDIA_LIMITS = {
+  basic: { photos: 5, videos: 0 },
+  premium: { photos: 10, videos: 1 },
+  top: { photos: 15, videos: 2 },
+};
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
@@ -17,7 +25,6 @@ const ProfileEdit = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // FIXED: Remove TypeScript any types
   const [profile, setProfile] = useState<{
     id: string;
     user_id: string;
@@ -51,6 +58,7 @@ const ProfileEdit = () => {
     storage_path: string;
     is_primary: boolean;
     created_at: string;
+    media_type?: string;
   }>>([]);
   const [cantons, setCantons] = useState<Array<{
     id: string;
@@ -267,6 +275,12 @@ const ProfileEdit = () => {
     return null;
   }
 
+  // Calculate media limits based on listing type
+  const listingType = (profile.listing_type as 'basic' | 'premium' | 'top') || 'basic';
+  const currentLimits = MEDIA_LIMITS[listingType];
+  const imagePhotos = photos.filter(p => !p.media_type || p.media_type === 'image');
+  const videoPhotos = photos.filter(p => p.media_type === 'video');
+
   const defaultValues: ProfileFormData = {
     display_name: profile.display_name,
     is_adult: true,
@@ -326,80 +340,149 @@ const ProfileEdit = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Foto-Verwaltung</CardTitle>
-                  <CardDescription>Lade neue Fotos hoch und verwalte bestehende</CardDescription>
+                  <CardTitle>Medien-Verwaltung</CardTitle>
+                  <CardDescription>
+                    Lade Fotos und Videos hoch ({listingType.toUpperCase()} Paket)
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <h3 className="text-sm font-medium mb-3">Neue Fotos hochladen</h3>
-                    <PhotoUploader profileId={profile.id} onUploadComplete={loadData} />
+                    <h3 className="text-sm font-medium mb-3">Neue Medien hochladen</h3>
+                    <PhotoUploader 
+                      profileId={profile.id} 
+                      listingType={listingType}
+                      onUploadComplete={loadData} 
+                    />
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-medium mb-3">Deine Fotos ({photos.length}/5)</h3>
+                    <h3 className="text-sm font-medium mb-3">
+                      📷 Fotos ({imagePhotos.length}/{currentLimits.photos})
+                      {currentLimits.videos > 0 && (
+                        <span className="ml-2">| 🎬 Videos ({videoPhotos.length}/{currentLimits.videos})</span>
+                      )}
+                    </h3>
 
                     <div className="grid grid-cols-2 gap-4">
-                      {photos.map((photo) => (
-                        <div key={photo.id} className="relative group">
-                        <div className="aspect-square rounded-md overflow-hidden border">
-                          <img
-                            src={getPublicUrl(photo.storage_path)}
-                            alt="Profil Foto"
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        </div>
-                        {photo.is_primary && (
-                          <div className="absolute top-2 right-2">
-                            <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                          </div>
-                        )}
-                        <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!photo.is_primary && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="flex-1"
-                              onClick={() => handleSetPrimary(photo.id)}
-                            >
-                              <Star className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="destructive" className="flex-1">
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Foto löschen?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Dieses Foto wird dauerhaft entfernt.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeletePhoto(photo.id, photo.storage_path)}
+                      {photos.map((photo) => {
+                        const isVideo = photo.media_type === 'video';
+                        
+                        return (
+                          <div key={photo.id} className="relative group">
+                            <div className="aspect-square rounded-md overflow-hidden border">
+                              {isVideo ? (
+                                <div className="relative w-full h-full">
+                                  <video
+                                    src={getPublicUrl(photo.storage_path)}
+                                    className="w-full h-full object-cover"
+                                    preload="metadata"
+                                  />
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                    <Play className="h-12 w-12 text-white fill-white/80" />
+                                  </div>
+                                </div>
+                              ) : (
+                                <img
+                                  src={getPublicUrl(photo.storage_path)}
+                                  alt="Profil Foto"
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              )}
+                            </div>
+                            {photo.is_primary && (
+                              <div className="absolute top-2 right-2">
+                                <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                              </div>
+                            )}
+                            {isVideo && (
+                              <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                🎬 Video
+                              </div>
+                            )}
+                            <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!photo.is_primary && !isVideo && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="flex-1"
+                                  onClick={() => handleSetPrimary(photo.id)}
                                 >
-                                  Löschen
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    ))}
+                                  <Star className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="destructive" className="flex-1">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{isVideo ? 'Video' : 'Foto'} löschen?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {isVideo ? 'Dieses Video' : 'Dieses Foto'} wird dauerhaft entfernt.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeletePhoto(photo.id, photo.storage_path)}
+                                    >
+                                      Löschen
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {photos.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-8">
-                        Noch keine Fotos hochgeladen
+                        Noch keine Medien hochgeladen
                       </p>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Verification Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Verifizierung</CardTitle>
+                  <CardDescription>
+                    Verifizierte Profile erhalten mehr Vertrauen und Sichtbarkeit
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {profile.verified_at ? (
+                    <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                      <div>
+                        <p className="font-medium text-green-700 dark:text-green-400">Profil verifiziert</p>
+                        <p className="text-sm text-muted-foreground">
+                          Verifiziert am {new Date(profile.verified_at).toLocaleDateString('de-CH')}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <VerificationUploader
+                      profileId={profile.id}
+                      onComplete={() => {
+                        toast({
+                          title: 'Verifizierung eingereicht',
+                          description: 'Deine Verifizierung wird geprüft.',
+                        });
+                      }}
+                      onSkip={() => {
+                        // User skipped verification, no action needed
+                      }}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </div>

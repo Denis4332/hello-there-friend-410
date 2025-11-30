@@ -121,12 +121,23 @@ Deno.serve(async (req) => {
       .from('profiles')
       .select('user_id')
       .eq('id', profileId)
-      .single();
+      .maybeSingle();
 
-    if (profileError || !profile) {
-      console.error('Profile not found:', profileError);
+    if (profileError) {
+      console.error('Profile query error:', profileError);
       return new Response(
-        JSON.stringify({ error: 'Profile not found' }),
+        JSON.stringify({ error: 'Fehler beim Laden des Profils' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (!profile) {
+      console.error('Profile not found for ID:', profileId);
+      return new Response(
+        JSON.stringify({ error: 'Profil nicht gefunden. Bitte lade die Seite neu.' }),
         {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -134,7 +145,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (profile.user_id !== user.id) {
+    // Admin-created profiles have user_id = NULL, allow upload for profile owner only
+    // For admin-created profiles (user_id is null), this check is skipped
+    if (profile.user_id !== null && profile.user_id !== user.id) {
       console.error(`Unauthorized upload attempt: user ${user.id} tried to upload to profile ${profileId}`);
       return new Response(
         JSON.stringify({ error: 'Unauthorized: You can only upload photos to your own profile' }),
