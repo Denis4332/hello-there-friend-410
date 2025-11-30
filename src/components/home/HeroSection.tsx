@@ -45,8 +45,6 @@ export const HeroSection = ({
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryGpsOpen, setCategoryGpsOpen] = useState(false);
-  const [optimizedHeroImage, setOptimizedHeroImage] = useState('');
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   // CMS Settings
   const {
@@ -76,19 +74,13 @@ export const HeroSection = ({
   const {
     data: heroCategoryPlaceholder
   } = useSiteSetting('hero_category_placeholder');
-  // Set optimized hero image immediately without waiting for webP check
-  useEffect(() => {
-    if (!heroImageUrl) return;
-    
-    // Use optimized URL immediately - browser handles format
-    const optimizedImageUrl = getOptimizedImageUrl(heroImageUrl, {
-      width: 1200,
-      quality: 70,
-      format: 'webp' // Modern browsers support webp
-    });
-    setOptimizedHeroImage(optimizedImageUrl);
-    setImageLoaded(true); // Show immediately, don't wait for onload
-  }, [heroImageUrl]);
+  
+  // Compute optimized hero image URL synchronously for immediate render
+  const optimizedHeroImage = heroImageUrl ? getOptimizedImageUrl(heroImageUrl, {
+    width: 1200,
+    quality: 70,
+    format: 'webp'
+  }) : '';
   const activeFiltersCount = useMemo(() => {
     if (useGPS) {
       // GPS-Modus: GPS zählt als 1, plus optionale Filter
@@ -155,12 +147,16 @@ export const HeroSection = ({
   };
   return <section className="relative py-16" aria-label="Hero-Bereich mit Suchfunktion">
       {optimizedHeroImage && <>
-          <img src={optimizedHeroImage} alt="Hero background" className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700" style={{
-        opacity: imageLoaded ? 1 : 0
-      }} fetchPriority="high" loading="eager" />
+          <img 
+            src={optimizedHeroImage} 
+            alt="Hero background" 
+            className="absolute inset-0 w-full h-full object-cover" 
+            fetchPriority="high" 
+            loading="eager" 
+          />
           <div className="absolute inset-0 bg-background" style={{
-        opacity: heroOverlayOpacity || '0.7'
-      }} />
+            opacity: heroOverlayOpacity || '0.7'
+          }} />
         </>}
       <div className="container mx-auto px-4 relative z-10">
         <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6" role="search" aria-label="Hauptsuche">
