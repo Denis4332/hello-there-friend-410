@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
+import { EscoriaLogo } from '@/components/EscoriaLogo';
 import { User, Menu, Search, Plus, LogOut, Shield } from 'lucide-react';
 
 export const Header = () => {
@@ -41,11 +42,11 @@ export const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2" aria-label="Zur Startseite">
-            <img 
-              src={logoUrl || '/images/escoria-logo.png'} 
-              alt={logoText || 'ESCORIA'} 
-              className="h-8 object-contain" 
-            />
+            {logoUrl ? (
+              <img src={logoUrl} alt={logoText || 'ESCORIA'} className="h-8 object-contain" />
+            ) : (
+              <EscoriaLogo />
+            )}
           </Link>
           <nav className="hidden md:flex items-center gap-6" aria-label="Hauptnavigation">
             <Link to="/" className="hover:underline active:text-primary-foreground/80 transition-colors">
