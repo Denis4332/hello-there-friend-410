@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => ({
     // PWA for offline caching and performance
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'script-defer', // Defer SW registration to not block render
       includeAssets: ['favicon.ico', 'robots.txt'],
       manifest: {
         name: 'ESCORIA',
