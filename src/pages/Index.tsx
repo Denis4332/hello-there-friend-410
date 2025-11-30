@@ -66,7 +66,7 @@ const Index = () => {
           categories={categories}
         />
 
-        <BannerDisplay position="top" className="container mx-auto px-4 py-8" />
+        <BannerDisplay position="top" className="container mx-auto px-4 py-4" />
 
         <Suspense fallback={
           <section className="py-12 bg-muted">

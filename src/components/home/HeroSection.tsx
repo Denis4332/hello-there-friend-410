@@ -145,7 +145,7 @@ export const HeroSection = ({
     setUserLat(null);
     setUserLng(null);
   };
-  return <section className="relative py-16" aria-label="Hero-Bereich mit Suchfunktion">
+  return <section className="relative py-8" aria-label="Hero-Bereich mit Suchfunktion">
       {optimizedHeroImage && <>
           <img 
             src={optimizedHeroImage} 
