@@ -1,4 +1,4 @@
-import { Crown, Star, CheckCircle2 } from 'lucide-react';
+import { Crown, Star, CheckCircle2, Camera, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +61,10 @@ export const ListingTypeSelector = ({
                 <Star className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
                 <span className="font-medium">Hervorgehobene Darstellung</span>
               </li>
+              <li className="flex items-start gap-2 bg-muted/50 -mx-2 px-2 py-1 rounded">
+                <Camera className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                <span className="font-medium text-muted-foreground">📷 5 Fotos</span>
+              </li>
             </ul>
           </div>
         </button>
@@ -109,9 +113,9 @@ export const ListingTypeSelector = ({
                 <Star className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
                 <span className="font-medium">Größere Darstellung</span>
               </li>
-              <li className="flex items-start gap-2">
-                <Star className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
-                <span className="font-medium">Mehr Aufmerksamkeit</span>
+              <li className="flex items-start gap-2 bg-amber-100/50 dark:bg-amber-900/30 -mx-2 px-2 py-1 rounded">
+                <Camera className="h-4 w-4 mt-0.5 text-amber-600 flex-shrink-0" />
+                <span className="font-medium text-amber-700 dark:text-amber-400">📷 10 Fotos + 🎬 1 Video</span>
               </li>
             </ul>
           </div>
@@ -161,9 +165,9 @@ export const ListingTypeSelector = ({
                 <Star className="h-4 w-4 mt-0.5 text-red-500 flex-shrink-0" />
                 <span className="font-medium">TOP AD Banner</span>
               </li>
-              <li className="flex items-start gap-2">
-                <Star className="h-4 w-4 mt-0.5 text-red-500 flex-shrink-0" />
-                <span className="font-medium">Maximale Sichtbarkeit</span>
+              <li className="flex items-start gap-2 bg-red-100/50 dark:bg-red-900/30 -mx-2 px-2 py-1 rounded">
+                <Video className="h-4 w-4 mt-0.5 text-red-600 flex-shrink-0" />
+                <span className="font-medium text-red-700 dark:text-red-400">📷 15 Fotos + 🎬 2 Videos</span>
               </li>
             </ul>
           </div>

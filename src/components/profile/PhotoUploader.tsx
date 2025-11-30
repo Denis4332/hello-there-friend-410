@@ -1,55 +1,69 @@
 import { useState } from 'react';
-import { Upload, X, Image as ImageIcon, Star } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Star, Video, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useToastMessages } from '@/hooks/useToastMessages';
 import { cn } from '@/lib/utils';
 
 interface PhotoUploaderProps {
   profileId: string;
+  listingType?: 'basic' | 'premium' | 'top';
   onUploadComplete?: () => void;
 }
 
-interface PhotoPreview {
+interface MediaPreview {
   url: string;
   file?: File;
   uploaded: boolean;
+  mediaType: 'image' | 'video';
 }
 
-export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProps) => {
+// Tiered limits based on listing type
+const MEDIA_LIMITS = {
+  basic: { photos: 5, videos: 0 },
+  premium: { photos: 10, videos: 1 },
+  top: { photos: 15, videos: 2 },
+};
+
+const MAX_PHOTO_SIZE_MB = 10;
+const MAX_VIDEO_SIZE_MB = 50;
+const ALLOWED_PHOTO_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_VIDEO_FORMATS = ['video/mp4', 'video/webm'];
+
+export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComplete }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
-  const [previews, setPreviews] = useState<PhotoPreview[]>([]);
+  const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
   const { showSuccess, showError, showCustomError } = useToastMessages();
   
-  const { data: maxFileSize } = useSiteSetting('upload_max_file_size_mb');
-  const { data: maxPhotos } = useSiteSetting('upload_max_photos_per_profile');
-  const { data: allowedFormats } = useSiteSetting('upload_allowed_formats');
+  const limits = MEDIA_LIMITS[listingType];
+  const photoCount = previews.filter(p => p.mediaType === 'image').length;
+  const videoCount = previews.filter(p => p.mediaType === 'video').length;
 
-  const maxSizeMB = parseInt(maxFileSize || '5');
-  const maxPhotosCount = parseInt(maxPhotos || '5');
-  const allowedFormatsList = allowedFormats?.split(',') || ['image/jpeg', 'image/png', 'image/webp'];
-
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    // Validation
-    if (previews.length + files.length > maxPhotosCount) {
-      showCustomError(`Maximal ${maxPhotosCount} Fotos erlaubt`);
+    const maxSize = type === 'image' ? MAX_PHOTO_SIZE_MB : MAX_VIDEO_SIZE_MB;
+    const allowedFormats = type === 'image' ? ALLOWED_PHOTO_FORMATS : ALLOWED_VIDEO_FORMATS;
+    const currentCount = type === 'image' ? photoCount : videoCount;
+    const maxCount = type === 'image' ? limits.photos : limits.videos;
+
+    // Check count limit
+    if (currentCount + files.length > maxCount) {
+      showCustomError(`Maximal ${maxCount} ${type === 'image' ? 'Fotos' : 'Videos'} erlaubt (${listingType.toUpperCase()})`);
       return;
     }
 
-    // Validate each file before adding to previews
+    // Validate each file
     const validFiles: File[] = [];
     for (const file of Array.from(files)) {
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        showCustomError(`${file.name} ist zu groß (max. ${maxSizeMB}MB). Tipp: Verkleinere das Bild mit einem Online-Tool wie tinypng.com`);
+      if (file.size > maxSize * 1024 * 1024) {
+        showCustomError(`${file.name} ist zu groß (max. ${maxSize}MB). ${type === 'image' ? 'Tipp: Verkleinere das Bild mit einem Online-Tool wie tinypng.com' : ''}`);
         continue;
       }
-      if (!allowedFormatsList.includes(file.type)) {
-        showCustomError(`${file.name} ist kein erlaubtes Bildformat`);
+      if (!allowedFormats.includes(file.type)) {
+        showCustomError(`${file.name} ist kein erlaubtes ${type === 'image' ? 'Bildformat (JPEG, PNG, WebP)' : 'Videoformat (MP4, WebM)'}`);
         continue;
       }
       validFiles.push(file);
@@ -57,11 +71,12 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
 
     if (validFiles.length === 0) return;
 
-    // Create local previews with file reference
-    const newPreviews: PhotoPreview[] = validFiles.map(file => ({
+    // Create local previews
+    const newPreviews: MediaPreview[] = validFiles.map(file => ({
       url: URL.createObjectURL(file),
       file,
       uploaded: false,
+      mediaType: type,
     }));
     
     setPreviews(prev => [...prev, ...newPreviews]);
@@ -74,21 +89,20 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
     setUploading(true);
 
     try {
-      // Get session for authentication
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Nicht authentifiziert');
       }
 
-      // Check existing photos in database for is_primary logic
+      // Check existing media in database
       const { data: existingPhotos } = await supabase
         .from('photos')
-        .select('id')
+        .select('id, media_type')
         .eq('profile_id', profileId);
 
-      const existingPhotosCount = existingPhotos?.length || 0;
+      const existingImagesCount = existingPhotos?.filter(p => p.media_type === 'image' || !p.media_type).length || 0;
 
-      const uploadPromises = filesToUpload.map(async (preview, uploadIndex) => {
+      const uploadPromises = filesToUpload.map(async (preview) => {
         const file = preview.file!;
         const previewIndex = previews.findIndex(p => p.url === preview.url);
 
@@ -119,16 +133,15 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
           throw new Error(data.error || 'Validierung fehlgeschlagen');
         }
 
-        // Determine if this should be primary based on user selection
-        // If no existing photos: the selected primaryIndex becomes primary
-        // If existing photos exist: none of the new uploads are primary
-        const shouldBePrimary = existingPhotosCount === 0 && previewIndex === primaryIndex;
+        // Determine if this should be primary (only for images)
+        const shouldBePrimary = preview.mediaType === 'image' && existingImagesCount === 0 && previewIndex === primaryIndex;
 
         // Insert photo record into database
         const { error: dbError } = await supabase.from('photos').insert({
           profile_id: profileId,
           storage_path: data.path,
           is_primary: shouldBePrimary,
+          media_type: data.media_type || preview.mediaType,
         });
 
         if (dbError) throw dbError;
@@ -150,7 +163,7 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
       showSuccess('toast_photo_uploaded');
       onUploadComplete?.();
     } catch (error: any) {
-      showError('toast_photo_error', error.message || 'Fehler beim Hochladen der Fotos');
+      showError('toast_photo_error', error.message || 'Fehler beim Hochladen');
     } finally {
       setUploading(false);
     }
@@ -159,9 +172,10 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
   const removePreview = (index: number) => {
     setPreviews(prev => {
       const newPreviews = prev.filter((_, i) => i !== index);
-      // Adjust primaryIndex if needed
-      if (primaryIndex >= newPreviews.length) {
-        setPrimaryIndex(Math.max(0, newPreviews.length - 1));
+      // Adjust primaryIndex if needed (only for images)
+      const imageIndices = newPreviews.map((p, i) => p.mediaType === 'image' ? i : -1).filter(i => i >= 0);
+      if (primaryIndex >= newPreviews.length || newPreviews[primaryIndex]?.mediaType !== 'image') {
+        setPrimaryIndex(imageIndices[0] ?? 0);
       } else if (index < primaryIndex) {
         setPrimaryIndex(primaryIndex - 1);
       }
@@ -170,43 +184,56 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
   };
 
   const setPrimary = (index: number) => {
-    setPrimaryIndex(index);
+    if (previews[index]?.mediaType === 'image') {
+      setPrimaryIndex(index);
+    }
   };
 
   const hasUnuploadedFiles = previews.some(p => !p.uploaded && p.file);
+  const imagePreviews = previews.filter(p => p.mediaType === 'image');
+  const videoPreviews = previews.filter(p => p.mediaType === 'video');
 
   return (
-    <div className="space-y-4">
-      <div>
+    <div className="space-y-6">
+      {/* Photo Upload Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Fotos ({photoCount}/{limits.photos})
+          </h3>
+        </div>
+        
         <label
           htmlFor="photo-upload"
-          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+          className={cn(
+            "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors",
+            photoCount >= limits.photos && "opacity-50 cursor-not-allowed"
+          )}
         >
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              {uploading ? 'Wird hochgeladen...' : 'Klicken zum Auswählen'}
+              {uploading ? 'Wird hochgeladen...' : 'Fotos auswählen'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Max. {maxPhotosCount} Fotos, je max. {maxSizeMB}MB
+              Max. {limits.photos} Fotos, je max. {MAX_PHOTO_SIZE_MB}MB (JPEG, PNG, WebP)
             </p>
           </div>
           <input
             id="photo-upload"
             type="file"
             className="hidden"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             multiple
-            onChange={handleFileSelect}
-            disabled={uploading || previews.length >= maxPhotosCount}
+            onChange={(e) => handleFileSelect(e, 'image')}
+            disabled={uploading || photoCount >= limits.photos}
           />
         </label>
-      </div>
 
-      {previews.length > 0 && (
-        <>
+        {imagePreviews.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {previews.map((preview, index) => (
+            {previews.map((preview, index) => preview.mediaType === 'image' && (
               <div key={index} className="relative group">
                 <img
                   src={preview.url}
@@ -259,22 +286,91 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
               </div>
             ))}
           </div>
+        )}
+      </div>
 
-          {/* Upload button */}
-          {hasUnuploadedFiles && (
-            <Button 
-              onClick={handleUpload} 
-              disabled={uploading}
-              className="w-full"
-            >
-              {uploading ? 'Wird hochgeladen...' : `${previews.filter(p => !p.uploaded).length} Foto(s) hochladen`}
-            </Button>
+      {/* Video Upload Section - Only show if allowed */}
+      {limits.videos > 0 && (
+        <div className="space-y-4 border-t pt-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Video className="h-5 w-5" />
+              Videos ({videoCount}/{limits.videos})
+            </h3>
+          </div>
+          
+          <label
+            htmlFor="video-upload"
+            className={cn(
+              "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors border-amber-500/50",
+              videoCount >= limits.videos && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Video className="w-8 h-8 mb-2 text-amber-500" />
+              <p className="text-sm text-muted-foreground">
+                {uploading ? 'Wird hochgeladen...' : 'Video auswählen'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Max. {limits.videos} Video{limits.videos > 1 ? 's' : ''}, je max. {MAX_VIDEO_SIZE_MB}MB (MP4, WebM)
+              </p>
+            </div>
+            <input
+              id="video-upload"
+              type="file"
+              className="hidden"
+              accept="video/mp4,video/webm"
+              onChange={(e) => handleFileSelect(e, 'video')}
+              disabled={uploading || videoCount >= limits.videos}
+            />
+          </label>
+
+          {videoPreviews.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {previews.map((preview, index) => preview.mediaType === 'video' && (
+                <div key={index} className="relative group">
+                  <div className="relative w-full h-32 bg-black rounded-lg overflow-hidden">
+                    <video
+                      src={preview.url}
+                      className="w-full h-full object-cover"
+                      muted
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <Play className="w-10 h-10 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => removePreview(index)}
+                    className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+
+                  {/* Upload status indicator */}
+                  {preview.uploaded && (
+                    <div className="absolute bottom-2 right-2 px-2 py-1 bg-green-600 text-white text-xs rounded">
+                      ✓
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
+        </div>
+      )}
 
-          <p className="text-xs text-muted-foreground text-center">
-            ⭐ Klicke auf den Stern, um das Hauptfoto zu wählen
-          </p>
-        </>
+      {/* Upload button */}
+      {hasUnuploadedFiles && (
+        <Button 
+          onClick={handleUpload} 
+          disabled={uploading}
+          className="w-full"
+        >
+          {uploading ? 'Wird hochgeladen...' : `${previews.filter(p => !p.uploaded).length} Datei(en) hochladen`}
+        </Button>
       )}
 
       {previews.length === 0 && (
@@ -282,10 +378,16 @@ export const PhotoUploader = ({ profileId, onUploadComplete }: PhotoUploaderProp
           <div className="text-center">
             <ImageIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Noch keine Fotos ausgewählt
+              Noch keine Medien ausgewählt
             </p>
           </div>
         </div>
+      )}
+
+      {imagePreviews.length > 0 && (
+        <p className="text-xs text-muted-foreground text-center">
+          ⭐ Klicke auf den Stern, um das Hauptfoto zu wählen
+        </p>
       )}
     </div>
   );

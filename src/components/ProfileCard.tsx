@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrefetch } from '@/hooks/usePrefetch';
-import { Crown, CheckCircle2, Tag, MapPin, Heart } from 'lucide-react';
+import { Crown, CheckCircle2, Tag, MapPin, Heart, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { ResponsiveImage } from '@/components/ResponsiveImage';
@@ -33,6 +33,8 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
   const photoUrl = primaryPhoto 
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
     : null;
+  const primaryIsVideo = (primaryPhoto as any)?.media_type === 'video';
+  const hasVideo = profile.photos?.some((p) => (p as any).media_type === 'video');
   
   const isTop = profile.listing_type === 'top';
   const isPremium = profile.listing_type === 'premium' || profile.listing_type === 'top';
@@ -74,13 +76,32 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
       
       <div className="relative w-full h-[425px] flex-shrink-0">
         {photoUrl ? (
-          <ResponsiveImage
-            src={photoUrl}
-            alt={profile.display_name}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <>
+            {primaryIsVideo ? (
+              <video
+                src={photoUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <ResponsiveImage
+                src={photoUrl}
+                alt={profile.display_name}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+            {/* Video indicator */}
+            {hasVideo && (
+              <div className="absolute bottom-4 left-2 z-10 bg-black/70 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                <Play className="h-3 w-3" />
+                Video
+              </div>
+            )}
+          </>
         ) : (
           <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center">
             <span className="text-6xl font-bold text-muted-foreground">
