@@ -142,7 +142,7 @@ const ProfileCreate = () => {
           lng: data.lng,
           about_me: data.about_me,
           languages: data.languages,
-          status: 'pending',
+          status: 'draft',
         })
         .select()
         .single();

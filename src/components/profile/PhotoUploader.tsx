@@ -160,6 +160,21 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
         return p;
       }));
 
+      // Check if this was the first photo - update profile status from draft to pending
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('status')
+        .eq('id', profileId)
+        .maybeSingle();
+      
+      if (currentProfile?.status === 'draft') {
+        await supabase
+          .from('profiles')
+          .update({ status: 'pending' })
+          .eq('id', profileId);
+        console.log('✅ Profile status updated from draft to pending');
+      }
+
       showSuccess('toast_photo_uploaded');
       onUploadComplete?.();
     } catch (error: any) {

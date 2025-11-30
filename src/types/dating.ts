@@ -1,7 +1,7 @@
 // TypeScript Types for Dating Platform
 
 export type AppRole = 'admin' | 'user';
-export type ProfileStatus = 'pending' | 'active' | 'rejected';
+export type ProfileStatus = 'draft' | 'pending' | 'active' | 'rejected';
 export type ReportStatus = 'open' | 'closed';
 export type Gender = 'male' | 'female' | 'non-binary' | 'other' | 'prefer-not-to-say';
 

@@ -24,7 +24,7 @@ export function isProfile(value: unknown): value is Profile {
     typeof p.canton === 'string' &&
     Array.isArray(p.languages) &&
     typeof p.is_premium === 'boolean' &&
-    (p.status === 'active' || p.status === 'inactive' || p.status === 'pending')
+    (p.status === 'draft' || p.status === 'active' || p.status === 'inactive' || p.status === 'pending')
   );
 }
 
