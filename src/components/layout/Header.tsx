@@ -41,11 +41,11 @@ export const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2" aria-label="Zur Startseite">
-            {logoUrl ? (
-              <img src={logoUrl} alt={logoText || 'Logo'} className="h-8 object-contain" />
-            ) : (
-              <span className="text-xl font-bold">{logoText || 'ESCORIA'}</span>
-            )}
+            <img 
+              src={logoUrl || '/images/escoria-logo.png'} 
+              alt={logoText || 'ESCORIA'} 
+              className="h-8 object-contain" 
+            />
           </Link>
           <nav className="hidden md:flex items-center gap-6" aria-label="Hauptnavigation">
             <Link to="/" className="hover:underline active:text-primary-foreground/80 transition-colors">
