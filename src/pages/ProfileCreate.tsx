@@ -26,6 +26,7 @@ const ProfileCreate = () => {
   const [listingType, setListingType] = useState<'basic' | 'premium' | 'top'>('basic');
   const [currentStep, setCurrentStep] = useState<'form' | 'listing-type' | 'photos' | 'verification'>('form');
   const [agbAccepted, setAgbAccepted] = useState(false);
+  const [uploadedPhotoCount, setUploadedPhotoCount] = useState(0);
 
   const { data: seoTitle } = useSiteSetting('seo_profile_create_title');
   const { data: createTitle } = useSiteSetting('profile_create_title');
@@ -243,12 +244,36 @@ const ProfileCreate = () => {
   };
 
   const handlePhotosComplete = () => {
+    if (uploadedPhotoCount === 0) {
+      toast({
+        title: 'Keine Fotos hochgeladen',
+        description: 'Bitte lade mindestens 1 Foto hoch und klicke "Hochladen", bevor du fortfährst.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setCurrentStep('verification');
     setTimeout(() => {
       const verificationTab = document.querySelector('[value="verification"]');
       verificationTab?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
   };
+
+  // Load photo count when entering photos step
+  const loadPhotoCount = async () => {
+    if (!profileId) return;
+    const { data: photos } = await supabase
+      .from('photos')
+      .select('id')
+      .eq('profile_id', profileId);
+    setUploadedPhotoCount(photos?.length || 0);
+  };
+
+  useEffect(() => {
+    if (currentStep === 'photos' && profileId) {
+      loadPhotoCount();
+    }
+  }, [currentStep, profileId]);
 
   const handleVerificationComplete = () => {
     toast({
@@ -353,14 +378,23 @@ const ProfileCreate = () => {
                         {photosSubtitle || 'Lade mindestens 1 Foto hoch. Das erste Foto wird als Hauptfoto verwendet.'}
                       </p>
                     </div>
-                    <PhotoUploader profileId={profileId} />
+                    <PhotoUploader 
+                      profileId={profileId} 
+                      onUploadComplete={() => setUploadedPhotoCount(prev => prev + 1)}
+                    />
+                    {uploadedPhotoCount === 0 && (
+                      <p className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
+                        ⚠️ Bitte wähle Fotos aus und klicke auf "Hochladen", bevor du fortfährst.
+                      </p>
+                    )}
                     <Button
                       type="button"
                       onClick={handlePhotosComplete}
                       size="lg"
                       className="w-full"
+                      disabled={uploadedPhotoCount === 0}
                     >
-                      {photosSaveButton || 'Fotos speichern und weiter'}
+                      {photosSaveButton || 'Fotos speichern und weiter'} {uploadedPhotoCount > 0 && `(${uploadedPhotoCount} Foto${uploadedPhotoCount > 1 ? 's' : ''})`}
                     </Button>
                   </div>
                 )}
