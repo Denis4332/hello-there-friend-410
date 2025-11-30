@@ -388,27 +388,43 @@ const AdminProfile = () => {
   });
 
   const deleteProfileMutation = useMutation({
-    mutationFn: async (profileId: string) => {
-      // Erst abhängige Daten löschen (Reihenfolge wichtig wegen Foreign Keys)
-      await supabase.from('profile_categories').delete().eq('profile_id', profileId);
-      await supabase.from('profile_contacts').delete().eq('profile_id', profileId);
-      await supabase.from('photos').delete().eq('profile_id', profileId);
-      await supabase.from('profile_moderation_notes').delete().eq('profile_id', profileId);
-      await supabase.from('profile_views').delete().eq('profile_id', profileId);
-      await supabase.from('reports').delete().eq('profile_id', profileId);
-      await supabase.from('user_favorites').delete().eq('profile_id', profileId);
+    mutationFn: async (data: { profileId: string; userId: string | null }) => {
+      // Wenn User existiert, kompletten User + alle Daten löschen via Edge Function
+      if (data.userId) {
+        const { data: result, error } = await supabase.functions.invoke('admin-delete-user', {
+          body: { userId: data.userId }
+        });
+        
+        if (error) throw error;
+        if (result?.error) throw new Error(result.error);
+        return; // Edge Function löscht alles (User + Profile + Daten)
+      }
       
-      // Dann das Profil selbst löschen
-      const { error } = await supabase.from('profiles').delete().eq('id', profileId);
+      // Admin-erstelltes Profil (ohne User): Nur Profil-Daten löschen
+      await supabase.from('profile_categories').delete().eq('profile_id', data.profileId);
+      await supabase.from('profile_contacts').delete().eq('profile_id', data.profileId);
+      await supabase.from('photos').delete().eq('profile_id', data.profileId);
+      await supabase.from('profile_moderation_notes').delete().eq('profile_id', data.profileId);
+      await supabase.from('profile_views').delete().eq('profile_id', data.profileId);
+      await supabase.from('reports').delete().eq('profile_id', data.profileId);
+      await supabase.from('user_favorites').delete().eq('profile_id', data.profileId);
+      await supabase.from('verification_submissions').delete().eq('profile_id', data.profileId);
+      await supabase.from('agb_acceptances').delete().eq('profile_id', data.profileId);
+      
+      const { error } = await supabase.from('profiles').delete().eq('id', data.profileId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const message = variables.userId 
+        ? 'Nutzer, Profil und alle Daten wurden entfernt.'
+        : 'Profil und alle zugehörigen Daten wurden entfernt.';
       toast({ 
-        title: '🗑️ Profil gelöscht',
-        description: 'Profil und alle zugehörigen Daten wurden entfernt.'
+        title: '🗑️ Erfolgreich gelöscht',
+        description: message
       });
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setSelectedProfile(null);
     },
     onError: (error: any) => {
@@ -1097,14 +1113,25 @@ const AdminProfile = () => {
                                         className="w-full"
                                         disabled={deleteProfileMutation.isPending}
                                       >
-                                        {deleteProfileMutation.isPending ? 'Lösche...' : '🗑️ Profil dauerhaft löschen'}
+                                        {deleteProfileMutation.isPending ? 'Lösche...' : selectedProfile?.user_id ? '🗑️ Profil + Nutzer löschen' : '🗑️ Profil löschen'}
                                       </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Profil wirklich löschen?</AlertDialogTitle>
+                                        <AlertDialogTitle>
+                                          {selectedProfile?.user_id ? 'Profil UND Nutzer wirklich löschen?' : 'Profil wirklich löschen?'}
+                                        </AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Diese Aktion kann nicht rückgängig gemacht werden. Das Profil von <strong>{selectedProfile?.display_name}</strong> wird dauerhaft gelöscht, inklusive aller Fotos, Kontaktdaten und Statistiken.
+                                          Diese Aktion kann nicht rückgängig gemacht werden.{' '}
+                                          {selectedProfile?.user_id ? (
+                                            <>
+                                              Das Profil von <strong>{selectedProfile?.display_name}</strong> sowie der zugehörige <strong>Nutzer-Account (E-Mail/Login)</strong> werden dauerhaft gelöscht.
+                                            </>
+                                          ) : (
+                                            <>
+                                              Das Admin-erstellte Profil von <strong>{selectedProfile?.display_name}</strong> wird dauerhaft gelöscht. (Kein Nutzer-Account vorhanden)
+                                            </>
+                                          )}
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
@@ -1113,11 +1140,14 @@ const AdminProfile = () => {
                                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                           onClick={() => {
                                             if (selectedProfile) {
-                                              deleteProfileMutation.mutate(selectedProfile.id);
+                                              deleteProfileMutation.mutate({
+                                                profileId: selectedProfile.id,
+                                                userId: selectedProfile.user_id || null
+                                              });
                                             }
                                           }}
                                         >
-                                          Ja, endgültig löschen
+                                          {selectedProfile?.user_id ? 'Ja, beides löschen' : 'Ja, Profil löschen'}
                                         </AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
