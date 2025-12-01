@@ -186,11 +186,11 @@ export const HeroSection = ({
                   </Button>
                 </div>
                 <Slider id="hero-radius-slider" value={[radius]} onValueChange={([value]) => setRadius(value)} min={5} max={100} step={5} className="mt-2" aria-label={`Suchradius einstellen, aktuell ${radius} Kilometer`} />
-                <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                  <span>5 km</span>
-                  <span>25 km</span>
-                  <span>50 km</span>
-                  <span>100 km</span>
+                <div className="relative w-full text-xs text-muted-foreground mt-2 h-4">
+                  <span className="absolute left-0">5 km</span>
+                  <span className="absolute" style={{ left: 'calc(21% - 10px)' }}>25 km</span>
+                  <span className="absolute" style={{ left: 'calc(47% - 12px)' }}>50 km</span>
+                  <span className="absolute right-0">100 km</span>
                 </div>
               </div>
 
