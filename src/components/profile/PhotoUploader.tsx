@@ -126,16 +126,35 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         return;
       }
 
-      console.log('✅ Auth OK, starting upload for profile:', profileId);
-      
-      // KEINE Client-seitige Profil-Validierung mehr!
-      // Die Edge Function macht das mit SERVICE_ROLE_KEY (umgeht RLS)
+      // WICHTIG: Hole FRISCHE profileId vom Server!
+      // Dies umgeht jegliche React-State/Cache/Prop-Probleme
+      const { data: userProfile, error: profileLookupError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', effectiveUserId)
+        .maybeSingle();
+
+      if (profileLookupError || !userProfile) {
+        console.error('❌ Profil nicht gefunden für User:', effectiveUserId);
+        showCustomError('Dein Profil wurde nicht gefunden. Bitte lade die Seite neu.');
+        setUploading(false);
+        return;
+      }
+
+      const actualProfileId = userProfile.id;
+
+      // Debug: Zeige wenn Prop und DB unterschiedlich sind
+      if (profileId !== actualProfileId) {
+        console.warn('⚠️ profileId MISMATCH! Prop:', profileId, 'DB:', actualProfileId);
+      }
+
+      console.log('✅ Auth OK, verwende verifizierte profileId:', actualProfileId);
 
       // Check existing media in database
       const { data: existingPhotos } = await supabase
         .from('photos')
         .select('id, media_type')
-        .eq('profile_id', profileId);
+        .eq('profile_id', actualProfileId);
 
       const existingImagesCount = existingPhotos?.filter(p => p.media_type === 'image' || !p.media_type).length || 0;
 
@@ -162,7 +181,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         // Upload via edge function for server-side validation
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('profileId', profileId);
+        formData.append('profileId', actualProfileId);
         formData.append('fileName', fileName);
 
         const { data, error } = await supabase.functions.invoke('validate-image', {
@@ -182,7 +201,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
 
         // Insert photo record into database
         const { error: dbError } = await supabase.from('photos').insert({
-          profile_id: profileId,
+          profile_id: actualProfileId,
           storage_path: data.path,
           is_primary: shouldBePrimary,
           media_type: data.media_type || preview.mediaType,
@@ -209,14 +228,14 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       const { data: currentProfile } = await supabase
         .from('profiles')
         .select('status')
-        .eq('id', profileId)
+        .eq('id', actualProfileId)
         .maybeSingle();
       
       if (currentProfile?.status === 'draft') {
         await supabase
           .from('profiles')
           .update({ status: 'pending' })
-          .eq('id', profileId);
+          .eq('id', actualProfileId);
         console.log('✅ Profile status updated from draft to pending');
       }
 
