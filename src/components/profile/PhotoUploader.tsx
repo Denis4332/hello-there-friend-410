@@ -105,22 +105,18 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     setUploading(true);
 
     try {
-      // 1. Auth-Check mit getUser() - wenn fehlschlägt, Session-Refresh versuchen
-      let { data: { user }, error: authError } = await supabase.auth.getUser();
+      // 1. Auth-Check - nur für frühe Fehlermeldung
+      //    Die Edge Function macht die echte Sicherheitsprüfung mit SERVICE_ROLE_KEY
+      let { data: { user } } = await supabase.auth.getUser();
       
       // Wenn kein User, versuche Session-Refresh
-      if (!user || authError) {
+      if (!user) {
         console.log('🔄 Session-Refresh versuchen...');
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshData?.user) {
-          user = refreshData.user;
-          console.log('✅ Session erfolgreich refreshed');
-        } else {
-          console.error('❌ Session-Refresh fehlgeschlagen:', refreshError);
-        }
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        user = refreshData?.user ?? null;
       }
       
-      // Nutze userId Prop als Fallback wenn immer noch kein User
+      // Nutze userId Prop als Fallback
       const effectiveUserId = user?.id || userId;
       
       if (!effectiveUserId) {
@@ -130,27 +126,10 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         return;
       }
 
-      // 2. PRE-UPLOAD VALIDATION: Profil prüfen - RLS garantiert bereits Berechtigung
-      //    Wenn das Profil zurückgegeben wird, gehört es dem User (durch RLS Policy)
-      const { data: profileCheck, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, status')
-        .eq('id', profileId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('❌ Profile check error:', profileError);
-        showCustomError('Datenbankfehler. Bitte versuche es später erneut.');
-        setUploading(false);
-        return;
-      }
-
-      if (!profileCheck) {
-        console.error('❌ Profile not found:', profileId);
-        showCustomError('Profil nicht gefunden oder keine Berechtigung.');
-        setUploading(false);
-        return;
-      }
+      console.log('✅ Auth OK, starting upload for profile:', profileId);
+      
+      // KEINE Client-seitige Profil-Validierung mehr!
+      // Die Edge Function macht das mit SERVICE_ROLE_KEY (umgeht RLS)
 
       // Check existing media in database
       const { data: existingPhotos } = await supabase
