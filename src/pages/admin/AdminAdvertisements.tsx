@@ -294,7 +294,7 @@ export default function AdminAdvertisements() {
                         <Upload className="h-8 w-8 text-muted-foreground" />
                         <p className="text-sm font-medium">Klicken zum Hochladen</p>
                         <p className="text-xs text-muted-foreground">
-                          JPEG, PNG, WebP • Max 5MB • Wird automatisch zugeschnitten für {formData.position === 'popup' ? 'Pop-up (3:4)' : formData.position === 'top' ? 'Top-Banner (6:1)' : 'Grid (16:9)'}
+                          JPEG, PNG, WebP • Max 5MB • Wird automatisch auf 16:9 Querformat zugeschnitten
                         </p>
                       </div>
                     )}

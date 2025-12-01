@@ -483,7 +483,7 @@ Telefon: ${data.contact_phone}`;
                   <CardHeader>
                     <CardTitle>5. Banner-Bild hochladen</CardTitle>
                     <CardDescription>
-                      Empfohlene Größe: 1200x628px (max. 5MB)
+                      Empfohlenes Format: 16:9 (Querformat) • Max. 5MB
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -509,7 +509,7 @@ Telefon: ${data.contact_phone}`;
                                         <span className="font-semibold">Klicken zum Hochladen</span> oder Drag & Drop
                                       </p>
                                       <p className="text-xs text-muted-foreground">
-                                        PNG, JPG oder WebP (max. 5MB)
+                                        PNG, JPG oder WebP (max. 5MB) • Wird automatisch auf 16:9 zugeschnitten
                                       </p>
                                     </div>
                                   )}
