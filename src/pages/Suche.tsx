@@ -197,6 +197,19 @@ const Suche = () => {
     }
   }, [locationAccuracy]);
 
+  // Sync radius to URL when GPS is active
+  useEffect(() => {
+    if (userLat && userLng) {
+      const params = new URLSearchParams(searchParams);
+      params.set('radius', radius.toString());
+      params.set('lat', userLat.toString());
+      params.set('lng', userLng.toString());
+      if (detectedLocation) params.set('location', detectedLocation);
+      if (category) params.set('kategorie', category);
+      setSearchParams(params, { replace: true });
+    }
+  }, [radius, userLat, userLng, detectedLocation, category]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
