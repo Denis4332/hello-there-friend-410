@@ -94,6 +94,20 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
         throw new Error('Nicht authentifiziert');
       }
 
+      // PRE-UPLOAD VALIDATION: Check if profileId actually exists in database
+      const { data: profileCheck } = await supabase
+        .from('profiles')
+        .select('id, status')
+        .eq('id', profileId)
+        .maybeSingle();
+
+      if (!profileCheck) {
+        console.error('❌ Profile not found in database:', profileId);
+        showCustomError('Profil nicht gefunden. Bitte lade die Seite neu (Strg+Shift+R oder Cmd+Shift+R auf Mac).');
+        setUploading(false);
+        return;
+      }
+
       // Check existing media in database
       const { data: existingPhotos } = await supabase
         .from('photos')
