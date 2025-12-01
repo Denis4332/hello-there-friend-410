@@ -58,6 +58,25 @@ export class ErrorBoundary extends Component<Props, State> {
   async componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
+    // Auto-reload bei Module-Import-Fehlern (passiert nach Code-Updates)
+    if (error.message.includes('Importing a module script failed') ||
+        error.message.includes('Failed to fetch dynamically imported module') ||
+        error.message.includes('Loading chunk') ||
+        error.message.includes('Loading module')) {
+      
+      const hasAutoReloaded = sessionStorage.getItem('auto-reload-on-chunk-error');
+      
+      if (!hasAutoReloaded) {
+        // Nur einmal automatisch neu laden
+        sessionStorage.setItem('auto-reload-on-chunk-error', 'true');
+        window.location.reload();
+        return;
+      }
+      
+      // Wenn bereits neu geladen wurde, Flag zurücksetzen
+      sessionStorage.removeItem('auto-reload-on-chunk-error');
+    }
+
     // Log error to Supabase
     try {
       const { data: { user } } = await supabase.auth.getUser();
