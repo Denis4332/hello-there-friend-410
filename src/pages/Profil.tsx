@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useProfileBySlug } from '@/hooks/useProfiles';
 import { useProfileContacts } from '@/hooks/useProfileContacts';
 import { useCreateReport } from '@/hooks/useReports';
@@ -34,6 +35,8 @@ const Profil = () => {
   const [reportReason, setReportReason] = useState('');
   const [reportMessage, setReportMessage] = useState('');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Track profile view
   useEffect(() => {
@@ -54,6 +57,20 @@ const Profil = () => {
     isVideo: (p as any).media_type === 'video',
   }));
   const photoUrls = mediaItems.map(m => m.url);
+  
+  // Lightbox navigation (must be after mediaItems is defined)
+  const goToPrevious = useCallback(() => {
+    setLightboxIndex((prev) => (prev === 0 ? mediaItems.length - 1 : prev - 1));
+  }, [mediaItems.length]);
+  
+  const goToNext = useCallback(() => {
+    setLightboxIndex((prev) => (prev === mediaItems.length - 1 ? 0 : prev + 1));
+  }, [mediaItems.length]);
+  
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
   
   // Get category names
   const categoryNames = profile?.profile_categories
@@ -136,15 +153,15 @@ const Profil = () => {
             <div className="lg:col-span-3">
               {photoUrls.length > 0 ? (
                 <div className="bg-card border rounded-lg overflow-hidden">
-                  <Carousel className="w-full">
+                <Carousel className="w-full">
                     <CarouselContent>
                       {mediaItems.map((item, index: number) => (
                         <CarouselItem key={index}>
-                          <div className="relative aspect-[3/4]">
+                          <div className="relative aspect-[3/4] bg-black">
                             {item.isVideo ? (
                               <video
                                 src={item.url}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain"
                                 controls
                                 preload="metadata"
                                 playsInline
@@ -155,9 +172,10 @@ const Profil = () => {
                               <img
                                 src={item.url}
                                 alt={`${profile.display_name} - Foto ${index + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain cursor-pointer"
                                 loading="lazy"
                                 decoding="async"
+                                onClick={() => openLightbox(index)}
                               />
                             )}
                           </div>
@@ -320,6 +338,63 @@ const Profil = () => {
         </div>
       </main>
       <Footer />
+      
+      {/* Fullscreen Lightbox */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black border-none">
+          <div className="relative w-full h-[90vh] flex items-center justify-center">
+            {/* Close Button */}
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 z-50 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            
+            {/* Current Media */}
+            {mediaItems[lightboxIndex]?.isVideo ? (
+              <video
+                src={mediaItems[lightboxIndex]?.url}
+                className="max-w-full max-h-full object-contain"
+                controls
+                autoPlay
+                playsInline
+              >
+                Dein Browser unterstützt keine Videos.
+              </video>
+            ) : (
+              <img
+                src={mediaItems[lightboxIndex]?.url}
+                alt={`${profile.display_name} - Foto ${lightboxIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+              />
+            )}
+            
+            {/* Navigation Buttons */}
+            {mediaItems.length > 1 && (
+              <>
+                <button
+                  onClick={goToPrevious}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+                <button
+                  onClick={goToNext}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              </>
+            )}
+            
+            {/* Image Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 rounded-full text-white text-sm">
+              {lightboxIndex + 1} / {mediaItems.length}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
