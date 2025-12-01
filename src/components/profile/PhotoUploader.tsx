@@ -89,21 +89,37 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
     setUploading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Nicht authentifiziert');
+      // 1. Auth-Check mit getUser() (zuverlässiger als getSession)
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.error('❌ Auth error or no user:', authError);
+        showCustomError('Bitte melde dich erneut an.');
+        setUploading(false);
+        return;
       }
 
-      // PRE-UPLOAD VALIDATION: Check if profileId actually exists in database
-      const { data: profileCheck } = await supabase
+      // 2. PRE-UPLOAD VALIDATION: Profil mit BEIDEN Bedingungen prüfen
+      //    Das garantiert RLS-Kompatibilität bei allen Status (draft, pending, active)
+      const { data: profileCheck, error: profileError } = await supabase
         .from('profiles')
         .select('id, status')
         .eq('id', profileId)
+        .eq('user_id', user.id)  // ← KRITISCH: RLS-konform!
         .maybeSingle();
 
+      if (profileError) {
+        console.error('❌ Profile check error:', profileError);
+        showCustomError('Datenbankfehler. Bitte versuche es später erneut.');
+        setUploading(false);
+        return;
+      }
+
       if (!profileCheck) {
-        console.error('❌ Profile not found in database:', profileId);
-        showCustomError('Profil nicht gefunden. Bitte lade die Seite neu (Strg+Shift+R oder Cmd+Shift+R auf Mac).');
+        console.error('❌ Profile not found or not owned by user:', profileId, user.id);
+        showCustomError('Profil nicht gefunden. Du wirst zur Profil-Erstellung weitergeleitet...');
+        setTimeout(() => {
+          window.location.href = '/profil/erstellen';
+        }, 2000);
         setUploading(false);
         return;
       }
