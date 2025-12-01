@@ -59,7 +59,7 @@ const formSchema = z.object({
   link_url: z.string().url('Bitte geben Sie eine gültige URL ein'),
   contact_email: z.string().email('Bitte geben Sie eine gültige E-Mail-Adresse ein'),
   contact_phone: z.string().min(10, 'Bitte geben Sie eine gültige Telefonnummer ein'),
-  payment_method: z.enum(['bank', 'twint', 'later'], { required_error: 'Bitte wählen Sie eine Zahlungsmethode' }),
+  payment_method: z.enum(['bank', 'twint', 'later']).optional(),
   image: z.instanceof(File, { message: 'Bitte laden Sie ein Bild hoch' }),
 });
 
@@ -256,6 +256,9 @@ export default function BannerBuchen() {
                                         <div className="font-semibold">{pkg.name}</div>
                                         <div className="text-sm text-muted-foreground mt-1">
                                           {pkg.description}
+                                        </div>
+                                        <div className="text-lg font-bold text-primary mt-2">
+                                          ab CHF {pkg.price_per_day}/Tag
                                         </div>
                                       </div>
                                     </Label>
