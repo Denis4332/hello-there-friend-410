@@ -95,16 +95,10 @@ export default function AdminAdvertisements() {
     setIsUploading(true);
 
     try {
-      // Session-Check vor Upload
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        toast({ 
-          title: 'Nicht eingeloggt', 
-          description: 'Bitte neu anmelden und erneut versuchen', 
-          variant: 'destructive' 
-        });
-        setIsUploading(false);
-        return;
+      // Session-Check vor Upload (soft warning)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('No session found, attempting upload anyway...');
       }
 
       // Generate unique filename
