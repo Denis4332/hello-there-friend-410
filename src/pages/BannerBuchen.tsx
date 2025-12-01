@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Zap, Star, Grid3x3, Upload, Calendar, CreditCard } from 'lucide-react';
+import { Zap, Star, Grid3x3, Upload, Calendar, CheckCircle } from 'lucide-react';
 import { BannerPackage } from '@/types/advertisement';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 
@@ -59,7 +59,7 @@ const formSchema = z.object({
   link_url: z.string().url('Bitte geben Sie eine gültige URL ein'),
   contact_email: z.string().email('Bitte geben Sie eine gültige E-Mail-Adresse ein'),
   contact_phone: z.string().min(10, 'Bitte geben Sie eine gültige Telefonnummer ein'),
-  payment_method: z.enum(['bank', 'twint', 'later']).optional(),
+  contact_name: z.string().min(2, 'Bitte geben Sie Ihren Namen ein'),
   image: z.instanceof(File, { message: 'Bitte laden Sie ein Bild hoch' }),
 });
 
@@ -71,13 +71,19 @@ const positionIcons = {
   grid: Grid3x3,
 };
 
+const durationLabels: Record<string, string> = {
+  day: '1 Tag',
+  week: '1 Woche',
+  month: '1 Monat',
+};
+
 export default function BannerBuchen() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const { data: seoTitle } = useSiteSetting('seo_banner_title');
   const { data: seoDescription } = useSiteSetting('seo_banner_description');
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
 
   const form = useForm<FormValues>({
@@ -104,7 +110,6 @@ export default function BannerBuchen() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: 'Fehler',
@@ -114,7 +119,6 @@ export default function BannerBuchen() {
         return;
       }
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
           title: 'Fehler',
@@ -124,10 +128,8 @@ export default function BannerBuchen() {
         return;
       }
 
-      setSelectedImage(file);
       form.setValue('image', file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -140,64 +142,129 @@ export default function BannerBuchen() {
     setIsSubmitting(true);
 
     try {
-      // Upload image to storage
-      const fileExt = data.image.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `banner-images/${fileName}`;
+      let imageUrl = '';
+      
+      // Try to upload to storage first (may fail if not authenticated)
+      try {
+        const fileExt = data.image.name.split('.').pop();
+        const fileName = `banner-request-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `banner-requests/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('advertisements')
-        .upload(filePath, data.image);
+        const { error: uploadError } = await supabase.storage
+          .from('advertisements')
+          .upload(filePath, data.image);
 
-      if (uploadError) throw uploadError;
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('advertisements')
+            .getPublicUrl(filePath);
+          imageUrl = publicUrl;
+        }
+      } catch (storageError) {
+        console.log('Storage upload failed, using base64 fallback');
+      }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('advertisements')
-        .getPublicUrl(filePath);
+      // If storage failed, convert to base64 and store in metadata
+      let imageBase64 = '';
+      if (!imageUrl) {
+        const reader = new FileReader();
+        imageBase64 = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(data.image);
+        });
+      }
 
-      // Create advertisement entry
+      const pkg = BANNER_PACKAGES.find(p => p.position === data.position);
+      const calculatedPrice = calculatePrice();
+
+      // Create contact message entry (NOT advertisements)
+      const messageText = `📢 BANNER-ANFRAGE
+
+Position: ${pkg?.name || data.position}
+Laufzeit: ${durationLabels[data.duration]}
+Preis: CHF ${calculatedPrice}
+
+Titel: ${data.title}
+Link: ${data.link_url}
+
+Kontakt:
+Name: ${data.contact_name}
+E-Mail: ${data.contact_email}
+Telefon: ${data.contact_phone}`;
+
       const { error: insertError } = await supabase
-        .from('advertisements')
+        .from('contact_messages')
         .insert({
-          title: data.title,
-          image_url: publicUrl,
-          link_url: data.link_url,
-          position: data.position,
-          start_date: null,
-          end_date: null,
-          requested_duration: data.duration,
-          contact_email: data.contact_email,
-          contact_phone: data.contact_phone,
-          price_per_day: BANNER_PACKAGES.find(p => p.position === data.position)?.price_per_day,
-          payment_status: 'pending',
-          payment_method: data.payment_method,
-          active: false,
-          priority: data.position === 'popup' ? 100 : data.position === 'top' ? 50 : 10,
+          name: data.contact_name,
+          email: data.contact_email,
+          message: messageText,
+          type: 'banner',
+          attachment_url: imageUrl || null,
+          metadata: {
+            position: data.position,
+            position_name: pkg?.name,
+            duration: data.duration,
+            duration_label: durationLabels[data.duration],
+            title: data.title,
+            link_url: data.link_url,
+            contact_phone: data.contact_phone,
+            calculated_price: calculatedPrice,
+            image_base64: imageBase64 || null, // Fallback wenn Storage nicht verfügbar
+          },
+          status: 'unread',
         });
 
       if (insertError) throw insertError;
 
+      setIsSuccess(true);
       toast({
-        title: 'Vielen Dank für Ihre Anfrage!',
+        title: 'Anfrage gesendet!',
         description: 'Wir melden uns innerhalb von 24 Stunden bei Ihnen.',
       });
 
-      // Redirect after 3 seconds
+      // Redirect after 5 seconds
       setTimeout(() => {
         navigate('/');
-      }, 3000);
+      }, 5000);
 
     } catch (error: any) {
+      console.error('Banner request error:', error);
       toast({
         title: 'Fehler',
-        description: error.message,
+        description: error.message || 'Die Anfrage konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
         variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Success state
+  if (isSuccess) {
+    return (
+      <>
+        <SEO title="Anfrage gesendet" description="Ihre Banner-Anfrage wurde erfolgreich gesendet." />
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-1 container mx-auto px-4 py-12">
+            <div className="max-w-lg mx-auto text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+              <h1 className="text-3xl font-bold mb-4">Anfrage gesendet!</h1>
+              <p className="text-lg text-muted-foreground mb-6">
+                Vielen Dank für Ihre Banner-Anfrage. Wir werden uns innerhalb von 24 Stunden bei Ihnen melden.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Sie werden in wenigen Sekunden weitergeleitet...
+              </p>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -212,9 +279,9 @@ export default function BannerBuchen() {
         <main className="flex-1 container mx-auto px-4 py-12">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-4">Banner buchen</h1>
+              <h1 className="text-4xl font-bold mb-4">Banner-Anfrage</h1>
               <p className="text-lg text-muted-foreground">
-                Füllen Sie das Formular aus und buchen Sie Ihre Banneranzeige
+                Füllen Sie das Formular aus und wir kontaktieren Sie zur Buchung
               </p>
             </div>
 
@@ -294,8 +361,8 @@ export default function BannerBuchen() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="day">1 Tag</SelectItem>
-              <SelectItem value="week">1 Woche</SelectItem>
-              <SelectItem value="month">1 Monat</SelectItem>
+                              <SelectItem value="week">1 Woche</SelectItem>
+                              <SelectItem value="month">1 Monat</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -363,10 +430,24 @@ export default function BannerBuchen() {
                 {/* Contact Information */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>3.5. Ihre Kontaktdaten</CardTitle>
+                    <CardTitle>4. Ihre Kontaktdaten</CardTitle>
                     <CardDescription>Damit wir Sie bezüglich der Buchung kontaktieren können</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="contact_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ihr Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Max Mustermann" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <FormField
                       control={form.control}
                       name="contact_email"
@@ -400,7 +481,7 @@ export default function BannerBuchen() {
                 {/* Image Upload */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>4. Banner-Bild hochladen</CardTitle>
+                    <CardTitle>5. Banner-Bild hochladen</CardTitle>
                     <CardDescription>
                       Empfohlene Größe: 1200x628px (max. 5MB)
                     </CardDescription>
@@ -409,7 +490,7 @@ export default function BannerBuchen() {
                     <FormField
                       control={form.control}
                       name="image"
-                      render={({ field: { value, onChange, ...field } }) => (
+                      render={() => (
                         <FormItem>
                           <FormControl>
                             <div className="space-y-4">
@@ -437,7 +518,6 @@ export default function BannerBuchen() {
                                     className="hidden"
                                     accept="image/*"
                                     onChange={handleImageChange}
-                                    {...field}
                                   />
                                 </label>
                               </div>
@@ -450,100 +530,41 @@ export default function BannerBuchen() {
                   </CardContent>
                 </Card>
 
-                {/* Payment Method */}
+                {/* Submit */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>5. Zahlungsmethode</CardTitle>
-                    <CardDescription>Wie möchten Sie bezahlen?</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <FormField
-                      control={form.control}
-                      name="payment_method"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              className="grid gap-4"
-                            >
-                              <div>
-                                <RadioGroupItem value="bank" id="bank" className="peer sr-only" />
-                                <Label
-                                  htmlFor="bank"
-                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <CreditCard className="h-5 w-5" />
-                                    <div>
-                                      <div className="font-semibold">Banküberweisung</div>
-                                      <div className="text-sm text-muted-foreground">
-                                        Sie erhalten die Bankdaten per E-Mail
-                                      </div>
-                                    </div>
-                                  </div>
-                                </Label>
-                              </div>
-
-                              <div>
-                                <RadioGroupItem value="twint" id="twint" className="peer sr-only" />
-                                <Label
-                                  htmlFor="twint"
-                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <CreditCard className="h-5 w-5" />
-                                    <div>
-                                      <div className="font-semibold">TWINT</div>
-                                      <div className="text-sm text-muted-foreground">
-                                        Zahlung via TWINT
-                                      </div>
-                                    </div>
-                                  </div>
-                                </Label>
-                              </div>
-
-                              <div>
-                                <RadioGroupItem value="later" id="later" className="peer sr-only" />
-                                <Label
-                                  htmlFor="later"
-                                  className="flex items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <CreditCard className="h-5 w-5" />
-                                    <div>
-                                      <div className="font-semibold">Später zahlen</div>
-                                      <div className="text-sm text-muted-foreground">
-                                        Wir kontaktieren Sie mit den Zahlungsdetails
-                                      </div>
-                                    </div>
-                                  </div>
-                                </Label>
-                              </div>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      {selectedPosition && selectedDuration && (
+                        <div className="p-4 bg-muted rounded-lg">
+                          <h3 className="font-semibold mb-2">Zusammenfassung:</h3>
+                          <ul className="space-y-1 text-sm">
+                            <li>Position: {BANNER_PACKAGES.find(p => p.position === selectedPosition)?.name}</li>
+                            <li>Laufzeit: {durationLabels[selectedDuration]}</li>
+                            <li className="font-bold">Preis: CHF {calculatePrice()}</li>
+                          </ul>
+                        </div>
                       )}
-                    />
+
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        size="lg"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Wird gesendet...' : 'Anfrage absenden'}
+                      </Button>
+
+                      <p className="text-xs text-center text-muted-foreground">
+                        Nach Ihrer Anfrage werden wir Sie kontaktieren, um die Details zu besprechen und die Zahlung zu vereinbaren.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Wird gesendet...' : 'Jetzt anfragen'}
-                </Button>
               </form>
             </Form>
           </div>
         </main>
-
+        
         <Footer />
       </div>
     </>
