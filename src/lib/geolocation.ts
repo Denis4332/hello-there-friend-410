@@ -1,3 +1,5 @@
+import { supabase } from '@/integrations/supabase/client';
+
 /**
  * Result type for geolocation detection
  * @property {string} city - Detected city name (e.g., "Zürich")
@@ -17,8 +19,52 @@ interface GeolocationResult {
 }
 
 /**
+ * Look up the correct city name from the database using postal code
+ * This ensures we get the exact city name with canton suffix (e.g., "Stein AG")
+ * instead of the simplified Nominatim name (e.g., "Stein")
+ */
+async function lookupCityByPostalCode(postalCode: string, cantonAbbreviation?: string): Promise<{
+  name: string;
+  lat: number | null;
+  lng: number | null;
+} | null> {
+  try {
+    // First try with canton for accuracy (handles PLZ in multiple cantons)
+    if (cantonAbbreviation) {
+      const { data: cityWithCanton } = await supabase
+        .from('cities')
+        .select('name, lat, lng, canton:cantons!inner(abbreviation)')
+        .eq('postal_code', postalCode)
+        .eq('cantons.abbreviation', cantonAbbreviation)
+        .maybeSingle();
+      
+      if (cityWithCanton) {
+        return { name: cityWithCanton.name, lat: cityWithCanton.lat, lng: cityWithCanton.lng };
+      }
+    }
+    
+    // Fallback: just PLZ
+    const { data: cityByPlz } = await supabase
+      .from('cities')
+      .select('name, lat, lng')
+      .eq('postal_code', postalCode)
+      .maybeSingle();
+    
+    if (cityByPlz) {
+      return { name: cityByPlz.name, lat: cityByPlz.lat, lng: cityByPlz.lng };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('City lookup failed:', error);
+    return null;
+  }
+}
+
+/**
  * Detects the user's current location using the browser's Geolocation API
  * and performs reverse geocoding via OpenStreetMap Nominatim.
+ * Then looks up the correct city name from the database.
  * 
  * @throws {Error} "Geolocation wird von deinem Browser nicht unterstützt" - Browser lacks geolocation support
  * @throws {Error} "Standort-Zugriff wurde verweigert" - User denied location permission
@@ -70,7 +116,7 @@ export const detectLocation = async (): Promise<GeolocationResult> => {
           const address = data.address;
 
           // Extract city name (try different fields)
-          const city =
+          const nominatimCity =
             address.city ||
             address.town ||
             address.village ||
@@ -88,17 +134,46 @@ export const detectLocation = async (): Promise<GeolocationResult> => {
             ? `${address.road}${address.house_number ? ' ' + address.house_number : ''}`
             : undefined;
 
-          if (!city) {
+          if (!nominatimCity && !postalCode) {
             throw new Error('Stadt konnte nicht ermittelt werden');
           }
 
+          // Find canton abbreviation for DB lookup
+          let cantonAbbreviation: string | undefined;
+          if (canton) {
+            const { data: cantonData } = await supabase
+              .from('cantons')
+              .select('abbreviation')
+              .or(`name.ilike.%${canton}%,abbreviation.ilike.${canton}`)
+              .maybeSingle();
+            cantonAbbreviation = cantonData?.abbreviation;
+          }
+
+          // Look up correct city name from database using PLZ
+          // This gets the full name with canton suffix (e.g., "Stein AG" instead of "Stein")
+          let finalCity = nominatimCity;
+          let finalLat = latitude;
+          let finalLng = longitude;
+
+          if (postalCode) {
+            const dbCity = await lookupCityByPostalCode(postalCode, cantonAbbreviation);
+            if (dbCity) {
+              finalCity = dbCity.name; // Use DB name: "Stein AG" instead of "Stein"
+              // Use DB coordinates for consistency
+              if (dbCity.lat && dbCity.lng) {
+                finalLat = dbCity.lat;
+                finalLng = dbCity.lng;
+              }
+            }
+          }
+
           resolve({
-            city,
+            city: finalCity,
             canton,
             postalCode,
             street,
-            lat: latitude,
-            lng: longitude,
+            lat: finalLat,
+            lng: finalLng,
           });
         } catch (error) {
           reject(new Error('Standort konnte nicht verarbeitet werden'));

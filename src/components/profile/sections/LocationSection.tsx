@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ProfileFormData } from '../ProfileForm';
 import { useCitiesByCantonSlim, CityWithCoordinates } from '@/hooks/useCitiesByCantonSlim';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationSectionProps {
   register: UseFormRegister<ProfileFormData>;
@@ -51,27 +52,60 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
     try {
       const location = await detectLocation();
       
-      setValue('city', location.city);
-      setValue('postal_code', location.postalCode);
-      setValue('lat', location.lat);
-      setValue('lng', location.lng);
-      
+      // Find matching canton
       const matchingCanton = cantons.find((c) =>
         c.name.toLowerCase().includes(location.canton.toLowerCase()) ||
         c.abbreviation.toLowerCase() === location.canton.toLowerCase() ||
         location.canton.toLowerCase().includes(c.name.toLowerCase())
       );
       
+      const cantonAbbr = matchingCanton?.abbreviation || '';
+      
+      // Look up city in DB using PLZ + Canton for correct name (e.g., "Stein AG")
+      let finalCity = location.city;
+      let finalLat = location.lat;
+      let finalLng = location.lng;
+      let finalPostalCode = location.postalCode;
+      
+      if (location.postalCode) {
+        // Try PLZ + Canton first (most accurate for PLZ in multiple cantons)
+        let query = supabase
+          .from('cities')
+          .select('name, postal_code, lat, lng, canton:cantons!inner(abbreviation)')
+          .eq('postal_code', location.postalCode);
+        
+        if (cantonAbbr) {
+          query = query.eq('cantons.abbreviation', cantonAbbr);
+        }
+        
+        const { data: cityMatch } = await query.maybeSingle();
+        
+        if (cityMatch) {
+          finalCity = cityMatch.name; // "Stein AG" instead of "Stein"
+          finalPostalCode = cityMatch.postal_code || location.postalCode;
+          if (cityMatch.lat && cityMatch.lng) {
+            finalLat = cityMatch.lat;
+            finalLng = cityMatch.lng;
+          }
+        }
+      }
+      
+      // Set form values with DB-verified data
+      setValue('city', finalCity);
+      setValue('postal_code', finalPostalCode);
+      setValue('lat', finalLat);
+      setValue('lng', finalLng);
+      
       if (matchingCanton) {
         setValue('canton', matchingCanton.abbreviation);
         toast({
           title: 'Standort erkannt',
-          description: `${location.city}, ${matchingCanton.abbreviation}`,
+          description: `${finalCity}, ${matchingCanton.abbreviation}`,
         });
       } else {
         toast({
           title: 'Standort erkannt',
-          description: `${location.city} (Kanton bitte manuell wählen)`,
+          description: `${finalCity} (Kanton bitte manuell wählen)`,
         });
       }
     } catch (error) {
