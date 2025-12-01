@@ -456,16 +456,6 @@ export default function AdminAdvertisements() {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Priorität (höher = wichtiger)</Label>
-                  <Input
-                    id="priority"
-                    type="number"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
-                  />
-                </div>
-
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="active"

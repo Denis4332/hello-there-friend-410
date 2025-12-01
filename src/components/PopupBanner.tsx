@@ -25,8 +25,11 @@ export const PopupBanner = ({ ad, onClose, onImpression, onClick }: PopupBannerP
   };
 
   const handleClick = () => {
-    onClick();
+    // Open link FIRST (synchronously) to prevent mobile popup blockers
     window.open(ad.link_url, '_blank', 'noopener,noreferrer');
+    
+    // Track click in background
+    onClick();
   };
 
   return (
