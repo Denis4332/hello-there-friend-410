@@ -58,11 +58,18 @@ const Suche = () => {
   
   // Text-based search for profiles without GPS coordinates (only when GPS not active)
   const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
-    location: canton || searchParams.get('ort') || undefined,
-    categoryId: searchParams.get('kategorie') || undefined,
-    keyword: searchParams.get('stichwort') || undefined,
+    location: canton || undefined,
+    categoryId: category || undefined,  // Direct state instead of URL params
+    keyword: keyword || undefined,      // Direct state instead of URL params
     enabled: !userLat && !userLng, // Only run when GPS is NOT active
   });
+  
+  // Auto-refetch GPS results when radius or category changes
+  useEffect(() => {
+    if (userLat && userLng) {
+      refetchGpsProfiles();
+    }
+  }, [radius, category, userLat, userLng, refetchGpsProfiles]);
   
   // GPS active: ONLY show profiles within radius (like xdate.ch)
   // GPS inactive: Show canton-based text search results
