@@ -24,6 +24,7 @@ const ProfileEdit = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [profile, setProfile] = useState<{
     id: string;
@@ -367,8 +368,21 @@ const ProfileEdit = () => {
                       profileId={profile.id}
                       userId={user?.id}
                       listingType={listingType}
-                      onUploadComplete={loadData} 
+                      onUploadComplete={() => {
+                        loadData();
+                        setUploadSuccess(true);
+                      }} 
                     />
+                    
+                    {uploadSuccess && (
+                      <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-green-700 dark:text-green-400">Medien erfolgreich hochgeladen!</p>
+                          <p className="text-sm text-muted-foreground">Deine Änderungen wurden automatisch gespeichert.</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -503,9 +517,12 @@ const ProfileEdit = () => {
               </Card>
             </div>
 
-            <div className="mt-8">
-              <Button variant="outline" onClick={() => navigate('/mein-profil')}>
-                Zurück zum Dashboard
+            <div className="mt-8 p-4 bg-muted/50 rounded-lg flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Alle Änderungen werden automatisch gespeichert.
+              </p>
+              <Button onClick={() => navigate('/mein-profil')}>
+                ← Zurück zum Dashboard
               </Button>
             </div>
           </div>
