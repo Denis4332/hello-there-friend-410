@@ -33,6 +33,9 @@ verify_jwt = false
 [functions.cleanup-orphaned-photos]
 verify_jwt = false
 
+[functions.cleanup-draft-profiles]
+verify_jwt = false
+
 [functions.delete-user-account]
 verify_jwt = true
 
