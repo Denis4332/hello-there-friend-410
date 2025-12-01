@@ -95,17 +95,14 @@ export const ContactSection = ({
       </CardHeader>
       <CardContent className="space-y-3">
         {phone && (
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => {
-              profileId && trackContactClick(profileId, 'phone');
-              window.location.href = formatPhoneUrl(phone);
-            }}
+          <a
+            href={formatPhoneUrl(phone)}
+            onClick={() => profileId && trackContactClick(profileId, 'phone')}
+            className="inline-flex items-center justify-start w-full h-10 px-4 py-2 rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <Phone className="mr-2 h-4 w-4" />
             {phone}
-          </Button>
+          </a>
         )}
 
         {whatsapp && (
