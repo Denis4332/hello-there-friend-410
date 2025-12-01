@@ -321,31 +321,40 @@ export type Database = {
       }
       contact_messages: {
         Row: {
+          attachment_url: string | null
           created_at: string | null
           email: string
           id: string
           message: string
+          metadata: Json | null
           name: string
           read_at: string | null
           status: string | null
+          type: string | null
         }
         Insert: {
+          attachment_url?: string | null
           created_at?: string | null
           email: string
           id?: string
           message: string
+          metadata?: Json | null
           name: string
           read_at?: string | null
           status?: string | null
+          type?: string | null
         }
         Update: {
+          attachment_url?: string | null
           created_at?: string | null
           email?: string
           id?: string
           message?: string
+          metadata?: Json | null
           name?: string
           read_at?: string | null
           status?: string | null
+          type?: string | null
         }
         Relationships: []
       }
