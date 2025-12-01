@@ -19,7 +19,7 @@ const Suche = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
-  const [radius, setRadius] = useState(25);
+  const [radius, setRadius] = useState(parseInt(searchParams.get('radius') || '25'));
   const [category, setCategory] = useState(searchParams.get('kategorie') || '');
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
   const [sort, setSort] = useState('newest');
@@ -34,13 +34,6 @@ const Suche = () => {
   const [userLng, setUserLng] = useState<number | null>(urlLng ? parseFloat(urlLng) : null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(urlLocation);
-  
-  // Initialize radius from URL when GPS is active
-  useEffect(() => {
-    if (urlRadius && userLat && userLng) {
-      setRadius(parseInt(urlRadius));
-    }
-  }, []);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -214,11 +207,10 @@ const Suche = () => {
     }
   }, [canton, category, keyword, userLat, userLng]);
 
-  // Dynamic radius adjustment based on GPS accuracy
+  // GPS accuracy warning (no automatic radius change)
   useEffect(() => {
     if (locationAccuracy && locationAccuracy > 500) {
-      setRadius(20);
-      toast.info('GPS-Signal schwach - Suchradius auf 20km erhöht');
+      toast.info('GPS-Signal schwach (±' + Math.round(locationAccuracy) + 'm) - ggf. Radius erhöhen');
     }
   }, [locationAccuracy]);
 
