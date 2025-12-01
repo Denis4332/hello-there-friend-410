@@ -74,7 +74,7 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
         </div>
       )}
       
-      <div className="relative w-full h-[425px] flex-shrink-0">
+      <div className="relative w-full h-[425px] flex-shrink-0 bg-muted overflow-hidden">
         {photoUrl ? (
           <>
             {primaryIsVideo ? (
@@ -86,13 +86,13 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
                 playsInline
               />
             ) : (
-              <ResponsiveImage
-                src={photoUrl}
-                alt={profile.display_name}
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                loading="lazy"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+            <img
+              src={photoUrl}
+              alt={profile.display_name}
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
             )}
             {/* Video indicator */}
             {hasVideo && (
