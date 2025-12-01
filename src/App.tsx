@@ -11,6 +11,7 @@ import { useDesignSettings } from "./hooks/useDesignSettings";
 import { useCustomCodeInjection } from "./hooks/useCustomCodeInjection";
 import { useFaviconSetting } from "./hooks/useFaviconSetting";
 import { BannerManager } from "./components/BannerManager";
+import { ScrollToTop } from "./components/ScrollToTop";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { PageSkeleton } from "./components/PageSkeleton";
@@ -99,6 +100,7 @@ const AppContent = () => {
         <Sonner />
         <ErrorBoundary>
           <BrowserRouter>
+            <ScrollToTop />
             <PageViewTracker />
             <BannerManager />
             <Suspense fallback={<PageSkeleton />}>
