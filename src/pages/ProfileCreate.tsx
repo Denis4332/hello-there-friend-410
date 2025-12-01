@@ -388,6 +388,7 @@ const ProfileCreate = () => {
                     </div>
                     <PhotoUploader 
                       profileId={profileId}
+                      userId={user?.id}
                       listingType={listingType}
                       onUploadComplete={() => setUploadedPhotoCount(prev => prev + 1)}
                     />

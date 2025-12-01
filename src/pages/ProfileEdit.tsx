@@ -364,7 +364,8 @@ const ProfileEdit = () => {
                   <div>
                     <h3 className="text-sm font-medium mb-3">Neue Medien hochladen</h3>
                     <PhotoUploader 
-                      profileId={profile.id} 
+                      profileId={profile.id}
+                      userId={user?.id}
                       listingType={listingType}
                       onUploadComplete={loadData} 
                     />
