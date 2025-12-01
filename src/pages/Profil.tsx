@@ -161,7 +161,7 @@ const Profil = () => {
                             {item.isVideo ? (
                               <video
                                 src={item.url}
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-cover"
                                 controls
                                 preload="metadata"
                                 playsInline
@@ -172,7 +172,7 @@ const Profil = () => {
                               <img
                                 src={item.url}
                                 alt={`${profile.display_name} - Foto ${index + 1}`}
-                                className="w-full h-full object-contain cursor-pointer"
+                                className="w-full h-full object-cover cursor-pointer"
                                 loading="lazy"
                                 decoding="async"
                                 onClick={() => openLightbox(index)}
