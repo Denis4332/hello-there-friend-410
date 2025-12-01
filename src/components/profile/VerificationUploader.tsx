@@ -142,7 +142,7 @@ export const VerificationUploader = ({ profileId, onComplete, onSkip }: Verifica
             </p>
           </div>
         )}
-        <div className="flex gap-2 pt-4">
+        <div className="flex flex-col sm:flex-row gap-2 pt-4">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
