@@ -50,7 +50,10 @@ export function ImageCropper({ image, open, onClose, onCropComplete, position }:
     if (!croppedAreaPixels) throw new Error('No crop area');
 
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Nur crossOrigin setzen wenn es keine blob: URL ist
+    if (!image.startsWith('blob:')) {
+      img.crossOrigin = 'anonymous';
+    }
     
     return new Promise((resolve, reject) => {
       img.onload = () => {

@@ -95,6 +95,18 @@ export default function AdminAdvertisements() {
     setIsUploading(true);
 
     try {
+      // Session-Check vor Upload
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        toast({ 
+          title: 'Nicht eingeloggt', 
+          description: 'Bitte neu anmelden und erneut versuchen', 
+          variant: 'destructive' 
+        });
+        setIsUploading(false);
+        return;
+      }
+
       // Generate unique filename
       const filename = `banner_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
       
@@ -116,9 +128,14 @@ export default function AdminAdvertisements() {
       // Set the image URL in form
       setFormData({ ...formData, image_url: urlData.publicUrl });
       toast({ title: 'Bild hochgeladen', description: 'Das Bild wurde erfolgreich zugeschnitten und hochgeladen' });
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({ title: 'Upload fehlgeschlagen', description: 'Bild konnte nicht hochgeladen werden', variant: 'destructive' });
+    } catch (error: any) {
+      console.error('Upload error details:', error);
+      const errorMessage = error?.message || error?.error || 'Unbekannter Fehler beim Upload';
+      toast({ 
+        title: 'Upload fehlgeschlagen', 
+        description: errorMessage, 
+        variant: 'destructive' 
+      });
     } finally {
       setIsUploading(false);
       // Clean up object URL
