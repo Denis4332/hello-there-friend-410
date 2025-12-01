@@ -37,7 +37,7 @@ export const PopupBanner = ({ ad, onClose, onImpression, onClick }: PopupBannerP
       onClick={handleClose}
     >
       <div
-        className={`relative w-[300px] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+        className={`relative w-[90vw] max-w-[400px] md:max-w-[500px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
           isVisible ? 'scale-100' : 'scale-95'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -59,7 +59,7 @@ export const PopupBanner = ({ ad, onClose, onImpression, onClick }: PopupBannerP
             src={ad.image_url}
             alt={ad.title}
             loading="lazy"
-            className="w-full h-auto max-h-[250px] object-contain rounded-lg"
+            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}
