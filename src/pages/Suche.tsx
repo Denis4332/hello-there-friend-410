@@ -19,7 +19,7 @@ const Suche = () => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
-  const [radius, setRadius] = useState(parseInt(searchParams.get('radius') || searchParams.get('umkreis') || '25'));
+  const [radius, setRadius] = useState(25);
   const [category, setCategory] = useState(searchParams.get('kategorie') || '');
   const [keyword, setKeyword] = useState(searchParams.get('stichwort') || '');
   const [sort, setSort] = useState('newest');
@@ -29,10 +29,18 @@ const Suche = () => {
   const urlLat = searchParams.get('lat');
   const urlLng = searchParams.get('lng');
   const urlLocation = searchParams.get('location');
+  const urlRadius = searchParams.get('radius');
   const [userLat, setUserLat] = useState<number | null>(urlLat ? parseFloat(urlLat) : null);
   const [userLng, setUserLng] = useState<number | null>(urlLng ? parseFloat(urlLng) : null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [detectedLocation, setDetectedLocation] = useState<string | null>(urlLocation);
+  
+  // Initialize radius from URL when GPS is active
+  useEffect(() => {
+    if (urlRadius && userLat && userLng) {
+      setRadius(parseInt(urlRadius));
+    }
+  }, []);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [cantonOpen, setCantonOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -67,9 +75,19 @@ const Suche = () => {
   // Auto-refetch GPS results when radius or category changes
   useEffect(() => {
     if (userLat && userLng) {
+      // Update URL immediately when radius changes
+      const params = new URLSearchParams();
+      params.set('radius', radius.toString());
+      params.set('lat', userLat.toString());
+      params.set('lng', userLng.toString());
+      if (detectedLocation) params.set('location', detectedLocation);
+      if (category) params.set('kategorie', category);
+      setSearchParams(params, { replace: true });
+      
+      // Refetch profiles
       refetchGpsProfiles();
     }
-  }, [radius, category, userLat, userLng, refetchGpsProfiles]);
+  }, [radius, category, userLat, userLng]);
   
   // GPS active: ONLY show profiles within radius (like xdate.ch)
   // GPS inactive: Show canton-based text search results
@@ -203,19 +221,6 @@ const Suche = () => {
       toast.info('GPS-Signal schwach - Suchradius auf 20km erhöht');
     }
   }, [locationAccuracy]);
-
-  // Sync radius to URL when GPS is active
-  useEffect(() => {
-    if (userLat && userLng) {
-      const params = new URLSearchParams(searchParams);
-      params.set('radius', radius.toString());
-      params.set('lat', userLat.toString());
-      params.set('lng', userLng.toString());
-      if (detectedLocation) params.set('location', detectedLocation);
-      if (category) params.set('kategorie', category);
-      setSearchParams(params, { replace: true });
-    }
-  }, [radius, userLat, userLng, detectedLocation, category]);
 
   return (
     <div className="min-h-screen flex flex-col">

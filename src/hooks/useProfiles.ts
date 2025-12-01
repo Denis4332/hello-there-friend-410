@@ -224,7 +224,7 @@ export const useSearchProfiles = (filters: {
 }) => {
   return useQuery<ProfileWithRelations[]>({
     queryKey: ['search-profiles', filters, 'v9'],
-    staleTime: 1 * 60 * 1000,
+    staleTime: 0, // No caching - always fetch fresh data for filters
     enabled: filters.enabled ?? true,
     queryFn: async () => {
       let query = supabase
