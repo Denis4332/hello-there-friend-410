@@ -11,22 +11,21 @@ interface BannerDisplayProps {
 export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) => {
   const { data: ads } = useAdvertisements(position);
 
-  const handleClick = async (ad: Advertisement) => {
-    try {
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ad_id: ad.id,
-          event_type: 'click',
-        }),
-      });
-      window.open(ad.link_url, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.error('Failed to track click:', error);
-    }
+  const handleClick = (ad: Advertisement) => {
+    // Open link FIRST (synchronously) to prevent mobile popup blockers
+    window.open(ad.link_url, '_blank', 'noopener,noreferrer');
+    
+    // Track click in background
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ad_id: ad.id,
+        event_type: 'click',
+      }),
+    }).catch(error => console.error('Failed to track click:', error));
   };
 
   useEffect(() => {
