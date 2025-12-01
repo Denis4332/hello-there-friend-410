@@ -69,23 +69,23 @@ export default function Bannerpreise() {
   };
 
   const popupFeatures = parseFeatures(popupFeaturesRaw, [
+    'Format: 16:9 Querformat',
     'Erscheint beim Seitenaufruf',
     'Volle Aufmerksamkeit',
-    'Anpassbare Anzeigerate',
     'Exklusive Platzierung'
   ]);
 
   const topFeatures = parseFeatures(topFeaturesRaw, [
+    'Format: 16:9 Querformat',
     'Immer sichtbar',
     'Hohe Reichweite',
-    'Desktop & Mobile',
     'Exklusive Platzierung'
   ]);
 
   const gridFeatures = parseFeatures(gridFeaturesRaw, [
+    'Format: 16:9 Querformat',
     'Natürliche Integration',
     'Kontextbezogen',
-    'Hohe Klickrate',
     'Exklusive Platzierung'
   ]);
 
