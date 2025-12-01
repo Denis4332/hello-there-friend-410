@@ -98,15 +98,13 @@ export const ContactSection = ({
           <Button
             variant="outline"
             className="w-full justify-start"
-            asChild
+            onClick={() => {
+              profileId && trackContactClick(profileId, 'phone');
+              window.location.href = formatPhoneUrl(phone);
+            }}
           >
-            <a 
-              href={formatPhoneUrl(phone)}
-              onClick={() => profileId && trackContactClick(profileId, 'phone')}
-            >
-              <Phone className="mr-2 h-4 w-4" />
-              {phone}
-            </a>
+            <Phone className="mr-2 h-4 w-4" />
+            {phone}
           </Button>
         )}
 
