@@ -51,19 +51,15 @@ export const ListingTypeSelector = ({
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 flex-shrink-0" />
-                <span className="font-medium">Erscheint in Suchergebnissen</span>
+                <span className="font-medium">Sichtbar im gewählten Kanton</span>
               </li>
               <li className="flex items-start gap-2">
-                <Star className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span className="font-medium">Bessere Platzierung</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Star className="h-4 w-4 mt-0.5 text-blue-500 flex-shrink-0" />
-                <span className="font-medium">Hervorgehobene Darstellung</span>
+                <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 flex-shrink-0" />
+                <span className="font-medium">Kontaktdaten anzeigen</span>
               </li>
               <li className="flex items-start gap-2 bg-muted/50 -mx-2 px-2 py-1 rounded">
                 <Camera className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                <span className="font-medium text-muted-foreground">📷 5 Fotos</span>
+                <span className="font-medium text-muted-foreground">📷 Bis zu 5 Fotos</span>
               </li>
             </ul>
           </div>
@@ -107,11 +103,11 @@ export const ListingTypeSelector = ({
               </li>
               <li className="flex items-start gap-2">
                 <Star className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
-                <span className="font-medium">VIP Badge mit Animation</span>
+                <span className="font-medium">VIP Badge</span>
               </li>
               <li className="flex items-start gap-2">
                 <Star className="h-4 w-4 mt-0.5 text-amber-500 flex-shrink-0" />
-                <span className="font-medium">Größere Darstellung</span>
+                <span className="font-medium">Bessere Platzierung</span>
               </li>
               <li className="flex items-start gap-2 bg-amber-100/50 dark:bg-amber-900/30 -mx-2 px-2 py-1 rounded">
                 <Camera className="h-4 w-4 mt-0.5 text-amber-600 flex-shrink-0" />
@@ -159,11 +155,11 @@ export const ListingTypeSelector = ({
               </li>
               <li className="flex items-start gap-2">
                 <Star className="h-4 w-4 mt-0.5 text-red-500 flex-shrink-0" />
-                <span className="font-medium">Immer ganz oben</span>
+                <span className="font-medium">Immer ganz oben platziert</span>
               </li>
               <li className="flex items-start gap-2">
                 <Star className="h-4 w-4 mt-0.5 text-red-500 flex-shrink-0" />
-                <span className="font-medium">TOP AD Banner</span>
+                <span className="font-medium">Schweizweit auf Startseite</span>
               </li>
               <li className="flex items-start gap-2 bg-red-100/50 dark:bg-red-900/30 -mx-2 px-2 py-1 rounded">
                 <Video className="h-4 w-4 mt-0.5 text-red-600 flex-shrink-0" />
