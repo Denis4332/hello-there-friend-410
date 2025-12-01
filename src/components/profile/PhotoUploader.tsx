@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Upload, X, Image as ImageIcon, Star, Video, Play } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Upload, X, Image as ImageIcon, Star, Video, Play, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToastMessages } from '@/hooks/useToastMessages';
@@ -34,11 +34,26 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const { showSuccess, showError, showCustomError } = useToastMessages();
   
   const limits = MEDIA_LIMITS[listingType];
   const photoCount = previews.filter(p => p.mediaType === 'image').length;
   const videoCount = previews.filter(p => p.mediaType === 'video').length;
+
+  // Browser-Warnung beim Verlassen während Upload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (uploading) {
+        e.preventDefault();
+        e.returnValue = 'Upload läuft noch. Seite wirklich verlassen?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [uploading]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = event.target.files;
@@ -132,7 +147,14 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
 
       const existingImagesCount = existingPhotos?.filter(p => p.media_type === 'image' || !p.media_type).length || 0;
 
-      const uploadPromises = filesToUpload.map(async (preview) => {
+      // Set upload progress
+      setUploadProgress({ current: 0, total: filesToUpload.length });
+
+      const results: { previewUrl: string; uploadedUrl: string }[] = [];
+
+      // Upload files sequentially to track progress
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const preview = filesToUpload[i];
         const file = preview.file!;
         const previewIndex = previews.findIndex(p => p.url === preview.url);
 
@@ -176,10 +198,11 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
 
         if (dbError) throw dbError;
 
-        return { previewUrl: preview.url, uploadedUrl: data.url };
-      });
+        results.push({ previewUrl: preview.url, uploadedUrl: data.url });
 
-      const results = await Promise.all(uploadPromises);
+        // Update progress after each file
+        setUploadProgress({ current: i + 1, total: filesToUpload.length });
+      }
       
       // Update previews to mark as uploaded
       setPreviews(prev => prev.map(p => {
@@ -239,7 +262,33 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
   const videoPreviews = previews.filter(p => p.mediaType === 'video');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Upload Overlay mit Warnung */}
+      {uploading && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-xl p-8 max-w-sm text-center shadow-2xl mx-4">
+            <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-primary" />
+            <h3 className="font-bold text-xl mb-3">Upload läuft...</h3>
+            <p className="text-amber-500 font-semibold mb-4 flex items-center justify-center gap-2">
+              <span className="text-2xl">⚠️</span>
+              Bitte Seite NICHT schließen oder neu laden!
+            </p>
+            <div className="bg-muted rounded-lg p-3">
+              <p className="text-sm text-muted-foreground">
+                {uploadProgress.current}/{uploadProgress.total} Datei{uploadProgress.total !== 1 ? 'en' : ''} hochgeladen
+              </p>
+              {/* Progress bar */}
+              <div className="mt-2 h-2 bg-muted-foreground/20 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300 rounded-full"
+                  style={{ width: `${uploadProgress.total > 0 ? (uploadProgress.current / uploadProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Photo Upload Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
