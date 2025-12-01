@@ -31,6 +31,31 @@ export const ContactSection = ({
     return null;
   }
 
+  const formatPhoneUrl = (number: string) => {
+    // Remove all non-digit characters except +
+    let cleaned = number.replace(/[^\d+]/g, "");
+    
+    // If starts with +, keep as-is (already international)
+    if (cleaned.startsWith("+")) {
+      return `tel:${cleaned}`;
+    }
+    // If starts with 00, replace with + (international prefix)
+    if (cleaned.startsWith("00")) {
+      return `tel:+${cleaned.substring(2)}`;
+    }
+    // If starts with 0, it's a Swiss number without country code
+    // Remove leading 0 and add +41 (Switzerland)
+    if (cleaned.startsWith("0")) {
+      return `tel:+41${cleaned.substring(1)}`;
+    }
+    // If starts with 41 already, add +
+    if (cleaned.startsWith("41")) {
+      return `tel:+${cleaned}`;
+    }
+    // Otherwise return as-is with tel:
+    return `tel:${cleaned}`;
+  };
+
   const formatWhatsAppUrl = (number: string) => {
     // Remove all non-digit characters except +
     let cleaned = number.replace(/[^\d+]/g, "");
@@ -76,7 +101,7 @@ export const ContactSection = ({
             asChild
           >
             <a 
-              href={`tel:${phone}`}
+              href={formatPhoneUrl(phone)}
               onClick={() => profileId && trackContactClick(profileId, 'phone')}
             >
               <Phone className="mr-2 h-4 w-4" />
