@@ -9,18 +9,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/hooks/useContactMessages';
-import { User, Settings, LogOut, ChevronDown, ShieldAlert } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, ShieldAlert, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 
 export const AdminHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { data: unreadCount } = useUnreadCount();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Fetch locked accounts count
   const { data: lockedCount } = useQuery({
@@ -40,11 +43,65 @@ export const AdminHeader = () => {
     navigate('/admin/login');
   };
 
+  const handleMobileNavClick = (path: string) => {
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
+
+  const navLinks = [
+    { path: '/admin', label: 'Dashboard' },
+    { path: '/admin/profile', label: 'Profile' },
+    { path: '/admin/users', label: 'Nutzer' },
+    { path: '/admin/categories', label: 'Kategorien' },
+    { path: '/admin/cities', label: 'Städte' },
+    { path: '/admin/reports', label: 'Meldungen' },
+    { path: '/admin/messages', label: 'Nachrichten', badge: unreadCount },
+    { path: '/admin/advertisements', label: 'Banner' },
+    { path: '/admin/pending-payments', label: 'Zahlungen' },
+    { path: '/admin/settings', label: 'Einstellungen' },
+    { path: '/admin/dropdowns', label: 'Dropdowns' },
+    { path: '/admin/analytics', label: 'Analytics' },
+    { path: '/admin/performance', label: 'Performance' },
+    { path: '/admin/rate-limits', label: 'Sicherheit', badge: lockedCount },
+    { path: '/admin/export', label: 'Export' },
+  ];
+
   return (
     <header className="bg-card border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14 gap-4">
           <div className="flex items-center gap-4 min-w-0">
+            {/* Mobile Menu Button */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64">
+                <SheetHeader>
+                  <SheetTitle>Admin Navigation</SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-2 mt-6">
+                  {navLinks.map((link) => (
+                    <Button
+                      key={link.path}
+                      variant={isActive(link.path) ? "default" : "ghost"}
+                      className="justify-start"
+                      onClick={() => handleMobileNavClick(link.path)}
+                    >
+                      {link.label}
+                      {link.badge && link.badge > 0 && (
+                        <Badge variant="destructive" className="ml-auto px-1.5 py-0 text-xs">
+                          {link.badge}
+                        </Badge>
+                      )}
+                    </Button>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
+
             <Link to="/admin" className="text-lg font-bold text-primary shrink-0">
               ESCORIA Admin
             </Link>
