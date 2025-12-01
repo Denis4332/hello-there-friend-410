@@ -15,15 +15,15 @@ interface ImageCropperProps {
 
 // Aspect ratios based on banner position
 const ASPECT_RATIOS = {
-  popup: 9 / 16,   // Hochkant wie xdate.ch
-  top: 9 / 16,     // Einheitlich hochkant
-  grid: 9 / 16,    // Einheitlich hochkant
+  popup: 16 / 9,   // Querformat
+  top: 16 / 9,     // Querformat
+  grid: 16 / 9,    // Querformat
 };
 
 const POSITION_LABELS = {
-  popup: 'Pop-up (9:16 hochkant)',
-  top: 'Top-Banner (9:16 hochkant)',
-  grid: 'Grid (9:16 hochkant)',
+  popup: 'Pop-up (16:9 quer)',
+  top: 'Top-Banner (16:9 quer)',
+  grid: 'Grid (16:9 quer)',
 };
 
 export function ImageCropper({ image, open, onClose, onCropComplete, position }: ImageCropperProps) {
