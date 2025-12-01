@@ -127,7 +127,11 @@ export default function AdminMessages() {
               </TableHeader>
               <TableBody>
                 {messages.map((message, index) => (
-                  <TableRow key={message.id} className={`${index % 2 === 0 ? 'bg-muted/20' : ''} hover:bg-muted/50 transition-colors`}>
+                  <TableRow 
+                    key={message.id} 
+                    className={`${index % 2 === 0 ? 'bg-muted/20' : ''} hover:bg-muted/50 transition-colors cursor-pointer`}
+                    onClick={() => setSelectedMessage(message)}
+                  >
                     <TableCell>
                       <Badge variant={message.status === 'unread' ? 'destructive' : 'secondary'}>
                         {message.status === 'unread' ? '🔴 Neu' : '✅ Gelesen'}
