@@ -47,7 +47,6 @@ function validateMediaMagicBytes(bytes: Uint8Array): MediaValidationResult {
   }
 
   // Check MP4 magic bytes (ftyp box)
-  // MP4 files start with "ftyp" at offset 4
   if (
     bytes[4] === 0x66 && // 'f'
     bytes[5] === 0x74 && // 't'
@@ -77,21 +76,22 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Verify user is authenticated
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser();
+    // User-Client: Nur für Auth-Prüfung (mit Authorization Header)
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization')! },
+      },
+    });
+
+    // Admin-Client: Für DB-Operationen (umgeht RLS!)
+    const adminClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    // 1. Auth-Check mit User-Client
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
 
     if (authError || !user) {
       console.error('Authentication error:', authError);
@@ -100,6 +100,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log(`✅ User authenticated: ${user.id}`);
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -116,8 +118,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify profile ownership - CRITICAL SECURITY CHECK
-    const { data: profile, error: profileError } = await supabaseClient
+    // 2. Profil-Query mit Admin-Client (umgeht RLS!)
+    const { data: profile, error: profileError } = await adminClient
       .from('profiles')
       .select('user_id')
       .eq('id', profileId)
@@ -137,7 +139,7 @@ Deno.serve(async (req) => {
     if (!profile) {
       console.error('Profile not found for ID:', profileId);
       return new Response(
-        JSON.stringify({ error: 'Profil nicht gefunden. Bitte lade die Seite neu.' }),
+        JSON.stringify({ error: 'Profil nicht gefunden.' }),
         {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -145,12 +147,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Admin-created profiles have user_id = NULL, allow upload for profile owner only
-    // For admin-created profiles (user_id is null), this check is skipped
+    // 3. Ownership selbst prüfen (statt RLS)
+    // Admin-created profiles have user_id = NULL, allow upload for authenticated admin/user
     if (profile.user_id !== null && profile.user_id !== user.id) {
-      console.error(`Unauthorized upload attempt: user ${user.id} tried to upload to profile ${profileId}`);
+      console.error(`❌ Unauthorized upload attempt: user ${user.id} tried to upload to profile ${profileId} (owned by ${profile.user_id})`);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized: You can only upload photos to your own profile' }),
+        JSON.stringify({ error: 'Keine Berechtigung für dieses Profil.' }),
         {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -158,8 +160,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Profile ownership verified for user ${user.id}`);
-    console.log(`Validating media upload for profile ${profileId}: ${fileName}`);
+    console.log(`✅ Profile ownership verified for user ${user.id}, profile ${profileId}`);
 
     // Read file bytes for magic byte validation
     const arrayBuffer = await file.arrayBuffer();
@@ -182,8 +183,8 @@ Deno.serve(async (req) => {
     if (isVideo) {
       maxSizeMB = 50; // Videos up to 50MB
     } else {
-      // Fetch max file size for images from site_settings
-      const { data: settingsData } = await supabaseClient
+      // Fetch max file size for images from site_settings (mit Admin-Client)
+      const { data: settingsData } = await adminClient
         .from('site_settings')
         .select('value')
         .eq('key', 'upload_max_file_size_mb')
@@ -201,10 +202,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Media validated successfully: ${validation.mimeType}`);
+    console.log(`✅ Media validated successfully: ${validation.mimeType}`);
 
-    // Upload to storage
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+    // 4. Upload to storage mit Admin-Client (umgeht Storage RLS!)
+    const { data: uploadData, error: uploadError } = await adminClient.storage
       .from('profile-photos')
       .upload(`${profileId}/${fileName}`, bytes, {
         contentType: validation.mimeType,
@@ -220,11 +221,11 @@ Deno.serve(async (req) => {
     }
 
     // Get public URL
-    const { data: urlData } = supabaseClient.storage
+    const { data: urlData } = adminClient.storage
       .from('profile-photos')
       .getPublicUrl(`${profileId}/${fileName}`);
 
-    console.log(`Media uploaded successfully: ${uploadData.path}`);
+    console.log(`✅ Media uploaded successfully: ${uploadData.path}`);
 
     return new Response(
       JSON.stringify({
