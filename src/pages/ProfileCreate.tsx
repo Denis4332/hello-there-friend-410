@@ -53,11 +53,19 @@ const ProfileCreate = () => {
       if (existingProfile) {
         setProfileId(existingProfile.id);
         
+        // WICHTIG: listing_type wiederherstellen für Video-Limits!
+        if (existingProfile.listing_type) {
+          setListingType(existingProfile.listing_type as 'basic' | 'premium' | 'top');
+        }
+        
         // Check photos to determine correct step
         const { data: photos } = await supabase
           .from('photos')
           .select('id')
           .eq('profile_id', existingProfile.id);
+        
+        // Foto-Count setzen
+        setUploadedPhotoCount(photos?.length || 0);
         
         // Determine correct step based on profile state
         if (!existingProfile.listing_type) {
@@ -303,18 +311,18 @@ const ProfileCreate = () => {
               {createSubtitle || 'Erstelle dein Profil in 2 Schritten: Zuerst die Basisdaten, dann deine Fotos'}
             </p>
 
-            <Tabs value={currentStep} className="w-full">
+            <Tabs value={currentStep} onValueChange={(v) => setCurrentStep(v as typeof currentStep)} className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="form" disabled={currentStep !== 'form'}>
+                <TabsTrigger value="form" disabled={!!profileId}>
                   {tabData || '1. Profildaten'}
                 </TabsTrigger>
-                <TabsTrigger value="listing-type" disabled={!profileId || currentStep === 'form'}>
+                <TabsTrigger value="listing-type" disabled={!profileId}>
                   {tabListing || '2. Inserat-Typ'}
                 </TabsTrigger>
-                <TabsTrigger value="photos" disabled={currentStep === 'form' || currentStep === 'listing-type'}>
+                <TabsTrigger value="photos" disabled={!profileId || !listingType}>
                   {tabPhotos || '3. Fotos'}
                 </TabsTrigger>
-                <TabsTrigger value="verification" disabled={currentStep === 'form' || currentStep === 'listing-type'}>
+                <TabsTrigger value="verification" disabled={!profileId || uploadedPhotoCount === 0}>
                   {tabVerification || '4. Verifizierung'}
                 </TabsTrigger>
               </TabsList>
