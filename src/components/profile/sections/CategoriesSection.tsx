@@ -13,7 +13,10 @@ interface CategoriesSectionProps {
 export const CategoriesSection = ({ categories, selectedCategories, onToggle, errors }: CategoriesSectionProps) => {
   return (
     <div>
-      <Label>Kategorien / Interessen *</Label>
+      <Label>Ich bin / Ich biete *</Label>
+      <p className="text-sm text-muted-foreground mb-2">
+        Wähle dein Geschlecht und optional einen Service (max. 2)
+      </p>
       <div className="grid grid-cols-2 gap-2 mt-2">
         {categories.map((cat) => (
           <div key={cat.id} className="flex items-center space-x-2">
