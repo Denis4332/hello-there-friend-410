@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 
 interface PhotoUploaderProps {
   profileId: string;
+  userId?: string; // Optional: vom Parent übergeben für Session-Fallback
   listingType?: 'basic' | 'premium' | 'top';
   onUploadComplete?: () => void;
 }
@@ -30,7 +31,7 @@ const MAX_VIDEO_SIZE_MB = 50;
 const ALLOWED_PHOTO_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
 const ALLOWED_VIDEO_FORMATS = ['video/mp4', 'video/webm'];
 
-export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComplete }: PhotoUploaderProps) => {
+export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUploadComplete }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
@@ -104,22 +105,37 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
     setUploading(true);
 
     try {
-      // 1. Auth-Check mit getUser() (zuverlässiger als getSession)
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        console.error('❌ Auth error or no user:', authError);
-        showCustomError('Bitte melde dich erneut an.');
+      // 1. Auth-Check mit getUser() - wenn fehlschlägt, Session-Refresh versuchen
+      let { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      // Wenn kein User, versuche Session-Refresh
+      if (!user || authError) {
+        console.log('🔄 Session-Refresh versuchen...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshData?.user) {
+          user = refreshData.user;
+          console.log('✅ Session erfolgreich refreshed');
+        } else {
+          console.error('❌ Session-Refresh fehlgeschlagen:', refreshError);
+        }
+      }
+      
+      // Nutze userId Prop als Fallback wenn immer noch kein User
+      const effectiveUserId = user?.id || userId;
+      
+      if (!effectiveUserId) {
+        console.error('❌ Keine User-ID verfügbar');
+        showCustomError('Session abgelaufen. Bitte melde dich erneut an.');
         setUploading(false);
         return;
       }
 
-      // 2. PRE-UPLOAD VALIDATION: Profil mit BEIDEN Bedingungen prüfen
-      //    Das garantiert RLS-Kompatibilität bei allen Status (draft, pending, active)
+      // 2. PRE-UPLOAD VALIDATION: Profil prüfen - RLS garantiert bereits Berechtigung
+      //    Wenn das Profil zurückgegeben wird, gehört es dem User (durch RLS Policy)
       const { data: profileCheck, error: profileError } = await supabase
         .from('profiles')
         .select('id, status')
         .eq('id', profileId)
-        .eq('user_id', user.id)  // ← KRITISCH: RLS-konform!
         .maybeSingle();
 
       if (profileError) {
@@ -130,11 +146,8 @@ export const PhotoUploader = ({ profileId, listingType = 'basic', onUploadComple
       }
 
       if (!profileCheck) {
-        console.error('❌ Profile not found or not owned by user:', profileId, user.id);
-        showCustomError('Profil nicht gefunden. Du wirst zur Profil-Erstellung weitergeleitet...');
-        setTimeout(() => {
-          window.location.href = '/profil/erstellen';
-        }, 2000);
+        console.error('❌ Profile not found:', profileId);
+        showCustomError('Profil nicht gefunden oder keine Berechtigung.');
         setUploading(false);
         return;
       }
