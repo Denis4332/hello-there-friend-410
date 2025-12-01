@@ -32,8 +32,24 @@ export const ContactSection = ({
   }
 
   const formatWhatsAppUrl = (number: string) => {
-    // Remove all non-digit characters
-    const cleaned = number.replace(/\D/g, "");
+    // Remove all non-digit characters except +
+    let cleaned = number.replace(/[^\d+]/g, "");
+    
+    // If starts with +, just remove it (already international)
+    if (cleaned.startsWith("+")) {
+      cleaned = cleaned.substring(1);
+    }
+    // If starts with 00, remove the 00 (international prefix)
+    else if (cleaned.startsWith("00")) {
+      cleaned = cleaned.substring(2);
+    }
+    // If starts with 0, it's a Swiss number without country code
+    // Remove the leading 0 and add 41 (Switzerland)
+    else if (cleaned.startsWith("0")) {
+      cleaned = "41" + cleaned.substring(1);
+    }
+    // If starts with 41 already or some other number, keep as-is
+    
     return `https://wa.me/${cleaned}`;
   };
 
