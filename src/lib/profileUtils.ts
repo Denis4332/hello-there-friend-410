@@ -1,13 +1,18 @@
 import { ProfileWithRelations } from '@/types/common';
 
 /**
- * Sorts profiles by listing type with weighted random + time-decay.
+ * Sorts profiles by listing type with weighted random.
  * TOP > Premium > Basic, with fair rotation for profiles within same tier.
  * Rotation changes every 30 minutes to prevent gaming and ensure stability.
+ * 
+ * @param profiles - Array of profiles to sort
+ * @param sessionSeed - Optional seed for rotation (defaults to current 30-min window)
  */
-export const sortProfilesByListingType = (profiles: ProfileWithRelations[]): ProfileWithRelations[] => {
-  const now = Date.now();
-  const sessionSeed = Math.floor(now / (30 * 60 * 1000)); // Rotation every 30min
+export const sortProfilesByListingType = (
+  profiles: ProfileWithRelations[],
+  sessionSeed?: number
+): ProfileWithRelations[] => {
+  const seed = sessionSeed ?? Math.floor(Date.now() / (30 * 60 * 1000));
   
   return [...profiles].sort((a, b) => {
     // 1. LISTING TYPE (highest priority)
@@ -22,7 +27,6 @@ export const sortProfilesByListingType = (profiles: ProfileWithRelations[]): Pro
     if (aVerified !== bVerified) return bVerified - aVerified;
     
     // 3. WEIGHTED RANDOM (within same tier)
-    // NO Time-Decay: All paid listings are equal (Basic, Premium, TOP all cost money)
     const weightA = 1.0;
     const weightB = 1.0;
     
@@ -36,8 +40,8 @@ export const sortProfilesByListingType = (profiles: ProfileWithRelations[]): Pro
       return Math.abs(hash);
     };
     
-    const randomA = (hashCode(a.id + sessionSeed) % 1000) / 1000 * weightA;
-    const randomB = (hashCode(b.id + sessionSeed) % 1000) / 1000 * weightB;
+    const randomA = (hashCode(a.id + seed) % 1000) / 1000 * weightA;
+    const randomB = (hashCode(b.id + seed) % 1000) / 1000 * weightB;
     
     return randomB - randomA;
   });

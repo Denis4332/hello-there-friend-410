@@ -12,8 +12,12 @@ import { SEO } from '@/components/SEO';
 import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
+import { useRotationKey } from '@/hooks/useRotationKey';
+import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
 
 const Kategorie = () => {
+  useProfilesRealtime(); // Listen for realtime profile changes
+  const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
   const { slug } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
   
@@ -37,10 +41,10 @@ const Kategorie = () => {
     );
   }
 
-  // Sort profiles: TOP > Premium > Basic > Verified > Newest
+  // Sort profiles: TOP > Premium > Basic > Verified > Newest (rotates every 30min)
   const sortedProfiles = useMemo(() => {
-    return sortProfilesByListingType(categoryProfiles);
-  }, [categoryProfiles]);
+    return sortProfilesByListingType(categoryProfiles, rotationKey);
+  }, [categoryProfiles, rotationKey]);
 
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;

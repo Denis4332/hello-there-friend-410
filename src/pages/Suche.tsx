@@ -14,8 +14,12 @@ import { SearchResults } from '@/components/search/SearchResults';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
+import { useRotationKey } from '@/hooks/useRotationKey';
+import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
 
 const Suche = () => {
+  useProfilesRealtime(); // Listen for realtime profile changes
+  const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
@@ -96,10 +100,10 @@ const Suche = () => {
   const { data: searchButton } = useSiteSetting('search_button_text');
   const { data: searchNoResults } = useSiteSetting('search_no_results_text');
 
-  // Sort profiles: TOP > Premium > Basic > Verified > Newest
+  // Sort profiles: TOP > Premium > Basic > Verified > Newest (rotates every 30min)
   const sortedProfiles = useMemo(() => {
-    return sortProfilesByListingType(profiles);
-  }, [profiles]);
+    return sortProfilesByListingType(profiles, rotationKey);
+  }, [profiles, rotationKey]);
 
   // Pagination (24 items per page)
   const ITEMS_PER_PAGE = 24;

@@ -1,6 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { useHomepageProfiles } from "@/hooks/useProfiles";
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
@@ -8,17 +8,19 @@ import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { SEO } from '@/components/SEO';
 import { BannerDisplay } from '@/components/BannerDisplay';
-import { AdvertisementCTA } from '@/components/AdvertisementCTA';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
-import { detectLocation } from '@/lib/geolocation';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
+import { useRotationKey } from '@/hooks/useRotationKey';
+import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
 
 // Lazy load non-critical section
 const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedProfilesSection').then(m => ({ default: m.FeaturedProfilesSection })));
 
 const Index = () => {
   useDesignSettings();
+  useProfilesRealtime(); // Listen for realtime profile changes (admin approval)
+  const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
   
   // SIMPLIFIED: Nur TOP-Ads schweizweit anzeigen auf Homepage
   const { 
@@ -29,9 +31,9 @@ const Index = () => {
   const topProfiles = homepageData?.topProfiles ?? [];
   
   const featuredProfiles = useMemo(() => {
-    // Nur TOP-Ads anzeigen, sortiert nach created_at
-    return sortProfilesByListingType(topProfiles);
-  }, [topProfiles]);
+    // Nur TOP-Ads anzeigen, sortiert mit Rotation
+    return sortProfilesByListingType(topProfiles, rotationKey);
+  }, [topProfiles, rotationKey]);
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
