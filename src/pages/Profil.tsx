@@ -49,26 +49,15 @@ const Profil = () => {
   const { data: reportButton } = useSiteSetting('profile_report_button');
   const { data: reportDialogTitle } = useSiteSetting('profile_report_dialog_title');
   
-  // Get all photos and videos with media type - optimized URLs for carousel, original for lightbox
+  // Get all photos and videos with direct URLs (transforms require Supabase Pro plan)
   const photos = profile?.photos || [];
   const mediaItems = photos.map((p) => {
     const isVideo = (p as any).media_type === 'video';
-    // Videos don't get transformed, images get optimized
-    const optimizedUrl = isVideo 
-      ? supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl
-      : supabase.storage.from('profile-photos').getPublicUrl(p.storage_path, {
-          transform: {
-            width: 800,
-            height: 1067,
-            quality: 80,
-          }
-        }).data.publicUrl;
-    // Keep original URL for lightbox (full quality)
-    const originalUrl = supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl;
+    const url = supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl;
     
     return {
-      url: optimizedUrl,
-      originalUrl,
+      url,
+      originalUrl: url, // Same URL since we don't have transforms
       mediaType: (p as any).media_type || 'image',
       isVideo,
     };

@@ -31,21 +31,15 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
   const distance = profile.distance_km;
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
   
-  // Optimized image URL with Supabase Image Transformations
+  // Direct URL without transform (transforms require Supabase Pro plan)
   const photoUrl = primaryPhoto 
-    ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path, {
-        transform: {
-          width: 400,
-          height: 600,
-          quality: 75,
-        }
-      }).data.publicUrl
+    ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
     : null;
   
   const primaryIsVideo = (primaryPhoto as any)?.media_type === 'video';
   const hasVideo = profile.photos?.some((p) => (p as any).media_type === 'video');
   
-  // For videos, get original URL (no transformation) but use poster
+  // For videos, get original URL
   const videoUrl = primaryIsVideo && primaryPhoto
     ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
     : null;
@@ -55,13 +49,7 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
     ? profile.photos?.find((p) => (p as any).media_type !== 'video') 
     : null;
   const posterUrl = posterPhoto
-    ? supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path, {
-        transform: {
-          width: 400,
-          height: 600,
-          quality: 75,
-        }
-      }).data.publicUrl
+    ? supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path).data.publicUrl
     : undefined;
   
   const isTop = profile.listing_type === 'top';
