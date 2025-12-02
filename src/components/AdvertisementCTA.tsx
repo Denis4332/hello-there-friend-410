@@ -18,7 +18,7 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
       <div 
         className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=60&w=800")',
+          backgroundImage: 'url("https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=40&w=800")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.08,
