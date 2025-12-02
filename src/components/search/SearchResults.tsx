@@ -44,8 +44,8 @@ const SearchResultsComponent = ({
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {profiles.map((profile) => (
-          <ProfileCard key={profile.id} profile={profile} />
+        {profiles.map((profile, index) => (
+          <ProfileCard key={profile.id} profile={profile} priority={index < 4} />
         ))}
       </div>
       

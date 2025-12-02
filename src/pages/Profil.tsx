@@ -49,13 +49,30 @@ const Profil = () => {
   const { data: reportButton } = useSiteSetting('profile_report_button');
   const { data: reportDialogTitle } = useSiteSetting('profile_report_dialog_title');
   
-  // Get all photos and videos with media type
+  // Get all photos and videos with media type - optimized URLs for carousel, original for lightbox
   const photos = profile?.photos || [];
-  const mediaItems = photos.map((p) => ({
-    url: supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl,
-    mediaType: (p as any).media_type || 'image',
-    isVideo: (p as any).media_type === 'video',
-  }));
+  const mediaItems = photos.map((p) => {
+    const isVideo = (p as any).media_type === 'video';
+    // Videos don't get transformed, images get optimized
+    const optimizedUrl = isVideo 
+      ? supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl
+      : supabase.storage.from('profile-photos').getPublicUrl(p.storage_path, {
+          transform: {
+            width: 800,
+            height: 1067,
+            quality: 80,
+          }
+        }).data.publicUrl;
+    // Keep original URL for lightbox (full quality)
+    const originalUrl = supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl;
+    
+    return {
+      url: optimizedUrl,
+      originalUrl,
+      mediaType: (p as any).media_type || 'image',
+      isVideo,
+    };
+  });
   const photoUrls = mediaItems.map(m => m.url);
   
   // Lightbox navigation (must be after mediaItems is defined)
@@ -173,8 +190,9 @@ const Profil = () => {
                                 src={item.url}
                                 alt={`${profile.display_name} - Foto ${index + 1}`}
                                 className="w-full h-full object-cover cursor-pointer"
-                                loading="lazy"
-                                decoding="async"
+                                loading={index === 0 ? 'eager' : 'lazy'}
+                                decoding={index === 0 ? 'sync' : 'async'}
+                                fetchPriority={index === 0 ? 'high' : undefined}
                                 onClick={() => openLightbox(index)}
                               />
                             )}
@@ -351,10 +369,10 @@ const Profil = () => {
               <X className="h-6 w-6" />
             </button>
             
-            {/* Current Media */}
+            {/* Current Media - use original URL for full quality in lightbox */}
             {mediaItems[lightboxIndex]?.isVideo ? (
               <video
-                src={mediaItems[lightboxIndex]?.url}
+                src={mediaItems[lightboxIndex]?.originalUrl}
                 className="max-w-full max-h-full object-contain"
                 controls
                 autoPlay
@@ -364,7 +382,7 @@ const Profil = () => {
               </video>
             ) : (
               <img
-                src={mediaItems[lightboxIndex]?.url}
+                src={mediaItems[lightboxIndex]?.originalUrl}
                 alt={`${profile.display_name} - Foto ${lightboxIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
               />
