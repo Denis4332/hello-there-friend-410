@@ -77,6 +77,9 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
         <img
           src={ad.image_url}
           alt={ad.title}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-auto object-contain"
         />
       </div>

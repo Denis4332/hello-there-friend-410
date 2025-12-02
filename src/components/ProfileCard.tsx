@@ -4,7 +4,6 @@ import { usePrefetch } from '@/hooks/usePrefetch';
 import { Crown, CheckCircle2, Tag, MapPin, Heart, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { ResponsiveImage } from '@/components/ResponsiveImage';
 import { useFavorites } from '@/hooks/useFavorites';
 import type { Profile, Photo } from '@/types/dating';
 
@@ -25,16 +24,45 @@ interface ProfileCardProps {
     availability_status?: string;
     distance_km?: number;
   };
+  priority?: boolean; // For eager loading above-the-fold images
 }
 
-const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
+const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) => {
   const distance = profile.distance_km;
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
+  
+  // Optimized image URL with Supabase Image Transformations
   const photoUrl = primaryPhoto 
-    ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
+    ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path, {
+        transform: {
+          width: 400,
+          height: 600,
+          quality: 75,
+        }
+      }).data.publicUrl
     : null;
+  
   const primaryIsVideo = (primaryPhoto as any)?.media_type === 'video';
   const hasVideo = profile.photos?.some((p) => (p as any).media_type === 'video');
+  
+  // For videos, get original URL (no transformation) but use poster
+  const videoUrl = primaryIsVideo && primaryPhoto
+    ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
+    : null;
+  
+  // Get thumbnail for video poster (first non-video image or placeholder)
+  const posterPhoto = primaryIsVideo 
+    ? profile.photos?.find((p) => (p as any).media_type !== 'video') 
+    : null;
+  const posterUrl = posterPhoto
+    ? supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path, {
+        transform: {
+          width: 400,
+          height: 600,
+          quality: 75,
+        }
+      }).data.publicUrl
+    : undefined;
   
   const isTop = profile.listing_type === 'top';
   const isPremium = profile.listing_type === 'premium' || profile.listing_type === 'top';
@@ -75,24 +103,27 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
       )}
       
       <div className="relative w-full h-[425px] flex-shrink-0 bg-muted overflow-hidden">
-        {photoUrl ? (
+        {photoUrl || videoUrl ? (
           <>
-            {primaryIsVideo ? (
+            {primaryIsVideo && videoUrl ? (
               <video
-                src={photoUrl}
+                src={videoUrl}
+                poster={posterUrl}
                 className="absolute inset-0 w-full h-full object-cover"
                 muted
                 loop
                 playsInline
+                preload="none"
               />
             ) : (
-            <img
-              src={photoUrl}
-              alt={profile.display_name}
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+              <img
+                src={photoUrl!}
+                alt={profile.display_name}
+                loading={priority ? "eager" : "lazy"}
+                fetchPriority={priority ? "high" : "auto"}
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
             )}
             {/* Video indicator */}
             {hasVideo && (
