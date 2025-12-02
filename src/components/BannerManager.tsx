@@ -6,21 +6,11 @@ import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
 
 const STORAGE_KEY_PREFIX = 'popup_shown_session_';
-const SESSION_POPUP_KEY = 'popup_shown_this_session';
 const DEMO_POPUP_KEY = 'demo_popup_shown_this_session';
 
-// Blacklist: Keine Popups auf diesen Seiten
-const EXCLUDED_PATHS = [
-  '/bannerpreise',
-  '/banner/buchen',
-  '/auth',
-  '/reset-password',
-  '/profil/erstellen',
-  '/profil/bearbeiten',
-  '/mein-profil',
-  '/favoriten',
-  '/kontakt',
-];
+// WHITELIST: Popup NUR auf diesen "Browse"-Seiten
+const POPUP_ALLOWED_PATHS = ['/', '/suche', '/kantone', '/kategorien'];
+const POPUP_ALLOWED_PREFIXES = ['/kategorie/', '/stadt/'];
 
 export const BannerManager = () => {
   const { data: popupAds } = useAdvertisements('popup');
@@ -28,35 +18,31 @@ export const BannerManager = () => {
   const [showDemoPopup, setShowDemoPopup] = useState(false);
   const location = useLocation();
 
-  // Prüfe ob auf ausgeschlossener Seite
-  const isExcludedPage = EXCLUDED_PATHS.includes(location.pathname) || 
-    location.pathname.startsWith('/admin');
+  // Prüfe ob auf erlaubter Browse-Seite
+  const isPopupAllowedPage = 
+    POPUP_ALLOWED_PATHS.includes(location.pathname) ||
+    POPUP_ALLOWED_PREFIXES.some(prefix => location.pathname.startsWith(prefix));
 
   useEffect(() => {
-    // Keine Popups auf ausgeschlossenen Seiten
-    if (isExcludedPage) return;
+    // Keine Popups auf nicht-erlaubten Seiten
+    if (!isPopupAllowedPage) return;
 
     // Warte bis Query fertig geladen ist
     if (popupAds === undefined) return;
 
-    // FESTE REGEL: Nur 1x pro Session
-    const alreadyShownThisSession = sessionStorage.getItem(SESSION_POPUP_KEY);
-    if (alreadyShownThisSession) return;
-
     // Fall 1: Echte Ads vorhanden - zeige erste aktive
     if (popupAds.length > 0) {
-      const selectedAd = popupAds[0]; // Nur 1 Banner pro Position
+      const selectedAd = popupAds[0];
       const delay = selectedAd.popup_delay_seconds || 5;
       
       const timer = setTimeout(() => {
         setCurrentAd(selectedAd);
-        sessionStorage.setItem(SESSION_POPUP_KEY, 'true');
       }, delay * 1000);
 
       return () => clearTimeout(timer);
     }
 
-    // Fall 2: Keine echten Ads → Demo-Popup nach 5 Sekunden
+    // Fall 2: Keine echten Ads → Demo-Popup nach 5 Sekunden (1x pro Session)
     const demoShown = sessionStorage.getItem(DEMO_POPUP_KEY);
     if (demoShown) return;
 
@@ -66,7 +52,7 @@ export const BannerManager = () => {
     }, 5000);
 
     return () => clearTimeout(demoTimer);
-  }, [popupAds, isExcludedPage, location.pathname]);
+  }, [popupAds, isPopupAllowedPage, location.pathname]);
 
   const handleClose = () => {
     if (currentAd) {
