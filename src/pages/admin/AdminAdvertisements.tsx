@@ -386,22 +386,6 @@ export default function AdminAdvertisements() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="popup_frequency">Häufigkeit</Label>
-                      <Select
-                        value={formData.popup_frequency}
-                        onValueChange={(value: Advertisement['popup_frequency']) => setFormData({ ...formData, popup_frequency: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="once_per_session">Einmal pro Session</SelectItem>
-                          <SelectItem value="once_per_day">Einmal pro Tag</SelectItem>
-                          <SelectItem value="always">Immer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </>
                 )}
 
