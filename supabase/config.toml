@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.import-geonames-cities]
 verify_jwt = false
+
+[functions.compress-existing-images]
+verify_jwt = true
