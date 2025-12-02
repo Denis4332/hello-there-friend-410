@@ -15,15 +15,16 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
   return (
     <div className={`${className} flex justify-center`}>
       <Card className="relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 w-full">
-      <div 
-        className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background"
-        style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=40&w=800")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          opacity: 0.08,
-        }}
-      />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background">
+        <img 
+          src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=40&w=800"
+          alt=""
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
+          className="w-full h-full object-cover opacity-[0.08]"
+        />
+      </div>
       
       <div className="relative text-center space-y-3 p-6">
         <Badge variant="secondary" className="mb-2">
