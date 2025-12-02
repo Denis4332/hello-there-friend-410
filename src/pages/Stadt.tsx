@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useCityProfiles } from '@/hooks/useProfiles';
 import { useCityBySlug } from '@/hooks/useCities';
 import { SEO } from '@/components/SEO';
-import { AdvertisementCTA } from '@/components/AdvertisementCTA';
+import { BannerDisplay } from '@/components/BannerDisplay';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
@@ -83,7 +83,7 @@ const Stadt = () => {
             <p className="text-muted-foreground mb-8 max-w-3xl">{city.intro_text}</p>
           )}
 
-          <AdvertisementCTA position="grid" className="mb-8" />
+          <BannerDisplay position="top" className="mb-8" />
 
           {loadingProfiles ? (
             <div className="grid md:grid-cols-2 gap-4 auto-rows-fr">
