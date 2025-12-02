@@ -80,7 +80,7 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
             {primaryIsVideo ? (
               <video
                 src={photoUrl}
-                className="absolute inset-0 w-full h-full object-cover bg-muted"
+                className="absolute inset-0 w-full h-full object-cover"
                 muted
                 loop
                 playsInline
@@ -91,7 +91,7 @@ const ProfileCardComponent = ({ profile }: ProfileCardProps) => {
               alt={profile.display_name}
               loading="lazy"
               decoding="async"
-              className="absolute inset-0 w-full h-full object-cover bg-muted"
+              className="absolute inset-0 w-full h-full object-cover"
             />
             )}
             {/* Video indicator */}
