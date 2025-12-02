@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { AdminProfileCreateDialog } from '@/components/admin/AdminProfileCreateDialog';
 import { Badge } from '@/components/ui/badge';
@@ -22,8 +22,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useAgbAcceptances } from '@/hooks/useAgbAcceptances';
-import { Trash2, X, Pencil, FileCheck } from 'lucide-react';
+import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2 } from 'lucide-react';
 import type { Profile } from '@/types/dating';
+
+interface NewPhotoPreview {
+  url: string;
+  file: File;
+}
 
 const AdminProfile = () => {
   // CMS Preise laden
@@ -55,6 +60,11 @@ const AdminProfile = () => {
     instagram: '',
     street_address: '',
   });
+  
+  // New photo upload states
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState<NewPhotoPreview[]>([]);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -436,12 +446,164 @@ const AdminProfile = () => {
     }
   });
 
+  // Image compression function - max 1200x1600px, 80% JPEG quality
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        let { width, height } = img;
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1600;
+        
+        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+          const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              reject(new Error('Could not compress image'));
+            }
+          },
+          'image/jpeg',
+          0.8
+        );
+      };
+      
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Handle new photo selection with compression
+  const handleAddPhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const previews: NewPhotoPreview[] = [];
+    for (const file of Array.from(files)) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: 'Datei zu groß',
+          description: `${file.name} ist zu groß (max. 10MB)`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Ungültiger Dateityp',
+          description: `${file.name} ist kein Bild`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+      
+      try {
+        const compressedFile = await compressImage(file);
+        previews.push({
+          url: URL.createObjectURL(compressedFile),
+          file: compressedFile,
+        });
+      } catch (error) {
+        console.error('Compression error:', error);
+        previews.push({
+          url: URL.createObjectURL(file),
+          file,
+        });
+      }
+    }
+
+    setNewPhotoPreviews(prev => [...prev, ...previews]);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = '';
+    }
+  };
+
+  // Upload new photos mutation
+  const uploadNewPhotosMutation = useMutation({
+    mutationFn: async (data: { profileId: string; photos: NewPhotoPreview[] }) => {
+      const uploadedPhotos: { storage_path: string }[] = [];
+      
+      for (const preview of data.photos) {
+        const fileName = `${data.profileId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+        
+        const { error: uploadError } = await supabase
+          .storage
+          .from('profile-photos')
+          .upload(fileName, preview.file, {
+            contentType: 'image/jpeg',
+            upsert: false
+          });
+        
+        if (uploadError) throw uploadError;
+        
+        uploadedPhotos.push({ storage_path: fileName });
+      }
+      
+      // Insert photo records
+      for (const photo of uploadedPhotos) {
+        const { error: dbError } = await supabase
+          .from('photos')
+          .insert({
+            profile_id: data.profileId,
+            storage_path: photo.storage_path,
+            is_primary: false,
+            media_type: 'image'
+          });
+        
+        if (dbError) throw dbError;
+      }
+      
+      return uploadedPhotos;
+    },
+    onSuccess: () => {
+      toast({ title: '✅ Fotos hochgeladen' });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      setNewPhotoPreviews([]);
+      // Refresh selectedProfile photos
+      if (selectedProfile) {
+        queryClient.fetchQuery({ queryKey: ['admin-profiles'] }).then((profiles: any) => {
+          const updated = profiles?.find((p: any) => p.id === selectedProfile.id);
+          if (updated) setSelectedProfile(updated);
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: 'Fehler beim Upload', description: error.message, variant: 'destructive' });
+    }
+  });
+
   const handleOpenDialog = (profile: any) => {
     setSelectedProfile(profile);
     setDialogStatus(profile.status);
     setDialogVerified(!!profile.verified_at);
     setDialogNote('');
     setDialogListingType(profile.listing_type || 'basic');
+    
+    // Reset photo upload state
+    setNewPhotoPreviews([]);
     
     // Set edit fields
     setEditDisplayName(profile.display_name || '');
@@ -645,11 +807,33 @@ const AdminProfile = () => {
                                     )}
                                   </div>
                                 </div>
-                                {/* Photos Section with Delete */}
-                                {selectedProfile.photos && selectedProfile.photos.length > 0 && (
-                                  <div>
-                                    <label className="text-sm font-medium mb-2 block">Fotos ({selectedProfile.photos.length})</label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                {/* Photos Section with Delete and Upload */}
+                                <div className="border rounded-lg p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <label className="text-sm font-medium">
+                                      Fotos ({selectedProfile.photos?.length || 0})
+                                    </label>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => photoInputRef.current?.click()}
+                                    >
+                                      <ImagePlus className="h-4 w-4 mr-1" />
+                                      Fotos hinzufügen
+                                    </Button>
+                                    <input
+                                      ref={photoInputRef}
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      className="hidden"
+                                      onChange={handleAddPhotoSelect}
+                                    />
+                                  </div>
+                                  
+                                  {/* Existing Photos */}
+                                  {selectedProfile.photos && selectedProfile.photos.length > 0 && (
+                                    <div className="grid grid-cols-4 gap-2 mb-3">
                                       {selectedProfile.photos.map((photo: any) => (
                                         <div key={photo.id} className="relative group">
                                           <img 
@@ -698,8 +882,64 @@ const AdminProfile = () => {
                                         </div>
                                       ))}
                                     </div>
-                                  </div>
-                                )}
+                                  )}
+                                  
+                                  {/* New Photos Preview */}
+                                  {newPhotoPreviews.length > 0 && (
+                                    <div className="border-t pt-3 mt-3">
+                                      <label className="text-sm font-medium mb-2 block text-green-600">
+                                        Neue Fotos ({newPhotoPreviews.length})
+                                      </label>
+                                      <div className="grid grid-cols-4 gap-2 mb-3">
+                                        {newPhotoPreviews.map((preview, index) => (
+                                          <div key={index} className="relative group">
+                                            <img 
+                                              src={preview.url}
+                                              alt=""
+                                              className="rounded aspect-square object-cover ring-2 ring-green-500"
+                                            />
+                                            <Button
+                                              size="icon"
+                                              variant="destructive"
+                                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={() => {
+                                                URL.revokeObjectURL(preview.url);
+                                                setNewPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+                                              }}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <Button 
+                                        size="sm"
+                                        onClick={() => uploadNewPhotosMutation.mutate({
+                                          profileId: selectedProfile.id,
+                                          photos: newPhotoPreviews
+                                        })}
+                                        disabled={uploadNewPhotosMutation.isPending}
+                                        className="bg-green-600 hover:bg-green-700"
+                                      >
+                                        {uploadNewPhotosMutation.isPending ? (
+                                          <>
+                                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                            Lade hoch...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <ImagePlus className="h-4 w-4 mr-1" />
+                                            {newPhotoPreviews.length} Foto(s) hochladen
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  )}
+                                  
+                                  {(!selectedProfile.photos || selectedProfile.photos.length === 0) && newPhotoPreviews.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">Keine Fotos vorhanden</p>
+                                  )}
+                                </div>
                                 
                                 {/* Profile Text Section - Editable */}
                                 <div className="border rounded-lg p-3">
