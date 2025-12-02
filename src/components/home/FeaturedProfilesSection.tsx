@@ -42,6 +42,11 @@ export const FeaturedProfilesSection = ({
     chunks.push(sortedProfiles.slice(i, i + chunkSize));
   }
 
+  // First 4 profiles get priority loading (above-the-fold on most screens)
+  const getPriority = (chunkIndex: number, indexInChunk: number): boolean => {
+    return chunkIndex === 0 && indexInChunk < 4;
+  };
+
   return (
     <section className="py-12 bg-muted content-visibility-auto">
       <div className="container mx-auto px-4">
@@ -58,8 +63,12 @@ export const FeaturedProfilesSection = ({
               <div key={`chunk-${chunkIndex}`}>
                 {/* Grid for up to 8 profiles */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                  {chunk.map((profile) => (
-                    <ProfileCard key={profile.id} profile={profile} />
+                  {chunk.map((profile, indexInChunk) => (
+                    <ProfileCard 
+                      key={profile.id} 
+                      profile={profile} 
+                      priority={getPriority(chunkIndex, indexInChunk)}
+                    />
                   ))}
                 </div>
                 
