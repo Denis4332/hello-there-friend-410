@@ -65,8 +65,21 @@ export function ImageCropper({ image, open, onClose, onCropComplete, position }:
           return;
         }
 
-        canvas.width = croppedAreaPixels.width;
-        canvas.height = croppedAreaPixels.height;
+        // Max size for banners: 1920x1080 (Full HD, 16:9)
+        const maxWidth = 1920;
+        const maxHeight = 1080;
+        let width = croppedAreaPixels.width;
+        let height = croppedAreaPixels.height;
+
+        // Scale down if larger than max dimensions
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
 
         ctx.drawImage(
           img,
@@ -76,8 +89,8 @@ export function ImageCropper({ image, open, onClose, onCropComplete, position }:
           croppedAreaPixels.height,
           0,
           0,
-          croppedAreaPixels.width,
-          croppedAreaPixels.height
+          width,
+          height
         );
 
         canvas.toBlob(
@@ -89,7 +102,7 @@ export function ImageCropper({ image, open, onClose, onCropComplete, position }:
             }
           },
           'image/jpeg',
-          0.9
+          0.8  // 80% quality for better compression
         );
       };
       
