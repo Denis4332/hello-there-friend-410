@@ -15,6 +15,7 @@ import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
+import { BannerDisplay } from '@/components/BannerDisplay';
 import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
 
 const Suche = () => {
@@ -230,6 +231,8 @@ const Suche = () => {
           <Breadcrumbs items={[{ label: 'Suche' }]} />
           <h1 className="text-3xl font-bold mb-2">{searchTitle || 'Profile durchsuchen'}</h1>
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
+          
+          <BannerDisplay position="top" className="mb-6" />
           
           <SearchFilters
             canton={canton}
