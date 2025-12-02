@@ -135,8 +135,59 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     setCityPopoverOpen(false);
   };
 
-  // Photo handling
-  const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Image compression function - max 1200x1600px, 80% JPEG quality
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        let { width, height } = img;
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1600;
+        
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+          const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              reject(new Error('Could not compress image'));
+            }
+          },
+          'image/jpeg',
+          0.8 // 80% quality
+        );
+      };
+      
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Photo handling with compression
+  const handlePhotoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -153,10 +204,10 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     const newPreviews: PhotoPreview[] = [];
     for (const file of Array.from(files)) {
       // Basic validation
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         toast({
           title: 'Datei zu groß',
-          description: `${file.name} ist zu groß (max. 5MB)`,
+          description: `${file.name} ist zu groß (max. 10MB)`,
           variant: 'destructive',
         });
         continue;
@@ -169,10 +220,22 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
         });
         continue;
       }
-      newPreviews.push({
-        url: URL.createObjectURL(file),
-        file,
-      });
+      
+      try {
+        // Compress image before adding to previews
+        const compressedFile = await compressImage(file);
+        newPreviews.push({
+          url: URL.createObjectURL(compressedFile),
+          file: compressedFile,
+        });
+      } catch (error) {
+        console.error('Compression error:', error);
+        // Fallback to original file if compression fails
+        newPreviews.push({
+          url: URL.createObjectURL(file),
+          file,
+        });
+      }
     }
 
     setPhotoPreviews(prev => [...prev, ...newPreviews]);
