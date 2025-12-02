@@ -22,12 +22,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useAgbAcceptances } from '@/hooks/useAgbAcceptances';
-import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2 } from 'lucide-react';
+import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2, Camera } from 'lucide-react';
 import type { Profile } from '@/types/dating';
 
 interface NewPhotoPreview {
   url: string;
   file: File;
+}
+
+// State for quick upload from list
+interface QuickUploadState {
+  profileId: string;
+  profileName: string;
+  isUploading: boolean;
 }
 
 const AdminProfile = () => {
@@ -65,6 +72,10 @@ const AdminProfile = () => {
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<NewPhotoPreview[]>([]);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  
+  // Quick upload from list states
+  const [quickUpload, setQuickUpload] = useState<QuickUploadState | null>(null);
+  const quickUploadInputRef = useRef<HTMLInputElement>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -595,6 +606,67 @@ const AdminProfile = () => {
     }
   });
 
+  // Quick upload handler for list view
+  const handleQuickUploadSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!quickUpload || !event.target.files?.length) return;
+    
+    const files = Array.from(event.target.files);
+    setQuickUpload(prev => prev ? { ...prev, isUploading: true } : null);
+    
+    try {
+      for (const file of files) {
+        // Compress image
+        const compressedFile = await compressImage(file);
+        
+        // Upload to storage
+        const fileName = `${quickUpload.profileId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+        const { error: uploadError } = await supabase
+          .storage
+          .from('profile-photos')
+          .upload(fileName, compressedFile, {
+            contentType: 'image/jpeg',
+            upsert: false
+          });
+        
+        if (uploadError) throw uploadError;
+        
+        // Insert photo record
+        const { error: dbError } = await supabase
+          .from('photos')
+          .insert({
+            profile_id: quickUpload.profileId,
+            storage_path: fileName,
+            is_primary: false,
+            media_type: 'image'
+          });
+        
+        if (dbError) throw dbError;
+      }
+      
+      toast({ 
+        title: `✅ ${files.length} Foto(s) hochgeladen`,
+        description: `für ${quickUpload.profileName}`
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    } catch (error: any) {
+      toast({ 
+        title: 'Fehler beim Upload', 
+        description: error.message, 
+        variant: 'destructive' 
+      });
+    } finally {
+      setQuickUpload(null);
+      if (quickUploadInputRef.current) {
+        quickUploadInputRef.current.value = '';
+      }
+    }
+  };
+
+  const triggerQuickUpload = (profileId: string, profileName: string) => {
+    setQuickUpload({ profileId, profileName, isUploading: false });
+    setTimeout(() => quickUploadInputRef.current?.click(), 0);
+  };
+
   const handleOpenDialog = (profile: any) => {
     setSelectedProfile(profile);
     setDialogStatus(profile.status);
@@ -653,6 +725,17 @@ const AdminProfile = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <AdminHeader />
+      
+      {/* Hidden input for quick upload from list */}
+      <input
+        ref={quickUploadInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleQuickUploadSelect}
+      />
+      
       <main className="flex-1 py-8 bg-muted">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-6">
@@ -772,16 +855,33 @@ const AdminProfile = () => {
                         {new Date(profile.created_at).toLocaleDateString('de-CH')}
                       </td>
                       <td className="p-3">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleOpenDialog(profile)}
-                            >
-                              Prüfen
-                            </Button>
-                          </DialogTrigger>
+                        <div className="flex gap-1">
+                          {/* Quick Upload Button */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            disabled={quickUpload?.isUploading}
+                            onClick={() => triggerQuickUpload(profile.id, profile.display_name)}
+                            title="Fotos hochladen"
+                          >
+                            {quickUpload?.profileId === profile.id && quickUpload?.isUploading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Camera className="h-4 w-4" />
+                            )}
+                          </Button>
+                          
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleOpenDialog(profile)}
+                              >
+                                Prüfen
+                              </Button>
+                            </DialogTrigger>
                           <DialogContent className="max-w-3xl max-h-[90vh]">
                             <DialogHeader>
                               <DialogTitle>Profil prüfen: {selectedProfile?.display_name}</DialogTitle>
@@ -1397,6 +1497,7 @@ const AdminProfile = () => {
                             )}
                           </DialogContent>
                         </Dialog>
+                        </div>
                       </td>
                     </tr>
                     ))}
