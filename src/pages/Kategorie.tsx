@@ -88,8 +88,8 @@ const Kategorie = () => {
           ) : paginatedProfiles.length > 0 ? (
             <>
               <div className="grid md:grid-cols-2 gap-4 auto-rows-fr">
-                {paginatedProfiles.map((profile) => (
-                  <ProfileCard key={profile.id} profile={profile} />
+                {paginatedProfiles.map((profile, index) => (
+                  <ProfileCard key={profile.id} profile={profile} priority={index < 4} />
                 ))}
               </div>
               <Pagination
