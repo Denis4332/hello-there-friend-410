@@ -5,14 +5,14 @@
  * Desktop (≥ 1024px): 4 columns (lg:grid-cols-4)
  * 
  * DO NOT change this to grid-cols-1 on mobile!
+ * 
+ * NOTE: Profiles are expected to be PRE-SORTED by the parent component.
+ * No additional sorting is done here to avoid duplicate sorting overhead.
  */
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { ProfileWithRelations } from '@/types/common';
-import { sortProfilesByListingType } from '@/lib/profileUtils';
-import { useMemo } from 'react';
-import { useRotationKey } from '@/hooks/useRotationKey';
 
 interface FeaturedProfilesSectionProps {
   profiles: ProfileWithRelations[];
@@ -28,18 +28,13 @@ export const FeaturedProfilesSection = ({
   title,
   noProfilesText,
 }: FeaturedProfilesSectionProps) => {
-  const rotationKey = useRotationKey();
+  // Profiles are PRE-SORTED by parent - no sorting here to avoid duplication
   
-  // Sort profiles: TOP > Premium > Basic > Verified > Newest (rotates every 30min)
-  const sortedProfiles = useMemo(() => {
-    return sortProfilesByListingType(profiles, rotationKey);
-  }, [profiles, rotationKey]);
-
   // Split profiles into chunks of 8
   const chunkSize = 8;
   const chunks = [];
-  for (let i = 0; i < sortedProfiles.length; i += chunkSize) {
-    chunks.push(sortedProfiles.slice(i, i + chunkSize));
+  for (let i = 0; i < profiles.length; i += chunkSize) {
+    chunks.push(profiles.slice(i, i + chunkSize));
   }
 
   // First 4 profiles get priority loading (above-the-fold on most screens)
