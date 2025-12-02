@@ -12,6 +12,7 @@ import { BannerDisplay } from '@/components/BannerDisplay';
 import { ProfileWithRelations } from '@/types/common';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useMemo } from 'react';
+import { useRotationKey } from '@/hooks/useRotationKey';
 
 interface FeaturedProfilesSectionProps {
   profiles: ProfileWithRelations[];
@@ -27,10 +28,12 @@ export const FeaturedProfilesSection = ({
   title,
   noProfilesText,
 }: FeaturedProfilesSectionProps) => {
-  // Sort profiles: TOP > Premium > Basic > Verified > Newest
+  const rotationKey = useRotationKey();
+  
+  // Sort profiles: TOP > Premium > Basic > Verified > Newest (rotates every 30min)
   const sortedProfiles = useMemo(() => {
-    return sortProfilesByListingType(profiles);
-  }, [profiles]);
+    return sortProfilesByListingType(profiles, rotationKey);
+  }, [profiles, rotationKey]);
 
   // Split profiles into chunks of 8
   const chunkSize = 8;
