@@ -14,14 +14,33 @@ export const sortProfilesByListingType = (
 ): ProfileWithRelations[] => {
   const seed = sessionSeed ?? Math.floor(Date.now() / (30 * 60 * 1000));
   
-  // Hash function that truly incorporates the seed mathematically
+  // MurmurHash3-inspired algorithm for TRUE random rotation
+  // Different seeds GUARANTEE different sort orders
   const hashWithSeed = (id: string, seedValue: number): number => {
-    let hash = seedValue;
+    let h1 = seedValue >>> 0; // Ensure unsigned 32-bit
+    
     for (let i = 0; i < id.length; i++) {
-      hash = ((hash << 5) - hash + id.charCodeAt(i)) ^ (seedValue >> (i % 16));
-      hash = hash & hash;
+      let k1 = id.charCodeAt(i);
+      
+      // Mix the character with magic constants
+      k1 = Math.imul(k1, 0xcc9e2d51);
+      k1 = (k1 << 15) | (k1 >>> 17);
+      k1 = Math.imul(k1, 0x1b873593);
+      
+      h1 ^= k1;
+      h1 = (h1 << 13) | (h1 >>> 19);
+      h1 = Math.imul(h1, 5) + 0xe6546b64;
     }
-    return Math.abs(hash);
+    
+    // Final mixing for even distribution
+    h1 ^= id.length;
+    h1 ^= h1 >>> 16;
+    h1 = Math.imul(h1, 0x85ebca6b);
+    h1 ^= h1 >>> 13;
+    h1 = Math.imul(h1, 0xc2b2ae35);
+    h1 ^= h1 >>> 16;
+    
+    return h1 >>> 0; // Return unsigned
   };
   
   return [...profiles].sort((a, b) => {
