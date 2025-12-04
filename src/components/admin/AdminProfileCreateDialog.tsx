@@ -34,6 +34,7 @@ import { useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
 import { Plus, ChevronsUpDown, Check, MapPin, Upload, X, Star, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { compressImage } from '@/utils/imageCompression';
 
 interface AdminProfileCreateDialogProps {
   onSuccess?: () => void;
@@ -133,57 +134,6 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     setLat(selectedCity.lat);
     setLng(selectedCity.lng);
     setCityPopoverOpen(false);
-  };
-
-  // Image compression function - max 1200x1600px, 80% JPEG quality
-  const compressImage = async (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        let { width, height } = img;
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1600;
-        
-        // Calculate new dimensions while maintaining aspect ratio
-        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-          const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'));
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-                type: 'image/jpeg',
-                lastModified: Date.now(),
-              });
-              resolve(compressedFile);
-            } else {
-              reject(new Error('Could not compress image'));
-            }
-          },
-          'image/jpeg',
-          0.8 // 80% quality
-        );
-      };
-      
-      img.onerror = () => reject(new Error('Could not load image'));
-      img.src = URL.createObjectURL(file);
-    });
   };
 
   // Photo handling with compression
