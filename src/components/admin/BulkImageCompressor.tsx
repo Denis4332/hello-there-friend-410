@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, ImageDown } from 'lucide-react';
-
+import { compressImageBlob } from '@/utils/imageCompression';
 interface CompressionStats {
   total: number;
   processed: number;
@@ -21,52 +21,6 @@ export const BulkImageCompressor = () => {
   const [currentImage, setCurrentImage] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Compress image using Canvas - max 1200x1600px, 80% JPEG
-  const compressImageBlob = async (blob: Blob): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        let { width, height } = img;
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1600;
-        
-        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-          const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        if (!ctx) {
-          reject(new Error('Canvas context not available'));
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob(
-          (result) => {
-            if (result) {
-              resolve(result);
-            } else {
-              reject(new Error('Compression failed'));
-            }
-          },
-          'image/jpeg',
-          0.8
-        );
-      };
-      
-      img.onerror = () => reject(new Error('Image load failed'));
-      img.src = URL.createObjectURL(blob);
-    });
-  };
 
   const runBulkCompression = async () => {
     setIsRunning(true);

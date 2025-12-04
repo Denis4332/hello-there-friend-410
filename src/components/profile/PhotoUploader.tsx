@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToastMessages } from '@/hooks/useToastMessages';
 import { cn } from '@/lib/utils';
-
+import { compressImage } from '@/utils/imageCompression';
 interface PhotoUploaderProps {
   profileId: string;
   userId?: string; // Optional: vom Parent übergeben für Session-Fallback
@@ -55,60 +55,6 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [uploading]);
-
-  // Compress image before upload using Canvas API
-  const compressImage = async (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(file); // Fallback to original if canvas not supported
-          return;
-        }
-
-        // Max dimensions for compressed images
-        const maxWidth = 1200;
-        const maxHeight = 1600;
-        
-        let width = img.width;
-        let height = img.height;
-        
-        // Calculate new dimensions while maintaining aspect ratio
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to blob with 80% JPEG quality
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              // Create new file with compressed data
-              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-                type: 'image/jpeg',
-                lastModified: Date.now(),
-              });
-              console.log(`🗜️ Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
-              resolve(compressedFile);
-            } else {
-              resolve(file);
-            }
-          },
-          'image/jpeg',
-          0.8 // 80% quality
-        );
-      };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
-    });
-  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
     const files = event.target.files;
