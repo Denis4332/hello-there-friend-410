@@ -9,7 +9,7 @@ interface BannerDisplayProps {
 }
 
 export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) => {
-  const { data: ads } = useAdvertisements(position);
+  const { data: ads, isLoading } = useAdvertisements(position);
 
   const handleClick = (ad: Advertisement) => {
     // Open link FIRST (synchronously) to prevent mobile popup blockers
@@ -52,6 +52,11 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
 
     trackImpression(displayedAd);
   }, [ads]);
+
+  // Während des Ladens nichts anzeigen (verhindert Placeholder-Flash)
+  if (isLoading) {
+    return null;
+  }
 
   if (!ads || ads.length === 0) {
     return (
