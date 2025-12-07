@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { AdminProfileCreateDialog } from '@/components/admin/AdminProfileCreateDialog';
 import { BulkImageCompressor } from '@/components/admin/BulkImageCompressor';
+import { RotationDebugTool } from '@/components/admin/RotationDebugTool';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { useAgbAcceptances } from '@/hooks/useAgbAcceptances';
 import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2, Camera } from 'lucide-react';
 import type { Profile } from '@/types/dating';
 import { compressImage } from '@/utils/imageCompression';
+import { sortProfilesByListingType } from '@/lib/profileUtils';
 
 interface NewPhotoPreview {
   url: string;
@@ -696,6 +698,9 @@ const AdminProfile = () => {
           </div>
 
           <BulkImageCompressor />
+
+          {/* Rotation Debug Tool */}
+          <RotationDebugTool profiles={profiles || []} />
 
           <div className="bg-card border rounded-lg p-4 mb-4">
             <div className="flex gap-4 flex-wrap">
