@@ -3,14 +3,15 @@ import { Link } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 interface DemoPopupBannerProps {
   onClose: () => void;
 }
 
 export const DemoPopupBanner = ({ onClose }: DemoPopupBannerProps) => {
-  const { data: popupPrice } = useSiteSetting('banner_popup_price_day');
+  const { getSetting } = useSiteSettingsContext();
+  const popupPrice = getSetting('banner_popup_price_day', 'CHF 80');
   
   const handleClose = () => {
     localStorage.setItem('demo_popup_last_shown', new Date().toISOString());

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Lock, Heart, Plus } from 'lucide-react';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -23,36 +23,31 @@ const UserDashboard = () => {
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: seoTitle } = useSiteSetting('seo_dashboard_title');
-  const { data: dashboardWelcome } = useSiteSetting('dashboard_welcome_text');
-  const { data: createProfileButton } = useSiteSetting('dashboard_create_profile_button');
-  const { data: editProfileButton } = useSiteSetting('dashboard_edit_profile_button');
-  const { data: favoritesButton } = useSiteSetting('dashboard_favorites_button');
-  const { data: statusPending } = useSiteSetting('dashboard_status_pending');
-  const { data: statusActive } = useSiteSetting('dashboard_status_active');
-  const { data: statusRejected } = useSiteSetting('dashboard_status_rejected');
-  const { data: noProfileTitle } = useSiteSetting('dashboard_no_profile_title');
-  const { data: noProfileText } = useSiteSetting('dashboard_no_profile_text');
-  const { data: noProfileButton } = useSiteSetting('dashboard_no_profile_button');
-  const { data: packageTitle } = useSiteSetting('dashboard_package_title');
-  const { data: packageBasic } = useSiteSetting('dashboard_package_basic_desc');
-  const { data: packagePremium } = useSiteSetting('dashboard_package_premium_desc');
-  const { data: packageTop } = useSiteSetting('dashboard_package_top_desc');
-  const { data: validUntil } = useSiteSetting('dashboard_valid_until');
-  const { data: upgradeButton } = useSiteSetting('dashboard_upgrade_button');
-  const { data: extendButton } = useSiteSetting('dashboard_extend_button');
-  const { data: profileDataTitle } = useSiteSetting('dashboard_profile_data_title');
-  const { data: labelName } = useSiteSetting('dashboard_label_name');
-  const { data: labelGender } = useSiteSetting('dashboard_label_gender');
-  const { data: labelLocation } = useSiteSetting('dashboard_label_location');
-  const { data: labelLanguages } = useSiteSetting('dashboard_label_languages');
-  const { data: labelAbout } = useSiteSetting('dashboard_label_about');
-  const { data: labelCategories } = useSiteSetting('dashboard_label_categories');
-  const { data: photosTitle } = useSiteSetting('dashboard_photos_title');
-  const { data: privacyTitle } = useSiteSetting('dashboard_privacy_title');
-  const { data: deleteTitle } = useSiteSetting('dashboard_delete_title');
-  const { data: deleteText } = useSiteSetting('dashboard_delete_text');
-  const { data: deleteButton } = useSiteSetting('dashboard_delete_button');
+  const { getSetting } = useSiteSettingsContext();
+  const seoTitle = getSetting('seo_dashboard_title', 'Dashboard');
+  const editProfileButton = getSetting('dashboard_edit_profile_button', 'Profil bearbeiten');
+  const favoritesButton = getSetting('dashboard_favorites_button', 'Favoriten');
+  const statusPending = getSetting('dashboard_status_pending', 'In Prüfung');
+  const statusActive = getSetting('dashboard_status_active', 'Aktiv');
+  const statusRejected = getSetting('dashboard_status_rejected', 'Abgelehnt');
+  const noProfileTitle = getSetting('dashboard_no_profile_title', 'Noch kein Inserat');
+  const noProfileText = getSetting('dashboard_no_profile_text', 'Du hast noch kein Inserat erstellt. Starte jetzt und erreiche tausende potenzielle Kunden!');
+  const noProfileButton = getSetting('dashboard_no_profile_button', 'Inserat aufgeben');
+  const packageTitle = getSetting('dashboard_package_title', 'Dein Inserat-Paket');
+  const packageBasic = getSetting('dashboard_package_basic_desc', '📋 Standard Inserat - Basis-Sichtbarkeit');
+  const packagePremium = getSetting('dashboard_package_premium_desc', '👑 Premium Inserat - VIP Badge, größere Darstellung, höhere Priorität');
+  const packageTop = getSetting('dashboard_package_top_desc', '⭐ TOP AD - Maximale Sichtbarkeit, immer ganz oben, hervorgehoben');
+  const validUntil = getSetting('dashboard_valid_until', 'Gültig bis');
+  const upgradeButton = getSetting('dashboard_upgrade_button', 'Paket upgraden');
+  const extendButton = getSetting('dashboard_extend_button', 'Paket verlängern');
+  const profileDataTitle = getSetting('dashboard_profile_data_title', 'Profildaten');
+  const labelName = getSetting('dashboard_label_name', 'Anzeigename');
+  const labelGender = getSetting('dashboard_label_gender', 'Geschlecht');
+  const labelLocation = getSetting('dashboard_label_location', 'Standort');
+  const labelLanguages = getSetting('dashboard_label_languages', 'Sprachen');
+  const labelAbout = getSetting('dashboard_label_about', 'Über mich');
+  const labelCategories = getSetting('dashboard_label_categories', 'Kategorien');
+  const photosTitle = getSetting('dashboard_photos_title', 'Fotos');
 
   useEffect(() => {
     loadProfile();

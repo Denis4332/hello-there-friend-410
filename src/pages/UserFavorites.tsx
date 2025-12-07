@@ -6,14 +6,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 const UserFavorites = () => {
   const { user } = useAuth();
-  const { data: seoTitle } = useSiteSetting('seo_favorites_title');
+  const { getSetting } = useSiteSettingsContext();
+  const seoTitle = getSetting('seo_favorites_title', 'Favoriten');
   
   const { data: favoriteProfiles = [], isLoading } = useQuery({
     queryKey: ['favorite-profiles', user?.id],

@@ -12,7 +12,7 @@ import { ListingTypeSelector } from '@/components/profile/ListingTypeSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
 
 const ProfileCreate = () => {
@@ -28,16 +28,17 @@ const ProfileCreate = () => {
   const [agbAccepted, setAgbAccepted] = useState(false);
   const [uploadedPhotoCount, setUploadedPhotoCount] = useState(0);
 
-  const { data: seoTitle } = useSiteSetting('seo_profile_create_title');
-  const { data: createTitle } = useSiteSetting('profile_create_title');
-  const { data: createSubtitle } = useSiteSetting('profile_create_subtitle');
-  const { data: photosTitle } = useSiteSetting('profile_photos_title');
-  const { data: photosSubtitle } = useSiteSetting('profile_photos_subtitle');
-  const { data: tabData } = useSiteSetting('profile_tab_data');
-  const { data: tabListing } = useSiteSetting('profile_tab_listing');
-  const { data: tabPhotos } = useSiteSetting('profile_tab_photos');
-  const { data: tabVerification } = useSiteSetting('profile_tab_verification');
-  const { data: photosSaveButton } = useSiteSetting('profile_photos_save_button');
+  const { getSetting } = useSiteSettingsContext();
+  const seoTitle = getSetting('seo_profile_create_title', 'Inserat erstellen');
+  const createTitle = getSetting('profile_create_title', 'Profil erstellen');
+  const createSubtitle = getSetting('profile_create_subtitle', 'Erstelle dein Profil in 2 Schritten: Zuerst die Basisdaten, dann deine Fotos');
+  const photosTitle = getSetting('profile_photos_title', 'Fotos hochladen');
+  const photosSubtitle = getSetting('profile_photos_subtitle', 'Lade mindestens 1 Foto hoch. Das erste Foto wird als Hauptfoto verwendet.');
+  const tabData = getSetting('profile_tab_data', '1. Profildaten');
+  const tabListing = getSetting('profile_tab_listing', '2. Inserat-Typ');
+  const tabPhotos = getSetting('profile_tab_photos', '3. Fotos');
+  const tabVerification = getSetting('profile_tab_verification', '4. Verifizierung');
+  const photosSaveButton = getSetting('profile_photos_save_button', 'Fotos speichern und weiter');
 
   // Check for existing profile on page load (handles page reload during creation)
   useEffect(() => {
