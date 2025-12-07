@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
@@ -46,6 +46,7 @@ const Suche = () => {
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
+  const { getSetting } = useSiteSettingsContext();
   
   // GPS-based search
   const { 
@@ -95,11 +96,11 @@ const Suche = () => {
   
   const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
 
-  const { data: searchTitle } = useSiteSetting('search_page_title');
-  const { data: searchSubtitle } = useSiteSetting('search_page_subtitle');
-  const { data: searchKeywordLabel } = useSiteSetting('search_filter_label_keyword');
-  const { data: searchButton } = useSiteSetting('search_button_text');
-  const { data: searchNoResults } = useSiteSetting('search_no_results_text');
+  const searchTitle = getSetting('search_page_title', 'Profile durchsuchen');
+  const searchSubtitle = getSetting('search_page_subtitle', 'Durchsuchen Sie alle verifizierten Profile in der Schweiz');
+  const searchKeywordLabel = getSetting('search_filter_label_keyword', 'Stichwort');
+  const searchButton = getSetting('search_button_text', 'Suchen');
+  const searchNoResults = getSetting('search_no_results_text', 'Keine Profile gefunden');
 
   // Sort profiles: TOP > Premium > Basic > Verified > Newest (rotates every 30min)
   const sortedProfiles = useMemo(() => {

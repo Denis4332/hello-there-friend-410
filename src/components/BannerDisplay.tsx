@@ -83,7 +83,6 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
           src={`${ad.image_url}?width=800&resize=contain`}
           alt={ad.title}
           loading="eager"
-          fetchPriority="high"
           decoding="async"
           className="w-full h-auto object-contain"
         />

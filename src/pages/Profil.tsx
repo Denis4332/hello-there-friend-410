@@ -13,7 +13,7 @@ import { useProfileContacts } from '@/hooks/useProfileContacts';
 import { useCreateReport } from '@/hooks/useReports';
 import { supabase } from '@/integrations/supabase/client';
 import { useCategories } from '@/hooks/useCategories';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { SEO } from '@/components/SEO';
 import { ContactSection } from '@/components/profile/ContactSection';
@@ -45,9 +45,9 @@ const Profil = () => {
     }
   }, [profile?.id, trackProfileView]);
 
-  const { data: contactButton } = useSiteSetting('profile_contact_button');
-  const { data: reportButton } = useSiteSetting('profile_report_button');
-  const { data: reportDialogTitle } = useSiteSetting('profile_report_dialog_title');
+  const { getSetting } = useSiteSettingsContext();
+  const reportButton = getSetting('profile_report_button', 'Melden');
+  const reportDialogTitle = getSetting('profile_report_dialog_title', 'Profil melden');
   
   // Get all photos and videos with direct URLs (transforms require Supabase Pro plan)
   const photos = profile?.photos || [];

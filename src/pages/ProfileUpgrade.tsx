@@ -9,7 +9,7 @@ import { CheckCircle2, Crown, Star, Zap, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const ProfileUpgrade = () => {
   const navigate = useNavigate();
@@ -18,12 +18,13 @@ const ProfileUpgrade = () => {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const { data: basicTitle } = useSiteSetting('pricing_basic_title');
-  const { data: basicPrice } = useSiteSetting('pricing_basic_price');
-  const { data: premiumTitle } = useSiteSetting('pricing_premium_title');
-  const { data: premiumPrice } = useSiteSetting('pricing_premium_price');
-  const { data: topTitle } = useSiteSetting('pricing_top_title');
-  const { data: topPrice } = useSiteSetting('pricing_top_price');
+  const { getSetting } = useSiteSettingsContext();
+  const basicTitle = getSetting('pricing_basic_title', 'Standard Inserat');
+  const basicPrice = getSetting('pricing_basic_price', 'CHF 49/Monat');
+  const premiumTitle = getSetting('pricing_premium_title', 'Premium Inserat');
+  const premiumPrice = getSetting('pricing_premium_price', 'CHF 99/Monat');
+  const topTitle = getSetting('pricing_top_title', 'TOP AD Inserat');
+  const topPrice = getSetting('pricing_top_price', 'CHF 199/Monat');
 
   useEffect(() => {
     if (!user) {
