@@ -80,7 +80,7 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
         }`}
       >
         <img
-          src={ad.image_url}
+          src={`${ad.image_url}?width=800&resize=contain`}
           alt={ad.title}
           loading="eager"
           fetchPriority="high"
