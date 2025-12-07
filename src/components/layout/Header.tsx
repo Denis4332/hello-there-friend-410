@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { EscoriaLogo } from '@/components/EscoriaLogo';
 import { User, Menu, Search, Plus, LogOut, Shield } from 'lucide-react';
@@ -17,25 +17,28 @@ export const Header = () => {
   const { user, role, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  const { data: navHome } = useSiteSetting('nav_home');
-  const { data: navCantons } = useSiteSetting('nav_cantons');
-  const { data: navCategories } = useSiteSetting('nav_categories');
-  const { data: navBanners } = useSiteSetting('nav_banners');
-  const { data: navContact } = useSiteSetting('nav_contact');
-  const { data: navLogin } = useSiteSetting('nav_login');
-  const { data: navMyAccount } = useSiteSetting('nav_my_account');
-  const { data: navMyProfile } = useSiteSetting('nav_my_profile');
-  const { data: navLogout } = useSiteSetting('nav_logout');
-  const { data: logoUrl } = useSiteSetting('design_logo_url');
-  const { data: logoText } = useSiteSetting('design_logo_text');
-  const { data: navPrices } = useSiteSetting('nav_prices');
-  const { data: navCreateAd } = useSiteSetting('nav_create_ad');
-  const { data: navAgb } = useSiteSetting('nav_agb');
-  const { data: navPrivacy } = useSiteSetting('nav_privacy');
-  const { data: navSearch } = useSiteSetting('nav_search');
-  const { data: navAdmin } = useSiteSetting('nav_admin');
-  const { data: navAdminDashboard } = useSiteSetting('nav_admin_dashboard');
-  const { data: navWelcome } = useSiteSetting('nav_welcome_title');
+  // Single batch load instead of 20 individual API calls
+  const { getSetting } = useSiteSettingsContext();
+  
+  const navHome = getSetting('nav_home', 'Start');
+  const navCantons = getSetting('nav_cantons', 'Kantone');
+  const navCategories = getSetting('nav_categories', 'Kategorien');
+  const navBanners = getSetting('nav_banners', 'Werbung');
+  const navContact = getSetting('nav_contact', 'Kontakt');
+  const navLogin = getSetting('nav_login', 'Anmelden');
+  const navMyAccount = getSetting('nav_my_account', 'Mein Account');
+  const navMyProfile = getSetting('nav_my_profile', 'Mein Profil');
+  const navLogout = getSetting('nav_logout', 'Abmelden');
+  const logoUrl = getSetting('design_logo_url');
+  const logoText = getSetting('design_logo_text', 'ESCORIA');
+  const navPrices = getSetting('nav_prices', 'Preise & Pakete');
+  const navCreateAd = getSetting('nav_create_ad', 'Inserat aufgeben');
+  const navAgb = getSetting('nav_agb', 'AGB');
+  const navPrivacy = getSetting('nav_privacy', 'Datenschutzerklärung');
+  const navSearch = getSetting('nav_search', 'Suche');
+  const navAdmin = getSetting('nav_admin', 'Admin');
+  const navAdminDashboard = getSetting('nav_admin_dashboard', 'Admin Dashboard');
+  const navWelcome = getSetting('nav_welcome_title', 'Willkommen');
 
   return (
     <header className="bg-primary text-primary-foreground" role="banner">
@@ -43,43 +46,43 @@ export const Header = () => {
         <div className="flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2" aria-label="Zur Startseite">
             {logoUrl ? (
-              <img src={logoUrl} alt={logoText || 'ESCORIA'} className="h-8 object-contain" />
+              <img src={logoUrl} alt={logoText} className="h-8 object-contain" />
             ) : (
               <EscoriaLogo />
             )}
           </Link>
           <nav className="hidden md:flex items-center gap-6" aria-label="Hauptnavigation">
             <Link to="/" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              {navHome || 'Start'}
+              {navHome}
             </Link>
             <Link to="/kantone" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              {navCantons || 'Kantone'}
+              {navCantons}
             </Link>
             <Link to="/kategorien" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              {navCategories || 'Kategorien'}
+              {navCategories}
             </Link>
             <Link to="/preise" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              {navPrices || 'Preise & Pakete'}
+              {navPrices}
             </Link>
             <Link to="/bannerpreise" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              {navBanners || 'Werbung'}
+              {navBanners}
             </Link>
             <Link to="/kontakt" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              {navContact || 'Kontakt'}
+              {navContact}
             </Link>
 
             {/* Quick Actions */}
             <Link to="/profil/erstellen">
-              <Button variant="secondary" size="sm" className="gap-2" aria-label={navCreateAd || 'Inserat aufgeben'}>
+              <Button variant="secondary" size="sm" className="gap-2" aria-label={navCreateAd}>
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden lg:inline">{navCreateAd || 'Inserat aufgeben'}</span>
+                <span className="hidden lg:inline">{navCreateAd}</span>
               </Button>
             </Link>
             
             <Link to="/suche">
-              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label={navSearch || 'Suche'}>
+              <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label={navSearch}>
                 <Search className="h-4 w-4" aria-hidden="true" />
-                <span className="sr-only">{navSearch || 'Suche'}</span>
+                <span className="sr-only">{navSearch}</span>
               </Button>
             </Link>
 
@@ -96,15 +99,15 @@ export const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-primary-foreground hover:text-primary-foreground/80" aria-label="Mein Account Menü öffnen">
                     <User className="h-4 w-4 mr-2" aria-hidden="true" />
-                    {navMyAccount || 'Mein Account'}
+                    {navMyAccount}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => navigate('/mein-profil')}>
-                    {navMyProfile || 'Mein Profil'}
+                    {navMyProfile}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => signOut()}>
-                    {navLogout || 'Abmelden'}
+                    {navLogout}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -119,10 +122,10 @@ export const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
-                    {navAdminDashboard || 'Admin Dashboard'}
+                    {navAdminDashboard}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => signOut()}>
-                    {navLogout || 'Abmelden'}
+                    {navLogout}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -132,9 +135,9 @@ export const Header = () => {
           {/* Mobile CTA Icons */}
           <div className="flex md:hidden items-center gap-4">
             <Link to="/profil/erstellen">
-              <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label={navCreateAd || 'Inserat aufgeben'}>
+              <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label={navCreateAd}>
                 <Plus className="h-6 w-6" aria-hidden="true" />
-                <span className="sr-only">{navCreateAd || 'Inserat aufgeben'}</span>
+                <span className="sr-only">{navCreateAd}</span>
               </Button>
             </Link>
             
@@ -158,19 +161,19 @@ export const Header = () => {
                 <nav className="flex flex-col gap-4 mt-8" aria-label="Mobile Menü">
                   {/* Primary Navigation */}
                   <Link to="/" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
-                    {navHome || 'Start'}
+                    {navHome}
                   </Link>
                   <Link to="/kantone" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
-                    {navCantons || 'Kantone'}
+                    {navCantons}
                   </Link>
                   <Link to="/kategorien" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
-                    {navCategories || 'Kategorien'}
+                    {navCategories}
                   </Link>
                   <Link to="/preise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
-                    {navPrices || 'Preise & Pakete'}
+                    {navPrices}
                   </Link>
                   <Link to="/bannerpreise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
-                    {navBanners || 'Werbung'}
+                    {navBanners}
                   </Link>
 
                   <Separator />
@@ -182,7 +185,7 @@ export const Header = () => {
                     className="flex items-center gap-3 text-lg font-semibold text-primary hover:text-primary/80 active:text-primary/60 py-3 transition-colors"
                   >
                     <Plus className="h-6 w-6" />
-                    {navCreateAd || 'Inserat aufgeben'}
+                    {navCreateAd}
                   </Link>
                   <Link 
                     to="/suche" 
@@ -190,27 +193,27 @@ export const Header = () => {
                     className="flex items-center gap-3 text-lg font-medium hover:text-primary active:text-primary/80 py-3 transition-colors"
                   >
                     <Search className="h-6 w-6" />
-                    {navSearch || 'Suche'}
+                    {navSearch}
                   </Link>
 
                   <Separator />
 
                   {/* Extended Links */}
                   <Link to="/agb" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
-                    {navAgb || 'AGB'}
+                    {navAgb}
                   </Link>
                   <Link to="/datenschutz" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
-                    {navPrivacy || 'Datenschutzerklärung'}
+                    {navPrivacy}
                   </Link>
                   <Link to="/kontakt" onClick={() => setMobileMenuOpen(false)} className="text-sm text-muted-foreground hover:text-foreground active:text-foreground/80 py-2 transition-colors">
-                    {navContact || 'Kontakt'}
+                    {navContact}
                   </Link>
 
                   {!user ? (
                     <>
                       <Separator />
                       <Button onClick={() => { setMobileMenuOpen(false); navigate('/auth'); }} className="mt-2">
-                        {navLogin || 'Anmelden'}
+                        {navLogin}
                       </Button>
                     </>
                   ) : (
@@ -223,7 +226,7 @@ export const Header = () => {
                           className="flex items-center gap-3 text-lg font-medium hover:text-primary active:text-primary/80 py-3 transition-colors"
                         >
                           <User className="h-6 w-6" />
-                          {navMyProfile || 'Mein Profil'}
+                          {navMyProfile}
                         </Link>
                         {role === 'admin' && (
                           <Link
@@ -232,7 +235,7 @@ export const Header = () => {
                             className="flex items-center gap-3 text-lg font-medium text-primary hover:text-primary/80 active:text-primary/60 py-3 transition-colors"
                           >
                             <Shield className="h-6 w-6" />
-                            {navAdminDashboard || 'Admin Dashboard'}
+                            {navAdminDashboard}
                           </Link>
                         )}
                         <Button
@@ -241,7 +244,7 @@ export const Header = () => {
                           className="w-full justify-start gap-2"
                         >
                           <LogOut className="h-5 w-5" />
-                          {navLogout || 'Abmelden'}
+                          {navLogout}
                         </Button>
                       </div>
                     </>

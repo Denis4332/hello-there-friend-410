@@ -1,28 +1,31 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
 
 export const Footer = () => {
-  const { data: copyright } = useSiteSetting('footer_copyright');
-  const { data: agbText } = useSiteSetting('footer_agb');
-  const { data: datenschutzText } = useSiteSetting('footer_datenschutz');
-  const { data: kontaktText } = useSiteSetting('footer_kontakt');
-  const { data: adminText } = useSiteSetting('footer_admin');
-  const { data: ctaText } = useSiteSetting('footer_cta_text');
-  const { data: ctaLink } = useSiteSetting('footer_cta_link');
-  const { data: facebookUrl } = useSiteSetting('footer_facebook_url');
-  const { data: instagramUrl } = useSiteSetting('footer_instagram_url');
-  const { data: twitterUrl } = useSiteSetting('footer_twitter_url');
-  const { data: linkedinUrl } = useSiteSetting('footer_linkedin_url');
-  const { data: sectionInfo } = useSiteSetting('footer_section_info');
-  const { data: sectionLegal } = useSiteSetting('footer_section_legal');
-  const { data: sectionCta } = useSiteSetting('footer_section_cta');
-  const { data: ctaDescription } = useSiteSetting('footer_cta_description');
-  const { data: linkPrices } = useSiteSetting('footer_link_prices');
-  const { data: linkAdvertising } = useSiteSetting('footer_link_advertising');
-  const { data: impressumText } = useSiteSetting('footer_impressum');
-  const { data: agbNotice } = useSiteSetting('footer_agb_notice');
+  // Single batch load instead of 19 individual API calls
+  const { getSetting } = useSiteSettingsContext();
+  
+  const copyright = getSetting('footer_copyright', '© 2025 Escoria');
+  const agbText = getSetting('footer_agb', 'AGB');
+  const datenschutzText = getSetting('footer_datenschutz', 'Datenschutz');
+  const kontaktText = getSetting('footer_kontakt', 'Kontakt');
+  const adminText = getSetting('footer_admin', 'Admin');
+  const ctaText = getSetting('footer_cta_text', 'Jetzt Inserat erstellen');
+  const ctaLink = getSetting('footer_cta_link', '/auth?mode=signup');
+  const facebookUrl = getSetting('footer_facebook_url');
+  const instagramUrl = getSetting('footer_instagram_url');
+  const twitterUrl = getSetting('footer_twitter_url');
+  const linkedinUrl = getSetting('footer_linkedin_url');
+  const sectionInfo = getSetting('footer_section_info', 'Informationen');
+  const sectionLegal = getSetting('footer_section_legal', 'Rechtliches');
+  const sectionCta = getSetting('footer_section_cta', 'Inserat erstellen');
+  const ctaDescription = getSetting('footer_cta_description', 'Erstelle jetzt dein Inserat und erreiche tausende potenzielle Interessenten in der ganzen Schweiz.');
+  const linkPrices = getSetting('footer_link_prices', 'Preise & Pakete');
+  const linkAdvertising = getSetting('footer_link_advertising', 'Werbung schalten');
+  const impressumText = getSetting('footer_impressum', 'Impressum');
+  const agbNotice = getSetting('footer_agb_notice');
 
   const socialLinks = [
     { url: facebookUrl, icon: Facebook, label: 'Facebook' },
@@ -37,21 +40,21 @@ export const Footer = () => {
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Informationen */}
           <div>
-            <h3 className="font-semibold mb-4">{sectionInfo || 'Informationen'}</h3>
+            <h3 className="font-semibold mb-4">{sectionInfo}</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/preise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {linkPrices || 'Preise & Pakete'}
+                  {linkPrices}
                 </Link>
               </li>
               <li>
                 <Link to="/bannerpreise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {linkAdvertising || 'Werbung schalten'}
+                  {linkAdvertising}
                 </Link>
               </li>
               <li>
                 <Link to="/kontakt" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {kontaktText || 'Kontakt'}
+                  {kontaktText}
                 </Link>
               </li>
             </ul>
@@ -59,26 +62,26 @@ export const Footer = () => {
 
           {/* Rechtliches */}
           <div>
-            <h3 className="font-semibold mb-4">{sectionLegal || 'Rechtliches'}</h3>
+            <h3 className="font-semibold mb-4">{sectionLegal}</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/agb" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {agbText || 'AGB'}
+                  {agbText}
                 </Link>
               </li>
               <li>
                 <Link to="/datenschutz" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {datenschutzText || 'Datenschutz'}
+                  {datenschutzText}
                 </Link>
               </li>
               <li>
                 <Link to="/impressum" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {impressumText || 'Impressum'}
+                  {impressumText}
                 </Link>
               </li>
               <li>
                 <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {adminText || 'Admin'}
+                  {adminText}
                 </Link>
               </li>
             </ul>
@@ -86,13 +89,13 @@ export const Footer = () => {
 
           {/* CTA */}
           <div>
-            <h3 className="font-semibold mb-4">{sectionCta || 'Inserat erstellen'}</h3>
+            <h3 className="font-semibold mb-4">{sectionCta}</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              {ctaDescription || 'Erstelle jetzt dein Inserat und erreiche tausende potenzielle Interessenten in der ganzen Schweiz.'}
+              {ctaDescription}
             </p>
             <Button asChild className="w-full">
-              <Link to={ctaLink || '/auth?mode=signup'}>
-                {ctaText || 'Jetzt Inserat erstellen'}
+              <Link to={ctaLink}>
+                {ctaText}
               </Link>
             </Button>
           </div>
@@ -118,7 +121,7 @@ export const Footer = () => {
               </div>
             )}
             <p className="text-sm text-muted-foreground">
-              {copyright || '© 2025 Escoria'}
+              {copyright}
             </p>
             {agbNotice && (
               <p className="text-xs text-muted-foreground/70 mt-2">

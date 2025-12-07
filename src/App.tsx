@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useDesignSettings } from "./hooks/useDesignSettings";
@@ -193,7 +194,9 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AppContent />
+    <SiteSettingsProvider>
+      <AppContent />
+    </SiteSettingsProvider>
   </QueryClientProvider>
 );
 
