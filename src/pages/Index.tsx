@@ -3,7 +3,7 @@ import { Footer } from '@/components/layout/Footer';
 import { lazy, Suspense, useMemo } from 'react';
 import { useHomepageProfiles } from "@/hooks/useProfiles";
 import { useCategories } from '@/hooks/useCategories';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { SEO } from '@/components/SEO';
@@ -19,40 +19,41 @@ const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedPro
 
 const Index = () => {
   useDesignSettings();
-  useProfilesRealtime(); // Listen for realtime profile changes (admin approval)
-  const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
+  useProfilesRealtime();
+  const rotationKey = useRotationKey();
   
-  // SIMPLIFIED: Nur TOP-Ads schweizweit anzeigen auf Homepage
+  // Single batch load instead of 9 individual API calls
+  const { getSetting } = useSiteSettingsContext();
+  
+  const siteTitle = getSetting('site_title', 'Verifizierte Profile in der Schweiz');
+  const heroSubtitle = getSetting('hero_subtitle');
+  const searchKeywordPlaceholder = getSetting('search_keyword_placeholder');
+  const searchButtonText = getSetting('search_button_text');
+  const metaDescription = getSetting('meta_description', 'Finde verifizierte Profile in deiner Nähe. Anbieter in Zürich, Bern, Basel und weiteren Schweizer Städten.');
+  const heroImageUrl = getSetting('design_hero_image_url');
+  const heroOverlayOpacity = getSetting('design_hero_overlay_opacity');
+  const featuredProfilesTitle = getSetting('home_featured_profiles_title');
+  const noProfilesText = getSetting('home_no_profiles_text');
+  
   const { 
     data: homepageData, 
     isLoading: isLoadingProfiles 
-  } = useHomepageProfiles(100, 0, 0, null); // Alle TOP-Ads holen
+  } = useHomepageProfiles(100, 0, 0, null);
   
   const topProfiles = homepageData?.topProfiles ?? [];
   
   const featuredProfiles = useMemo(() => {
-    // Nur TOP-Ads anzeigen, sortiert mit Rotation
     return sortProfilesByListingType(topProfiles, rotationKey);
   }, [topProfiles, rotationKey]);
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
-  
-  const { data: siteTitle } = useSiteSetting('site_title');
-  const { data: heroSubtitle } = useSiteSetting('hero_subtitle');
-  const { data: searchKeywordPlaceholder } = useSiteSetting('search_keyword_placeholder');
-  const { data: searchButtonText } = useSiteSetting('search_button_text');
-  const { data: metaDescription } = useSiteSetting('meta_description');
-  const { data: heroImageUrl } = useSiteSetting('design_hero_image_url');
-  const { data: heroOverlayOpacity } = useSiteSetting('design_hero_overlay_opacity');
-  const { data: featuredProfilesTitle } = useSiteSetting('home_featured_profiles_title');
-  const { data: noProfilesText } = useSiteSetting('home_no_profiles_text');
 
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title={siteTitle || "Verifizierte Profile in der Schweiz"}
-        description={metaDescription || "Finde verifizierte Profile in deiner Nähe. Anbieter in Zürich, Bern, Basel und weiteren Schweizer Städten."}
+        title={siteTitle}
+        description={metaDescription}
         url="https://escoria.ch"
       />
       <Header />

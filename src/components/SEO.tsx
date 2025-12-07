@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { SchemaOrg } from './seo/SchemaOrg';
 import { Tracking } from './seo/Tracking';
 import { SocialMeta } from './seo/SocialMeta';
@@ -27,19 +27,22 @@ export const SEO = ({
   schemaType,
   keywords
 }: SEOProps) => {
-  const { data: siteName } = useSiteSetting('site_name');
-  const { data: author } = useSiteSetting('seo_author');
-  const { data: publisher } = useSiteSetting('seo_publisher');
-  const { data: copyright } = useSiteSetting('seo_copyright');
-  const { data: contentLang } = useSiteSetting('seo_content_language');
-  const { data: geoRegion } = useSiteSetting('seo_geo_region');
-  const { data: geoPlace } = useSiteSetting('seo_geo_placename');
-  const { data: geoPosition } = useSiteSetting('seo_geo_position');
-  const { data: canonicalBase } = useSiteSetting('seo_canonical_base');
-  const { data: noindexPages } = useSiteSetting('noindex_pages');
-  const { data: globalKeywords } = useSiteSetting('meta_keywords');
+  // Single batch load instead of 11 individual API calls
+  const { getSetting } = useSiteSettingsContext();
   
-  const fullTitle = `${title} | ${siteName || 'ESCORIA'}`;
+  const siteName = getSetting('site_name', 'ESCORIA');
+  const author = getSetting('seo_author');
+  const publisher = getSetting('seo_publisher');
+  const copyright = getSetting('seo_copyright');
+  const contentLang = getSetting('seo_content_language');
+  const geoRegion = getSetting('seo_geo_region');
+  const geoPlace = getSetting('seo_geo_placename');
+  const geoPosition = getSetting('seo_geo_position');
+  const canonicalBase = getSetting('seo_canonical_base');
+  const noindexPages = getSetting('noindex_pages');
+  const globalKeywords = getSetting('meta_keywords');
+  
+  const fullTitle = `${title} | ${siteName}`;
   const currentUrl = url || window.location.href;
   const isNoIndex = noindexPages?.split(',').some(page => currentUrl.includes(page.trim()));
   
