@@ -232,8 +232,6 @@ const Suche = () => {
           <h1 className="text-3xl font-bold mb-2">{searchTitle || 'Profile durchsuchen'}</h1>
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
           
-          <BannerDisplay position="top" className="mb-6" />
-          
           <SearchFilters
             canton={canton}
             category={category}
@@ -269,6 +267,8 @@ const Suche = () => {
             setCategoryOpen={setCategoryOpen}
             setCategoryGpsOpen={setCategoryGpsOpen}
           />
+
+          <BannerDisplay position="top" className="my-6" />
 
           {/* Info-Banner wenn keine Filter aktiv */}
           {!userLat && !userLng && !canton && !category && !keyword && (
