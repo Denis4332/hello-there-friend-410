@@ -1,12 +1,14 @@
 import { Helmet } from 'react-helmet-async';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 interface HreflangTagsProps {
   currentUrl: string;
 }
 
 export const HreflangTags = ({ currentUrl }: HreflangTagsProps) => {
-  const { data: hreflangEnabled } = useSiteSetting('hreflang_enabled');
+  const { getSetting } = useSiteSettingsContext();
+
+  const hreflangEnabled = getSetting('hreflang_enabled');
 
   // Only render if hreflang is enabled
   if (hreflangEnabled !== 'true') {

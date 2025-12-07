@@ -1,17 +1,19 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const Impressum = () => {
-  const { data: title } = useSiteSetting('impressum_title');
-  const { data: seoTitle } = useSiteSetting('seo_impressum_title');
-  const { data: seoDescription } = useSiteSetting('seo_impressum_description');
-  const { data: companyName } = useSiteSetting('impressum_company_name');
-  const { data: address } = useSiteSetting('impressum_address');
-  const { data: email } = useSiteSetting('impressum_email');
-  const { data: phone } = useSiteSetting('impressum_phone');
-  const { data: additionalInfo } = useSiteSetting('impressum_additional_info');
+  const { getSetting } = useSiteSettingsContext();
+
+  const title = getSetting('impressum_title');
+  const seoTitle = getSetting('seo_impressum_title');
+  const seoDescription = getSetting('seo_impressum_description');
+  const companyName = getSetting('impressum_company_name');
+  const address = getSetting('impressum_address');
+  const email = getSetting('impressum_email');
+  const phone = getSetting('impressum_phone');
+  const additionalInfo = getSetting('impressum_additional_info');
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -1,63 +1,65 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const Datenschutz = () => {
+  const { getSetting } = useSiteSettingsContext();
+
   // SEO Settings
-  const { data: seoTitle } = useSiteSetting('seo_datenschutz_title');
-  const { data: seoDescription } = useSiteSetting('seo_datenschutz_description');
+  const seoTitle = getSetting('seo_datenschutz_title');
+  const seoDescription = getSetting('seo_datenschutz_description');
   
   // Section 1 - Verantwortliche Stelle
-  const { data: title } = useSiteSetting('legal_privacy_title');
-  const { data: intro } = useSiteSetting('legal_privacy_intro');
-  const { data: section1Title } = useSiteSetting('legal_privacy_section1_title');
-  const { data: section1Content } = useSiteSetting('legal_privacy_section1_content');
-  const { data: contactInfo } = useSiteSetting('legal_privacy_contact');
+  const title = getSetting('legal_privacy_title');
+  const intro = getSetting('legal_privacy_intro');
+  const section1Title = getSetting('legal_privacy_section1_title');
+  const section1Content = getSetting('legal_privacy_section1_content');
+  const contactInfo = getSetting('legal_privacy_contact');
 
   // Section 2 - Art der verarbeiteten Daten
-  const { data: section2Title } = useSiteSetting('legal_privacy_section2_title');
-  const { data: section2Content } = useSiteSetting('legal_privacy_section2_content');
+  const section2Title = getSetting('legal_privacy_section2_title');
+  const section2Content = getSetting('legal_privacy_section2_content');
 
   // Section 3 - Zweck und Rechtsgrundlage
-  const { data: section3Title } = useSiteSetting('legal_privacy_section3_title');
-  const { data: section3Content } = useSiteSetting('legal_privacy_section3_content');
+  const section3Title = getSetting('legal_privacy_section3_title');
+  const section3Content = getSetting('legal_privacy_section3_content');
 
   // Section 4 - Speicherdauer
-  const { data: section4Title } = useSiteSetting('legal_privacy_section4_title');
-  const { data: section4Content } = useSiteSetting('legal_privacy_section4_content');
+  const section4Title = getSetting('legal_privacy_section4_title');
+  const section4Content = getSetting('legal_privacy_section4_content');
 
   // Section 5 - Weitergabe von Daten
-  const { data: section5Title } = useSiteSetting('legal_privacy_section5_title');
-  const { data: section5Content } = useSiteSetting('legal_privacy_section5_content');
+  const section5Title = getSetting('legal_privacy_section5_title');
+  const section5Content = getSetting('legal_privacy_section5_content');
 
   // Section 6 - Ihre Rechte
-  const { data: section6Title } = useSiteSetting('legal_privacy_section6_title');
-  const { data: section6Content } = useSiteSetting('legal_privacy_section6_content');
+  const section6Title = getSetting('legal_privacy_section6_title');
+  const section6Content = getSetting('legal_privacy_section6_content');
 
   // Section 7 - Datensicherheit
-  const { data: section7Title } = useSiteSetting('legal_privacy_section7_title');
-  const { data: section7Content } = useSiteSetting('legal_privacy_section7_content');
+  const section7Title = getSetting('legal_privacy_section7_title');
+  const section7Content = getSetting('legal_privacy_section7_content');
 
   // Section 8 - Zahlungsdaten
-  const { data: section8Title } = useSiteSetting('legal_privacy_section8_title');
-  const { data: section8Content } = useSiteSetting('legal_privacy_section8_content');
+  const section8Title = getSetting('legal_privacy_section8_title');
+  const section8Content = getSetting('legal_privacy_section8_content');
 
   // Section 9 - Cookies und Tracking
-  const { data: section9Title } = useSiteSetting('legal_privacy_section9_title');
-  const { data: section9Content } = useSiteSetting('legal_privacy_section9_content');
+  const section9Title = getSetting('legal_privacy_section9_title');
+  const section9Content = getSetting('legal_privacy_section9_content');
 
   // Section 10 - Profilsichtbarkeit
-  const { data: section10Title } = useSiteSetting('legal_privacy_section10_title');
-  const { data: section10Content } = useSiteSetting('legal_privacy_section10_content');
+  const section10Title = getSetting('legal_privacy_section10_title');
+  const section10Content = getSetting('legal_privacy_section10_content');
 
   // Section 11 - Beschwerderecht
-  const { data: section11Title } = useSiteSetting('legal_privacy_section11_title');
-  const { data: section11Content } = useSiteSetting('legal_privacy_section11_content');
+  const section11Title = getSetting('legal_privacy_section11_title');
+  const section11Content = getSetting('legal_privacy_section11_content');
 
   // Section 12 - Änderungen
-  const { data: section12Title } = useSiteSetting('legal_privacy_section12_title');
-  const { data: section12Content } = useSiteSetting('legal_privacy_section12_content');
+  const section12Title = getSetting('legal_privacy_section12_title');
+  const section12Content = getSetting('legal_privacy_section12_content');
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -1,14 +1,16 @@
 import { Helmet } from 'react-helmet-async';
 import type { ProfileWithRelations } from '@/types/common';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 interface ProfileSchemaProps {
   profile: ProfileWithRelations;
 }
 
 export const ProfileSchema = ({ profile }: ProfileSchemaProps) => {
-  const { data: siteName } = useSiteSetting('site_name');
-  const { data: siteUrl } = useSiteSetting('seo_canonical_base');
+  const { getSetting } = useSiteSettingsContext();
+
+  const siteName = getSetting('site_name');
+  const siteUrl = getSetting('seo_canonical_base');
 
   // Construct full Supabase URL for primary photo
   const primaryPhoto = profile.photos?.[0]?.storage_path 

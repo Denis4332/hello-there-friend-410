@@ -1,14 +1,16 @@
 import { Helmet } from 'react-helmet-async';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 export const Tracking = () => {
-  const { data: gaId } = useSiteSetting('google_analytics_id');
-  const { data: gtmId } = useSiteSetting('google_tag_manager_id');
-  const { data: fbPixel } = useSiteSetting('facebook_pixel_id');
-  const { data: googleVerify } = useSiteSetting('google_site_verification');
-  const { data: bingVerify } = useSiteSetting('bing_site_verification');
-  const { data: yandexVerify } = useSiteSetting('yandex_verification');
-  const { data: pinterestVerify } = useSiteSetting('pinterest_verification');
+  const { getSetting } = useSiteSettingsContext();
+
+  const gaId = getSetting('google_analytics_id');
+  const gtmId = getSetting('google_tag_manager_id');
+  const fbPixel = getSetting('facebook_pixel_id');
+  const googleVerify = getSetting('google_site_verification');
+  const bingVerify = getSetting('bing_site_verification');
+  const yandexVerify = getSetting('yandex_verification');
+  const pinterestVerify = getSetting('pinterest_verification');
 
   return (
     <Helmet>

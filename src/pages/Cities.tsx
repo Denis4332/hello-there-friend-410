@@ -3,18 +3,20 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCities } from '@/hooks/useCities';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
 
 const Cities = () => {
   const { data: cities = [], isLoading } = useCities();
-  const { data: seoTitle } = useSiteSetting('seo_cities_title');
-  const { data: seoDescription } = useSiteSetting('seo_cities_description');
-  const { data: pageTitle } = useSiteSetting('cities_page_title');
-  const { data: pageDescription } = useSiteSetting('cities_page_subtitle');
-  const { data: loadingText } = useSiteSetting('cities_loading_text');
-  const { data: emptyText } = useSiteSetting('cities_empty_text');
+  const { getSetting } = useSiteSettingsContext();
+
+  const seoTitle = getSetting('seo_cities_title');
+  const seoDescription = getSetting('seo_cities_description');
+  const pageTitle = getSetting('cities_page_title');
+  const pageDescription = getSetting('cities_page_subtitle');
+  const loadingText = getSetting('cities_loading_text');
+  const emptyText = getSetting('cities_empty_text');
   
   return (
     <div className="min-h-screen flex flex-col">

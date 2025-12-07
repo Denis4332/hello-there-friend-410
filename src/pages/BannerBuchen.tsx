@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Zap, Star, Grid3x3, Upload, Calendar, CheckCircle } from 'lucide-react';
 import { BannerPackage } from '@/types/advertisement';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const BANNER_PACKAGES: BannerPackage[] = [
   {
@@ -80,10 +80,11 @@ const durationLabels: Record<string, string> = {
 export default function BannerBuchen() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getSetting } = useSiteSettingsContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const { data: seoTitle } = useSiteSetting('seo_banner_title');
-  const { data: seoDescription } = useSiteSetting('seo_banner_description');
+  const seoTitle = getSetting('seo_banner_title');
+  const seoDescription = getSetting('seo_banner_description');
   const [imagePreview, setImagePreview] = useState<string>('');
 
   const form = useForm<FormValues>({
@@ -469,7 +470,7 @@ Telefon: ${data.contact_phone}`;
                         <FormItem>
                           <FormLabel>Telefonnummer</FormLabel>
                           <FormControl>
-                            <Input type="tel" placeholder="+41 79 123 45 67" {...field} />
+                            <Input placeholder="+41 79 123 45 67" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -483,7 +484,7 @@ Telefon: ${data.contact_phone}`;
                   <CardHeader>
                     <CardTitle>5. Banner-Bild hochladen</CardTitle>
                     <CardDescription>
-                      Empfohlenes Format: 16:9 (Querformat) • Max. 5MB
+                      Format: 16:9 Querformat empfohlen (z.B. 1920x1080px). Max. 5MB.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -494,33 +495,34 @@ Telefon: ${data.contact_phone}`;
                         <FormItem>
                           <FormControl>
                             <div className="space-y-4">
-                              <div className="flex items-center justify-center w-full">
-                                <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                                  {imagePreview ? (
-                                    <img 
-                                      src={imagePreview} 
-                                      alt="Preview" 
-                                      className="w-full h-full object-contain rounded-lg"
-                                    />
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                      <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                                      <p className="mb-2 text-sm text-muted-foreground">
-                                        <span className="font-semibold">Klicken zum Hochladen</span> oder Drag & Drop
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">
-                                        PNG, JPG oder WebP (max. 5MB) • Wird automatisch auf 16:9 zugeschnitten
-                                      </p>
-                                    </div>
-                                  )}
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                  />
+                              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleImageChange}
+                                  className="hidden"
+                                  id="banner-image"
+                                />
+                                <label
+                                  htmlFor="banner-image"
+                                  className="cursor-pointer flex flex-col items-center"
+                                >
+                                  <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                                  <span className="text-sm text-muted-foreground">
+                                    Klicken Sie hier, um ein Bild hochzuladen
+                                  </span>
                                 </label>
                               </div>
+
+                              {imagePreview && (
+                                <div className="relative">
+                                  <img
+                                    src={imagePreview}
+                                    alt="Banner preview"
+                                    className="w-full h-auto rounded-lg"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -530,41 +532,14 @@ Telefon: ${data.contact_phone}`;
                   </CardContent>
                 </Card>
 
-                {/* Submit */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      {selectedPosition && selectedDuration && (
-                        <div className="p-4 bg-muted rounded-lg">
-                          <h3 className="font-semibold mb-2">Zusammenfassung:</h3>
-                          <ul className="space-y-1 text-sm">
-                            <li>Position: {BANNER_PACKAGES.find(p => p.position === selectedPosition)?.name}</li>
-                            <li>Laufzeit: {durationLabels[selectedDuration]}</li>
-                            <li className="font-bold">Preis: CHF {calculatePrice()}</li>
-                          </ul>
-                        </div>
-                      )}
-
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        size="lg"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? 'Wird gesendet...' : 'Anfrage absenden'}
-                      </Button>
-
-                      <p className="text-xs text-center text-muted-foreground">
-                        Nach Ihrer Anfrage werden wir Sie kontaktieren, um die Details zu besprechen und die Zahlung zu vereinbaren.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? 'Anfrage wird gesendet...' : 'Anfrage absenden'}
+                </Button>
               </form>
             </Form>
           </div>
         </main>
-        
+
         <Footer />
       </div>
     </>

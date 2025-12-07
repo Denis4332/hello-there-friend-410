@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,7 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const { checkRateLimit, recordAttempt } = useAuthRateLimit();
+  const { getSetting } = useSiteSettingsContext();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,19 +39,19 @@ const Auth = () => {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: seoTitle } = useSiteSetting('seo_auth_title');
-  const { data: seoDescription } = useSiteSetting('seo_auth_description');
-  const { data: loginTitle } = useSiteSetting('auth_login_title');
-  const { data: registerTitle } = useSiteSetting('auth_register_title');
-  const { data: emailLabel } = useSiteSetting('auth_email_label');
-  const { data: passwordLabel } = useSiteSetting('auth_password_label');
-  const { data: loginButton } = useSiteSetting('auth_login_button');
-  const { data: registerButton } = useSiteSetting('auth_register_button');
-  const { data: welcomeTitle } = useSiteSetting('nav_welcome_title');
-  const { data: passwordHint } = useSiteSetting('auth_password_hint');
-  const { data: loadingLogin } = useSiteSetting('auth_loading_login');
-  const { data: loadingSignup } = useSiteSetting('auth_loading_signup');
-  const { data: allowSelfRegistration } = useSiteSetting('config_allow_self_registration');
+  const seoTitle = getSetting('seo_auth_title');
+  const seoDescription = getSetting('seo_auth_description');
+  const loginTitle = getSetting('auth_login_title');
+  const registerTitle = getSetting('auth_register_title');
+  const emailLabel = getSetting('auth_email_label');
+  const passwordLabel = getSetting('auth_password_label');
+  const loginButton = getSetting('auth_login_button');
+  const registerButton = getSetting('auth_register_button');
+  const welcomeTitle = getSetting('nav_welcome_title');
+  const passwordHint = getSetting('auth_password_hint');
+  const loadingLogin = getSetting('auth_loading_login');
+  const loadingSignup = getSetting('auth_loading_signup');
+  const allowSelfRegistration = getSetting('config_allow_self_registration');
   
   // Check if registration is enabled (default: true)
   const isRegistrationEnabled = allowSelfRegistration !== 'false';

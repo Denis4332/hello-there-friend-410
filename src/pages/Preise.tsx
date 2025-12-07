@@ -4,19 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Crown, Star, Zap, UserPlus, Camera, CreditCard, Sparkles, Globe, MapPin, BadgeCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 // How it works - 4 step process
 const HowItWorks = () => {
-  const { data: title } = useSiteSetting('pricing_howto_title');
-  const { data: step1Title } = useSiteSetting('pricing_howto_step1_title');
-  const { data: step1Text } = useSiteSetting('pricing_howto_step1_text');
-  const { data: step2Title } = useSiteSetting('pricing_howto_step2_title');
-  const { data: step2Text } = useSiteSetting('pricing_howto_step2_text');
-  const { data: step3Title } = useSiteSetting('pricing_howto_step3_title');
-  const { data: step3Text } = useSiteSetting('pricing_howto_step3_text');
-  const { data: step4Title } = useSiteSetting('pricing_howto_step4_title');
-  const { data: step4Text } = useSiteSetting('pricing_howto_step4_text');
+  const { getSetting } = useSiteSettingsContext();
+
+  const title = getSetting('pricing_howto_title');
+  const step1Title = getSetting('pricing_howto_step1_title');
+  const step1Text = getSetting('pricing_howto_step1_text');
+  const step2Title = getSetting('pricing_howto_step2_title');
+  const step2Text = getSetting('pricing_howto_step2_text');
+  const step3Title = getSetting('pricing_howto_step3_title');
+  const step3Text = getSetting('pricing_howto_step3_text');
+  const step4Title = getSetting('pricing_howto_step4_title');
+  const step4Text = getSetting('pricing_howto_step4_text');
 
   const steps = [
     { icon: UserPlus, title: step1Title || 'Account erstellen', text: step1Text || 'Registriere dich kostenlos mit deiner E-Mail-Adresse.' },
@@ -56,14 +58,16 @@ const HowItWorks = () => {
 
 // Visibility explanation
 const VisibilityExplanation = () => {
-  const { data: title } = useSiteSetting('pricing_visibility_title');
-  const { data: intro } = useSiteSetting('pricing_visibility_intro');
-  const { data: topTitle } = useSiteSetting('pricing_visibility_top_title');
-  const { data: topText } = useSiteSetting('pricing_visibility_top_text');
-  const { data: premiumTitle } = useSiteSetting('pricing_visibility_premium_title');
-  const { data: premiumText } = useSiteSetting('pricing_visibility_premium_text');
-  const { data: basicTitle } = useSiteSetting('pricing_visibility_basic_title');
-  const { data: basicText } = useSiteSetting('pricing_visibility_basic_text');
+  const { getSetting } = useSiteSettingsContext();
+
+  const title = getSetting('pricing_visibility_title');
+  const intro = getSetting('pricing_visibility_intro');
+  const topTitle = getSetting('pricing_visibility_top_title');
+  const topText = getSetting('pricing_visibility_top_text');
+  const premiumTitle = getSetting('pricing_visibility_premium_title');
+  const premiumText = getSetting('pricing_visibility_premium_text');
+  const basicTitle = getSetting('pricing_visibility_basic_title');
+  const basicText = getSetting('pricing_visibility_basic_text');
 
   const tiers = [
     {
@@ -165,8 +169,10 @@ const VisibilityExplanation = () => {
 
 // Verification info box
 const VerificationInfo = () => {
-  const { data: title } = useSiteSetting('pricing_verification_title');
-  const { data: text } = useSiteSetting('pricing_verification_text');
+  const { getSetting } = useSiteSettingsContext();
+
+  const title = getSetting('pricing_verification_title');
+  const text = getSetting('pricing_verification_text');
 
   return (
     <div className="mb-16">
@@ -205,22 +211,24 @@ const VerificationInfo = () => {
 
 // Extended FAQ (8 questions)
 const FAQ = () => {
-  const { data: faq1Q } = useSiteSetting('pricing_faq1_question');
-  const { data: faq1A } = useSiteSetting('pricing_faq1_answer');
-  const { data: faq2Q } = useSiteSetting('pricing_faq2_question');
-  const { data: faq2A } = useSiteSetting('pricing_faq2_answer');
-  const { data: faq3Q } = useSiteSetting('pricing_faq3_question');
-  const { data: faq3A } = useSiteSetting('pricing_faq3_answer');
-  const { data: faq4Q } = useSiteSetting('pricing_faq4_question');
-  const { data: faq4A } = useSiteSetting('pricing_faq4_answer');
-  const { data: faq5Q } = useSiteSetting('pricing_faq5_question');
-  const { data: faq5A } = useSiteSetting('pricing_faq5_answer');
-  const { data: faq6Q } = useSiteSetting('pricing_faq6_question');
-  const { data: faq6A } = useSiteSetting('pricing_faq6_answer');
-  const { data: faq7Q } = useSiteSetting('pricing_faq7_question');
-  const { data: faq7A } = useSiteSetting('pricing_faq7_answer');
-  const { data: faq8Q } = useSiteSetting('pricing_faq8_question');
-  const { data: faq8A } = useSiteSetting('pricing_faq8_answer');
+  const { getSetting } = useSiteSettingsContext();
+
+  const faq1Q = getSetting('pricing_faq1_question');
+  const faq1A = getSetting('pricing_faq1_answer');
+  const faq2Q = getSetting('pricing_faq2_question');
+  const faq2A = getSetting('pricing_faq2_answer');
+  const faq3Q = getSetting('pricing_faq3_question');
+  const faq3A = getSetting('pricing_faq3_answer');
+  const faq4Q = getSetting('pricing_faq4_question');
+  const faq4A = getSetting('pricing_faq4_answer');
+  const faq5Q = getSetting('pricing_faq5_question');
+  const faq5A = getSetting('pricing_faq5_answer');
+  const faq6Q = getSetting('pricing_faq6_question');
+  const faq6A = getSetting('pricing_faq6_answer');
+  const faq7Q = getSetting('pricing_faq7_question');
+  const faq7A = getSetting('pricing_faq7_answer');
+  const faq8Q = getSetting('pricing_faq8_question');
+  const faq8A = getSetting('pricing_faq8_answer');
 
   const faqs = [
     { q: faq1Q, a: faq1A },
@@ -250,9 +258,11 @@ const FAQ = () => {
 };
 
 const CTA = () => {
-  const { data: ctaTitle } = useSiteSetting('pricing_cta_title');
-  const { data: ctaSubtitle } = useSiteSetting('pricing_cta_subtitle');
-  const { data: ctaButton } = useSiteSetting('pricing_cta_button');
+  const { getSetting } = useSiteSettingsContext();
+
+  const ctaTitle = getSetting('pricing_cta_title');
+  const ctaSubtitle = getSetting('pricing_cta_subtitle');
+  const ctaButton = getSetting('pricing_cta_button');
 
   return (
     <div className="text-center mt-16">
@@ -270,17 +280,19 @@ const CTA = () => {
 };
 
 const Preise = () => {
-  const { data: pageTitle } = useSiteSetting('pricing_page_title');
-  const { data: pageSubtitle } = useSiteSetting('pricing_page_subtitle');
-  const { data: seoTitle } = useSiteSetting('seo_pricing_title');
-  const { data: seoDescription } = useSiteSetting('seo_pricing_description');
-  const { data: basicTitle } = useSiteSetting('pricing_basic_title');
-  const { data: basicPrice } = useSiteSetting('pricing_basic_price');
-  const { data: premiumTitle } = useSiteSetting('pricing_premium_title');
-  const { data: premiumPrice } = useSiteSetting('pricing_premium_price');
-  const { data: topTitle } = useSiteSetting('pricing_top_title');
-  const { data: topPrice } = useSiteSetting('pricing_top_price');
-  const { data: comparisonTitle } = useSiteSetting('pricing_feature_comparison_title');
+  const { getSetting } = useSiteSettingsContext();
+
+  const pageTitle = getSetting('pricing_page_title');
+  const pageSubtitle = getSetting('pricing_page_subtitle');
+  const seoTitle = getSetting('seo_pricing_title');
+  const seoDescription = getSetting('seo_pricing_description');
+  const basicTitle = getSetting('pricing_basic_title');
+  const basicPrice = getSetting('pricing_basic_price');
+  const premiumTitle = getSetting('pricing_premium_title');
+  const premiumPrice = getSetting('pricing_premium_price');
+  const topTitle = getSetting('pricing_top_title');
+  const topPrice = getSetting('pricing_top_price');
+  const comparisonTitle = getSetting('pricing_feature_comparison_title');
 
   const packages = [
     {
@@ -417,30 +429,42 @@ const Preise = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { name: 'In Suchergebnissen', basic: true, premium: true, top: true },
-                    { name: 'Profil-Seite', basic: true, premium: true, top: true },
-                    { name: 'Foto-Upload', basic: true, premium: true, top: true },
-                    { name: 'Schweizweit auf Homepage', basic: false, premium: false, top: true },
-                    { name: 'Im gewählten Bereich', basic: true, premium: true, top: true },
-                    { name: 'Bessere Platzierung', basic: false, premium: true, top: true },
-                    { name: 'VIP Badge', basic: false, premium: true, top: true },
-                    { name: 'TOP Position (Priorität)', basic: false, premium: false, top: true },
-                    { name: 'TOP Banner', basic: false, premium: false, top: true },
-                  ].map((row, idx) => (
-                    <tr key={idx} className="border-b hover:bg-muted/50">
-                      <td className="p-4">{row.name}</td>
-                      <td className="text-center p-4">
-                        {row.basic ? <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /> : '—'}
-                      </td>
-                      <td className="text-center p-4">
-                        {row.premium ? <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /> : '—'}
-                      </td>
-                      <td className="text-center p-4">
-                        {row.top ? <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /> : '—'}
-                      </td>
-                    </tr>
-                  ))}
+                  <tr className="border-b">
+                    <td className="p-4">In Suchergebnissen</td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-4">Profil-Seite</td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-4">Bevorzugte Platzierung</td>
+                    <td className="text-center p-4">–</td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-4">VIP Badge</td>
+                    <td className="text-center p-4">–</td>
+                    <td className="text-center p-4"><Crown className="h-5 w-5 text-amber-500 mx-auto" /></td>
+                    <td className="text-center p-4"><Zap className="h-5 w-5 text-red-500 mx-auto" /></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-4">Auf Homepage</td>
+                    <td className="text-center p-4">–</td>
+                    <td className="text-center p-4">–</td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-4">Schweizweite Sichtbarkeit</td>
+                    <td className="text-center p-4">–</td>
+                    <td className="text-center p-4">–</td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -449,7 +473,7 @@ const Preise = () => {
           {/* Verification Info */}
           <VerificationInfo />
 
-          {/* FAQ Section */}
+          {/* FAQ */}
           <div className="mb-16">
             <h2 className="text-2xl font-bold mb-6 text-center">Häufige Fragen</h2>
             <FAQ />
