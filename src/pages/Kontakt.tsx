@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const contactSchema = z.object({
   name: z.string().min(1, 'Name ist erforderlich').max(100, 'Name zu lang'),
@@ -18,19 +18,20 @@ const contactSchema = z.object({
 
 const Kontakt = () => {
   const { toast } = useToast();
+  const { getSetting } = useSiteSettingsContext();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: seoTitle } = useSiteSetting('seo_contact_title');
-  const { data: seoDescription } = useSiteSetting('seo_contact_description');
-  const { data: pageTitle } = useSiteSetting('contact_page_title');
-  const { data: pageSubtitle } = useSiteSetting('contact_page_subtitle');
-  const { data: nameLabel } = useSiteSetting('contact_form_name_label');
-  const { data: emailLabel } = useSiteSetting('contact_form_email_label');
-  const { data: messageLabel } = useSiteSetting('contact_form_message_label');
-  const { data: submitButton } = useSiteSetting('contact_submit_button');
+  const seoTitle = getSetting('seo_contact_title');
+  const seoDescription = getSetting('seo_contact_description');
+  const pageTitle = getSetting('contact_page_title');
+  const pageSubtitle = getSetting('contact_page_subtitle');
+  const nameLabel = getSetting('contact_form_name_label');
+  const emailLabel = getSetting('contact_form_email_label');
+  const messageLabel = getSetting('contact_form_message_label');
+  const submitButton = getSetting('contact_submit_button');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

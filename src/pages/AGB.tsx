@@ -1,22 +1,24 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const AGB = () => {
-  const { data: title } = useSiteSetting('legal_agb_title');
-  const { data: seoTitle } = useSiteSetting('seo_agb_title');
-  const { data: seoDescription } = useSiteSetting('seo_agb_description');
-  const { data: section1Title } = useSiteSetting('legal_agb_section1_title');
-  const { data: section1Content } = useSiteSetting('legal_agb_section1_content');
-  const { data: section2Title } = useSiteSetting('legal_agb_section2_title');
-  const { data: section2Content } = useSiteSetting('legal_agb_section2_content');
-  const { data: section3Title } = useSiteSetting('legal_agb_section3_title');
-  const { data: section3Content } = useSiteSetting('legal_agb_section3_content');
-  const { data: section4Title } = useSiteSetting('legal_agb_section4_title');
-  const { data: section4Content } = useSiteSetting('legal_agb_section4_content');
-  const { data: section5Title } = useSiteSetting('legal_agb_section5_title');
-  const { data: section5Content } = useSiteSetting('legal_agb_section5_content');
+  const { getSetting } = useSiteSettingsContext();
+
+  const title = getSetting('legal_agb_title');
+  const seoTitle = getSetting('seo_agb_title');
+  const seoDescription = getSetting('seo_agb_description');
+  const section1Title = getSetting('legal_agb_section1_title');
+  const section1Content = getSetting('legal_agb_section1_content');
+  const section2Title = getSetting('legal_agb_section2_title');
+  const section2Content = getSetting('legal_agb_section2_content');
+  const section3Title = getSetting('legal_agb_section3_title');
+  const section3Content = getSetting('legal_agb_section3_content');
+  const section4Title = getSetting('legal_agb_section4_title');
+  const section4Content = getSetting('legal_agb_section4_content');
+  const section5Title = getSetting('legal_agb_section5_title');
+  const section5Content = getSetting('legal_agb_section5_content');
 
   return (
     <div className="min-h-screen flex flex-col">

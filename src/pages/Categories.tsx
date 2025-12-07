@@ -3,18 +3,20 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCategories } from '@/hooks/useCategories';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
 
 const Categories = () => {
   const { data: categories = [], isLoading } = useCategories();
-  const { data: seoTitle } = useSiteSetting('seo_categories_title');
-  const { data: seoDescription } = useSiteSetting('seo_categories_description');
-  const { data: pageTitle } = useSiteSetting('categories_page_title');
-  const { data: pageDescription } = useSiteSetting('categories_page_subtitle');
-  const { data: loadingText } = useSiteSetting('categories_loading_text');
-  const { data: emptyText } = useSiteSetting('categories_empty_text');
+  const { getSetting } = useSiteSettingsContext();
+
+  const seoTitle = getSetting('seo_categories_title');
+  const seoDescription = getSetting('seo_categories_description');
+  const pageTitle = getSetting('categories_page_title');
+  const pageDescription = getSetting('categories_page_subtitle');
+  const loadingText = getSetting('categories_loading_text');
+  const emptyText = getSetting('categories_empty_text');
   
   return (
     <div className="min-h-screen flex flex-col">

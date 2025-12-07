@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 interface SocialMetaProps {
   title: string;
@@ -9,17 +9,19 @@ interface SocialMetaProps {
 }
 
 export const SocialMeta = ({ title, description, image, url }: SocialMetaProps) => {
-  const { data: siteName } = useSiteSetting('og_site_name');
-  const { data: locale } = useSiteSetting('og_locale');
-  const { data: ogType } = useSiteSetting('og_type');
-  const { data: ogImageWidth } = useSiteSetting('og_image_width');
-  const { data: ogImageHeight } = useSiteSetting('og_image_height');
-  const { data: ogImageAlt } = useSiteSetting('og_image_alt');
-  const { data: twitterCardType } = useSiteSetting('twitter_card_type');
-  const { data: twitterSite } = useSiteSetting('twitter_site');
-  const { data: twitterCreator } = useSiteSetting('twitter_creator');
-  const { data: fbAppId } = useSiteSetting('facebook_app_id');
-  const { data: linkedinId } = useSiteSetting('linkedin_partner_id');
+  const { getSetting } = useSiteSettingsContext();
+
+  const siteName = getSetting('og_site_name');
+  const locale = getSetting('og_locale');
+  const ogType = getSetting('og_type');
+  const ogImageWidth = getSetting('og_image_width');
+  const ogImageHeight = getSetting('og_image_height');
+  const ogImageAlt = getSetting('og_image_alt');
+  const twitterCardType = getSetting('twitter_card_type');
+  const twitterSite = getSetting('twitter_site');
+  const twitterCreator = getSetting('twitter_creator');
+  const fbAppId = getSetting('facebook_app_id');
+  const linkedinId = getSetting('linkedin_partner_id');
 
   const currentUrl = url || window.location.href;
   const ogImage = image || `${window.location.origin}/placeholder.svg`;

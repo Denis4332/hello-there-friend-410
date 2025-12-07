@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Zap, Eye, Grid3x3, Star } from 'lucide-react';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const positionIcons = {
   popup: Zap,
@@ -15,48 +15,50 @@ const positionIcons = {
 };
 
 export default function Bannerpreise() {
+  const { getSetting } = useSiteSettingsContext();
+
   // SEO settings
-  const { data: seoTitle } = useSiteSetting('seo_bannerpreise_title');
-  const { data: seoDescription } = useSiteSetting('seo_bannerpreise_description');
+  const seoTitle = getSetting('seo_bannerpreise_title');
+  const seoDescription = getSetting('seo_bannerpreise_description');
   
   // Page content
-  const { data: pageTitle } = useSiteSetting('banner_page_title');
-  const { data: pageSubtitle } = useSiteSetting('banner_page_subtitle');
+  const pageTitle = getSetting('banner_page_title');
+  const pageSubtitle = getSetting('banner_page_subtitle');
   
   // Popup banner
-  const { data: popupName } = useSiteSetting('banner_popup_name');
-  const { data: popupDescription } = useSiteSetting('banner_popup_description');
-  const { data: popupPriceDay } = useSiteSetting('banner_popup_price_day');
-  const { data: popupPriceWeek } = useSiteSetting('banner_popup_price_week');
-  const { data: popupPriceMonth } = useSiteSetting('banner_popup_price_month');
-  const { data: popupFeaturesRaw } = useSiteSetting('banner_popup_features');
+  const popupName = getSetting('banner_popup_name');
+  const popupDescription = getSetting('banner_popup_description');
+  const popupPriceDay = getSetting('banner_popup_price_day');
+  const popupPriceWeek = getSetting('banner_popup_price_week');
+  const popupPriceMonth = getSetting('banner_popup_price_month');
+  const popupFeaturesRaw = getSetting('banner_popup_features');
   
   // Top banner
-  const { data: topName } = useSiteSetting('banner_top_name');
-  const { data: topDescription } = useSiteSetting('banner_top_description');
-  const { data: topPriceDay } = useSiteSetting('banner_top_price_day');
-  const { data: topPriceWeek } = useSiteSetting('banner_top_price_week');
-  const { data: topPriceMonth } = useSiteSetting('banner_top_price_month');
-  const { data: topFeaturesRaw } = useSiteSetting('banner_top_features');
+  const topName = getSetting('banner_top_name');
+  const topDescription = getSetting('banner_top_description');
+  const topPriceDay = getSetting('banner_top_price_day');
+  const topPriceWeek = getSetting('banner_top_price_week');
+  const topPriceMonth = getSetting('banner_top_price_month');
+  const topFeaturesRaw = getSetting('banner_top_features');
   
   // Grid banner
-  const { data: gridName } = useSiteSetting('banner_grid_name');
-  const { data: gridDescription } = useSiteSetting('banner_grid_description');
-  const { data: gridPriceDay } = useSiteSetting('banner_grid_price_day');
-  const { data: gridPriceWeek } = useSiteSetting('banner_grid_price_week');
-  const { data: gridPriceMonth } = useSiteSetting('banner_grid_price_month');
-  const { data: gridFeaturesRaw } = useSiteSetting('banner_grid_features');
+  const gridName = getSetting('banner_grid_name');
+  const gridDescription = getSetting('banner_grid_description');
+  const gridPriceDay = getSetting('banner_grid_price_day');
+  const gridPriceWeek = getSetting('banner_grid_price_week');
+  const gridPriceMonth = getSetting('banner_grid_price_month');
+  const gridFeaturesRaw = getSetting('banner_grid_features');
   
   // Info section
-  const { data: infoResultsTitle } = useSiteSetting('banner_info_results_title');
-  const { data: infoResultsText } = useSiteSetting('banner_info_results_text');
-  const { data: infoActivationTitle } = useSiteSetting('banner_info_activation_title');
-  const { data: infoActivationText } = useSiteSetting('banner_info_activation_text');
+  const infoResultsTitle = getSetting('banner_info_results_title');
+  const infoResultsText = getSetting('banner_info_results_text');
+  const infoActivationTitle = getSetting('banner_info_activation_title');
+  const infoActivationText = getSetting('banner_info_activation_text');
   
   // CTA section
-  const { data: ctaTitle } = useSiteSetting('banner_cta_title');
-  const { data: ctaText } = useSiteSetting('banner_cta_text');
-  const { data: ctaButton } = useSiteSetting('banner_cta_button');
+  const ctaTitle = getSetting('banner_cta_title');
+  const ctaText = getSetting('banner_cta_text');
+  const ctaButton = getSetting('banner_cta_button');
 
   // Parse features JSON
   const parseFeatures = (raw: string | undefined, fallback: string[]) => {

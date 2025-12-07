@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
-import { useSiteSetting } from '@/hooks/useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,8 +22,10 @@ interface BreadcrumbsProps {
 }
 
 export const Breadcrumbs = ({ items, showUI = true }: BreadcrumbsProps) => {
-  const { data: enabled } = useSiteSetting('breadcrumbs_enabled');
-  const { data: homeLabel } = useSiteSetting('breadcrumbs_home_label');
+  const { getSetting } = useSiteSettingsContext();
+
+  const enabled = getSetting('breadcrumbs_enabled');
+  const homeLabel = getSetting('breadcrumbs_home_label');
 
   if (enabled === 'false') return null;
 
