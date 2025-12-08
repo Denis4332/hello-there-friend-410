@@ -108,7 +108,6 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
                 src={photoUrl!}
                 alt={profile.display_name}
                 loading={priority ? "eager" : "lazy"}
-                fetchPriority={priority ? "high" : "auto"}
                 decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
               />
