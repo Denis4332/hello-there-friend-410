@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
-import { useSiteSetting } from './useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 /**
  * Hook to inject custom CSS and JavaScript from CMS settings.
  * ⚠️ SECURITY WARNING: Custom JS is executed via eval() - only admin should have access to these settings.
  */
 export const useCustomCodeInjection = () => {
-  const { data: customCss } = useSiteSetting('advanced_custom_css');
-  const { data: customJs } = useSiteSetting('advanced_custom_js');
+  const { getSetting } = useSiteSettingsContext();
+  
+  const customCss = getSetting('advanced_custom_css');
+  const customJs = getSetting('advanced_custom_js');
 
   // Inject Custom CSS
   useEffect(() => {

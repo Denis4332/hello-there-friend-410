@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
-import { useSiteSetting } from './useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 export const useDesignSettings = () => {
-  const { data: primaryColor } = useSiteSetting('design_primary_color');
-  const { data: secondaryColor } = useSiteSetting('design_secondary_color');
-  const { data: accentColor } = useSiteSetting('design_accent_color');
-  const { data: fontFamily } = useSiteSetting('design_font_family');
-  const { data: borderRadius } = useSiteSetting('design_border_radius');
+  const { getSetting } = useSiteSettingsContext();
+  
+  const primaryColor = getSetting('design_primary_color');
+  const secondaryColor = getSetting('design_secondary_color');
+  const accentColor = getSetting('design_accent_color');
+  const fontFamily = getSetting('design_font_family');
+  const borderRadius = getSetting('design_border_radius');
 
   useEffect(() => {
     if (primaryColor) {
