@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
-import { useSiteSetting } from './useSiteSettings';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 /**
  * Hook to dynamically set favicon from CMS settings.
  * Supports .ico, .png, .svg, and other image formats.
  */
 export const useFaviconSetting = () => {
-  const { data: faviconUrl } = useSiteSetting('design_favicon_url');
+  const { getSetting } = useSiteSettingsContext();
+  
+  const faviconUrl = getSetting('design_favicon_url');
 
   useEffect(() => {
     if (!faviconUrl) return;
