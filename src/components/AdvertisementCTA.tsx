@@ -19,8 +19,7 @@ export const AdvertisementCTA = ({ position, className = '' }: AdvertisementCTAP
         <img 
           src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=40&w=800"
           alt=""
-          fetchPriority="high"
-          loading="eager"
+          loading="lazy"
           decoding="async"
           className="w-full h-full object-cover opacity-[0.08]"
         />
