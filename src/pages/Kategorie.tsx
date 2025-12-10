@@ -14,9 +14,11 @@ import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
 import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
+import { useAdvertisementsRealtime } from '@/hooks/useAdvertisementsRealtime';
 
 const Kategorie = () => {
   useProfilesRealtime(); // Listen for realtime profile changes
+  useAdvertisementsRealtime(); // Listen for realtime banner changes
   const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
   const { slug } = useParams();
   const [currentPage, setCurrentPage] = useState(1);

@@ -13,6 +13,7 @@ import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
 import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
+import { useAdvertisementsRealtime } from '@/hooks/useAdvertisementsRealtime';
 
 // Lazy load non-critical section
 const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedProfilesSection').then(m => ({ default: m.FeaturedProfilesSection })));
@@ -20,6 +21,7 @@ const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedPro
 const Index = () => {
   useDesignSettings();
   useProfilesRealtime();
+  useAdvertisementsRealtime();
   const rotationKey = useRotationKey();
   
   // Single batch load instead of 9 individual API calls

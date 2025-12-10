@@ -17,9 +17,11 @@ import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
+import { useAdvertisementsRealtime } from '@/hooks/useAdvertisementsRealtime';
 
 const Suche = () => {
   useProfilesRealtime(); // Listen for realtime profile changes
+  useAdvertisementsRealtime(); // Listen for realtime banner changes
   const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
