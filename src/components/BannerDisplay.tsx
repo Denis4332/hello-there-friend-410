@@ -33,24 +33,23 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
     
     const displayedAd = ads[0];
     
-    const trackImpression = async (ad: Advertisement) => {
-      try {
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ad_id: ad.id,
-            event_type: 'impression',
-          }),
-        });
-      } catch (error) {
-        console.error('Failed to track impression:', error);
-      }
-    };
-
-    trackImpression(displayedAd);
+    // Delay impression tracking by 3 seconds (user must actually see it)
+    const impressionTimer = setTimeout(() => {
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ad_id: displayedAd.id,
+          event_type: 'impression',
+        }),
+      }).catch(() => {
+        // Silently fail - don't log to console
+      });
+    }, 3000);
+    
+    return () => clearTimeout(impressionTimer);
   }, [ads]);
 
   // Während des Ladens nichts anzeigen (verhindert Placeholder-Flash)
@@ -80,9 +79,9 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
         }`}
       >
         <img
-          src={`${ad.image_url}?width=800&resize=contain`}
+          src={`${ad.image_url}?width=600&resize=contain&quality=70`}
           alt={ad.title}
-          loading="eager"
+          loading="lazy"
           decoding="async"
           className="w-full h-auto object-contain"
         />

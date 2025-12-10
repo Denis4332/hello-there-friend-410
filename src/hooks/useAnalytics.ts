@@ -15,43 +15,93 @@ const isOptedOut = (): boolean => {
   return localStorage.getItem('analytics_opt_out') === 'true';
 };
 
+// Batched events queue - send in bulk every 30 seconds or on page unload
+let eventQueue: Array<{ event_type: string; event_data: any; session_id: string; timestamp: string }> = [];
+let flushTimeout: number | null = null;
+
+const flushEvents = async () => {
+  if (eventQueue.length === 0) return;
+  
+  const eventsToSend = [...eventQueue];
+  eventQueue = [];
+  
+  try {
+    // Send all events in one batch request
+    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-event`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        event_type: 'batch',
+        event_data: { events: eventsToSend },
+        session_id: eventsToSend[0]?.session_id,
+      }),
+    });
+  } catch (error) {
+    // Silently fail - analytics shouldn't break the app
+    console.error('Analytics batch send error:', error);
+  }
+};
+
+// Flush on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (eventQueue.length > 0) {
+      // Use sendBeacon for reliable delivery on page close
+      const data = JSON.stringify({
+        event_type: 'batch',
+        event_data: { events: eventQueue },
+        session_id: eventQueue[0]?.session_id,
+      });
+      navigator.sendBeacon(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-event`,
+        new Blob([data], { type: 'application/json' })
+      );
+    }
+  });
+}
+
 export const useAnalytics = () => {
   const sessionId = useRef(getSessionId());
+  const lastPageView = useRef<string | null>(null);
 
-  const trackEvent = useCallback(async (eventType: string, eventData?: any) => {
+  // Start flush timer on mount
+  useEffect(() => {
+    flushTimeout = window.setInterval(flushEvents, 30000); // Flush every 30 seconds
+    return () => {
+      if (flushTimeout) clearInterval(flushTimeout);
+      flushEvents(); // Flush remaining on unmount
+    };
+  }, []);
+
+  const trackEvent = useCallback((eventType: string, eventData?: any) => {
     if (isOptedOut()) return;
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({
-          event_type: eventType,
-          event_data: eventData,
-          session_id: sessionId.current,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error('Failed to track event');
-      }
-    } catch (error) {
-      console.error('Analytics tracking error:', error);
-    }
+    // Add to queue instead of immediate send
+    eventQueue.push({
+      event_type: eventType,
+      event_data: eventData,
+      session_id: sessionId.current,
+      timestamp: new Date().toISOString(),
+    });
   }, []);
 
   const trackPageView = useCallback((page: string) => {
-    trackEvent('page_view', { page, timestamp: new Date().toISOString() });
+    // Deduplicate consecutive page views to same page
+    if (lastPageView.current === page) return;
+    lastPageView.current = page;
+    
+    trackEvent('page_view', { page });
   }, [trackEvent]);
 
   const trackProfileView = useCallback(async (profileId: string) => {
     if (isOptedOut()) return;
 
+    // Profile views still sent immediately (important for stats)
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-profile-view`, {
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-profile-view`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,12 +112,8 @@ export const useAnalytics = () => {
           session_id: sessionId.current,
         }),
       });
-
-      if (!response.ok) {
-        console.error('Failed to track profile view');
-      }
     } catch (error) {
-      console.error('Profile view tracking error:', error);
+      // Silently fail
     }
   }, []);
 

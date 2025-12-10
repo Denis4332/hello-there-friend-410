@@ -31,9 +31,9 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
   const distance = profile.distance_km;
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
   
-  // Optimized URL with resize parameters for faster loading
+  // Optimized URL - smaller size for mobile performance
   const photoUrl = primaryPhoto 
-    ? `${supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl}?width=400&height=500&resize=cover`
+    ? `${supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl}?width=300&height=400&resize=cover&quality=70`
     : null;
   
   const primaryIsVideo = (primaryPhoto as any)?.media_type === 'video';
@@ -49,7 +49,7 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
     ? profile.photos?.find((p) => (p as any).media_type !== 'video') 
     : null;
   const posterUrl = posterPhoto
-    ? `${supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path).data.publicUrl}?width=400&height=500&resize=cover`
+    ? `${supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path).data.publicUrl}?width=300&height=400&resize=cover&quality=70`
     : undefined;
   
   const isTop = profile.listing_type === 'top';

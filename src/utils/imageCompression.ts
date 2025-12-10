@@ -1,11 +1,11 @@
 /**
  * Shared Image Compression Utilities
- * Max dimensions: 1200x1600px, 80% JPEG quality
+ * AGGRESSIVE compression: Max 800x1000px, 70% JPEG quality
  * Used by: PhotoUploader, AdminProfileCreateDialog, AdminProfile, BulkImageCompressor
  */
 
 /**
- * Compress a File to max 1200x1600px at 80% JPEG quality
+ * Compress a File to max 800x1000px at 70% JPEG quality (aggressive for mobile performance)
  * @param file - Input image file
  * @returns Compressed File with .jpg extension
  */
@@ -22,9 +22,9 @@ export const compressImage = async (file: File): Promise<File> => {
         return;
       }
 
-      // Max dimensions for compressed images
-      const MAX_WIDTH = 1200;
-      const MAX_HEIGHT = 1600;
+      // AGGRESSIVE: Max dimensions for mobile performance
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 1000;
       
       let { width, height } = img;
       
@@ -39,7 +39,7 @@ export const compressImage = async (file: File): Promise<File> => {
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Convert to blob with 80% JPEG quality
+      // Convert to blob with 70% JPEG quality (aggressive compression)
       canvas.toBlob(
         (blob) => {
           if (blob) {
@@ -55,7 +55,7 @@ export const compressImage = async (file: File): Promise<File> => {
           }
         },
         'image/jpeg',
-        0.8 // 80% quality
+        0.7 // 70% quality - aggressive for mobile
       );
       
       URL.revokeObjectURL(img.src);
@@ -67,7 +67,7 @@ export const compressImage = async (file: File): Promise<File> => {
 };
 
 /**
- * Compress a Blob to max 1200x1600px at 80% JPEG quality
+ * Compress a Blob to max 800x1000px at 70% JPEG quality (aggressive)
  * Used by BulkImageCompressor for existing images
  * @param blob - Input image blob
  * @returns Compressed Blob
@@ -85,8 +85,8 @@ export const compressImageBlob = async (blob: Blob): Promise<Blob> => {
         return;
       }
       
-      const MAX_WIDTH = 1200;
-      const MAX_HEIGHT = 1600;
+      const MAX_WIDTH = 800;
+      const MAX_HEIGHT = 1000;
       
       let { width, height } = img;
       
@@ -109,7 +109,7 @@ export const compressImageBlob = async (blob: Blob): Promise<Blob> => {
           }
         },
         'image/jpeg',
-        0.8
+        0.7 // 70% quality - aggressive
       );
       
       URL.revokeObjectURL(img.src);
