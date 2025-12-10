@@ -27,9 +27,6 @@ export default function AdminSettings() {
   const { data: advancedSettings, isLoading: advancedLoading } = useSiteSettings('advanced');
   const { data: trackingSettings, isLoading: trackingLoading } = useSiteSettings('tracking');
   const { data: schemaSettings, isLoading: schemaLoading } = useSiteSettings('schema');
-  const { data: indexingSettings, isLoading: indexingLoading } = useSiteSettings('indexing');
-  const { data: socialSettings, isLoading: socialLoading } = useSiteSettings('social');
-  const { data: advancedSeoSettings, isLoading: advancedSeoLoading } = useSiteSettings('advanced_seo');
   const { data: legalSettings, isLoading: legalLoading } = useSiteSettings('legal');
   const { data: messagesSettings, isLoading: messagesLoading } = useSiteSettings('messages');
   const updateMutation = useUpdateSiteSetting();
@@ -322,12 +319,9 @@ export default function AdminSettings() {
               <TabsTrigger value="contact">Kontakt</TabsTrigger>
               <TabsTrigger value="config">Konfiguration</TabsTrigger>
               <TabsTrigger value="advanced">Erweitert</TabsTrigger>
-              <TabsTrigger value="seo">SEO Basis</TabsTrigger>
+              <TabsTrigger value="seo">SEO</TabsTrigger>
               <TabsTrigger value="tracking">Tracking</TabsTrigger>
               <TabsTrigger value="schema">Schema.org</TabsTrigger>
-              <TabsTrigger value="indexing">Indexierung</TabsTrigger>
-              <TabsTrigger value="social">Social Media</TabsTrigger>
-              <TabsTrigger value="advanced_seo">SEO Erweitert</TabsTrigger>
               <TabsTrigger value="legal">Rechtliches</TabsTrigger>
               <TabsTrigger value="messages">Meldungen</TabsTrigger>
             </TabsList>
@@ -617,65 +611,6 @@ export default function AdminSettings() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="indexing" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Indexierung & Sitemap</CardTitle>
-                  <CardDescription>
-                    Sitemap-Konfiguration und NoIndex-Seiten
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {indexingLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    indexingSettings?.map(renderSettingField)
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="social" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Social Media Erweitert</CardTitle>
-                  <CardDescription>
-                    Open Graph, Twitter Cards und Social Media IDs
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {socialLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    socialSettings?.map(renderSettingField)
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="advanced_seo" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Erweiterte SEO Features</CardTitle>
-                  <CardDescription>
-                    Breadcrumbs, Hreflang, Rich Snippets und FAQ Schema
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {advancedSeoLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    advancedSeoSettings?.map(renderSettingField)
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             <TabsContent value="legal" className="space-y-6">
               <Card>
