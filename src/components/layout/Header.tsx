@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { EscoriaLogo } from '@/components/EscoriaLogo';
-import { User, Menu, Search, Plus, LogOut, Shield } from 'lucide-react';
+import { User, Menu, Search, Plus, LogOut, Shield, MessageCircle } from 'lucide-react';
 
 export const Header = () => {
   useDesignSettings(); // Apply design colors
@@ -105,6 +105,10 @@ export const Header = () => {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => navigate('/mein-profil')}>
                     {navMyProfile}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/kontakt')}>
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Support kontaktieren
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => signOut()}>
                     {navLogout}
@@ -227,6 +231,14 @@ export const Header = () => {
                         >
                           <User className="h-6 w-6" />
                           {navMyProfile}
+                        </Link>
+                        <Link
+                          to="/kontakt"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-3 text-lg font-medium text-primary hover:text-primary/80 active:text-primary/60 py-3 transition-colors"
+                        >
+                          <MessageCircle className="h-6 w-6" />
+                          Support kontaktieren
                         </Link>
                         {role === 'admin' && (
                           <Link

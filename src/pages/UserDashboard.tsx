@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Lock, Heart, Plus } from 'lucide-react';
+import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Lock, Heart, Plus, MessageCircle } from 'lucide-react';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const UserDashboard = () => {
@@ -196,7 +196,13 @@ const UserDashboard = () => {
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold">Mein Profil</h1>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
+                <Button asChild variant="outline">
+                  <Link to="/kontakt">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Support
+                  </Link>
+                </Button>
                 <Button asChild variant="outline">
                   <Link to="/favoriten">
                     <Heart className="h-4 w-4 mr-2" />
