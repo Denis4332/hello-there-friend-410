@@ -1,6 +1,7 @@
 import { Crown, Star, CheckCircle2, Camera, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 interface ListingTypeSelectorProps {
   selectedType: 'basic' | 'premium' | 'top';
@@ -13,6 +14,13 @@ export const ListingTypeSelector = ({
   onSelect,
   onContinue,
 }: ListingTypeSelectorProps) => {
+  const { getSetting } = useSiteSettingsContext();
+  
+  // CMS-gesteuerte Preise
+  const basicPrice = getSetting('pricing_basic_price', 'CHF 49/Monat');
+  const premiumPrice = getSetting('pricing_premium_price', 'CHF 99/Monat');
+  const topPrice = getSetting('pricing_top_price', 'CHF 199/Monat');
+
   return (
     <div className="space-y-6">
       <div>
@@ -45,7 +53,7 @@ export const ListingTypeSelector = ({
 
             <div>
               <h3 className="text-xl font-bold mb-1">Standard</h3>
-              <p className="text-lg font-semibold text-foreground mb-3">CHF 49/Monat</p>
+              <p className="text-lg font-semibold text-foreground mb-3">{basicPrice}</p>
             </div>
 
             <ul className="space-y-2 text-sm">
@@ -93,7 +101,7 @@ export const ListingTypeSelector = ({
 
             <div>
               <h3 className="text-xl font-bold mb-1">Premium</h3>
-              <p className="text-lg font-semibold text-foreground mb-3">CHF 99/Monat</p>
+              <p className="text-lg font-semibold text-foreground mb-3">{premiumPrice}</p>
             </div>
 
             <ul className="space-y-2 text-sm">
@@ -145,7 +153,7 @@ export const ListingTypeSelector = ({
 
             <div>
               <h3 className="text-xl font-bold mb-1">TOP AD</h3>
-              <p className="text-lg font-semibold text-foreground mb-3">CHF 199/Monat</p>
+              <p className="text-lg font-semibold text-foreground mb-3">{topPrice}</p>
             </div>
 
             <ul className="space-y-2 text-sm">
