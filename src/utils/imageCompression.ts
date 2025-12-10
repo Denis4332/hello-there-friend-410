@@ -1,13 +1,22 @@
 /**
  * Shared Image Compression Utilities
- * AGGRESSIVE compression: Max 800x1000px, 70% JPEG quality
+ * ULTRA-AGGRESSIVE compression: Max 500x650px, 55% WebP quality
  * Used by: PhotoUploader, AdminProfileCreateDialog, AdminProfile, BulkImageCompressor
  */
 
 /**
- * Compress a File to max 800x1000px at 70% JPEG quality (aggressive for mobile performance)
+ * Check WebP support
+ */
+const supportsWebP = (): boolean => {
+  const canvas = document.createElement('canvas');
+  return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+};
+
+/**
+ * Compress a File to max 500x650px at 55% WebP quality (ultra-aggressive for mobile)
+ * Falls back to JPEG if WebP not supported
  * @param file - Input image file
- * @returns Compressed File with .jpg extension
+ * @returns Compressed File with .webp or .jpg extension
  */
 export const compressImage = async (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
@@ -18,17 +27,16 @@ export const compressImage = async (file: File): Promise<File> => {
       const ctx = canvas.getContext('2d');
       
       if (!ctx) {
-        resolve(file); // Fallback to original if canvas not supported
+        resolve(file);
         return;
       }
 
-      // AGGRESSIVE: Max dimensions for mobile performance
-      const MAX_WIDTH = 800;
-      const MAX_HEIGHT = 1000;
+      // ULTRA-AGGRESSIVE: Max dimensions for mobile performance
+      const MAX_WIDTH = 500;
+      const MAX_HEIGHT = 650;
       
       let { width, height } = img;
       
-      // Calculate new dimensions while maintaining aspect ratio
       if (width > MAX_WIDTH || height > MAX_HEIGHT) {
         const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
         width = Math.round(width * ratio);
@@ -39,23 +47,28 @@ export const compressImage = async (file: File): Promise<File> => {
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Convert to blob with 70% JPEG quality (aggressive compression)
+      // Try WebP first (30-40% smaller), fallback to JPEG
+      const useWebP = supportsWebP();
+      const mimeType = useWebP ? 'image/webp' : 'image/jpeg';
+      const extension = useWebP ? '.webp' : '.jpg';
+      const quality = 0.55; // 55% quality - ultra aggressive
+      
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            // Create new file with compressed data
-            const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            });
-            console.log(`🗜️ Compressed: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+            const compressedFile = new File(
+              [blob], 
+              file.name.replace(/\.[^.]+$/, extension), 
+              { type: mimeType, lastModified: Date.now() }
+            );
+            console.log(`🗜️ Ultra-Compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedFile.size / 1024).toFixed(0)}KB (${useWebP ? 'WebP' : 'JPEG'})`);
             resolve(compressedFile);
           } else {
-            resolve(file); // Fallback to original
+            resolve(file);
           }
         },
-        'image/jpeg',
-        0.7 // 70% quality - aggressive for mobile
+        mimeType,
+        quality
       );
       
       URL.revokeObjectURL(img.src);
@@ -67,7 +80,7 @@ export const compressImage = async (file: File): Promise<File> => {
 };
 
 /**
- * Compress a Blob to max 800x1000px at 70% JPEG quality (aggressive)
+ * Compress a Blob to max 500x650px at 55% WebP quality (ultra-aggressive)
  * Used by BulkImageCompressor for existing images
  * @param blob - Input image blob
  * @returns Compressed Blob
@@ -85,8 +98,8 @@ export const compressImageBlob = async (blob: Blob): Promise<Blob> => {
         return;
       }
       
-      const MAX_WIDTH = 800;
-      const MAX_HEIGHT = 1000;
+      const MAX_WIDTH = 500;
+      const MAX_HEIGHT = 650;
       
       let { width, height } = img;
       
@@ -100,16 +113,21 @@ export const compressImageBlob = async (blob: Blob): Promise<Blob> => {
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
       
+      // Try WebP first, fallback to JPEG
+      const useWebP = supportsWebP();
+      const mimeType = useWebP ? 'image/webp' : 'image/jpeg';
+      
       canvas.toBlob(
         (result) => {
           if (result) {
+            console.log(`🗜️ Blob Ultra-Compressed: ${(blob.size / 1024).toFixed(0)}KB → ${(result.size / 1024).toFixed(0)}KB (${useWebP ? 'WebP' : 'JPEG'})`);
             resolve(result);
           } else {
             reject(new Error('Compression failed'));
           }
         },
-        'image/jpeg',
-        0.7 // 70% quality - aggressive
+        mimeType,
+        0.55 // 55% quality - ultra aggressive
       );
       
       URL.revokeObjectURL(img.src);
