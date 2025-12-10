@@ -42,8 +42,15 @@ export const FeaturedProfilesSection = ({
     return chunkIndex === 0 && indexInChunk < 4;
   };
 
+  // Calculate min-height to prevent CLS: ~500px per row of 2 cards on mobile
+  const estimatedRows = Math.ceil(profiles.length / 2);
+  const minHeight = isLoading ? 1200 : Math.max(600, estimatedRows * 520);
+
   return (
-    <section className="py-12 bg-muted content-visibility-auto">
+    <section 
+      className="py-12 bg-muted content-visibility-auto-large"
+      style={{ minHeight: `${minHeight}px` }}
+    >
       <div className="container mx-auto px-4">
         <h2 className="text-2xl font-bold mb-6">{title || 'Aktuelle Profile'}</h2>
         {isLoading ? (
