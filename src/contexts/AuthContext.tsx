@@ -134,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -148,6 +148,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       showError('toast_register_error', error.message);
     } else {
+      // Send custom verification email via Resend
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-auth-email', {
+          body: {
+            type: 'signup_confirmation',
+            email: email,
+            user_id: data.user?.id,
+            redirect_url: `${window.location.origin}/profil/erstellen`,
+          },
+        });
+        
+        if (emailError) {
+          console.error('Failed to send verification email:', emailError);
+        }
+      } catch (emailErr) {
+        console.error('Error sending verification email:', emailErr);
+      }
+      
       showSuccess('toast_register_success');
     }
 
@@ -218,20 +236,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    // Send password reset email via our custom edge function (uses Resend)
+    try {
+      const { error } = await supabase.functions.invoke('send-auth-email', {
+        body: {
+          type: 'password_reset',
+          email: email,
+          redirect_url: `${window.location.origin}/reset-password`,
+        },
+      });
 
-    // Record the attempt
-    await recordAttempt(email, 'password_reset', !error);
+      // Record the attempt
+      await recordAttempt(email, 'password_reset', !error);
 
-    if (error) {
-      showCustomError(error.message);
-    } else {
+      if (error) {
+        console.error('Password reset email error:', error);
+        showCustomError('Fehler beim Senden der E-Mail. Bitte versuche es später erneut.');
+        return { error: new Error(error.message || 'Failed to send email') };
+      }
+
       showSuccess('toast_password_reset_sent');
+      return { error: null };
+    } catch (err: any) {
+      console.error('Password reset error:', err);
+      showCustomError('Fehler beim Senden der E-Mail. Bitte versuche es später erneut.');
+      return { error: err };
     }
-
-    return { error };
   };
 
   const updatePassword = async (newPassword: string) => {
