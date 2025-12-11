@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.compress-existing-images]
 verify_jwt = true
+
+[functions.send-email]
+verify_jwt = false
