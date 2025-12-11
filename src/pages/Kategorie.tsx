@@ -65,7 +65,7 @@ const Kategorie = () => {
       />
       <Header />
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
+        <div className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
           <Breadcrumbs 
             items={[
               { label: 'Kategorien', href: '/kategorien' },
@@ -82,14 +82,14 @@ const Kategorie = () => {
           <BannerDisplay position="top" className="mb-8" />
 
           {loadingProfiles ? (
-            <div className="grid md:grid-cols-2 gap-4 auto-rows-fr">
-              {Array.from({ length: 8 }).map((_, i) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+              {Array.from({ length: 12 }).map((_, i) => (
                 <ProfileCardSkeleton key={i} />
               ))}
             </div>
           ) : paginatedProfiles.length > 0 ? (
             <>
-              <div className="grid md:grid-cols-2 gap-4 auto-rows-fr">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
                 {paginatedProfiles.map((profile, index) => (
                   <ProfileCard key={profile.id} profile={profile} priority={index < 4} />
                 ))}

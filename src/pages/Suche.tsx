@@ -230,7 +230,7 @@ const Suche = () => {
       />
       <Header />
       <main className="flex-1 py-8">
-        <div className="container mx-auto px-4">
+        <div className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
           <Breadcrumbs items={[{ label: 'Suche' }]} />
           <h1 className="text-3xl font-bold mb-2">{searchTitle || 'Profile durchsuchen'}</h1>
           {searchSubtitle && <p className="text-muted-foreground mb-6">{searchSubtitle}</p>}
