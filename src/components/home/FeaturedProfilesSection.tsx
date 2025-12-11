@@ -3,6 +3,8 @@
  * Mobile (< 768px): 2 columns (grid-cols-2)
  * Tablet (≥ 768px): 3 columns (md:grid-cols-3)
  * Desktop (≥ 1024px): 4 columns (lg:grid-cols-4)
+ * XL Desktop (≥ 1280px): 5 columns (xl:grid-cols-5)
+ * 2XL Desktop (≥ 1536px): 6 columns (2xl:grid-cols-6)
  * 
  * DO NOT change this to grid-cols-1 on mobile!
  * 
@@ -54,8 +56,8 @@ export const FeaturedProfilesSection = ({
       <div className="container mx-auto px-4">
         <h2 className="text-2xl font-bold mb-6">{title || 'Aktuelle Profile'}</h2>
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+            {Array.from({ length: 12 }).map((_, i) => (
               <ProfileCardSkeleton key={i} />
             ))}
           </div>
@@ -64,7 +66,7 @@ export const FeaturedProfilesSection = ({
             {chunks.map((chunk, chunkIndex) => (
               <div key={`chunk-${chunkIndex}`}>
                 {/* Grid for up to 8 profiles */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
                   {chunk.map((profile, indexInChunk) => (
                     <ProfileCard 
                       key={profile.id} 
