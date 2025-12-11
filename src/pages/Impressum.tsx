@@ -9,6 +9,7 @@ const Impressum = () => {
   const title = getSetting('impressum_title');
   const seoTitle = getSetting('seo_impressum_title');
   const seoDescription = getSetting('seo_impressum_description');
+  const operatorNote = getSetting('impressum_operator_note');
   const companyName = getSetting('impressum_company_name');
   const address = getSetting('impressum_address');
   const email = getSetting('impressum_email');
@@ -26,6 +27,12 @@ const Impressum = () => {
         <h1 className="text-3xl font-bold mb-8">{title || 'Impressum'}</h1>
         
         <div className="prose prose-sm max-w-none space-y-6">
+          {operatorNote && (
+            <p className="text-muted-foreground font-medium bg-muted/50 p-4 rounded-lg">
+              {operatorNote}
+            </p>
+          )}
+
           {companyName && (
             <section>
               <h2 className="text-xl font-semibold mb-2">Angaben gemäss Schweizer Recht</h2>
