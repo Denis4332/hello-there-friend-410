@@ -69,11 +69,11 @@ const Index = () => {
           categories={categories}
         />
 
-        <BannerDisplay position="top" className="container mx-auto px-4 py-4" />
+        <BannerDisplay position="top" className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24 py-4" />
 
         <Suspense fallback={
           <section className="py-12 bg-muted">
-            <div className="container mx-auto px-4">
+            <div className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
               <div className="h-8 bg-muted-foreground/20 rounded w-1/4 mb-6 animate-pulse" />
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (

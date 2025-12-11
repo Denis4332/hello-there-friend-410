@@ -42,7 +42,7 @@ export const Header = () => {
 
   return (
     <header className="bg-primary text-primary-foreground" role="banner">
-      <div className="container mx-auto px-4">
+      <div className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
         <div className="flex items-center justify-between h-14">
           <Link to="/" className="flex items-center gap-2" aria-label="Zur Startseite">
             {logoUrl ? (

@@ -53,7 +53,7 @@ export const FeaturedProfilesSection = ({
       className="py-12 bg-muted content-visibility-auto-large"
       style={{ minHeight: `${minHeight}px` }}
     >
-      <div className="container mx-auto px-4">
+      <div className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
         <h2 className="text-2xl font-bold mb-6">{title || 'Aktuelle Profile'}</h2>
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
