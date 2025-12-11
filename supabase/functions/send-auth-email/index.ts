@@ -47,9 +47,9 @@ const handler = async (req: Request): Promise<Response> => {
     let confirmationUrl: string;
 
     if (type === "signup_confirmation") {
-      // Generate a magic link for email confirmation/login
+      // Generate an invite/confirmation link (verifies email and activates account)
       const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
+        type: "invite",
         email: email,
         options: {
           redirectTo: redirect_url || "https://escoria.ch/profil/erstellen",

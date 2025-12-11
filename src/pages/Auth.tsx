@@ -15,6 +15,7 @@ import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
 import { useToast } from '@/hooks/use-toast';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
+import { Mail, CheckCircle } from 'lucide-react';
 
 const authSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
@@ -38,6 +39,8 @@ const Auth = () => {
   const [agbAccepted, setAgbAccepted] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const seoTitle = getSetting('seo_auth_title');
   const seoDescription = getSetting('seo_auth_description');
@@ -103,6 +106,18 @@ const Auth = () => {
     
     setIsSubmitting(false);
 
+    if (error) {
+      // Check if it's an email not confirmed error
+      if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
+        toast({
+          title: 'E-Mail nicht bestätigt',
+          description: 'Bitte bestätige zuerst deine E-Mail-Adresse. Prüfe deinen Posteingang.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     if (!error) {
       navigate('/');
     }
@@ -161,28 +176,93 @@ const Auth = () => {
     // Record AGB acceptance if signup successful
     if (!error) {
       try {
-        // Get the newly created user
-        const { data: { user: newUser } } = await supabase.auth.getUser();
-        if (newUser) {
-          await recordAgbAcceptance({
-            userId: newUser.id,
-            email: email,
-            acceptanceType: 'registration',
-            agbVersion: '1.0',
-          });
-        }
+        await recordAgbAcceptance({
+          email: email,
+          acceptanceType: 'registration',
+          agbVersion: '1.0',
+        });
       } catch (agbError) {
         console.error('Failed to record AGB acceptance:', agbError);
         // Continue anyway - user is already registered
       }
+      
+      // Show success message instead of redirecting
+      setRegisteredEmail(email);
+      setRegistrationSuccess(true);
     }
     
     setIsSubmitting(false);
-
-    if (!error) {
-      navigate('/profil/erstellen');
-    }
   };
+
+  // Show success message after registration
+  if (registrationSuccess) {
+    return (
+      <>
+        <SEO 
+          title={seoTitle || 'Anmelden'}
+          description={seoDescription || 'Anmelden oder registrieren bei der Plattform'}
+        />
+        <Header />
+        <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
+          <div className="w-full max-w-md">
+            <div className="bg-card border rounded-lg p-8 text-center">
+              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+              
+              <h1 className="text-2xl font-bold mb-4">
+                Fast geschafft!
+              </h1>
+              
+              <div className="bg-muted/50 rounded-lg p-4 mb-6">
+                <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Wir haben dir eine E-Mail an
+                </p>
+                <p className="font-semibold text-foreground">
+                  {registeredEmail}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  gesendet.
+                </p>
+              </div>
+              
+              <p className="text-muted-foreground mb-6">
+                Bitte klicke auf den Link in der E-Mail, um dein Konto zu aktivieren.
+                Danach kannst du dich anmelden.
+              </p>
+              
+              <div className="space-y-3">
+                <Button 
+                  onClick={() => {
+                    setRegistrationSuccess(false);
+                    setActiveTab('login');
+                    setPassword('');
+                  }}
+                  className="w-full"
+                >
+                  Zur Anmeldung
+                </Button>
+                
+                <p className="text-xs text-muted-foreground">
+                  Keine E-Mail erhalten? Prüfe deinen Spam-Ordner oder{' '}
+                  <button 
+                    onClick={() => {
+                      setRegistrationSuccess(false);
+                      setActiveTab('signup');
+                    }}
+                    className="text-primary underline hover:no-underline"
+                  >
+                    versuche es erneut
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
