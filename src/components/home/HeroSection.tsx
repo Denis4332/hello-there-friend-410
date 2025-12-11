@@ -148,8 +148,8 @@ export const HeroSection = ({
           }} />
         </>
       )}
-      <div className="container mx-auto px-4 relative z-10">
-        <form onSubmit={handleSearch} className="max-w-3xl mx-auto bg-card border rounded-lg p-6" role="search" aria-label="Hauptsuche">
+      <div className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24 relative z-10">
+        <form onSubmit={handleSearch} className="max-w-5xl mx-auto bg-card border rounded-lg p-6" role="search" aria-label="Hauptsuche">
           {activeFiltersCount > 0 && (
             <div className="flex items-center justify-end gap-2 mb-4">
               <Badge variant="secondary" className="text-xs">
