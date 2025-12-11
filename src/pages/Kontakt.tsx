@@ -68,6 +68,18 @@ const Kontakt = () => {
         return;
       }
 
+      // Send email notification to admin (fire-and-forget)
+      supabase.functions.invoke('send-email', {
+        body: {
+          type: 'contact_notification',
+          data: {
+            name: name.trim(),
+            email: email.trim(),
+            message: message.trim()
+          }
+        }
+      }).catch(err => console.error('Email notification failed:', err));
+
       // Success
       toast({
         title: 'Nachricht gesendet',
