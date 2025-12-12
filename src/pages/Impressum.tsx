@@ -2,6 +2,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
+import DOMPurify from 'dompurify';
 
 const Impressum = () => {
   const { getSetting } = useSiteSettingsContext();
@@ -60,7 +61,7 @@ const Impressum = () => {
               <h2 className="text-xl font-semibold mb-2">Weitere Informationen</h2>
               <div 
                 className="text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: additionalInfo }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(additionalInfo) }}
               />
             </section>
           )}
