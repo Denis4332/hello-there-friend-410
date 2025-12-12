@@ -7,6 +7,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// In-Memory Rate Limiting (per IP)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 5; // Max 5 emails per minute
+const RATE_WINDOW = 60 * 1000; // 1 minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT) {
+    return false; // Rate limit exceeded
+  }
+  
+  record.count++;
+  return true;
+}
+
 interface EmailRequest {
   type: "contact_notification" | "welcome";
   data: {
@@ -23,8 +45,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Get client IP for rate limiting
+    const ip = req.headers.get("x-forwarded-for") || 
+               req.headers.get("x-real-ip") || 
+               "unknown";
+
+    // Check rate limit
+    if (!checkRateLimit(ip)) {
+      console.warn(`Rate limit exceeded for IP: ${ip}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Zu viele Anfragen. Bitte warte eine Minute." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const { type, data }: EmailRequest = await req.json();
-    console.log(`Processing email request: type=${type}`, data);
+    console.log(`Processing email request: type=${type}, ip=${ip}`, data);
 
     let emailPayload: {
       from: string;
