@@ -9,7 +9,6 @@ import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useDesignSettings } from "./hooks/useDesignSettings";
-import { useCustomCodeInjection } from "./hooks/useCustomCodeInjection";
 import { useFaviconSetting } from "./hooks/useFaviconSetting";
 import { BannerManager } from "./components/BannerManager";
 import { ScrollToTop } from "./components/ScrollToTop";
@@ -91,7 +90,6 @@ const PageViewTracker = () => {
 
 const AppContent = () => {
   useDesignSettings(); // Load dynamic colors, font, border-radius from database
-  useCustomCodeInjection(); // Inject custom CSS/JS from CMS
   useFaviconSetting(); // Load dynamic favicon from CMS
   
   return (
