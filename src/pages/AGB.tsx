@@ -2,6 +2,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
+import DOMPurify from 'dompurify';
 
 const AGB = () => {
   const { getSetting } = useSiteSettingsContext();
@@ -52,7 +53,7 @@ const AGB = () => {
           {intro && (
             <div 
               className="bg-muted/50 rounded-lg p-4 mb-8 prose prose-sm max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0"
-              dangerouslySetInnerHTML={{ __html: intro }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(intro) }}
             />
           )}
 
@@ -64,7 +65,7 @@ const AGB = () => {
                   {section.content && (
                     <div 
                       className="prose prose-sm max-w-none text-muted-foreground [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:text-foreground [&_strong]:font-medium"
-                      dangerouslySetInnerHTML={{ __html: section.content }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(section.content) }}
                     />
                   )}
                 </section>

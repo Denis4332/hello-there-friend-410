@@ -2,6 +2,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
+import DOMPurify from 'dompurify';
 
 const Datenschutz = () => {
   const { getSetting } = useSiteSettingsContext();
@@ -87,7 +88,7 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section2Content || `<p>Wir verarbeiten folgende Kategorien personenbezogener Daten:</p>
+                __html: DOMPurify.sanitize(section2Content || `<p>Wir verarbeiten folgende Kategorien personenbezogener Daten:</p>
 <ul>
 <li><strong>Profilinformationen:</strong> Anzeigename, Alter, Geschlecht, Standort (Stadt, Kanton, Postleitzahl), GPS-Koordinaten, Sprachen, Beschreibungstext</li>
 <li><strong>Kontaktdaten (optional):</strong> Telefonnummer, WhatsApp, E-Mail, Website, Instagram, Telegram, Strassenadresse</li>
@@ -96,7 +97,7 @@ const Datenschutz = () => {
 <li><strong>Nutzungsstatistiken:</strong> Profilaufrufe, Suchhistorie, Kontaktanfragen, Session-IDs, Referrer-URLs</li>
 <li><strong>Authentifizierungsdaten:</strong> E-Mail-Adresse, verschlüsseltes Passwort, Login-Zeitstempel</li>
 <li><strong>Zahlungsinformationen:</strong> Transaktions-IDs von Payment-Providern (keine vollständigen Zahlungsdaten)</li>
-</ul>` 
+</ul>`) 
               }} 
             />
 
@@ -105,13 +106,13 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section3Content || `<p>Die Verarbeitung Ihrer Daten erfolgt zu folgenden Zwecken:</p>
+                __html: DOMPurify.sanitize(section3Content || `<p>Die Verarbeitung Ihrer Daten erfolgt zu folgenden Zwecken:</p>
 <ul>
 <li><strong>Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO):</strong> Erstellung und Verwaltung Ihres Profils, Bereitstellung der Plattform-Funktionen</li>
 <li><strong>Berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO):</strong> Sicherstellung der Plattform-Sicherheit, Betrugsbekämpfung, Analyse und Optimierung der Nutzererfahrung</li>
 <li><strong>Rechtliche Verpflichtung (Art. 6 Abs. 1 lit. c DSGVO):</strong> Erfüllung gesetzlicher Aufbewahrungspflichten</li>
 <li><strong>Einwilligung (Art. 6 Abs. 1 lit. a DSGVO):</strong> Verwendung von optionalen Cookies und Tracking-Tools (nur nach ausdrücklicher Zustimmung)</li>
-</ul>` 
+</ul>`) 
               }} 
             />
 
@@ -126,12 +127,12 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section5Content || `<p>Eine Weitergabe Ihrer Daten an Dritte erfolgt <strong>nicht</strong>, ausser in folgenden Fällen:</p>
+                __html: DOMPurify.sanitize(section5Content || `<p>Eine Weitergabe Ihrer Daten an Dritte erfolgt <strong>nicht</strong>, ausser in folgenden Fällen:</p>
 <ul>
 <li>Sie haben ausdrücklich eingewilligt (Art. 6 Abs. 1 lit. a DSGVO)</li>
 <li>Die Weitergabe ist zur Vertragserfüllung erforderlich (z.B. Payment-Provider)</li>
 <li>Eine gesetzliche Verpflichtung besteht (z.B. behördliche Anfragen)</li>
-</ul>` 
+</ul>`) 
               }} 
             />
 
@@ -140,7 +141,7 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section6Content || `<p>Sie haben folgende Rechte bezüglich Ihrer personenbezogenen Daten:</p>
+                __html: DOMPurify.sanitize(section6Content || `<p>Sie haben folgende Rechte bezüglich Ihrer personenbezogenen Daten:</p>
 <div class="bg-muted/50 p-4 rounded-lg space-y-4">
 <div>
 <h3 class="font-bold">✓ Auskunftsrecht (Art. 15 DSGVO)</h3>
@@ -166,7 +167,7 @@ const Datenschutz = () => {
 <h3 class="font-bold">✓ Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</h3>
 <p class="text-sm">Sie können die Verarbeitung Ihrer Daten unter bestimmten Voraussetzungen einschränken lassen.</p>
 </div>
-</div>` 
+</div>`) 
               }} 
             />
             <p className="mt-4">
@@ -178,7 +179,7 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section7Content || `<p>Wir setzen umfassende Sicherheitsmaßnahmen zum Schutz Ihrer Daten ein:</p>
+                __html: DOMPurify.sanitize(section7Content || `<p>Wir setzen umfassende Sicherheitsmaßnahmen zum Schutz Ihrer Daten ein:</p>
 <ul>
 <li><strong>SSL/TLS-Verschlüsselung:</strong> Alle Datenübertragungen erfolgen verschlüsselt über HTTPS</li>
 <li><strong>Passwort-Sicherheit:</strong> Passwörter werden mit modernen Hashing-Algorithmen (bcrypt) gespeichert</li>
@@ -186,7 +187,7 @@ const Datenschutz = () => {
 <li><strong>Rate Limiting:</strong> Schutz vor Brute-Force-Angriffen durch Zugriffsbeschränkungen</li>
 <li><strong>Row Level Security (RLS):</strong> Datenbankzugriff wird auf Benutzerebene kontrolliert</li>
 <li><strong>Regelmäßige Security Audits:</strong> Kontinuierliche Überprüfung und Aktualisierung der Sicherheitsmaßnahmen</li>
-</ul>` 
+</ul>`) 
               }} 
             />
 
@@ -201,7 +202,7 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section9Content || `<p>Wir verwenden folgende Arten von Cookies:</p>
+                __html: DOMPurify.sanitize(section9Content || `<p>Wir verwenden folgende Arten von Cookies:</p>
 <div class="space-y-3">
 <div>
 <h3 class="font-semibold">Technisch notwendige Cookies (immer aktiv)</h3>
@@ -215,7 +216,7 @@ const Datenschutz = () => {
 <h3 class="font-semibold">Kein Third-Party-Tracking</h3>
 <p class="text-sm text-muted-foreground">ESCORIA verwendet keine Marketing-Cookies oder Third-Party-Tracker ohne Ihre ausdrückliche Zustimmung.</p>
 </div>
-</div>` 
+</div>`) 
               }} 
             />
 
@@ -224,14 +225,14 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section10Content || `<p>Ihr Profil ist nach Freischaltung durch unser Moderationsteam öffentlich einsehbar. Folgende Daten sind für alle Besucher sichtbar:</p>
+                __html: DOMPurify.sanitize(section10Content || `<p>Ihr Profil ist nach Freischaltung durch unser Moderationsteam öffentlich einsehbar. Folgende Daten sind für alle Besucher sichtbar:</p>
 <ul>
 <li>Anzeigename, Alter, Standort (Stadt, Kanton)</li>
 <li>Profilfotos und Beschreibungstext</li>
 <li>Von Ihnen freigegebene Kontaktdaten (optional)</li>
 <li>Kategorien und Sprachen</li>
 </ul>
-<p><strong>Ihre E-Mail-Adresse</strong> (Login) ist <strong>niemals</strong> öffentlich sichtbar.</p>` 
+<p><strong>Ihre E-Mail-Adresse</strong> (Login) ist <strong>niemals</strong> öffentlich sichtbar.</p>`) 
               }} 
             />
 
@@ -240,8 +241,8 @@ const Datenschutz = () => {
             <div 
               className="prose-content"
               dangerouslySetInnerHTML={{ 
-                __html: section11Content || `<p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde über die Verarbeitung Ihrer personenbezogenen Daten zu beschweren.</p>
-<p class="text-sm text-muted-foreground mt-2"><strong>Schweiz:</strong> Eidgenössischer Datenschutz- und Öffentlichkeitsbeauftragter (EDÖB)<br/><strong>EU:</strong> Zuständige Aufsichtsbehörde Ihres Aufenthaltslandes</p>` 
+                __html: DOMPurify.sanitize(section11Content || `<p>Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde über die Verarbeitung Ihrer personenbezogenen Daten zu beschweren.</p>
+<p class="text-sm text-muted-foreground mt-2"><strong>Schweiz:</strong> Eidgenössischer Datenschutz- und Öffentlichkeitsbeauftragter (EDÖB)<br/><strong>EU:</strong> Zuständige Aufsichtsbehörde Ihres Aufenthaltslandes</p>`) 
               }} 
             />
 
