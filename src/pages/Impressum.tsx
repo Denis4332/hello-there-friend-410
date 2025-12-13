@@ -10,12 +10,24 @@ const Impressum = () => {
   const title = getSetting('impressum_title');
   const seoTitle = getSetting('seo_impressum_title');
   const seoDescription = getSetting('seo_impressum_description');
-  const operatorNote = getSetting('impressum_operator_note');
+  
+  // Betreiberin / Anbieterin
   const companyName = getSetting('impressum_company_name');
   const address = getSetting('impressum_address');
+  
+  // Kontakt
   const email = getSetting('impressum_email');
   const phone = getSetting('impressum_phone');
-  const additionalInfo = getSetting('impressum_additional_info');
+  
+  // Rechtliche Angaben
+  const uid = getSetting('impressum_uid');
+  const register = getSetting('impressum_register');
+  const representation = getSetting('impressum_representation');
+  
+  // Weitere Sektionen
+  const websitePurpose = getSetting('impressum_website_purpose');
+  const hostingInfo = getSetting('impressum_hosting_info');
+  const copyrightLiability = getSetting('impressum_copyright_liability');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -27,27 +39,19 @@ const Impressum = () => {
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">{title || 'Impressum'}</h1>
         
-        <div className="prose prose-sm max-w-none space-y-6">
-          {operatorNote && (
-            <p className="text-muted-foreground font-medium bg-muted/50 p-4 rounded-lg">
-              {operatorNote}
-            </p>
-          )}
-
+        <div className="prose prose-sm max-w-none space-y-8">
+          {/* Betreiberin / Anbieterin */}
           {companyName && (
             <section>
-              <h2 className="text-xl font-semibold mb-2">Angaben gemäss Schweizer Recht</h2>
-              <p className="text-muted-foreground whitespace-pre-line">{companyName}</p>
+              <h2 className="text-xl font-semibold mb-2">Betreiberin / Anbieterin</h2>
+              <p className="text-muted-foreground font-medium">{companyName}</p>
+              {address && (
+                <p className="text-muted-foreground whitespace-pre-line">{address}</p>
+              )}
             </section>
           )}
 
-          {address && (
-            <section>
-              <h2 className="text-xl font-semibold mb-2">Adresse</h2>
-              <p className="text-muted-foreground whitespace-pre-line">{address}</p>
-            </section>
-          )}
-
+          {/* Kontakt */}
           {(email || phone) && (
             <section>
               <h2 className="text-xl font-semibold mb-2">Kontakt</h2>
@@ -56,17 +60,45 @@ const Impressum = () => {
             </section>
           )}
 
-          {additionalInfo && (
+          {/* Rechtliche Angaben */}
+          {(uid || register || representation) && (
             <section>
-              <h2 className="text-xl font-semibold mb-2">Weitere Informationen</h2>
+              <h2 className="text-xl font-semibold mb-2">Rechtliche Angaben</h2>
+              {uid && <p className="text-muted-foreground">UID: {uid}</p>}
+              {register && <p className="text-muted-foreground">Handelsregister-Nr.: {register}</p>}
+              {representation && <p className="text-muted-foreground">Vertretung: {representation}</p>}
+            </section>
+          )}
+
+          {/* Zweck der Website */}
+          {websitePurpose && (
+            <section>
+              <h2 className="text-xl font-semibold mb-2">Zweck der Website</h2>
+              <p className="text-muted-foreground">{websitePurpose}</p>
+            </section>
+          )}
+
+          {/* Hosting / Technischer Betrieb */}
+          {hostingInfo && (
+            <section>
+              <h2 className="text-xl font-semibold mb-2">Hosting / Technischer Betrieb</h2>
               <div 
                 className="text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(additionalInfo) }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(hostingInfo) }}
               />
             </section>
           )}
 
-          {!companyName && !address && !email && !phone && !additionalInfo && (
+          {/* Urheberrecht & Haftung */}
+          {copyrightLiability && (
+            <section>
+              <h2 className="text-xl font-semibold mb-2">Urheberrecht & Haftung</h2>
+              <p className="text-muted-foreground">{copyrightLiability}</p>
+            </section>
+          )}
+
+          {/* Fallback wenn nichts konfiguriert */}
+          {!companyName && !address && !email && !phone && !uid && (
             <p className="text-muted-foreground">
               Impressum-Inhalt wird vom Administrator gepflegt.
             </p>
