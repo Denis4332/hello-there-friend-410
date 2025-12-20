@@ -134,11 +134,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     const redirectUrl = `${window.location.origin}/`;
     
+    // Use signUp WITHOUT automatic Supabase email - we'll send our own
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
+        // Supabase will NOT send an email if auto-confirm is disabled
+        // We handle the email ourselves via send-auth-email Edge Function
       },
     });
 
@@ -147,9 +150,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       showError('toast_register_error', error.message);
-    } else {
-      // Send custom verification email via Resend
+      return { error };
+    }
+    
+    // Check if email confirmation is required (session will be null)
+    // If session exists, user is auto-confirmed (shouldn't happen with our config)
+    if (!data.session) {
+      // Send our custom verification email via Resend - this is the ONLY email
       try {
+        console.log('Sending custom verification email to:', email);
         const { error: emailError } = await supabase.functions.invoke('send-auth-email', {
           body: {
             type: 'signup_confirmation',
@@ -161,15 +170,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (emailError) {
           console.error('Failed to send verification email:', emailError);
+          // Still show success since account was created
         }
       } catch (emailErr) {
         console.error('Error sending verification email:', emailErr);
       }
-      
-      showSuccess('toast_register_success');
     }
-
-    return { error };
+    
+    showSuccess('toast_register_success');
+    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {
