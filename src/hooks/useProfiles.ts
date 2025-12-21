@@ -89,11 +89,12 @@ export const useHomepageProfiles = (
       }
       
       // Use public_profiles view (no user_id exposure)
+      // PERFORMANCE: Reduced from 500 to 50 for faster initial load
       const result = await supabase
         .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
       .order('created_at', { ascending: false })
-      .limit(500); // Fetch enough for all TOP ads
+      .limit(50); // Reduced from 500 for performance
       
       if (result.error) throw result.error;
       
