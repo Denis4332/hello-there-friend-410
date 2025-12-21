@@ -35,11 +35,10 @@ const Index = () => {
   const featuredProfilesTitle = getSetting('home_featured_profiles_title');
   const noProfilesText = getSetting('home_no_profiles_text');
   
-  // PERFORMANCE: Reduced from 100 to 24 for faster initial load
   const { 
     data: homepageData, 
     isLoading: isLoadingProfiles 
-  } = useHomepageProfiles(24, 0, 0, null);
+  } = useHomepageProfiles(100, 0, 0, null);
   
   const topProfiles = homepageData?.topProfiles ?? [];
   

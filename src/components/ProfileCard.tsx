@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrefetch } from '@/hooks/usePrefetch';
 import { Crown, CheckCircle2, Tag, MapPin, Heart, Play } from 'lucide-react';
@@ -91,26 +91,13 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
       )}
       
       <div className="relative w-full h-[425px] flex-shrink-0 bg-muted overflow-hidden">
-        {/* Blur placeholder - always visible until image loads */}
-        <div
-          className={cn(
-            "absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20 z-0"
-          )}
-        />
-        
-        {/* Shimmer loading animation */}
-        <div 
-          className="absolute inset-0 z-[1] bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"
-          style={{ animationDuration: '1.5s' }}
-        />
-
         {photoUrl || videoUrl ? (
           <>
             {primaryIsVideo && videoUrl ? (
               <video
                 src={videoUrl}
                 poster={posterUrl}
-                className="absolute inset-0 w-full h-full object-cover z-[2]"
+                className="absolute inset-0 w-full h-full object-cover"
                 muted
                 loop
                 playsInline
@@ -122,12 +109,7 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
                 alt={profile.display_name}
                 loading={priority ? "eager" : "lazy"}
                 decoding="async"
-                className="absolute inset-0 w-full h-full object-cover z-[2]"
-                // Add fade-in on load
-                onLoad={(e) => {
-                  (e.target as HTMLImageElement).style.opacity = '1';
-                }}
-                style={{ opacity: priority ? 1 : 0, transition: 'opacity 0.3s ease-in-out' }}
+                className="absolute inset-0 w-full h-full object-cover"
               />
             )}
             {/* Video indicator */}
@@ -139,7 +121,7 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
             )}
           </>
         ) : (
-          <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center z-[2]">
+          <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center">
             <span className="text-6xl font-bold text-muted-foreground">
               {profile.display_name.charAt(0).toUpperCase()}
             </span>
