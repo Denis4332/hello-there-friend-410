@@ -14,6 +14,7 @@
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { BannerDisplay } from '@/components/BannerDisplay';
+import { Pagination } from '@/components/Pagination';
 import { ProfileWithRelations } from '@/types/common';
 
 interface FeaturedProfilesSectionProps {
@@ -22,6 +23,9 @@ interface FeaturedProfilesSectionProps {
   title?: string;
   loadingText?: string;
   noProfilesText?: string;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export const FeaturedProfilesSection = ({
@@ -29,6 +33,9 @@ export const FeaturedProfilesSection = ({
   isLoading,
   title,
   noProfilesText,
+  currentPage,
+  totalPages,
+  onPageChange,
 }: FeaturedProfilesSectionProps) => {
   // Profiles are PRE-SORTED by parent - no sorting here to avoid duplication
   
@@ -84,6 +91,15 @@ export const FeaturedProfilesSection = ({
                 )}
               </div>
             ))}
+            
+            {/* Pagination - nur wenn mehr als 1 Seite */}
+            {totalPages && totalPages > 1 && onPageChange && (
+              <Pagination
+                currentPage={currentPage || 1}
+                totalPages={totalPages}
+                onPageChange={onPageChange}
+              />
+            )}
           </div>
         ) : (
           <p className="text-muted-foreground">{noProfilesText || 'Keine Profile verfügbar'}</p>
