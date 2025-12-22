@@ -92,8 +92,7 @@ export const useHomepageProfiles = (
       const result = await supabase
         .from('public_profiles')
         .select(PROFILE_SELECT_QUERY)
-      .order('created_at', { ascending: false })
-      .limit(500); // Fetch enough for all TOP ads
+      .order('created_at', { ascending: false });
       
       if (result.error) throw result.error;
       
@@ -101,8 +100,7 @@ export const useHomepageProfiles = (
       
       // Client-side filtering and limiting
       const topProfiles = allProfiles
-        .filter(p => p.listing_type === 'top')
-        .slice(0, topLimit);
+        .filter(p => p.listing_type === 'top');
       
       // ROBUST FIX: Filter for BOTH abbreviation AND full canton name
       const localProfiles = canton 
