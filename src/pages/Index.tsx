@@ -1,6 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense, useMemo, useState, useEffect } from 'react';
 import { useHomepageProfiles } from "@/hooks/useProfiles";
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
@@ -12,15 +12,16 @@ import { HeroSection } from '@/components/home/HeroSection';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
-// Realtime hooks removed for performance - React Query cache (5-15min) is sufficient
 
 // Lazy load non-critical section
 const FeaturedProfilesSection = lazy(() => import('@/components/home/FeaturedProfilesSection').then(m => ({ default: m.FeaturedProfilesSection })));
 
+const PROFILES_PER_PAGE = 24;
+
 const Index = () => {
   useDesignSettings();
-  // Realtime hooks removed - unnecessary WebSocket connections hurt performance
   const rotationKey = useRotationKey();
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Single batch load instead of 9 individual API calls
   const { getSetting } = useSiteSettingsContext();
@@ -42,9 +43,23 @@ const Index = () => {
   
   const topProfiles = homepageData?.topProfiles ?? [];
   
-  const featuredProfiles = useMemo(() => {
+  // Step 1: Rotation auf ALLE Profile anwenden (seiten-unabhängig!)
+  const allRotatedProfiles = useMemo(() => {
     return sortProfilesByListingType(topProfiles, rotationKey);
   }, [topProfiles, rotationKey]);
+  
+  // Step 2: Pagination NACH Rotation
+  const paginatedProfiles = useMemo(() => {
+    const start = (currentPage - 1) * PROFILES_PER_PAGE;
+    return allRotatedProfiles.slice(start, start + PROFILES_PER_PAGE);
+  }, [allRotatedProfiles, currentPage]);
+  
+  const totalPages = Math.ceil(allRotatedProfiles.length / PROFILES_PER_PAGE);
+  
+  // Bei Rotation-Änderung zurück auf Seite 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rotationKey]);
   
   const { data: categories = [] } = useCategories();
   const { data: cantons = [] } = useCantons();
@@ -84,10 +99,13 @@ const Index = () => {
           </section>
         }>
           <FeaturedProfilesSection
-            profiles={featuredProfiles}
+            profiles={paginatedProfiles}
             isLoading={isLoadingProfiles}
             title={featuredProfilesTitle}
             noProfilesText={noProfilesText}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
           />
         </Suspense>
       </main>
