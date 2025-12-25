@@ -182,7 +182,9 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         const previewIndex = previews.findIndex(p => p.url === preview.url);
 
         // Generate cryptographically random filename
-        const fileExt = file.name.split('.').pop();
+        // Use .webp extension for images (already compressed to WebP format by compressImage)
+        const originalExt = file.name.split('.').pop()?.toLowerCase();
+        const fileExt = preview.mediaType === 'image' ? 'webp' : originalExt;
         const randomBytes = new Uint8Array(16);
         crypto.getRandomValues(randomBytes);
         const randomName = Array.from(randomBytes)
