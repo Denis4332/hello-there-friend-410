@@ -92,14 +92,14 @@ export const BulkImageCompressor = () => {
           }
 
           // Generate new storage path (add -compressed suffix before extension)
-          const newPath = photo.storage_path.replace(/\.[^.]+$/, '') + '-compressed-' + Date.now() + '.jpg';
+          const newPath = photo.storage_path.replace(/\.[^.]+$/, '') + '-compressed-' + Date.now() + '.webp';
 
           // Upload compressed image
           const { error: uploadError } = await supabase
             .storage
             .from('profile-photos')
             .upload(newPath, compressedBlob, {
-              contentType: 'image/jpeg',
+              contentType: 'image/webp',
               upsert: false
             });
 
@@ -183,7 +183,7 @@ export const BulkImageCompressor = () => {
             Bulk Bilder-Komprimierung
           </h3>
           <p className="text-sm text-muted-foreground">
-            Komprimiert alle bestehenden Profilbilder (&gt;500KB) auf max. 1200x1600px, 80% JPEG
+            Komprimiert alle bestehenden Profilbilder (&gt;500KB) auf max. 500x650px, 55% WebP
           </p>
         </div>
         <Button 
