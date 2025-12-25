@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -6,9 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+// Reuse client across requests (performance optimization)
+const supabaseClient = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -21,39 +26,18 @@ serve(async (req) => {
       );
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Increment the counter
+    // ATOMIC increment - single DB call instead of SELECT then UPDATE
     const column = event_type === 'impression' ? 'impressions' : 'clicks';
     
-  // First get current value
-  const { data: currentAd, error: fetchError } = await supabaseClient
-    .from('advertisements')
-    .select(column)
-    .eq('id', ad_id)
-    .single();
+    const { error } = await supabaseClient.rpc('increment_ad_counter', {
+      p_ad_id: ad_id,
+      p_column: column
+    });
 
-  if (fetchError) {
-    console.error('Fetch error:', fetchError);
-    throw new Error('Advertisement not found or inactive');
-  }
-
-    if (fetchError) throw fetchError;
-    if (!currentAd) throw new Error('Advertisement not found');
-    
-    // Then increment it
-    const currentValue = (currentAd as any)[column] as number || 0;
-    const newValue = currentValue + 1;
-    
-    const { error } = await supabaseClient
-      .from('advertisements')
-      .update({ [column]: newValue })
-      .eq('id', ad_id);
-
-    if (error) throw error;
+    if (error) {
+      console.error('RPC error:', error);
+      throw new Error('Failed to increment counter');
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
