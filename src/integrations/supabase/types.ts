@@ -1461,6 +1461,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_ad_counter: {
+        Args: { p_ad_id: string; p_column: string }
+        Returns: undefined
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }

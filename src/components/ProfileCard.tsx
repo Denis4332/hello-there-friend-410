@@ -25,15 +25,25 @@ interface ProfileCardProps {
     distance_km?: number;
   };
   priority?: boolean; // For eager loading above-the-fold images
+  // Performance: Favorites props passed from parent to avoid 24 hook instances
+  isFavorite?: boolean;
+  onToggleFavorite?: (profileId: string) => void;
+  isTogglingFavorite?: boolean;
 }
 
-const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) => {
+const ProfileCardComponent = ({ 
+  profile, 
+  priority = false,
+  isFavorite: isFavoriteProp,
+  onToggleFavorite,
+  isTogglingFavorite,
+}: ProfileCardProps) => {
   const distance = profile.distance_km;
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
   
-  // Optimized URL - smaller size for mobile performance
+  // OPTIMIZED: Smaller size + WebP for faster loading (200x267 instead of 300x400)
   const photoUrl = primaryPhoto 
-    ? `${supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl}?width=300&height=400&resize=cover&quality=70`
+    ? `${supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl}?width=200&height=267&resize=cover&quality=60&format=webp`
     : null;
   
   const primaryIsVideo = (primaryPhoto as any)?.media_type === 'video';
@@ -48,8 +58,9 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
   const posterPhoto = primaryIsVideo 
     ? profile.photos?.find((p) => (p as any).media_type !== 'video') 
     : null;
+  // OPTIMIZED: Smaller poster + WebP
   const posterUrl = posterPhoto
-    ? `${supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path).data.publicUrl}?width=300&height=400&resize=cover&quality=70`
+    ? `${supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path).data.publicUrl}?width=200&height=267&resize=cover&quality=60&format=webp`
     : undefined;
   
   const isTop = profile.listing_type === 'top';
@@ -63,12 +74,16 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
     onHover: true,
   });
 
-  const { isFavorite, toggleFavorite, isToggling } = useFavorites();
+  // Use props if provided (optimized path from parent), otherwise fallback to hook
+  const favoriteHook = !onToggleFavorite ? useFavorites() : null;
+  const isProfileFavorite = isFavoriteProp ?? favoriteHook?.isFavorite(profile.id) ?? false;
+  const toggleFavoriteHandler = onToggleFavorite ?? favoriteHook?.toggleFavorite ?? (() => {});
+  const isToggling = isTogglingFavorite ?? favoriteHook?.isToggling ?? false;
   
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFavorite(profile.id);
+    toggleFavoriteHandler(profile.id);
   };
 
   return (
@@ -141,12 +156,12 @@ const ProfileCardComponent = ({ profile, priority = false }: ProfileCardProps) =
           onClick={handleFavoriteClick}
           disabled={isToggling}
           className="absolute bottom-4 right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95"
-          aria-label={isFavorite(profile.id) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+          aria-label={isProfileFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
         >
           <Heart 
             className={cn(
               "h-5 w-5 transition-colors",
-              isFavorite(profile.id) ? "fill-red-500 text-red-500" : "text-gray-600"
+              isProfileFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
             )}
           />
         </button>

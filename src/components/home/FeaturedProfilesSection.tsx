@@ -10,12 +10,15 @@
  * 
  * NOTE: Profiles are expected to be PRE-SORTED by the parent component.
  * No additional sorting is done here to avoid duplicate sorting overhead.
+ * 
+ * PERFORMANCE: useFavorites is called ONCE here instead of 24x in ProfileCard
  */
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { Pagination } from '@/components/Pagination';
 import { ProfileWithRelations } from '@/types/common';
+import { useFavorites } from '@/hooks/useFavorites';
 
 interface FeaturedProfilesSectionProps {
   profiles: ProfileWithRelations[];
@@ -37,6 +40,9 @@ export const FeaturedProfilesSection = ({
   totalPages,
   onPageChange,
 }: FeaturedProfilesSectionProps) => {
+  // PERFORMANCE: Single hook call for all 24 cards instead of 24 separate calls
+  const { favorites, toggleFavorite, isToggling } = useFavorites();
+  
   // Profiles are PRE-SORTED by parent - no sorting here to avoid duplication
   
   // Split profiles into chunks of 8
@@ -79,6 +85,9 @@ export const FeaturedProfilesSection = ({
                       key={profile.id} 
                       profile={profile} 
                       priority={getPriority(chunkIndex, indexInChunk)}
+                      isFavorite={favorites.includes(profile.id)}
+                      onToggleFavorite={toggleFavorite}
+                      isTogglingFavorite={isToggling}
                     />
                   ))}
                 </div>

@@ -2,25 +2,37 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Advertisement } from '@/types/advertisement';
 
-export const useAdvertisements = (position?: Advertisement['position']) => {
+// PERFORMANCE: Single query for all active ads, filter client-side
+export const useAllActiveAdvertisements = () => {
   return useQuery({
-    queryKey: ['advertisements', position],
+    queryKey: ['advertisements', 'all-active'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('advertisements')
         .select('*')
         .eq('active', true)
         .order('priority', { ascending: false });
-
-      if (position) {
-        query = query.eq('position', position);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       return data as Advertisement[];
     },
+    staleTime: 60000, // Cache for 1 minute
   });
+};
+
+// Legacy hook - uses cached data from useAllActiveAdvertisements
+export const useAdvertisements = (position?: Advertisement['position']) => {
+  const { data: allAds, isLoading, error } = useAllActiveAdvertisements();
+  
+  // Filter client-side instead of separate API call
+  const filteredAds = position 
+    ? allAds?.filter(ad => ad.position === position) 
+    : allAds;
+  
+  return {
+    data: filteredAds,
+    isLoading,
+    error,
+  };
 };
 
 export const useTrackImpression = () => {
