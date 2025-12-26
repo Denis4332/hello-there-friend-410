@@ -1438,6 +1438,21 @@ export type Database = {
           status: Database["public"]["Enums"]["user_status"]
         }[]
       }
+      get_paginated_profiles: {
+        Args: {
+          p_canton?: string
+          p_category_id?: string
+          p_city?: string
+          p_keyword?: string
+          p_page?: number
+          p_page_size?: number
+          p_rotation_seed?: number
+        }
+        Returns: {
+          profiles: Json
+          total_count: number
+        }[]
+      }
       get_rate_limits_for_admin: {
         Args: never
         Returns: {
@@ -1519,41 +1534,81 @@ export type Database = {
         }
         Returns: undefined
       }
-      search_profiles_by_radius: {
-        Args: {
-          filter_category_id?: string
-          filter_keyword?: string
-          radius_km: number
-          user_lat: number
-          user_lng: number
-        }
-        Returns: {
-          about_me: string
-          age: number
-          availability_status: string
-          canton: string
-          city: string
-          created_at: string
-          display_name: string
-          distance_km: number
-          gender: string
-          id: string
-          is_adult: boolean
-          languages: string[]
-          lat: number
-          listing_type: string
-          lng: number
-          postal_code: string
-          premium_until: string
-          show_street: boolean
-          slug: string
-          status: string
-          street_address: string
-          top_ad_until: string
-          updated_at: string
-          verified_at: string
-        }[]
-      }
+      search_profiles_by_radius:
+        | {
+            Args: {
+              filter_category_id?: string
+              filter_keyword?: string
+              radius_km: number
+              user_lat: number
+              user_lng: number
+            }
+            Returns: {
+              about_me: string
+              age: number
+              availability_status: string
+              canton: string
+              city: string
+              created_at: string
+              display_name: string
+              distance_km: number
+              gender: string
+              id: string
+              is_adult: boolean
+              languages: string[]
+              lat: number
+              listing_type: string
+              lng: number
+              postal_code: string
+              premium_until: string
+              show_street: boolean
+              slug: string
+              status: string
+              street_address: string
+              top_ad_until: string
+              updated_at: string
+              verified_at: string
+            }[]
+          }
+        | {
+            Args: {
+              filter_category_id?: string
+              filter_keyword?: string
+              p_page?: number
+              p_page_size?: number
+              p_rotation_seed?: number
+              radius_km: number
+              user_lat: number
+              user_lng: number
+            }
+            Returns: {
+              about_me: string
+              age: number
+              availability_status: string
+              canton: string
+              city: string
+              created_at: string
+              display_name: string
+              distance_km: number
+              gender: string
+              id: string
+              is_adult: boolean
+              languages: string[]
+              lat: number
+              listing_type: string
+              lng: number
+              postal_code: string
+              premium_until: string
+              show_street: boolean
+              slug: string
+              status: string
+              street_address: string
+              top_ad_until: string
+              total_count: number
+              updated_at: string
+              verified_at: string
+            }[]
+          }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown

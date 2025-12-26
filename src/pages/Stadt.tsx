@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -11,20 +11,37 @@ import { useCityBySlug } from '@/hooks/useCities';
 import { SEO } from '@/components/SEO';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
-import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
 import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
 import { useAdvertisementsRealtime } from '@/hooks/useAdvertisementsRealtime';
 
+const ITEMS_PER_PAGE = 24;
+
 const Stadt = () => {
-  useProfilesRealtime(); // Listen for realtime profile changes
-  useAdvertisementsRealtime(); // Listen for realtime banner changes
-  const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
+  useProfilesRealtime();
+  useAdvertisementsRealtime();
+  const rotationKey = useRotationKey();
   const { slug } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
   
   const { data: city, isLoading: loadingCity } = useCityBySlug(slug || '');
-  const { data: cityProfiles = [], isLoading: loadingProfiles } = useCityProfiles(city?.name);
+  
+  // Server-side pagination mit Rotation
+  const { data: cityData, isLoading: loadingProfiles } = useCityProfiles(
+    city?.name,
+    currentPage,
+    ITEMS_PER_PAGE,
+    rotationKey
+  );
+  
+  const profiles = cityData?.profiles ?? [];
+  const totalCount = cityData?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
+  // Reset auf Seite 1 bei Rotation-Änderung
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rotationKey]);
 
   if (loadingCity || !city) {
     return (
@@ -48,19 +65,6 @@ const Stadt = () => {
       </div>
     );
   }
-
-  // Sort profiles: TOP > Premium > Basic > Verified > Newest (rotates every 30min)
-  const sortedProfiles = useMemo(() => {
-    return sortProfilesByListingType(cityProfiles, rotationKey);
-  }, [cityProfiles, rotationKey]);
-
-  // Pagination (24 items per page)
-  const ITEMS_PER_PAGE = 24;
-  const totalPages = Math.ceil(sortedProfiles.length / ITEMS_PER_PAGE);
-  const paginatedProfiles = sortedProfiles.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -93,18 +97,20 @@ const Stadt = () => {
                 <ProfileCardSkeleton key={i} />
               ))}
             </div>
-          ) : paginatedProfiles.length > 0 ? (
+          ) : profiles.length > 0 ? (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
-                {paginatedProfiles.map((profile, index) => (
+                {profiles.map((profile, index) => (
                   <ProfileCard key={profile.id} profile={profile} priority={index < 4} />
                 ))}
               </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-              />
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              )}
             </>
           ) : (
             <p className="text-center text-muted-foreground py-12">

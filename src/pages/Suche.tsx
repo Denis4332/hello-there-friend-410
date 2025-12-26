@@ -13,16 +13,17 @@ import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchResults } from '@/components/search/SearchResults';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
-import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
 import { useAdvertisementsRealtime } from '@/hooks/useAdvertisementsRealtime';
 
+const ITEMS_PER_PAGE = 24;
+
 const Suche = () => {
-  useProfilesRealtime(); // Listen for realtime profile changes
-  useAdvertisementsRealtime(); // Listen for realtime banner changes
-  const rotationKey = useRotationKey(); // Auto-rotate every 30 minutes
+  useProfilesRealtime();
+  useAdvertisementsRealtime();
+  const rotationKey = useRotationKey();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [canton, setCanton] = useState(searchParams.get('kanton') || '');
@@ -36,7 +37,6 @@ const Suche = () => {
   const urlLat = searchParams.get('lat');
   const urlLng = searchParams.get('lng');
   const urlLocation = searchParams.get('location');
-  const urlRadius = searchParams.get('radius');
   const [userLat, setUserLat] = useState<number | null>(urlLat ? parseFloat(urlLat) : null);
   const [userLng, setUserLng] = useState<number | null>(urlLng ? parseFloat(urlLng) : null);
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
@@ -50,9 +50,9 @@ const Suche = () => {
   const { data: cantons = [] } = useCantons();
   const { getSetting } = useSiteSettingsContext();
   
-  // GPS-based search
+  // GPS-based search mit Server-Side Pagination
   const { 
-    data: gpsProfiles = [], 
+    data: gpsData,
     isLoading: isLoadingGps,
     refetch: refetchGpsProfiles 
   } = useProfilesByRadius(
@@ -62,21 +62,26 @@ const Suche = () => {
     {
       categoryId: category || undefined,
       keyword: keyword || undefined,
+      page: currentPage,
+      pageSize: ITEMS_PER_PAGE,
+      rotationSeed: rotationKey,
     }
   );
   
-  // Text-based search for profiles without GPS coordinates (only when GPS not active)
-  const { data: textProfiles = [], isLoading: isLoadingText } = useSearchProfiles({
+  // Text-based search mit Server-Side Pagination (only when GPS not active)
+  const { data: textData, isLoading: isLoadingText } = useSearchProfiles({
     location: canton || undefined,
-    categoryId: category || undefined,  // Direct state instead of URL params
-    keyword: keyword || undefined,      // Direct state instead of URL params
-    enabled: !userLat && !userLng, // Only run when GPS is NOT active
+    categoryId: category || undefined,
+    keyword: keyword || undefined,
+    enabled: !userLat && !userLng,
+    page: currentPage,
+    pageSize: ITEMS_PER_PAGE,
+    rotationSeed: rotationKey,
   });
   
   // Auto-refetch GPS results when radius or category changes
   useEffect(() => {
     if (userLat && userLng) {
-      // Update URL immediately when radius changes
       const params = new URLSearchParams();
       params.set('radius', radius.toString());
       params.set('lat', userLat.toString());
@@ -84,18 +89,27 @@ const Suche = () => {
       if (detectedLocation) params.set('location', detectedLocation);
       if (category) params.set('kategorie', category);
       setSearchParams(params, { replace: true });
-      
-      // Refetch profiles
       refetchGpsProfiles();
     }
   }, [radius, category, userLat, userLng]);
   
-  // GPS active: ONLY show profiles within radius (like xdate.ch)
+  // GPS active: ONLY show profiles within radius
   // GPS inactive: Show canton-based text search results
   const profiles = useMemo(() => {
-    return userLat && userLng ? gpsProfiles : textProfiles;
-  }, [userLat, userLng, gpsProfiles, textProfiles]);
+    if (userLat && userLng) {
+      return gpsData?.profiles ?? [];
+    }
+    return textData?.profiles ?? [];
+  }, [userLat, userLng, gpsData, textData]);
   
+  const totalCount = useMemo(() => {
+    if (userLat && userLng) {
+      return gpsData?.totalCount ?? 0;
+    }
+    return textData?.totalCount ?? 0;
+  }, [userLat, userLng, gpsData, textData]);
+  
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
   const isLoading = userLat && userLng ? isLoadingGps : isLoadingText;
 
   const searchTitle = getSetting('search_page_title', 'Profile durchsuchen');
@@ -104,18 +118,10 @@ const Suche = () => {
   const searchButton = getSetting('search_button_text', 'Suchen');
   const searchNoResults = getSetting('search_no_results_text', 'Keine Profile gefunden');
 
-  // Sort profiles: TOP > Premium > Basic > Verified > Newest (rotates every 30min)
-  const sortedProfiles = useMemo(() => {
-    return sortProfilesByListingType(profiles, rotationKey);
-  }, [profiles, rotationKey]);
-
-  // Pagination (24 items per page)
-  const ITEMS_PER_PAGE = 24;
-  const totalPages = Math.ceil(sortedProfiles.length / ITEMS_PER_PAGE);
-  const paginatedProfiles = sortedProfiles.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  // Reset auf Seite 1 bei Filter-Änderung
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [canton, category, keyword, rotationKey]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,11 +144,9 @@ const Suche = () => {
             const lng = position.coords.longitude;
             const accuracy = position.coords.accuracy;
             
-            // Clear old text search results from cache
-            queryClient.removeQueries({ queryKey: ['search-profiles'] });
-            queryClient.removeQueries({ queryKey: ['profiles-by-radius'] });
+            queryClient.removeQueries({ queryKey: ['search-profiles-paginated'] });
+            queryClient.removeQueries({ queryKey: ['profiles-by-radius-paginated'] });
             
-            // Reset all text-based filters when GPS is activated
             setCanton('');
             setSearchParams({});
             
@@ -151,12 +155,10 @@ const Suche = () => {
             setLocationAccuracy(accuracy);
             setCurrentPage(1);
             
-            // Manually trigger GPS query refetch with small delay
             setTimeout(() => {
               refetchGpsProfiles();
             }, 100);
 
-            // Get location name via reverse geocoding
             const result = await detectLocation();
             
             const matchingCanton = cantons.find(
@@ -202,7 +204,7 @@ const Suche = () => {
 
   const activeFiltersCount = useMemo(() => {
     if (userLat && userLng) {
-      let count = 1; // GPS = 1
+      let count = 1;
       if (category) count++;
       if (keyword) count++;
       return count;
@@ -215,7 +217,6 @@ const Suche = () => {
     }
   }, [canton, category, keyword, userLat, userLng]);
 
-  // GPS accuracy warning (no automatic radius change)
   useEffect(() => {
     if (locationAccuracy && locationAccuracy > 500) {
       toast.info('GPS-Signal schwach (±' + Math.round(locationAccuracy) + 'm) - ggf. Radius erhöhen');
@@ -273,7 +274,6 @@ const Suche = () => {
 
           <BannerDisplay position="top" className="my-6" />
 
-          {/* Info-Banner wenn keine Filter aktiv */}
           {!userLat && !userLng && !canton && !category && !keyword && (
             <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">
               <p className="text-sm text-muted-foreground">
@@ -285,13 +285,13 @@ const Suche = () => {
 
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
-              {sortedProfiles.length} {sortedProfiles.length === 1 ? 'Ergebnis' : 'Ergebnisse'}
+              {totalCount} {totalCount === 1 ? 'Ergebnis' : 'Ergebnisse'}
               {!userLat && !userLng && !canton && !category && !keyword && ' (nur TOP)'}
             </p>
           </div>
 
           <SearchResults
-            profiles={paginatedProfiles}
+            profiles={profiles}
             isLoading={isLoading}
             currentPage={currentPage}
             totalPages={totalPages}
