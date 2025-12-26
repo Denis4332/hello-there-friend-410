@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -7,25 +7,49 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useCantons } from '@/hooks/useCitiesByCantonSlim';
-import { useSearchProfiles } from '@/hooks/useProfiles';
+import { useAllCities } from '@/hooks/useProfiles';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { MapPin, Search } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 const Kantone = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { data: cantons = [] } = useCantons();
-  const { data: allProfiles = [] } = useSearchProfiles({});
   const { getSetting } = useSiteSettingsContext();
   const seoTitle = getSetting('seo_kantone_title', 'Kantone');
   const seoDescription = getSetting('seo_kantone_description', 'Durchsuchen Sie Profile nach Schweizer Kantonen');
 
+  // Einfache Zählung der Profile pro Kanton direkt aus der DB
+  const { data: profileCounts = {} } = useQuery({
+    queryKey: ['canton-profile-counts'],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('canton')
+        .eq('status', 'active');
+      
+      if (error) throw error;
+      
+      const counts: Record<string, number> = {};
+      data?.forEach((p) => {
+        const canton = p.canton?.toUpperCase();
+        if (canton) {
+          counts[canton] = (counts[canton] || 0) + 1;
+        }
+      });
+      return counts;
+    },
+  });
+
   // Count profiles per canton
-  const cantonCounts = cantons.map((canton) => ({
-    ...canton,
-    profileCount: allProfiles.filter(
-      (p) => p.canton?.toLowerCase() === canton.abbreviation.toLowerCase()
-    ).length,
-  }));
+  const cantonCounts = useMemo(() => {
+    return cantons.map((canton) => ({
+      ...canton,
+      profileCount: profileCounts[canton.abbreviation.toUpperCase()] || 0,
+    }));
+  }, [cantons, profileCounts]);
 
   const filteredCantons = cantonCounts.filter((canton) =>
     canton.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

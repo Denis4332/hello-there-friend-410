@@ -1,6 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { lazy, Suspense, useMemo, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { useHomepageProfiles } from "@/hooks/useProfiles";
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
@@ -10,7 +10,6 @@ import { SEO } from '@/components/SEO';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
-import { sortProfilesByListingType } from '@/lib/profileUtils';
 import { useRotationKey } from '@/hooks/useRotationKey';
 
 // Lazy load non-critical section
@@ -36,25 +35,15 @@ const Index = () => {
   const featuredProfilesTitle = getSetting('home_featured_profiles_title');
   const noProfilesText = getSetting('home_no_profiles_text');
   
+  // Server-side pagination mit Rotation
   const { 
     data: homepageData, 
     isLoading: isLoadingProfiles 
-  } = useHomepageProfiles(100, 0, 0, null);
+  } = useHomepageProfiles(currentPage, PROFILES_PER_PAGE, rotationKey);
   
-  const topProfiles = homepageData?.topProfiles ?? [];
-  
-  // Step 1: Rotation auf ALLE Profile anwenden (seiten-unabhängig!)
-  const allRotatedProfiles = useMemo(() => {
-    return sortProfilesByListingType(topProfiles, rotationKey);
-  }, [topProfiles, rotationKey]);
-  
-  // Step 2: Pagination NACH Rotation
-  const paginatedProfiles = useMemo(() => {
-    const start = (currentPage - 1) * PROFILES_PER_PAGE;
-    return allRotatedProfiles.slice(start, start + PROFILES_PER_PAGE);
-  }, [allRotatedProfiles, currentPage]);
-  
-  const totalPages = Math.ceil(allRotatedProfiles.length / PROFILES_PER_PAGE);
+  const profiles = homepageData?.profiles ?? [];
+  const totalCount = homepageData?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / PROFILES_PER_PAGE);
   
   // Bei Rotation-Änderung zurück auf Seite 1
   useEffect(() => {
@@ -99,7 +88,7 @@ const Index = () => {
           </section>
         }>
           <FeaturedProfilesSection
-            profiles={paginatedProfiles}
+            profiles={profiles}
             isLoading={isLoadingProfiles}
             title={featuredProfilesTitle}
             noProfilesText={noProfilesText}
