@@ -63,6 +63,7 @@ const AdminRateLimits = lazy(() => import("./pages/admin/AdminRateLimits"));
 const AdminPerformance = lazy(() => import("./pages/admin/AdminPerformance"));
 const AdminPendingPayments = lazy(() => import("./pages/admin/AdminPendingPayments"));
 const AdminExport = lazy(() => import("./pages/admin/AdminExport"));
+const AdminTierDashboard = lazy(() => import("./pages/admin/AdminTierDashboard"));
 
 // Optimized QueryClient with aggressive caching
 const queryClient = new QueryClient({
@@ -180,6 +181,7 @@ const AppContent = () => {
               <Route path="/admin/rate-limits" element={<ProtectedRoute><AdminRateLimits /></ProtectedRoute>} />
               <Route path="/admin/performance" element={<ProtectedRoute><AdminPerformance /></ProtectedRoute>} />
               <Route path="/admin/export" element={<ProtectedRoute><AdminExport /></ProtectedRoute>} />
+              <Route path="/admin/tier-dashboard" element={<ProtectedRoute><AdminTierDashboard /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
