@@ -13,7 +13,8 @@ import {
   MapPin,
   User,
   ShieldAlert,
-  Download
+  Download,
+  Layers
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -233,6 +234,15 @@ const AdminDashboard = () => {
                     <h3 className="font-semibold">Export</h3>
                   </div>
                   <p className="text-sm text-muted-foreground">Daten exportieren & Backup</p>
+                </div>
+              </Link>
+              <Link to="/admin/tier-dashboard">
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Layers className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Tier-Monitor</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Tier-Verteilung & Rotation überwachen</p>
                 </div>
               </Link>
             </div>

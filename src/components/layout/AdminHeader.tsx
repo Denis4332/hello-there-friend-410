@@ -64,6 +64,7 @@ export const AdminHeader = () => {
     { path: '/admin/performance', label: 'Performance' },
     { path: '/admin/rate-limits', label: 'Sicherheit', badge: lockedCount },
     { path: '/admin/export', label: 'Export' },
+    { path: '/admin/tier-dashboard', label: 'Tier-Monitor' },
   ];
 
   return (
