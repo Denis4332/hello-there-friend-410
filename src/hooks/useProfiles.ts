@@ -78,22 +78,7 @@ export const useSearchProfiles = (filters: {
     staleTime: 0, // No caching - always fetch fresh data for filters
     enabled: filters.enabled ?? true,
     queryFn: async () => {
-      // NEUE LOGIK: Ohne Filter (kein Kanton, keine Kategorie, kein Keyword) → NUR TOP-Profile
-      const hasNoFilters = !filters.location && !filters.categoryId && !filters.keyword;
-      
-      if (hasNoFilters) {
-        // Für "keine Filter" Fall - nur TOP Profile
-        const { data, error } = await supabase
-          .from('public_profiles')
-          .select(PROFILE_SELECT_QUERY)
-          .eq('listing_type', 'top');
-        
-        if (error) throw error;
-        const profiles = validateProfilesResponse(data || []);
-        return { profiles, totalCount: profiles.length };
-      }
-      
-      // Mit Filtern - nutze DB-Funktion
+      // Canton-Name Lookup falls nötig
       let cantonName: string | null = null;
       if (filters.location) {
         const isCantonCode = /^[A-Z]{2,3}$/.test(filters.location);
