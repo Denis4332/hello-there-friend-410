@@ -43,6 +43,8 @@ const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 const UserFavorites = lazy(() => import("./pages/UserFavorites"));
 const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
 const ProfileUpgrade = lazy(() => import("./pages/ProfileUpgrade"));
+const ZahlungErfolg = lazy(() => import("./pages/ZahlungErfolg"));
+const ZahlungAbgebrochen = lazy(() => import("./pages/ZahlungAbgebrochen"));
 
 // Lazy load admin pages
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -122,6 +124,8 @@ const AppContent = () => {
             <Route path="/bannerpreise" element={<Bannerpreise />} />
             <Route path="/banner/buchen" element={<BannerBuchen />} />
             <Route path="/preise" element={<Preise />} />
+            <Route path="/zahlung/erfolg" element={<ZahlungErfolg />} />
+            <Route path="/zahlung/abgebrochen" element={<ZahlungAbgebrochen />} />
             <Route path="/500" element={<ServerError />} />
             <Route
               path="/profil/erstellen"

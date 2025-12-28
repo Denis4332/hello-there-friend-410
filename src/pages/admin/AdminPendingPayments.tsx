@@ -161,7 +161,9 @@ export default function AdminPendingPayments() {
     const variants: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
       bank_transfer: { label: 'Banküberweisung', variant: 'default' },
       twint: { label: 'TWINT', variant: 'secondary' },
+      payport: { label: 'PayPort', variant: 'secondary' },
       manual: { label: 'Manuell', variant: 'outline' },
+      pending: { label: 'Ausstehend', variant: 'outline' },
     };
 
     const config = variants[method || 'manual'] || variants.manual;
