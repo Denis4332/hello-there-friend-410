@@ -71,3 +71,9 @@ verify_jwt = false
 
 [functions.send-auth-email]
 verify_jwt = false
+
+[functions.create-payport-checkout]
+verify_jwt = true
+
+[functions.payport-webhook]
+verify_jwt = false

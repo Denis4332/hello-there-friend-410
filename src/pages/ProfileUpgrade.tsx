@@ -59,52 +59,42 @@ const ProfileUpgrade = () => {
     if (!profile) return;
     
     try {
-      const updates: any = { 
-        listing_type: listingType,
-        payment_status: 'pending',
-        payment_method: 'pending',
-        status: 'pending'
+      // Get amount based on listing type
+      const priceMap: Record<string, number> = {
+        basic: parseFloat(basicPrice.replace(/[^0-9.]/g, '')) || 49,
+        premium: parseFloat(premiumPrice.replace(/[^0-9.]/g, '')) || 99,
+        top: parseFloat(topPrice.replace(/[^0-9.]/g, '')) || 199,
       };
-      
-      // Ablaufdatum setzen (heute + 30 Tage) - wird erst bei Genehmigung aktiv
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30);
-      
-      if (listingType === 'premium') {
-        updates.premium_until = expiryDate.toISOString();
-        updates.top_ad_until = null;
-      } else if (listingType === 'top') {
-        updates.top_ad_until = expiryDate.toISOString();
-        updates.premium_until = null;
+      const amount = priceMap[listingType];
+
+      toast({
+        title: 'Weiterleitung zur Zahlung...',
+        description: 'Sie werden zur PayPort Zahlungsseite weitergeleitet.',
+      });
+
+      // Call edge function to create PayPort checkout
+      const { data, error } = await supabase.functions.invoke('create-payport-checkout', {
+        body: {
+          profile_id: profile.id,
+          listing_type: listingType,
+          amount: amount,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.checkout_url) {
+        // Redirect to PayPort checkout
+        window.location.href = data.checkout_url;
       } else {
-        // Basic hat auch Ablaufdatum (kostet auch Geld!)
-        updates.premium_until = expiryDate.toISOString();
-        updates.top_ad_until = null;
+        throw new Error('Keine Checkout-URL erhalten');
       }
       
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', profile.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: 'Upgrade-Anfrage gesendet!',
-        description: `Ihre ${listingType.toUpperCase()}-Anfrage wartet auf Admin-Genehmigung. Sie erhalten eine Bestätigung mit Zahlungsdetails per E-Mail.`,
-      });
-      
-      // Show payment instructions
-      toast({
-        title: 'Zahlungsinformationen',
-        description: 'Sie erhalten in Kürze eine E-Mail mit den Zahlungsdetails.',
-      });
-      
-      await loadProfile();
     } catch (error: any) {
+      console.error('PayPort checkout error:', error);
       toast({
         title: 'Fehler',
-        description: error.message,
+        description: error.message || 'Fehler bei der Zahlungsvorbereitung',
         variant: 'destructive',
       });
     }
