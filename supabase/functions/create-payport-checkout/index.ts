@@ -44,8 +44,8 @@ serve(async (req) => {
 
     // Prepare PayPort parameters
     const currency = 'CHF';
-    const successUrl = `${req.headers.get('origin') || 'https://escoria.lovable.app'}/zahlung/erfolg?ref=${referenceId}`;
-    const cancelUrl = `${req.headers.get('origin') || 'https://escoria.lovable.app'}/zahlung/abgebrochen`;
+    const successUrl = `${req.headers.get('origin') || 'https://escoria.ch'}/zahlung/erfolg?ref=${referenceId}`;
+    const cancelUrl = `${req.headers.get('origin') || 'https://escoria.ch'}/zahlung/abgebrochen`;
     const notifyUrl = `${supabaseUrl}/functions/v1/payport-webhook`;
     
     // Build hash string according to PayPort documentation
