@@ -33,6 +33,19 @@ const UserDashboard = () => {
     return prices[type] || 49;
   };
 
+  /**
+   * ============================================================
+   * PAYPORT: Startet Checkout-Prozess
+   * ============================================================
+   * 
+   * Diese Funktion ruft die Edge Function 'create-payport-checkout' auf.
+   * 
+   * BEIM PRODUKTIONSWECHSEL: KEINE Änderung nötig!
+   * Die Edge Function verwendet die korrekten Secrets aus Lovable Cloud.
+   * 
+   * Siehe: supabase/functions/create-payport-checkout/index.ts
+   * ============================================================
+   */
   const handlePayNow = async () => {
     if (!profile) return;
     

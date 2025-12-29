@@ -293,6 +293,20 @@ const ProfileCreate = () => {
     return prices[type] || 49;
   };
 
+  /**
+   * ============================================================
+   * PAYPORT: Checkout nach Profilerstellung
+   * ============================================================
+   * 
+   * Diese Funktion wird aufgerufen nachdem User sein Profil
+   * erstellt hat und zur Zahlung weitergeleitet werden soll.
+   * 
+   * BEIM PRODUKTIONSWECHSEL: KEINE Änderung nötig!
+   * Die Edge Function verwendet die korrekten Secrets aus Lovable Cloud.
+   * 
+   * Siehe: supabase/functions/create-payport-checkout/index.ts
+   * ============================================================
+   */
   const startPaymentCheckout = async () => {
     if (!profileId) return;
 

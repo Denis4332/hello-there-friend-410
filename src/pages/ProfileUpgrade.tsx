@@ -55,6 +55,19 @@ const ProfileUpgrade = () => {
     }
   };
 
+  /**
+   * ============================================================
+   * PAYPORT: Checkout für Upgrade-Zahlungen
+   * ============================================================
+   * 
+   * Diese Funktion wird aufgerufen wenn User sein Paket upgraden will.
+   * 
+   * BEIM PRODUKTIONSWECHSEL: KEINE Änderung nötig!
+   * Die Edge Function verwendet die korrekten Secrets aus Lovable Cloud.
+   * 
+   * Siehe: supabase/functions/create-payport-checkout/index.ts
+   * ============================================================
+   */
   const handleUpgrade = async (listingType: 'basic' | 'premium' | 'top') => {
     if (!profile) return;
     
