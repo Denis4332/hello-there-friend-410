@@ -132,11 +132,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
     }
     
-    // auto_confirm ist aktiviert - Supabase sendet KEINE Email
-    // Wir senden unsere eigene Email via Resend
+    // auto_confirm ist AUS - Email-Bestätigung erforderlich
+    // Wir senden unsere eigene Email via Resend (nicht Supabase Auth Emails)
+    const redirectUrl = `${window.location.origin}/profil/erstellen`;
+    
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     });
 
     // Record the attempt result
