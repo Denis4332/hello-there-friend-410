@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +33,7 @@ const Auth = () => {
   const { toast } = useToast();
   const { checkRateLimit, recordAttempt } = useAuthRateLimit();
   const { getSetting } = useSiteSettingsContext();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,12 +59,16 @@ const Auth = () => {
   
   // Check if registration is enabled (default: true)
   const isRegistrationEnabled = allowSelfRegistration !== 'false';
+  
+  // Get redirect target from query params
+  const nextPath = searchParams.get('next') || '/';
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      // Redirect to next path if specified, otherwise home
+      navigate(nextPath, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, nextPath]);
 
   const validate = () => {
     try {
@@ -119,7 +124,7 @@ const Auth = () => {
     }
 
     if (!error) {
-      navigate('/');
+      navigate(nextPath, { replace: true });
     }
   };
 
@@ -186,10 +191,8 @@ const Auth = () => {
         // Continue anyway - user is already registered
       }
       
-      // Store redirect target for after magic link login
-      localStorage.setItem('postAuthRedirect', '/profil/erstellen');
-      
-      // Show success message instead of redirecting
+      // AGB acceptance was recorded, show success
+      // The magic link email now redirects to /auth/callback?next=/profil/erstellen
       setRegisteredEmail(email);
       setRegistrationSuccess(true);
     }

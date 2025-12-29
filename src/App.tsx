@@ -15,7 +15,7 @@ import { ScrollToTop } from "./components/ScrollToTop";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { PageSkeleton } from "./components/PageSkeleton";
-import { PostAuthRedirect } from "./components/PostAuthRedirect";
+
 
 // Eager load only homepage and auth
 import Index from "./pages/Index";
@@ -25,6 +25,7 @@ import ServerError from "./pages/ServerError";
 
 // Lazy load all other pages for optimal code splitting
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Suche = lazy(() => import("./pages/Suche"));
 const Profil = lazy(() => import("./pages/Profil"));
 const Stadt = lazy(() => import("./pages/Stadt"));
@@ -105,12 +106,13 @@ const AppContent = () => {
           <BrowserRouter>
             <ScrollToTop />
             <PageViewTracker />
-            <PostAuthRedirect />
+            
             <BannerManager />
             <Suspense fallback={<PageSkeleton />}>
               <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/suche" element={<Suche />} />
             <Route path="/profil/:slug" element={<Profil />} />
