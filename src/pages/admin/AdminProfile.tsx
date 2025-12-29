@@ -1,4 +1,5 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { AdminProfileCreateDialog } from '@/components/admin/AdminProfileCreateDialog';
 import { BulkImageCompressor } from '@/components/admin/BulkImageCompressor';
@@ -46,8 +47,10 @@ const AdminProfile = () => {
   const { data: basicPrice } = useSiteSetting('pricing_basic_price');
   const { data: premiumPrice } = useSiteSetting('pricing_premium_price');
   const { data: topPrice } = useSiteSetting('pricing_top_price');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [verifiedFilter, setVerifiedFilter] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [verifiedFilter, setVerifiedFilter] = useState(searchParams.get('verified') || '');
+  const [paymentFilter, setPaymentFilter] = useState(searchParams.get('payment') || '');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [dialogStatus, setDialogStatus] = useState('');
   const [dialogVerified, setDialogVerified] = useState(false);
@@ -85,7 +88,7 @@ const AdminProfile = () => {
   const queryClient = useQueryClient();
 
   const { data: profiles, isLoading } = useQuery({
-    queryKey: ['admin-profiles', statusFilter, verifiedFilter],
+    queryKey: ['admin-profiles', statusFilter, verifiedFilter, paymentFilter],
     queryFn: async () => {
       // Erst Admin User IDs holen
       const { data: adminRoles } = await supabase
@@ -119,6 +122,11 @@ const AdminProfile = () => {
         query = query.not('verified_at', 'is', null);
       } else if (verifiedFilter === 'false') {
         query = query.is('verified_at', null);
+      }
+      
+      // Payment filter
+      if (paymentFilter) {
+        query = query.eq('payment_status', paymentFilter);
       }
       
       const { data, error } = await query;
@@ -727,6 +735,20 @@ const AdminProfile = () => {
                   <option value="">Alle</option>
                   <option value="true">Ja</option>
                   <option value="false">Nein</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Zahlung</label>
+                <select
+                  value={paymentFilter}
+                  onChange={(e) => setPaymentFilter(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Alle Zahlungen</option>
+                  <option value="paid">✅ Bezahlt</option>
+                  <option value="pending">⏳ Ausstehend</option>
+                  <option value="free">🎁 Gratis</option>
+                  <option value="failed">❌ Fehlgeschlagen</option>
                 </select>
               </div>
             </div>

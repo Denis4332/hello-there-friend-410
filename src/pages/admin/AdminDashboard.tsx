@@ -14,7 +14,8 @@ import {
   User,
   ShieldAlert,
   Download,
-  Layers
+  Layers,
+  CreditCard
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -26,6 +27,13 @@ const AdminDashboard = () => {
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
+      
+      // Count paid but pending profiles (waiting for admin activation)
+      const { count: paidPendingCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .eq('payment_status', 'paid');
       
       // Count verified profiles
       const { count: verifiedCount } = await supabase
@@ -69,6 +77,14 @@ const AdminDashboard = () => {
           icon: AlertCircle,
           color: 'text-orange-500',
           bgColor: 'bg-orange-50 dark:bg-orange-950'
+        },
+        { 
+          label: 'Bezahlt (wartet)', 
+          value: paidPendingCount || 0, 
+          link: '/admin/profile?status=pending&payment=paid',
+          icon: CreditCard,
+          color: 'text-green-500',
+          bgColor: 'bg-green-50 dark:bg-green-950'
         },
         { 
           label: 'Verifiziert', 
