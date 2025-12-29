@@ -47,8 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
     let confirmationUrl: string;
 
     if (type === "signup_confirmation") {
-      // Generate a magic link - this verifies email AND logs user in
-      // Using magiclink instead of invite/signup to avoid token collision
+      // Generate magic link - confirms email AND logs user in
       const { data, error } = await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
         email: email,
