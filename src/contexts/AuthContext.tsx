@@ -132,16 +132,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
     }
     
-    // Email-Bestätigung ist erforderlich (auto_confirm = false)
-    // Supabase Auth sendet automatisch die Bestätigungs-Email
-    const redirectUrl = `${window.location.origin}/profil/erstellen`;
-    
-    const { error } = await supabase.auth.signUp({
+    // auto_confirm ist aktiviert - Supabase sendet KEINE Email
+    // Wir senden unsere eigene Email via Resend
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
     });
 
     // Record the attempt result
@@ -150,6 +145,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) {
       showError('toast_register_error', error.message);
       return { error };
+    }
+    
+    // Sende Bestätigungs-Email via Resend
+    if (data.user) {
+      try {
+        console.log('Sending Resend verification email to:', email);
+        const { error: emailError } = await supabase.functions.invoke('send-auth-email', {
+          body: {
+            type: 'signup_confirmation',
+            email: email,
+            user_id: data.user.id,
+            redirect_url: `${window.location.origin}/profil/erstellen`,
+          },
+        });
+        
+        if (emailError) {
+          console.error('Failed to send Resend email:', emailError);
+          showCustomError('Konto erstellt, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Support.');
+          return { error: null };
+        }
+      } catch (emailErr) {
+        console.error('Error sending Resend email:', emailErr);
+      }
     }
     
     showSuccess('toast_register_success');
