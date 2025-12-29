@@ -104,8 +104,10 @@ serve(async (req) => {
 
     console.log("[auth-signup] User created successfully:", userData.user.id);
 
-    // Generate magic link for login - redirect to full URL including path
-    const targetUrl = redirect_url || Deno.env.get("SUPABASE_URL");
+    // Use canonical domain for redirect - ensures correct domain in all environments
+    // Default to escoria.ch as the production domain
+    const canonicalBase = "https://escoria.ch";
+    const targetUrl = `${canonicalBase}/auth/callback?next=/profil/erstellen`;
     console.log("[auth-signup] Generating magic link with redirect to:", targetUrl);
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
@@ -158,7 +160,7 @@ serve(async (req) => {
             <div style="text-align: center; margin: 35px 0;">
               <a href="${confirmationUrl}" 
                  style="display: inline-block; background-color: #B91C1C; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(185, 28, 28, 0.4);">
-                Jetzt einloggen
+                Profil erstellen
               </a>
             </div>
             

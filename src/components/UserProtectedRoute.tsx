@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface UserProtectedRouteProps {
@@ -8,22 +7,10 @@ interface UserProtectedRouteProps {
 
 export const UserProtectedRoute = ({ children }: UserProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  const [timedOut, setTimedOut] = useState(false);
+  const location = useLocation();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading) {
-        setTimedOut(true);
-      }
-    }, 5000);
-    
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  if (timedOut && loading) {
-    return <Navigate to="/auth" replace />;
-  }
-
+  // Show loading spinner while checking auth state
+  // No timeout redirect - let the auth state resolve naturally
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -35,8 +22,10 @@ export const UserProtectedRoute = ({ children }: UserProtectedRouteProps) => {
     );
   }
 
+  // If no user, redirect to auth with next param
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    const nextPath = location.pathname + location.search;
+    return <Navigate to={`/auth?next=${encodeURIComponent(nextPath)}`} replace />;
   }
 
   return <>{children}</>;
