@@ -284,20 +284,69 @@ const ProfileCreate = () => {
     }
   }, [currentStep, profileId]);
 
+  const getAmountForListingType = (type: string): number => {
+    const prices: Record<string, number> = {
+      basic: 49,
+      premium: 99,
+      top: 199
+    };
+    return prices[type] || 49;
+  };
+
+  const startPaymentCheckout = async () => {
+    if (!profileId) return;
+
+    try {
+      // Update profile status to pending before payment
+      await supabase
+        .from('profiles')
+        .update({ status: 'pending' })
+        .eq('id', profileId);
+
+      const response = await supabase.functions.invoke('create-payport-checkout', {
+        body: {
+          profile_id: profileId,
+          listing_type: listingType,
+          amount: getAmountForListingType(listingType)
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Checkout konnte nicht erstellt werden');
+      }
+
+      if (response.data?.checkout_url) {
+        // Redirect to PayPort
+        window.location.href = response.data.checkout_url;
+      } else {
+        throw new Error('Keine Checkout-URL erhalten');
+      }
+    } catch (error) {
+      console.error('Payment checkout error:', error);
+      toast({
+        title: 'Zahlungsfehler',
+        description: error instanceof Error ? error.message : 'Zahlung konnte nicht gestartet werden',
+        variant: 'destructive',
+      });
+      // Fallback: Navigate to dashboard where user can retry
+      navigate('/mein-profil');
+    }
+  };
+
   const handleVerificationComplete = () => {
     toast({
-      title: 'Inserat eingereicht!',
-      description: 'Dein Inserat wird in den nächsten 24 Stunden geprüft und freigeschaltet.',
+      title: 'Inserat fast fertig!',
+      description: 'Du wirst jetzt zur Zahlung weitergeleitet...',
     });
-    navigate('/mein-profil');
+    startPaymentCheckout();
   };
 
   const handleVerificationSkip = () => {
     toast({
-      title: 'Inserat eingereicht!',
-      description: 'Dein Inserat wird in den nächsten 24 Stunden geprüft und freigeschaltet.',
+      title: 'Inserat fast fertig!',
+      description: 'Du wirst jetzt zur Zahlung weitergeleitet...',
     });
-    navigate('/mein-profil');
+    startPaymentCheckout();
   };
 
   return (

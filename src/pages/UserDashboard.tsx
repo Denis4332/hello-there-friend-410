@@ -22,6 +22,50 @@ const UserDashboard = () => {
   const [photos, setPhotos] = useState<any[]>([]);
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+
+  const getAmountForListingType = (type: string): number => {
+    const prices: Record<string, number> = {
+      basic: 49,
+      premium: 99,
+      top: 199
+    };
+    return prices[type] || 49;
+  };
+
+  const handlePayNow = async () => {
+    if (!profile) return;
+    
+    setIsPaymentLoading(true);
+    try {
+      const response = await supabase.functions.invoke('create-payport-checkout', {
+        body: {
+          profile_id: profile.id,
+          listing_type: profile.listing_type,
+          amount: getAmountForListingType(profile.listing_type)
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Checkout konnte nicht erstellt werden');
+      }
+
+      if (response.data?.checkout_url) {
+        window.location.href = response.data.checkout_url;
+      } else {
+        throw new Error('Keine Checkout-URL erhalten');
+      }
+    } catch (error) {
+      console.error('Payment checkout error:', error);
+      toast({
+        title: 'Zahlungsfehler',
+        description: error instanceof Error ? error.message : 'Zahlung konnte nicht gestartet werden. Bitte versuche es erneut.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPaymentLoading(false);
+    }
+  };
 
   const { getSetting } = useSiteSettingsContext();
   const seoTitle = getSetting('seo_dashboard_title', 'Dashboard');
@@ -252,7 +296,8 @@ const UserDashboard = () => {
                     <span className="text-sm">
                       Bitte schliesse die Zahlung ab, um dein Inserat zur Prüfung freizugeben.
                     </span>
-                    <Button size="sm" onClick={() => navigate('/user/upgrade')}>
+                    <Button size="sm" onClick={handlePayNow} disabled={isPaymentLoading}>
+                      {isPaymentLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                       Jetzt bezahlen
                     </Button>
                   </div>
