@@ -15,6 +15,7 @@ import { ScrollToTop } from "./components/ScrollToTop";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { PageSkeleton } from "./components/PageSkeleton";
+import { PostAuthRedirect } from "./components/PostAuthRedirect";
 
 // Eager load only homepage and auth
 import Index from "./pages/Index";
@@ -104,6 +105,7 @@ const AppContent = () => {
           <BrowserRouter>
             <ScrollToTop />
             <PageViewTracker />
+            <PostAuthRedirect />
             <BannerManager />
             <Suspense fallback={<PageSkeleton />}>
               <Routes>

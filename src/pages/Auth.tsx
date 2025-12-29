@@ -186,6 +186,9 @@ const Auth = () => {
         // Continue anyway - user is already registered
       }
       
+      // Store redirect target for after magic link login
+      localStorage.setItem('postAuthRedirect', '/profil/erstellen');
+      
       // Show success message instead of redirecting
       setRegisteredEmail(email);
       setRegistrationSuccess(true);
@@ -228,8 +231,7 @@ const Auth = () => {
               </div>
               
               <p className="text-muted-foreground mb-6">
-                Bitte klicke auf den Link in der E-Mail, um dein Konto zu aktivieren.
-                Danach kannst du dich anmelden.
+                Klicke auf den Link in der E-Mail, um dich einzuloggen und dein Profil zu erstellen.
               </p>
               
               <div className="space-y-3">
