@@ -104,15 +104,15 @@ serve(async (req) => {
 
     console.log("[auth-signup] User created successfully:", userData.user.id);
 
-    // Generate magic link for login - redirect to site origin only (paths handled by frontend)
-    const siteOrigin = redirect_url ? new URL(redirect_url).origin : Deno.env.get("SUPABASE_URL");
-    console.log("[auth-signup] Generating magic link with redirect to origin:", siteOrigin);
+    // Generate magic link for login - redirect to full URL including path
+    const targetUrl = redirect_url || Deno.env.get("SUPABASE_URL");
+    console.log("[auth-signup] Generating magic link with redirect to:", targetUrl);
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: email,
       options: {
-        redirectTo: siteOrigin,
+        redirectTo: targetUrl,
       },
     });
 
@@ -127,12 +127,12 @@ serve(async (req) => {
     const confirmationUrl = linkData.properties.action_link;
     console.log("[auth-signup] Magic link generated successfully");
 
-    // Send email via Resend
+    // Send email via Resend - ESCORIA Red Style
     console.log("[auth-signup] Sending confirmation email via Resend...");
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: "ESCORIA <noreply@escoria.ch>",
       to: [email],
-      subject: "Bestätige deine E-Mail-Adresse - ESCORIA",
+      subject: "Willkommen bei ESCORIA - Bestätige deine E-Mail",
       html: `
         <!DOCTYPE html>
         <html>
@@ -140,32 +140,43 @@ serve(async (req) => {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #8B5CF6; margin: 0;">ESCORIA</h1>
+        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #e5e5e5; max-width: 600px; margin: 0 auto; padding: 0; background-color: #0a0a0a;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #141414 0%, #1a1a1a 100%); padding: 40px 20px; text-align: center; border-bottom: 3px solid #B91C1C;">
+            <h1 style="color: #B91C1C; margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 2px;">ESCORIA</h1>
+            <p style="color: #888; margin: 8px 0 0 0; font-size: 14px;">Schweizer Dating-Plattform</p>
           </div>
           
-          <h2 style="color: #333;">Willkommen bei ESCORIA!</h2>
-          
-          <p>Vielen Dank für deine Registrierung. Klicke auf den Button, um dich einzuloggen und dein Profil zu erstellen:</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${confirmationUrl}" 
-               style="display: inline-block; background-color: #8B5CF6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-              Jetzt einloggen
-            </a>
+          <!-- Content -->
+          <div style="background-color: #141414; padding: 40px 30px;">
+            <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 24px;">Willkommen bei ESCORIA!</h2>
+            
+            <p style="color: #b0b0b0; font-size: 16px; margin-bottom: 30px;">
+              Vielen Dank für deine Registrierung. Klicke auf den Button unten, um dich einzuloggen und dein Profil zu erstellen:
+            </p>
+            
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${confirmationUrl}" 
+                 style="display: inline-block; background-color: #B91C1C; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(185, 28, 28, 0.4);">
+                Jetzt einloggen
+              </a>
+            </div>
+            
+            <p style="color: #666; font-size: 13px; margin-top: 30px;">
+              Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br>
+              <a href="${confirmationUrl}" style="color: #B91C1C; word-break: break-all; text-decoration: none;">${confirmationUrl}</a>
+            </p>
           </div>
           
-          <p style="color: #666; font-size: 14px;">
-            Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br>
-            <a href="${confirmationUrl}" style="color: #8B5CF6; word-break: break-all;">${confirmationUrl}</a>
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 12px; text-align: center;">
-            Falls du dich nicht bei ESCORIA registriert hast, kannst du diese E-Mail ignorieren.
-          </p>
+          <!-- Footer -->
+          <div style="background-color: #0a0a0a; padding: 25px 30px; text-align: center; border-top: 1px solid #222;">
+            <p style="color: #555; font-size: 12px; margin: 0;">
+              Falls du dich nicht bei ESCORIA registriert hast, kannst du diese E-Mail ignorieren.
+            </p>
+            <p style="color: #444; font-size: 11px; margin: 10px 0 0 0;">
+              © ${new Date().getFullYear()} ESCORIA - Alle Rechte vorbehalten
+            </p>
+          </div>
         </body>
         </html>
       `,
