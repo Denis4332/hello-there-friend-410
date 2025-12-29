@@ -69,12 +69,12 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Create user with admin API - this does NOT send the default confirmation email
+    // Create user with admin API - email_confirm: true means user is already confirmed (no system mail)
     console.log("[auth-signup] Creating user with admin API...");
     const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: false, // User needs to confirm email
+      email_confirm: true, // User is immediately confirmed - no system confirmation email
     });
 
     if (createError) {
@@ -104,15 +104,15 @@ serve(async (req) => {
 
     console.log("[auth-signup] User created successfully:", userData.user.id);
 
-    // Generate magic link for email confirmation
-    const finalRedirectUrl = redirect_url || Deno.env.get("SUPABASE_URL");
-    console.log("[auth-signup] Generating magic link with redirect:", finalRedirectUrl);
+    // Generate magic link for login - redirect to site origin only (paths handled by frontend)
+    const siteOrigin = redirect_url ? new URL(redirect_url).origin : Deno.env.get("SUPABASE_URL");
+    console.log("[auth-signup] Generating magic link with redirect to origin:", siteOrigin);
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: email,
       options: {
-        redirectTo: finalRedirectUrl,
+        redirectTo: siteOrigin,
       },
     });
 
@@ -147,12 +147,12 @@ serve(async (req) => {
           
           <h2 style="color: #333;">Willkommen bei ESCORIA!</h2>
           
-          <p>Vielen Dank für deine Registrierung. Bitte bestätige deine E-Mail-Adresse, indem du auf den folgenden Button klickst:</p>
+          <p>Vielen Dank für deine Registrierung. Klicke auf den Button, um dich einzuloggen und dein Profil zu erstellen:</p>
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${confirmationUrl}" 
                style="display: inline-block; background-color: #8B5CF6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-              E-Mail bestätigen
+              Jetzt einloggen
             </a>
           </div>
           
