@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string) => {
-    // Validate password strength
+    // Validate password strength (also validated server-side)
     const passwordError = validatePassword(password);
     if (passwordError) {
       showCustomError(passwordError);
@@ -132,51 +132,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: new Error(rateLimitCheck.message || 'Rate limit exceeded') };
     }
     
-    // auto_confirm ist AUS - Email-Bestätigung erforderlich
-    // Wir senden unsere eigene Email via Resend (nicht Supabase Auth Emails)
-    const redirectUrl = `${window.location.origin}/profil/erstellen`;
+    // Signup komplett über Backend-Function - KEINE Standard-Mail wird gesendet
+    // Die Function erstellt den User mit admin.createUser() und sendet NUR unsere Resend-Mail
+    console.log('[signUp] Calling auth-signup function for:', email);
     
-    const { error, data } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('auth-signup', {
+        body: {
+          email,
+          password,
+          redirect_url: `${window.location.origin}/profil/erstellen`,
+        },
+      });
 
-    // Record the attempt result
-    await recordAttempt(email, 'signup', !error);
+      // Record the attempt result
+      await recordAttempt(email, 'signup', !error && !data?.error);
 
-    if (error) {
-      showError('toast_register_error', error.message);
-      return { error };
-    }
-    
-    // Sende Bestätigungs-Email via Resend
-    if (data.user) {
-      try {
-        console.log('Sending Resend verification email to:', email);
-        const { error: emailError } = await supabase.functions.invoke('send-auth-email', {
-          body: {
-            type: 'signup_confirmation',
-            email: email,
-            user_id: data.user.id,
-            redirect_url: `${window.location.origin}/profil/erstellen`,
-          },
-        });
-        
-        if (emailError) {
-          console.error('Failed to send Resend email:', emailError);
-          showCustomError('Konto erstellt, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Support.');
-          return { error: null };
-        }
-      } catch (emailErr) {
-        console.error('Error sending Resend email:', emailErr);
+      if (error) {
+        console.error('[signUp] Function invoke error:', error);
+        showError('toast_register_error', error.message);
+        return { error };
       }
+
+      if (data?.error) {
+        console.error('[signUp] Function returned error:', data.error);
+        showCustomError(data.error);
+        return { error: new Error(data.error) };
+      }
+
+      if (data?.warning) {
+        console.warn('[signUp] Function warning:', data.warning);
+        showCustomError(data.warning);
+      }
+
+      console.log('[signUp] Signup successful');
+      showSuccess('toast_register_success');
+      return { error: null };
+      
+    } catch (err: any) {
+      console.error('[signUp] Unexpected error:', err);
+      await recordAttempt(email, 'signup', false);
+      showCustomError('Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.');
+      return { error: err };
     }
-    
-    showSuccess('toast_register_success');
-    return { error: null };
   };
 
   const signIn = async (email: string, password: string) => {

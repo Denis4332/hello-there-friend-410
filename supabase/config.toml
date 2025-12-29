@@ -77,3 +77,6 @@ verify_jwt = true
 
 [functions.payport-webhook]
 verify_jwt = false
+
+[functions.auth-signup]
+verify_jwt = false
