@@ -200,16 +200,16 @@ serve(async (req) => {
 
     /**
      * HASH BERECHNUNG nach PayPort Dokumentation
-     * Format: accessKey + amount + currency + countryCode + successUrl + secretKey
+     * Format: accessKey + amount + currency + countryCode + secretKey
+     * WICHTIG: Die successUrl ist NICHT Teil des Hashs!
      */
-    const hashString = accessKey + amountStr + currency + countryCode + successUrl + secretKey;
+    const hashString = accessKey + amountStr + currency + countryCode + secretKey;
     
     console.log('[PAYPORT] Hash input components:', {
       accessKeyPrefix: accessKey.substring(0, 8) + '...',
       amountStr,
       currency,
       countryCode,
-      successUrl,
       secretKeyPrefix: secretKey.substring(0, 4) + '...',
       totalHashInputLength: hashString.length,
     });
