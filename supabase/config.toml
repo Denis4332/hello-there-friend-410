@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.check-payport-config]
 verify_jwt = false
+
+[functions.payport-test-links]
+verify_jwt = false
