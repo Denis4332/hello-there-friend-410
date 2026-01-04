@@ -8,6 +8,22 @@
  * AKTUELLER MODUS: TEST (Sandbox)
  * 
  * ============================================================
+ * DEBUG-MODUS OPTIONEN (via Secrets):
+ * ============================================================
+ * 
+ * PAYPORT_FORCE_RETURN_ORIGIN - Überschreibt die Return-URL Origin
+ *   Beispiel: "https://test.web" für Whitelist-Test
+ * 
+ * PAYPORT_AMOUNT_MULTIPLIER - Multiplikator für Amount (Default: 1)
+ *   Beispiel: "100" falls PayPort Rappen statt CHF erwartet
+ * 
+ * PAYPORT_NOTIFY_PARAM - Parameter-Name für Notify-URL (optional)
+ *   Beispiel: "n" 
+ * 
+ * PAYPORT_CANCEL_PARAM - Parameter-Name für Cancel-URL (optional)
+ *   Beispiel: "k"
+ * 
+ * ============================================================
  * PAYPORT INTEGRATION - VOLLSTÄNDIGE DATEIEN-LISTE:
  * ============================================================
  * 
@@ -85,7 +101,8 @@ serve(async (req) => {
   try {
     const { profile_id, listing_type, amount } = await req.json();
     
-    console.log('[PAYPORT] Checkout Request:', { profile_id, listing_type, amount });
+    console.log('[PAYPORT] ========== CHECKOUT REQUEST ==========');
+    console.log('[PAYPORT] Input:', { profile_id, listing_type, amount });
 
     if (!profile_id || !listing_type || !amount) {
       throw new Error('Missing required parameters: profile_id, listing_type, amount');
@@ -101,6 +118,14 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+    /**
+     * DEBUG OPTIONS - Optionale Overrides für Testing
+     */
+    const forceReturnOrigin = (Deno.env.get('PAYPORT_FORCE_RETURN_ORIGIN') || '').trim();
+    const amountMultiplier = parseInt(Deno.env.get('PAYPORT_AMOUNT_MULTIPLIER') || '1', 10) || 1;
+    const notifyParam = (Deno.env.get('PAYPORT_NOTIFY_PARAM') || '').trim();
+    const cancelParam = (Deno.env.get('PAYPORT_CANCEL_PARAM') || '').trim();
+
     // Detaillierte Fehlerprüfung
     if (!accessKey) {
       console.error('[PAYPORT] PAYPORT_ACCESS_KEY nicht konfiguriert!');
@@ -112,11 +137,18 @@ serve(async (req) => {
     }
 
     console.log('[PAYPORT] Config loaded:', {
-      accessKeyPrefix: accessKey.substring(0, 6) + '...',
+      accessKeyPrefix: accessKey.substring(0, 8) + '...',
       accessKeyLength: accessKey.length,
       secretKeyLength: secretKey.length,
       countryCode,
       checkoutUrlHost: new URL(checkoutUrl).host,
+    });
+    
+    console.log('[PAYPORT] Debug options:', {
+      forceReturnOrigin: forceReturnOrigin || '(not set - using request origin)',
+      amountMultiplier,
+      notifyParam: notifyParam || '(not set)',
+      cancelParam: cancelParam || '(not set)',
     });
 
     // Create Supabase admin client
@@ -129,22 +161,41 @@ serve(async (req) => {
     console.log('[PAYPORT] Generated Reference ID:', referenceId);
 
     /**
-     * AMOUNT NORMALISIERUNG - Sicherstellen dass es ein sauberer String ist
+     * AMOUNT NORMALISIERUNG
+     * - Multiplier erlaubt Test ob PayPort Rappen statt CHF erwartet
      */
-    const amountStr = String(amount).trim();
+    const rawAmount = Number(amount);
+    const finalAmount = rawAmount * amountMultiplier;
+    const amountStr = String(finalAmount).trim();
+    
+    console.log('[PAYPORT] Amount calculation:', {
+      rawAmount,
+      amountMultiplier,
+      finalAmount,
+      amountStr,
+    });
     
     const currency = 'CHF';
-    const origin = req.headers.get('origin') || 'https://escoria.ch';
-    const successUrl = `${origin}/zahlung/erfolg?ref=${referenceId}`;
-    const cancelUrl = `${origin}/zahlung/abgebrochen`;
+    
+    /**
+     * ORIGIN HANDLING
+     * - Wenn PAYPORT_FORCE_RETURN_ORIGIN gesetzt ist, wird diese verwendet
+     * - Sonst wird die Origin aus dem Request Header genommen
+     * - Fallback auf escoria.ch
+     */
+    const requestOrigin = req.headers.get('origin') || 'https://escoria.ch';
+    const effectiveOrigin = forceReturnOrigin || requestOrigin;
+    
+    const successUrl = `${effectiveOrigin}/zahlung/erfolg?ref=${referenceId}`;
+    const cancelUrl = `${effectiveOrigin}/zahlung/abgebrochen`;
     const notifyUrl = `${supabaseUrl}/functions/v1/payport-webhook`;
 
-    console.log('[PAYPORT] Payment params:', {
-      amountStr,
-      currency,
-      countryCode,
-      origin,
+    console.log('[PAYPORT] URL configuration:', {
+      requestOrigin,
+      effectiveOrigin,
       successUrl,
+      cancelUrl,
+      notifyUrl,
     });
 
     /**
@@ -153,13 +204,13 @@ serve(async (req) => {
      */
     const hashString = accessKey + amountStr + currency + countryCode + successUrl + secretKey;
     
-    console.log('[PAYPORT] Hash input (ohne secrets):', {
-      accessKeyPrefix: accessKey.substring(0, 6),
+    console.log('[PAYPORT] Hash input components:', {
+      accessKeyPrefix: accessKey.substring(0, 8) + '...',
       amountStr,
       currency,
       countryCode,
       successUrl,
-      secretKeyLength: secretKey.length,
+      secretKeyPrefix: secretKey.substring(0, 4) + '...',
       totalHashInputLength: hashString.length,
     });
     
@@ -170,7 +221,7 @@ serve(async (req) => {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    console.log('[PAYPORT] Hash generated:', hash.substring(0, 16) + '...');
+    console.log('[PAYPORT] Hash generated:', hash.substring(0, 20) + '...');
 
     /**
      * PROFIL UPDATE - Setzt payment_reference für späteren Webhook-Abgleich
@@ -198,6 +249,8 @@ serve(async (req) => {
      * CHECKOUT URL ZUSAMMENBAUEN
      * PayPort erwartet Kurzkeys laut Dokumentation:
      * ak = Access Key, cc = Country Code, r = Return URL, h = Hash
+     * 
+     * Optionale Parameter werden nur hinzugefügt wenn konfiguriert
      */
     const params = new URLSearchParams({
       ak: accessKey,
@@ -208,16 +261,40 @@ serve(async (req) => {
       h: hash,
     });
     
-    console.log('[PAYPORT] Final URL params:', params.toString().replace(accessKey, '[AK]').replace(hash, hash.substring(0, 12) + '...'));
+    // Optionale Notify-URL hinzufügen
+    if (notifyParam) {
+      params.set(notifyParam, notifyUrl);
+      console.log('[PAYPORT] Added notify URL with param:', notifyParam);
+    }
+    
+    // Optionale Cancel-URL hinzufügen
+    if (cancelParam) {
+      params.set(cancelParam, cancelUrl);
+      console.log('[PAYPORT] Added cancel URL with param:', cancelParam);
+    }
 
     const fullCheckoutUrl = `${checkoutUrl}?${params.toString()}`;
     
-    console.log('[PAYPORT] Checkout URL generated successfully');
+    // DEBUG: Vollständige URL loggen (mit maskierten Secrets)
+    const maskedUrl = fullCheckoutUrl
+      .replace(accessKey, '[ACCESS_KEY]')
+      .replace(hash, '[HASH]');
+    
+    console.log('[PAYPORT] ========== FINAL CHECKOUT URL ==========');
+    console.log('[PAYPORT] Masked URL:', maskedUrl);
+    console.log('[PAYPORT] URL Length:', fullCheckoutUrl.length);
+    console.log('[PAYPORT] ===========================================');
 
     return new Response(
       JSON.stringify({ 
         checkout_url: fullCheckoutUrl,
-        reference_id: referenceId 
+        reference_id: referenceId,
+        debug: {
+          effectiveOrigin,
+          amountUsed: amountStr,
+          amountMultiplier,
+          forceReturnOriginActive: !!forceReturnOrigin,
+        }
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
