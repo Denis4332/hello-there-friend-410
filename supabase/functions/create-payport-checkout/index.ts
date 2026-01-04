@@ -182,19 +182,19 @@ serve(async (req) => {
 
     /**
      * CHECKOUT URL ZUSAMMENBAUEN
-     * Alle Parameter werden als Query-String übergeben
+     * PayPort erwartet Kurzkeys laut Dokumentation:
+     * ak = Access Key, cc = Country Code, r = Return URL, h = Hash
      */
     const params = new URLSearchParams({
-      accessKey: accessKey,
-      referenceId: referenceId,
-      amount: amount.toString(),
-      currency: currency,
-      country: countryCode,
-      successUrl: successUrl,
-      cancelUrl: cancelUrl,
-      notifyUrl: notifyUrl,
-      hash: hash,
+      ak: accessKey,
+      r: successUrl,
+      a: amount.toString(),
+      c: currency,
+      cc: countryCode,
+      h: hash,
     });
+    
+    console.log('[PAYPORT] Using short parameter keys: ak, r, a, c, cc, h');
 
     const fullCheckoutUrl = `${checkoutUrl}?${params.toString()}`;
     
