@@ -55,14 +55,40 @@ const ProfileUpgrade = () => {
     }
   };
 
-  // TODO: PayPort Integration - wird nach Klärung mit PayPort implementiert
+  const getAmountForListingType = (type: string): number => {
+    const prices: Record<string, number> = {
+      basic: 49,
+      premium: 99,
+      top: 199
+    };
+    return prices[type] || 49;
+  };
+
   const handleUpgrade = async (listingType: 'basic' | 'premium' | 'top') => {
     if (!profile) return;
     
-    toast({
-      title: 'Upgrade wird vorbereitet...',
-      description: 'PayPort Integration wird noch konfiguriert.',
-    });
+    try {
+      const amountCents = getAmountForListingType(listingType) * 100;
+      
+      const { data, error } = await supabase.functions.invoke('payport-checkout', {
+        body: {
+          orderId: profile.id,
+          amountCents,
+          returnUrl: window.location.origin + '/payport/return'
+        }
+      });
+      
+      if (error) throw error;
+      
+      console.log('PayPort Debug:', data.debug);
+      window.location.href = data.redirectUrl;
+    } catch (error: any) {
+      toast({
+        title: 'Zahlungsfehler',
+        description: error.message || 'Ein Fehler ist aufgetreten',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleReactivate = async (listingType: string) => {

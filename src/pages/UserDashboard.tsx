@@ -33,16 +33,33 @@ const UserDashboard = () => {
     return prices[type] || 49;
   };
 
-  // TODO: PayPort Integration - wird nach Klärung mit PayPort implementiert
   const handlePayNow = async () => {
     if (!profile) return;
     
     setIsPaymentLoading(true);
-    toast({
-      title: 'Zahlung wird eingerichtet...',
-      description: 'PayPort Integration wird noch konfiguriert.',
-    });
-    setIsPaymentLoading(false);
+    try {
+      const amountCents = getAmountForListingType(profile.listing_type) * 100;
+      
+      const { data, error } = await supabase.functions.invoke('payport-checkout', {
+        body: {
+          orderId: profile.id,
+          amountCents,
+          returnUrl: window.location.origin + '/payport/return'
+        }
+      });
+      
+      if (error) throw error;
+      
+      console.log('PayPort Debug:', data.debug);
+      window.location.href = data.redirectUrl;
+    } catch (error: any) {
+      toast({
+        title: 'Zahlungsfehler',
+        description: error.message || 'Ein Fehler ist aufgetreten',
+        variant: 'destructive',
+      });
+      setIsPaymentLoading(false);
+    }
   };
 
   const { getSetting } = useSiteSettingsContext();
