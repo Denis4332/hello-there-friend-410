@@ -293,7 +293,6 @@ const ProfileCreate = () => {
     return prices[type] || 49;
   };
 
-  // TODO: PayPort Integration - wird nach Klärung mit PayPort implementiert
   const startPaymentCheckout = async () => {
     if (!profileId) return;
 
@@ -304,18 +303,25 @@ const ProfileCreate = () => {
         .update({ status: 'pending' })
         .eq('id', profileId);
 
-      toast({
-        title: 'Profil erstellt!',
-        description: 'Zahlung wird noch eingerichtet. Du wirst zum Dashboard weitergeleitet.',
+      const amountCents = getAmountForListingType(listingType) * 100;
+      
+      const { data, error } = await supabase.functions.invoke('payport-checkout', {
+        body: {
+          orderId: profileId,
+          amountCents,
+          returnUrl: window.location.origin + '/payport/return'
+        }
       });
       
-      // Redirect to dashboard - payment will be handled there
-      navigate('/mein-profil');
-    } catch (error) {
-      console.error('Profile update error:', error);
+      if (error) throw error;
+      
+      console.log('PayPort Debug:', data.debug);
+      window.location.href = data.redirectUrl;
+    } catch (error: any) {
+      console.error('PayPort checkout error:', error);
       toast({
-        title: 'Fehler',
-        description: 'Profil konnte nicht aktualisiert werden',
+        title: 'Zahlungsfehler',
+        description: error.message || 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
       navigate('/mein-profil');
