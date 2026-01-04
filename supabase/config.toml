@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.auth-signup]
 verify_jwt = false
+
+[functions.check-payport-config]
+verify_jwt = false
