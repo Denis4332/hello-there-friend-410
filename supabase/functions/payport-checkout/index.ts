@@ -48,11 +48,14 @@ serve(async (req) => {
     // Build params (alphabetically sorted keys)
     const ts = Math.floor(Date.now() / 1000).toString(); // SECONDS!
     
+    // ID auf max 20 Zeichen kürzen (PayPort Limit)
+    const id = String(orderId).replace(/-/g, '').slice(0, 20);
+    
     const params: Record<string, string> = {
       a: amountCents.toString(),
       ak: accessKey,
       cc: countryCode,
-      id: orderId,
+      id: id,
       r: returnUrl, // RAW, not URL-encoded in hash
       ts: ts
     };
