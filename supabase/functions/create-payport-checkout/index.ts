@@ -135,28 +135,31 @@ serve(async (req) => {
 
     /**
      * HASH BERECHNUNG nach PayPort Dokumentation
-     * Format: accessKey + referenceId + amount + currency + successUrl + cancelUrl + notifyUrl + secretKey
+     * WICHTIG: Hash muss GENAU die Parameter enthalten die an PayPort gesendet werden!
+     * Gesendete Parameter: ak (accessKey), a (amount), c (currency), cc (countryCode), r (successUrl)
+     * Format: accessKey + amount + currency + countryCode + successUrl + secretKey
      */
-    const hashString = accessKey + referenceId + amount + currency + successUrl + cancelUrl + notifyUrl + secretKey;
+    const hashString = accessKey + amount + currency + countryCode + successUrl + secretKey;
+    
+    console.log('[PAYPORT] Hash input parameters:', {
+      accessKey: accessKey?.substring(0, 8) + '...',
+      amount,
+      currency,
+      countryCode,
+      successUrl,
+      secretKeyLength: secretKey?.length
+    });
     
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(secretKey);
     const data = encoder.encode(hashString);
     
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-    
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, data);
-    const hash = Array.from(new Uint8Array(signature))
+    // SHA-256 Hash (nicht HMAC, sondern einfacher Hash)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hash = Array.from(new Uint8Array(hashBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
     
-    console.log('[PAYPORT] Hash generated successfully');
+    console.log('[PAYPORT] Hash generated:', hash.substring(0, 16) + '...');
 
     /**
      * PROFIL UPDATE - Setzt payment_reference für späteren Webhook-Abgleich
