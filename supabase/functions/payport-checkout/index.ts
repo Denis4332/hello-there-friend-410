@@ -63,7 +63,7 @@ serve(async (req) => {
     // Build prehash: alphabetically sorted "key=value" joined with ";" + secret appended
     // h is NOT in prehash
     const sortedKeys = Object.keys(params).sort();
-    const prehash = sortedKeys.map(k => `${k}=${params[k]}`).join(';') + secret;
+    const prehash = sortedKeys.map(k => `${k}=${params[k]}`).join(';') + ';' + secret;
 
     // Calculate SHA1 hash
     const h = await sha1(prehash);
