@@ -3,84 +3,29 @@
  * PAYPORT ZAHLUNGSINTEGRATION - CHECKOUT ERSTELLEN
  * ============================================================
  * 
- * Diese Edge Function erstellt PayPort Checkout-Sessions.
- * 
- * AKTUELLER MODUS: TEST (Sandbox)
- * 
- * ============================================================
- * DEBUG-MODUS OPTIONEN (via Secrets):
- * ============================================================
- * 
- * PAYPORT_FORCE_RETURN_ORIGIN - Überschreibt die Return-URL Origin
- *   Beispiel: "https://test.web" für Whitelist-Test
- * 
- * PAYPORT_AMOUNT_MULTIPLIER - Multiplikator für Amount (Default: 1)
- *   Beispiel: "100" falls PayPort Rappen statt CHF erwartet
- * 
- * PAYPORT_NOTIFY_PARAM - Parameter-Name für Notify-URL (optional)
- *   Beispiel: "n" 
- * 
- * PAYPORT_CANCEL_PARAM - Parameter-Name für Cancel-URL (optional)
- *   Beispiel: "k"
+ * MINIMAL VERSION - Exakt wie in PayPort Mail spezifiziert
+ * URL Format: https://test-pip3.payport.ch/prepare/checkout?ak=XXX&cc=YY&r=ZZZ&h=HHH
  * 
  * ============================================================
- * PAYPORT INTEGRATION - VOLLSTÄNDIGE DATEIEN-LISTE:
+ * HASH-MODI (gesteuert durch PAYPORT_HASH_MODE Secret):
  * ============================================================
  * 
- * BACKEND (Edge Functions):
- * 1. supabase/functions/create-payport-checkout/index.ts - Checkout erstellen (DIESE DATEI)
- * 2. supabase/functions/payport-webhook/index.ts - Zahlungsbestätigung empfangen
- * 
- * FRONTEND (React Seiten die Checkout aufrufen):
- * 3. src/pages/UserDashboard.tsx - "Jetzt bezahlen" Button (handlePayNow)
- * 4. src/pages/ProfileCreate.tsx - Checkout nach Profilerstellung (startPaymentCheckout)
- * 5. src/pages/ProfileUpgrade.tsx - Upgrade Zahlungen (handleUpgrade)
- * 
- * FRONTEND (Ergebnis-Seiten):
- * 6. src/pages/ZahlungErfolg.tsx - Erfolgsseite nach Zahlung
- * 7. src/pages/ZahlungAbgebrochen.tsx - Abbruch-Seite
- * 
- * ADMIN:
- * 8. src/pages/admin/AdminPendingPayments.tsx - Manuelle Zahlungsverwaltung
- * 9. src/pages/admin/AdminDashboard.tsx - "Bezahlt (wartet)" Karte
- * 10. src/pages/admin/AdminProfile.tsx - Payment-Filter in Profilliste
+ * - AK_CC_SECRET: sha256(ak + cc + secret)
+ * - AK_SECRET: sha256(ak + secret)
+ * - AK_R_SECRET: sha256(ak + returnUrl + secret)
+ * - FULL: sha256(ak + amount + currency + cc + secret) [default]
  * 
  * ============================================================
- * CHECKLISTE FÜR PRODUKTIONSWECHSEL:
+ * WICHTIGE SECRETS:
  * ============================================================
  * 
- * Ändere diese 4 Secrets in Lovable Cloud > Secrets:
+ * PAYPORT_ACCESS_KEY - Der Access Key
+ * PAYPORT_SECRET_KEY - Der Secret Key für Hash
+ * PAYPORT_COUNTRY_CODE - TE (Test) oder CH (Produktion)
+ * PAYPORT_CHECKOUT_URL_HOST - test-pip3.payport.ch oder pip3.payport.ch
+ * PAYPORT_FORCE_RETURN_ORIGIN - z.B. "https://test.web"
+ * PAYPORT_HASH_MODE - AK_CC_SECRET, AK_SECRET, AK_R_SECRET, oder FULL
  * 
- * [ ] 1. PAYPORT_ACCESS_KEY
- *     - Test: [dein aktueller Test-Key]
- *     - Produktion: [echter Access Key von PayPort]
- * 
- * [ ] 2. PAYPORT_SECRET_KEY
- *     - Test: [dein aktueller Test-Key]
- *     - Produktion: [echter Secret Key von PayPort]
- * 
- * [ ] 3. PAYPORT_CHECKOUT_URL
- *     - Test: https://test-pip3.payport.ch/prepare/checkout
- *     - Produktion: https://pip3.payport.ch/prepare/checkout
- *     WICHTIG: Das "test-" Präfix MUSS entfernt werden!
- * 
- * [ ] 4. PAYPORT_COUNTRY_CODE
- *     - Test: TE
- *     - Produktion: CH
- * 
- * ============================================================
- * NACH DEM WECHSEL - TESTSCHRITTE:
- * ============================================================
- * 
- * [ ] 1. Testzahlung mit echtem Kleinbetrag durchführen
- * [ ] 2. Prüfen: PayPort Webhook wird aufgerufen
- * [ ] 3. Prüfen: Profile payment_status = 'paid' gesetzt
- * [ ] 4. Prüfen: Admin-Dashboard zeigt "Bezahlt (wartet)"
- * [ ] 5. Prüfen: Admin kann Profil manuell aktivieren
- * 
- * ============================================================
- * WICHTIG: KEIN CODE MUSS GEÄNDERT WERDEN!
- * Nur die 4 Secrets oben anpassen = fertig!
  * ============================================================
  */
 
@@ -101,7 +46,7 @@ serve(async (req) => {
   try {
     const { profile_id, listing_type, amount } = await req.json();
     
-    console.log('[PAYPORT] ========== CHECKOUT REQUEST ==========');
+    console.log('[PAYPORT] ========== CHECKOUT REQUEST (MINIMAL) ==========');
     console.log('[PAYPORT] Input:', { profile_id, listing_type, amount });
 
     if (!profile_id || !listing_type || !amount) {
@@ -109,24 +54,21 @@ serve(async (req) => {
     }
 
     /**
-     * PAYPORT SECRETS - Defensiv trimmen gegen Copy/Paste Fehler
+     * PAYPORT SECRETS
      */
     const accessKey = (Deno.env.get('PAYPORT_ACCESS_KEY') || '').trim();
     const secretKey = (Deno.env.get('PAYPORT_SECRET_KEY') || '').trim();
     const countryCode = (Deno.env.get('PAYPORT_COUNTRY_CODE') || 'TE').trim().toUpperCase();
-    const checkoutUrl = (Deno.env.get('PAYPORT_CHECKOUT_URL') || 'https://test-pip3.payport.ch/prepare/checkout').trim().replace(/\/+$/, '');
+    const checkoutUrlHost = (Deno.env.get('PAYPORT_CHECKOUT_URL_HOST') || 'test-pip3.payport.ch').trim();
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     /**
-     * DEBUG OPTIONS - Optionale Overrides für Testing
+     * DEBUG OPTIONS
      */
     const forceReturnOrigin = (Deno.env.get('PAYPORT_FORCE_RETURN_ORIGIN') || '').trim();
-    const amountMultiplier = parseInt(Deno.env.get('PAYPORT_AMOUNT_MULTIPLIER') || '1', 10) || 1;
-    const notifyParam = (Deno.env.get('PAYPORT_NOTIFY_PARAM') || '').trim();
-    const cancelParam = (Deno.env.get('PAYPORT_CANCEL_PARAM') || '').trim();
+    const hashMode = (Deno.env.get('PAYPORT_HASH_MODE') || 'FULL').trim().toUpperCase();
 
-    // Detaillierte Fehlerprüfung
     if (!accessKey) {
       console.error('[PAYPORT] PAYPORT_ACCESS_KEY nicht konfiguriert!');
       throw new Error('PAYPORT_ACCESS_KEY not configured');
@@ -136,19 +78,14 @@ serve(async (req) => {
       throw new Error('PAYPORT_SECRET_KEY not configured');
     }
 
-    console.log('[PAYPORT] Config loaded:', {
+    console.log('[PAYPORT] Config:', {
       accessKeyPrefix: accessKey.substring(0, 8) + '...',
       accessKeyLength: accessKey.length,
       secretKeyLength: secretKey.length,
       countryCode,
-      checkoutUrlHost: new URL(checkoutUrl).host,
-    });
-    
-    console.log('[PAYPORT] Debug options:', {
-      forceReturnOrigin: forceReturnOrigin || '(not set - using request origin)',
-      amountMultiplier,
-      notifyParam: notifyParam || '(not set)',
-      cancelParam: cancelParam || '(not set)',
+      checkoutUrlHost,
+      hashMode,
+      forceReturnOrigin: forceReturnOrigin || '(request origin)',
     });
 
     // Create Supabase admin client
@@ -158,60 +95,49 @@ serve(async (req) => {
     const timestamp = Date.now();
     const referenceId = `ESC-${timestamp}-${listing_type.toUpperCase()}`;
     
-    console.log('[PAYPORT] Generated Reference ID:', referenceId);
+    console.log('[PAYPORT] Reference ID:', referenceId);
 
     /**
-     * AMOUNT NORMALISIERUNG
-     * - Multiplier erlaubt Test ob PayPort Rappen statt CHF erwartet
-     */
-    const rawAmount = Number(amount);
-    const finalAmount = rawAmount * amountMultiplier;
-    const amountStr = String(finalAmount).trim();
-    
-    console.log('[PAYPORT] Amount calculation:', {
-      rawAmount,
-      amountMultiplier,
-      finalAmount,
-      amountStr,
-    });
-    
-    const currency = 'CHF';
-    
-    /**
-     * ORIGIN HANDLING
-     * - Wenn PAYPORT_FORCE_RETURN_ORIGIN gesetzt ist, wird diese verwendet
-     * - Sonst wird die Origin aus dem Request Header genommen
-     * - Fallback auf escoria.ch
+     * RETURN URL - NUR DIE DOMAIN (wie in PayPort Mail)
      */
     const requestOrigin = req.headers.get('origin') || 'https://escoria.ch';
-    const effectiveOrigin = forceReturnOrigin || requestOrigin;
+    const returnUrl = forceReturnOrigin || requestOrigin;
     
-    const successUrl = `${effectiveOrigin}/zahlung/erfolg?ref=${referenceId}`;
-    const cancelUrl = `${effectiveOrigin}/zahlung/abgebrochen`;
-    const notifyUrl = `${supabaseUrl}/functions/v1/payport-webhook`;
-
-    console.log('[PAYPORT] URL configuration:', {
-      requestOrigin,
-      effectiveOrigin,
-      successUrl,
-      cancelUrl,
-      notifyUrl,
-    });
+    console.log('[PAYPORT] Return URL (domain only):', returnUrl);
 
     /**
-     * HASH BERECHNUNG nach PayPort Dokumentation
-     * Format: accessKey + amount + currency + countryCode + secretKey
-     * WICHTIG: Die successUrl ist NICHT Teil des Hashs!
+     * HASH BERECHNUNG - Multiple Modi für Testing
      */
-    const hashString = accessKey + amountStr + currency + countryCode + secretKey;
+    const currency = 'CHF';
+    const amountStr = String(amount);
     
-    console.log('[PAYPORT] Hash input components:', {
-      accessKeyPrefix: accessKey.substring(0, 8) + '...',
-      amountStr,
-      currency,
-      countryCode,
-      secretKeyPrefix: secretKey.substring(0, 4) + '...',
-      totalHashInputLength: hashString.length,
+    let hashString: string;
+    let hashDescription: string;
+    
+    switch (hashMode) {
+      case 'AK_CC_SECRET':
+        hashString = accessKey + countryCode + secretKey;
+        hashDescription = 'ak + cc + secret';
+        break;
+      case 'AK_SECRET':
+        hashString = accessKey + secretKey;
+        hashDescription = 'ak + secret';
+        break;
+      case 'AK_R_SECRET':
+        hashString = accessKey + returnUrl + secretKey;
+        hashDescription = 'ak + returnUrl + secret';
+        break;
+      case 'FULL':
+      default:
+        hashString = accessKey + amountStr + currency + countryCode + secretKey;
+        hashDescription = 'ak + amount + currency + cc + secret';
+        break;
+    }
+
+    console.log('[PAYPORT] Hash calculation:', {
+      mode: hashMode,
+      description: hashDescription,
+      inputLength: hashString.length,
     });
     
     const encoder = new TextEncoder();
@@ -224,8 +150,7 @@ serve(async (req) => {
     console.log('[PAYPORT] Hash generated:', hash.substring(0, 20) + '...');
 
     /**
-     * PROFIL UPDATE - Setzt payment_reference für späteren Webhook-Abgleich
-     * payment_status bleibt 'pending' bis Webhook 'paid' setzt
+     * PROFIL UPDATE
      */
     const { error: updateError } = await supabase
       .from('profiles')
@@ -243,57 +168,41 @@ serve(async (req) => {
       throw new Error('Failed to update profile with payment reference');
     }
 
-    console.log('[PAYPORT] Profile updated with payment reference');
+    console.log('[PAYPORT] Profile updated');
 
     /**
-     * CHECKOUT URL ZUSAMMENBAUEN
-     * PayPort erwartet Kurzkeys laut Dokumentation:
-     * ak = Access Key, cc = Country Code, r = Return URL, h = Hash
-     * 
-     * Optionale Parameter werden nur hinzugefügt wenn konfiguriert
+     * CHECKOUT URL - MINIMAL (nur ak, cc, r, h)
+     * Exakt wie in PayPort Mail beschrieben!
      */
     const params = new URLSearchParams({
       ak: accessKey,
-      r: successUrl,
-      a: amountStr,
-      c: currency,
       cc: countryCode,
+      r: returnUrl,
       h: hash,
     });
-    
-    // Optionale Notify-URL hinzufügen
-    if (notifyParam) {
-      params.set(notifyParam, notifyUrl);
-      console.log('[PAYPORT] Added notify URL with param:', notifyParam);
-    }
-    
-    // Optionale Cancel-URL hinzufügen
-    if (cancelParam) {
-      params.set(cancelParam, cancelUrl);
-      console.log('[PAYPORT] Added cancel URL with param:', cancelParam);
-    }
 
-    const fullCheckoutUrl = `${checkoutUrl}?${params.toString()}`;
+    const fullCheckoutUrl = `https://${checkoutUrlHost}/prepare/checkout?${params.toString()}`;
     
-    // DEBUG: Vollständige URL loggen (mit maskierten Secrets)
+    // Maskierte URL für Logs
     const maskedUrl = fullCheckoutUrl
-      .replace(accessKey, '[ACCESS_KEY]')
+      .replace(accessKey, '[AK]')
       .replace(hash, '[HASH]');
     
-    console.log('[PAYPORT] ========== FINAL CHECKOUT URL ==========');
-    console.log('[PAYPORT] Masked URL:', maskedUrl);
-    console.log('[PAYPORT] URL Length:', fullCheckoutUrl.length);
-    console.log('[PAYPORT] ===========================================');
+    console.log('[PAYPORT] ========== FINAL URL (MINIMAL) ==========');
+    console.log('[PAYPORT] Params: ak, cc, r, h ONLY');
+    console.log('[PAYPORT] Masked:', maskedUrl);
+    console.log('[PAYPORT] Length:', fullCheckoutUrl.length);
+    console.log('[PAYPORT] ==========================================');
 
     return new Response(
       JSON.stringify({ 
         checkout_url: fullCheckoutUrl,
         reference_id: referenceId,
         debug: {
-          effectiveOrigin,
-          amountUsed: amountStr,
-          amountMultiplier,
-          forceReturnOriginActive: !!forceReturnOrigin,
+          hashMode,
+          hashDescription,
+          returnUrl,
+          params: 'ak, cc, r, h (MINIMAL)',
         }
       }),
       { 
@@ -303,7 +212,7 @@ serve(async (req) => {
     );
 
   } catch (error: unknown) {
-    console.error('[PAYPORT] Error creating checkout:', error);
+    console.error('[PAYPORT] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
