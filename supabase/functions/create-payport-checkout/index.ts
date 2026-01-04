@@ -92,25 +92,32 @@ serve(async (req) => {
     }
 
     /**
-     * PAYPORT SECRETS - Bei Produktionswechsel hier anpassen:
-     * Gehe zu Lovable Cloud > Secrets und ändere diese Werte
+     * PAYPORT SECRETS - Defensiv trimmen gegen Copy/Paste Fehler
      */
-    const accessKey = Deno.env.get('PAYPORT_ACCESS_KEY');
-    const secretKey = Deno.env.get('PAYPORT_SECRET_KEY');
-    // PRODUKTION: Ändere zu 'CH'
-    const countryCode = Deno.env.get('PAYPORT_COUNTRY_CODE') || 'TE';
-    // PRODUKTION: Ändere zu 'https://pip3.payport.ch/prepare/checkout' (OHNE test-)
-    const checkoutUrl = Deno.env.get('PAYPORT_CHECKOUT_URL') || 'https://test-pip3.payport.ch/prepare/checkout';
+    const accessKey = (Deno.env.get('PAYPORT_ACCESS_KEY') || '').trim();
+    const secretKey = (Deno.env.get('PAYPORT_SECRET_KEY') || '').trim();
+    const countryCode = (Deno.env.get('PAYPORT_COUNTRY_CODE') || 'TE').trim().toUpperCase();
+    const checkoutUrl = (Deno.env.get('PAYPORT_CHECKOUT_URL') || 'https://test-pip3.payport.ch/prepare/checkout').trim().replace(/\/+$/, '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!accessKey || !secretKey) {
-      console.error('[PAYPORT] Secrets nicht konfiguriert!');
-      throw new Error('PayPort credentials not configured');
+    // Detaillierte Fehlerprüfung
+    if (!accessKey) {
+      console.error('[PAYPORT] PAYPORT_ACCESS_KEY nicht konfiguriert!');
+      throw new Error('PAYPORT_ACCESS_KEY not configured');
+    }
+    if (!secretKey) {
+      console.error('[PAYPORT] PAYPORT_SECRET_KEY nicht konfiguriert!');
+      throw new Error('PAYPORT_SECRET_KEY not configured');
     }
 
-    console.log('[PAYPORT] Using checkout URL:', checkoutUrl);
-    console.log('[PAYPORT] Country code:', countryCode);
+    console.log('[PAYPORT] Config loaded:', {
+      accessKeyPrefix: accessKey.substring(0, 6) + '...',
+      accessKeyLength: accessKey.length,
+      secretKeyLength: secretKey.length,
+      countryCode,
+      checkoutUrlHost: new URL(checkoutUrl).host,
+    });
 
     // Create Supabase admin client
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
@@ -122,38 +129,42 @@ serve(async (req) => {
     console.log('[PAYPORT] Generated Reference ID:', referenceId);
 
     /**
-     * PAYPORT PARAMETER - Diese bleiben bei Produktionswechsel gleich
+     * AMOUNT NORMALISIERUNG - Sicherstellen dass es ein sauberer String ist
      */
-    const currency = 'CHF';
-    const successUrl = `${req.headers.get('origin') || 'https://escoria.ch'}/zahlung/erfolg?ref=${referenceId}`;
-    const cancelUrl = `${req.headers.get('origin') || 'https://escoria.ch'}/zahlung/abgebrochen`;
-    // Webhook URL - bleibt immer gleich (Supabase Edge Function)
-    const notifyUrl = `${supabaseUrl}/functions/v1/payport-webhook`;
+    const amountStr = String(amount).trim();
     
-    console.log('[PAYPORT] Success URL:', successUrl);
-    console.log('[PAYPORT] Webhook URL:', notifyUrl);
+    const currency = 'CHF';
+    const origin = req.headers.get('origin') || 'https://escoria.ch';
+    const successUrl = `${origin}/zahlung/erfolg?ref=${referenceId}`;
+    const cancelUrl = `${origin}/zahlung/abgebrochen`;
+    const notifyUrl = `${supabaseUrl}/functions/v1/payport-webhook`;
+
+    console.log('[PAYPORT] Payment params:', {
+      amountStr,
+      currency,
+      countryCode,
+      origin,
+      successUrl,
+    });
 
     /**
      * HASH BERECHNUNG nach PayPort Dokumentation
-     * WICHTIG: Hash muss GENAU die Parameter enthalten die an PayPort gesendet werden!
-     * Gesendete Parameter: ak (accessKey), a (amount), c (currency), cc (countryCode), r (successUrl)
      * Format: accessKey + amount + currency + countryCode + successUrl + secretKey
      */
-    const hashString = accessKey + amount + currency + countryCode + successUrl + secretKey;
+    const hashString = accessKey + amountStr + currency + countryCode + successUrl + secretKey;
     
-    console.log('[PAYPORT] Hash input parameters:', {
-      accessKey: accessKey?.substring(0, 8) + '...',
-      amount,
+    console.log('[PAYPORT] Hash input (ohne secrets):', {
+      accessKeyPrefix: accessKey.substring(0, 6),
+      amountStr,
       currency,
       countryCode,
       successUrl,
-      secretKeyLength: secretKey?.length
+      secretKeyLength: secretKey.length,
+      totalHashInputLength: hashString.length,
     });
     
     const encoder = new TextEncoder();
     const data = encoder.encode(hashString);
-    
-    // SHA-256 Hash (nicht HMAC, sondern einfacher Hash)
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hash = Array.from(new Uint8Array(hashBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
@@ -191,13 +202,13 @@ serve(async (req) => {
     const params = new URLSearchParams({
       ak: accessKey,
       r: successUrl,
-      a: amount.toString(),
+      a: amountStr,
       c: currency,
       cc: countryCode,
       h: hash,
     });
     
-    console.log('[PAYPORT] Using short parameter keys: ak, r, a, c, cc, h');
+    console.log('[PAYPORT] Final URL params:', params.toString().replace(accessKey, '[AK]').replace(hash, hash.substring(0, 12) + '...'));
 
     const fullCheckoutUrl = `${checkoutUrl}?${params.toString()}`;
     
