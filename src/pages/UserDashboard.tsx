@@ -33,51 +33,16 @@ const UserDashboard = () => {
     return prices[type] || 49;
   };
 
-  /**
-   * ============================================================
-   * PAYPORT: Startet Checkout-Prozess
-   * ============================================================
-   * 
-   * Diese Funktion ruft die Edge Function 'create-payport-checkout' auf.
-   * 
-   * BEIM PRODUKTIONSWECHSEL: KEINE Änderung nötig!
-   * Die Edge Function verwendet die korrekten Secrets aus Lovable Cloud.
-   * 
-   * Siehe: supabase/functions/create-payport-checkout/index.ts
-   * ============================================================
-   */
+  // TODO: PayPort Integration - wird nach Klärung mit PayPort implementiert
   const handlePayNow = async () => {
     if (!profile) return;
     
     setIsPaymentLoading(true);
-    try {
-      const response = await supabase.functions.invoke('create-payport-checkout', {
-        body: {
-          profile_id: profile.id,
-          listing_type: profile.listing_type,
-          amount: getAmountForListingType(profile.listing_type)
-        }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Checkout konnte nicht erstellt werden');
-      }
-
-      if (response.data?.checkout_url) {
-        window.location.href = response.data.checkout_url;
-      } else {
-        throw new Error('Keine Checkout-URL erhalten');
-      }
-    } catch (error) {
-      console.error('Payment checkout error:', error);
-      toast({
-        title: 'Zahlungsfehler',
-        description: error instanceof Error ? error.message : 'Zahlung konnte nicht gestartet werden. Bitte versuche es erneut.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsPaymentLoading(false);
-    }
+    toast({
+      title: 'Zahlung wird eingerichtet...',
+      description: 'PayPort Integration wird noch konfiguriert.',
+    });
+    setIsPaymentLoading(false);
   };
 
   const { getSetting } = useSiteSettingsContext();

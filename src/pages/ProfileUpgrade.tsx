@@ -55,62 +55,14 @@ const ProfileUpgrade = () => {
     }
   };
 
-  /**
-   * ============================================================
-   * PAYPORT: Checkout für Upgrade-Zahlungen
-   * ============================================================
-   * 
-   * Diese Funktion wird aufgerufen wenn User sein Paket upgraden will.
-   * 
-   * BEIM PRODUKTIONSWECHSEL: KEINE Änderung nötig!
-   * Die Edge Function verwendet die korrekten Secrets aus Lovable Cloud.
-   * 
-   * Siehe: supabase/functions/create-payport-checkout/index.ts
-   * ============================================================
-   */
+  // TODO: PayPort Integration - wird nach Klärung mit PayPort implementiert
   const handleUpgrade = async (listingType: 'basic' | 'premium' | 'top') => {
     if (!profile) return;
     
-    try {
-      // Get amount based on listing type
-      const priceMap: Record<string, number> = {
-        basic: parseFloat(basicPrice.replace(/[^0-9.]/g, '')) || 49,
-        premium: parseFloat(premiumPrice.replace(/[^0-9.]/g, '')) || 99,
-        top: parseFloat(topPrice.replace(/[^0-9.]/g, '')) || 199,
-      };
-      const amount = priceMap[listingType];
-
-      toast({
-        title: 'Weiterleitung zur Zahlung...',
-        description: 'Sie werden zur PayPort Zahlungsseite weitergeleitet.',
-      });
-
-      // Call edge function to create PayPort checkout
-      const { data, error } = await supabase.functions.invoke('create-payport-checkout', {
-        body: {
-          profile_id: profile.id,
-          listing_type: listingType,
-          amount: amount,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.checkout_url) {
-        // Redirect to PayPort checkout
-        window.location.href = data.checkout_url;
-      } else {
-        throw new Error('Keine Checkout-URL erhalten');
-      }
-      
-    } catch (error: any) {
-      console.error('PayPort checkout error:', error);
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Fehler bei der Zahlungsvorbereitung',
-        variant: 'destructive',
-      });
-    }
+    toast({
+      title: 'Upgrade wird vorbereitet...',
+      description: 'PayPort Integration wird noch konfiguriert.',
+    });
   };
 
   const handleReactivate = async (listingType: string) => {

@@ -293,20 +293,7 @@ const ProfileCreate = () => {
     return prices[type] || 49;
   };
 
-  /**
-   * ============================================================
-   * PAYPORT: Checkout nach Profilerstellung
-   * ============================================================
-   * 
-   * Diese Funktion wird aufgerufen nachdem User sein Profil
-   * erstellt hat und zur Zahlung weitergeleitet werden soll.
-   * 
-   * BEIM PRODUKTIONSWECHSEL: KEINE Änderung nötig!
-   * Die Edge Function verwendet die korrekten Secrets aus Lovable Cloud.
-   * 
-   * Siehe: supabase/functions/create-payport-checkout/index.ts
-   * ============================================================
-   */
+  // TODO: PayPort Integration - wird nach Klärung mit PayPort implementiert
   const startPaymentCheckout = async () => {
     if (!profileId) return;
 
@@ -317,32 +304,20 @@ const ProfileCreate = () => {
         .update({ status: 'pending' })
         .eq('id', profileId);
 
-      const response = await supabase.functions.invoke('create-payport-checkout', {
-        body: {
-          profile_id: profileId,
-          listing_type: listingType,
-          amount: getAmountForListingType(listingType)
-        }
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Checkout konnte nicht erstellt werden');
-      }
-
-      if (response.data?.checkout_url) {
-        // Redirect to PayPort
-        window.location.href = response.data.checkout_url;
-      } else {
-        throw new Error('Keine Checkout-URL erhalten');
-      }
-    } catch (error) {
-      console.error('Payment checkout error:', error);
       toast({
-        title: 'Zahlungsfehler',
-        description: error instanceof Error ? error.message : 'Zahlung konnte nicht gestartet werden',
+        title: 'Profil erstellt!',
+        description: 'Zahlung wird noch eingerichtet. Du wirst zum Dashboard weitergeleitet.',
+      });
+      
+      // Redirect to dashboard - payment will be handled there
+      navigate('/mein-profil');
+    } catch (error) {
+      console.error('Profile update error:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Profil konnte nicht aktualisiert werden',
         variant: 'destructive',
       });
-      // Fallback: Navigate to dashboard where user can retry
       navigate('/mein-profil');
     }
   };
