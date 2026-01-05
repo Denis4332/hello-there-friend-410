@@ -110,6 +110,31 @@ serve(async (req) => {
     console.log('Redirect URL:', redirectUrl);
     console.log('==============================');
 
+    // Save payment_reference in profile for reliable matching on return
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Update profile with payment_reference = shortened id (for matching on return)
+      const { data: updateData, error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          payment_reference: id,
+          payment_status: 'pending'
+        })
+        .eq('id', orderId)
+        .select('id');
+
+      if (updateError) {
+        console.error('Failed to save payment_reference:', updateError);
+      } else {
+        const rowcount = updateData?.length || 0;
+        console.log('Saved payment_reference for profile:', { profileId: orderId, payportId: id, rowcount });
+      }
+    }
+
     return new Response(
       JSON.stringify({
         redirectUrl,
