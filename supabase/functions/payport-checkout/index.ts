@@ -27,11 +27,11 @@ serve(async (req) => {
     const countryCode = Deno.env.get('PAYPORT_CC') || 'TE';
     const checkoutUrl = Deno.env.get('PAYPORT_CHECKOUT_URL') || 'https://test-pip3.payport.ch/prepare/checkout';
     const currency = Deno.env.get('PAYPORT_C');
-    const paymentType = Deno.env.get('PAYPORT_PT');
-    const paymentSource = Deno.env.get('PAYPORT_PS'); // optional
+    const defaultPaymentType = Deno.env.get('PAYPORT_PT');
+    const defaultPaymentSource = Deno.env.get('PAYPORT_PS'); // optional
 
-    if (!accessKey || !secret || !currency || !paymentType) {
-      console.error('Missing required PayPort config (AK, SECRET, C, or PT)');
+    if (!accessKey || !secret || !currency) {
+      console.error('Missing required PayPort config (AK, SECRET, or C)');
       return new Response(
         JSON.stringify({ error: 'PayPort not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -39,13 +39,29 @@ serve(async (req) => {
     }
 
     // Parse input
-    const { orderId, amountCents, returnUrl } = await req.json();
+    const { orderId, amountCents, returnUrl, method } = await req.json();
 
     if (!orderId || !amountCents || !returnUrl) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: orderId, amountCents, returnUrl' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Determine pt and ps based on method parameter
+    let pt: string;
+    let ps: string | undefined;
+    
+    if (method === 'PHONE') {
+      pt = 'PHONE';
+      ps = 'TARIFF-CHANGE';
+    } else if (method === 'SMS') {
+      pt = 'SMS';
+      ps = 'VOUCHER';
+    } else {
+      // Fallback to secrets for backward compatibility
+      pt = defaultPaymentType || 'SMS';
+      ps = defaultPaymentSource;
     }
 
     // Build params (alphabetically sorted keys)
@@ -60,14 +76,14 @@ serve(async (req) => {
       c: currency,
       cc: countryCode,
       id: id,
-      pt: paymentType,
+      pt: pt,
       r: returnUrl,
       ts: ts
     };
 
     // ps nur hinzufügen wenn vorhanden und nicht leer
-    if (paymentSource && paymentSource.trim() !== '') {
-      params.ps = paymentSource;
+    if (ps && ps.trim() !== '') {
+      params.ps = ps;
     }
 
     // Build prehash: alphabetically sorted "key=value" joined with ";" + secret appended
