@@ -22,9 +22,19 @@ Deno.serve(async (req) => {
     // Get secrets
     const secret = Deno.env.get('PAYPORT_SECRET');
     const accessKey = Deno.env.get('PAYPORT_AK');
-    const apiBaseUrlRaw = Deno.env.get('PAYPORT_API_BASE_URL') || 'https://test-pip3api.payport.ch';
-    const apiBaseUrl = apiBaseUrlRaw.replace(/\/api\/?$/, '');
+    // PAYPORT_API_BASE_URL muss /api enthalten, z.B. "https://test-pip3api.payport.ch/api"
+    const apiBaseUrlRaw = Deno.env.get('PAYPORT_API_BASE_URL') || 'https://test-pip3api.payport.ch/api';
+    // NUR trailing slash entfernen, /api NICHT entfernen!
+    const apiBaseUrl = apiBaseUrlRaw.replace(/\/$/, '');
     const apiInterface = Deno.env.get('PAYPORT_INTERFACE') || 'pip3';
+
+    // Log config at start for debugging
+    console.log('PayPortReturn CONFIG', { 
+      apiBaseUrl, 
+      apiInterface, 
+      hasAK: !!accessKey, 
+      hasSecret: !!secret 
+    });
 
     if (!secret || !accessKey) {
       console.error('PayPortReturn CONFIG_ERROR - Missing PAYPORT_SECRET or PAYPORT_AK');
