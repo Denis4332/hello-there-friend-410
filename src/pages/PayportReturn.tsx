@@ -40,7 +40,7 @@ const PayportReturn = () => {
 
         // Redirect to the URL provided by the edge function
         // Use window.location.assign for hard reload to ensure fresh profile data
-        const redirectUrl = data?.redirect || '/mein-profil?payment=unknown&ts=' + Date.now();
+        const redirectUrl = data?.redirect || '/mein-profil?payment=failed&step=no_redirect&ts=' + Date.now();
         window.location.assign(redirectUrl);
       } catch (err) {
         console.error('PayportReturn - Exception:', err);

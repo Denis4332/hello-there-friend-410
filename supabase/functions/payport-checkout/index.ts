@@ -28,10 +28,10 @@ serve(async (req) => {
     const checkoutUrl = Deno.env.get('PAYPORT_CHECKOUT_URL') || 'https://test-pip3.payport.ch/prepare/checkout';
     const currency = Deno.env.get('PAYPORT_C');
     const defaultPaymentType = Deno.env.get('PAYPORT_PT');
-    const defaultPaymentSource = Deno.env.get('PAYPORT_PS'); // optional
+    const defaultPaymentSource = Deno.env.get('PAYPORT_PS');
 
     if (!accessKey || !secret || !currency) {
-      console.error('Missing required PayPort config (AK, SECRET, or C)');
+      console.error('PAYPORT_CHECKOUT CONFIG_ERROR - Missing AK, SECRET, or C');
       return new Response(
         JSON.stringify({ error: 'PayPort not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -59,13 +59,12 @@ serve(async (req) => {
       pt = 'SMS';
       ps = 'VOUCHER';
     } else {
-      // Fallback to secrets for backward compatibility
       pt = defaultPaymentType || 'SMS';
       ps = defaultPaymentSource;
     }
 
     // Build params (alphabetically sorted keys)
-    const ts = Math.floor(Date.now() / 1000).toString(); // SECONDS!
+    const ts = Math.floor(Date.now() / 1000).toString();
     
     // ID auf max 20 Zeichen kürzen (PayPort Limit)
     const id = String(orderId).replace(/-/g, '').slice(0, 20);
@@ -81,43 +80,29 @@ serve(async (req) => {
       ts: ts
     };
 
-    // ps nur hinzufügen wenn vorhanden und nicht leer
     if (ps && ps.trim() !== '') {
       params.ps = ps;
     }
 
-    // Build prehash: alphabetically sorted "key=value" joined with ";" + secret appended
-    // h is NOT in prehash
     const sortedKeys = Object.keys(params).sort();
     const prehash = sortedKeys.map(k => `${k}=${params[k]}`).join(';') + ';' + secret;
-
-    // Calculate SHA1 hash
     const h = await sha1(prehash);
 
-    // Build redirect URL with all params including h
     const urlParams = new URLSearchParams();
     sortedKeys.forEach(k => urlParams.append(k, params[k]));
     urlParams.append('h', h);
 
     const redirectUrl = `${checkoutUrl}?${urlParams.toString()}`;
 
-    // Log for debugging
-    console.log('=== PayPort Checkout Debug ===');
-    console.log('Input:', { orderId, amountCents, returnUrl });
-    console.log('Params:', params);
-    console.log('Prehash:', prehash);
-    console.log('Hash (h):', h);
-    console.log('Redirect URL:', redirectUrl);
-    console.log('==============================');
+    console.log('PAYPORT_CHECKOUT', { orderId, amountCents, payportId: id, method: pt });
 
-    // Save payment_reference in profile for reliable matching on return
+    // CRITICAL: Save payment_reference for reliable matching on return
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
       
-      // Update profile with payment_reference = shortened id (for matching on return)
       const { data: updateData, error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -127,12 +112,23 @@ serve(async (req) => {
         .eq('id', orderId)
         .select('id');
 
-      if (updateError) {
-        console.error('Failed to save payment_reference:', updateError);
-      } else {
-        const rowcount = updateData?.length || 0;
-        console.log('Saved payment_reference for profile:', { profileId: orderId, payportId: id, rowcount });
+      const rowcount = updateData?.length || 0;
+      console.log('PAYPORT_CHECKOUT MAPPING', { profileId: orderId, payportId: id, rowcount });
+
+      // HARD RULE: must link exactly 1 profile, otherwise abort checkout
+      if (updateError || rowcount !== 1) {
+        console.error('PAYPORT_CHECKOUT MAPPING_FAILED', { profileId: orderId, payportId: id, rowcount, updateError });
+        return new Response(
+          JSON.stringify({ error: 'Could not link payment to profile' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+    } else {
+      console.error('PAYPORT_CHECKOUT NO_SUPABASE - cannot save mapping');
+      return new Response(
+        JSON.stringify({ error: 'Database not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(
@@ -148,7 +144,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('PayPort checkout error:', error);
+    console.error('PAYPORT_CHECKOUT EXCEPTION', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),
