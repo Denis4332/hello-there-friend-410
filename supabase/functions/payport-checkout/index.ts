@@ -26,9 +26,12 @@ serve(async (req) => {
     const secret = Deno.env.get('PAYPORT_SECRET');
     const countryCode = Deno.env.get('PAYPORT_CC') || 'TE';
     const checkoutUrl = Deno.env.get('PAYPORT_CHECKOUT_URL') || 'https://test-pip3.payport.ch/prepare/checkout';
+    const currency = Deno.env.get('PAYPORT_C');
+    const paymentType = Deno.env.get('PAYPORT_PT');
+    const paymentSource = Deno.env.get('PAYPORT_PS'); // optional
 
-    if (!accessKey || !secret) {
-      console.error('Missing PAYPORT_AK or PAYPORT_SECRET');
+    if (!accessKey || !secret || !currency || !paymentType) {
+      console.error('Missing required PayPort config (AK, SECRET, C, or PT)');
       return new Response(
         JSON.stringify({ error: 'PayPort not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -54,11 +57,18 @@ serve(async (req) => {
     const params: Record<string, string> = {
       a: amountCents.toString(),
       ak: accessKey,
+      c: currency,
       cc: countryCode,
       id: id,
-      r: returnUrl, // RAW, not URL-encoded in hash
+      pt: paymentType,
+      r: returnUrl,
       ts: ts
     };
+
+    // ps nur hinzufügen wenn vorhanden und nicht leer
+    if (paymentSource && paymentSource.trim() !== '') {
+      params.ps = paymentSource;
+    }
 
     // Build prehash: alphabetically sorted "key=value" joined with ";" + secret appended
     // h is NOT in prehash
