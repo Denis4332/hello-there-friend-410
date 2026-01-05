@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.payport-checkout]
 verify_jwt = true
+
+[functions.payport-return]
+verify_jwt = false
