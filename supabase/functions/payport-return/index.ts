@@ -22,7 +22,8 @@ Deno.serve(async (req) => {
     // Get secrets
     const secret = Deno.env.get('PAYPORT_SECRET');
     const accessKey = Deno.env.get('PAYPORT_AK');
-    const apiBaseUrl = Deno.env.get('PAYPORT_API_BASE_URL') || 'https://test-pip3api.payport.ch/api';
+    const apiBaseUrlRaw = Deno.env.get('PAYPORT_API_BASE_URL') || 'https://test-pip3api.payport.ch';
+    const apiBaseUrl = apiBaseUrlRaw.replace(/\/api\/?$/, ''); // Strip trailing /api if present
     const apiInterface = Deno.env.get('PAYPORT_INTERFACE') || 'pip3';
 
     if (!secret || !accessKey) {
