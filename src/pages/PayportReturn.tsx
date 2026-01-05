@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
 const PayportReturn = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'redirecting'>('loading');
+  const debug = searchParams.get('debug') === '1';
 
   useEffect(() => {
     const processPayment = async () => {
@@ -16,34 +16,40 @@ const PayportReturn = () => {
         params[key] = value;
       });
 
-      console.log('PayportReturn - Processing with params:', params);
+      if (debug) {
+        console.log('PayportReturn - Processing with params:', params);
+      }
 
       try {
         const { data, error } = await supabase.functions.invoke('payport-return', {
           body: params
         });
 
-        console.log('PayportReturn - Response:', data, error);
+        if (debug) {
+          console.log('PayportReturn - Response:', data, error);
+        }
 
         setStatus('redirecting');
 
         if (error) {
           console.error('PayportReturn - Error:', error);
-          navigate('/mein-profil?payment=error');
+          // Hard reload to ensure fresh state
+          window.location.assign('/mein-profil?payment=error&ts=' + Date.now());
           return;
         }
 
         // Redirect to the URL provided by the edge function
-        const redirectUrl = data?.redirect || '/mein-profil?payment=unknown';
-        navigate(redirectUrl);
+        // Use window.location.assign for hard reload to ensure fresh profile data
+        const redirectUrl = data?.redirect || '/mein-profil?payment=unknown&ts=' + Date.now();
+        window.location.assign(redirectUrl);
       } catch (err) {
         console.error('PayportReturn - Exception:', err);
-        navigate('/mein-profil?payment=error');
+        window.location.assign('/mein-profil?payment=error&ts=' + Date.now());
       }
     };
 
     processPayment();
-  }, [searchParams, navigate]);
+  }, [searchParams, debug]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
