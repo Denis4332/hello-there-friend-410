@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
+import { PaymentMethodModal } from '@/components/PaymentMethodModal';
 
 const ProfileUpgrade = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const ProfileUpgrade = () => {
   const { toast } = useToast();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedListingType, setSelectedListingType] = useState<'basic' | 'premium' | 'top' | null>(null);
 
   const { getSetting } = useSiteSettingsContext();
   const basicTitle = getSetting('pricing_basic_title', 'Standard Inserat');
@@ -64,17 +67,24 @@ const ProfileUpgrade = () => {
     return prices[type] || 49;
   };
 
-  const handleUpgrade = async (listingType: 'basic' | 'premium' | 'top') => {
+  const handleUpgrade = (listingType: 'basic' | 'premium' | 'top') => {
     if (!profile) return;
+    setSelectedListingType(listingType);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentMethodSelect = async (method: 'PHONE' | 'SMS') => {
+    if (!profile || !selectedListingType) return;
     
     try {
-      const amountCents = getAmountForListingType(listingType) * 100;
+      const amountCents = getAmountForListingType(selectedListingType) * 100;
       
       const { data, error } = await supabase.functions.invoke('payport-checkout', {
         body: {
           orderId: profile.id,
           amountCents,
-          returnUrl: window.location.origin + '/payport/return'
+          returnUrl: window.location.origin + '/payport/return',
+          method
         }
       });
       
@@ -88,6 +98,7 @@ const ProfileUpgrade = () => {
         description: error.message || 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
+      setShowPaymentModal(false);
     }
   };
 
@@ -444,6 +455,12 @@ const ProfileUpgrade = () => {
           </Card>
         </div>
       </main>
+
+      <PaymentMethodModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSelectMethod={handlePaymentMethodSelect}
+      />
     </>
   );
 };

@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Lock, Heart, Plus, MessageCircle } from 'lucide-react';
+import { PaymentMethodModal } from '@/components/PaymentMethodModal';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
 const UserDashboard = () => {
@@ -23,6 +24,7 @@ const UserDashboard = () => {
   const [deleteConfirmed, setDeleteConfirmed] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const getAmountForListingType = (type: string): number => {
     const prices: Record<string, number> = {
@@ -33,7 +35,12 @@ const UserDashboard = () => {
     return prices[type] || 49;
   };
 
-  const handlePayNow = async () => {
+  const handlePayNow = () => {
+    if (!profile) return;
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentMethodSelect = async (method: 'PHONE' | 'SMS') => {
     if (!profile) return;
     
     setIsPaymentLoading(true);
@@ -44,7 +51,8 @@ const UserDashboard = () => {
         body: {
           orderId: profile.id,
           amountCents,
-          returnUrl: window.location.origin + '/payport/return'
+          returnUrl: window.location.origin + '/payport/return',
+          method
         }
       });
       
@@ -59,6 +67,7 @@ const UserDashboard = () => {
         variant: 'destructive',
       });
       setIsPaymentLoading(false);
+      setShowPaymentModal(false);
     }
   };
 
@@ -626,6 +635,12 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
+
+      <PaymentMethodModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSelectMethod={handlePaymentMethodSelect}
+      />
     </>
   );
 };
