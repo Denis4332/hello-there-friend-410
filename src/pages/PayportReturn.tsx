@@ -1,42 +1,58 @@
-import { useSearchParams, Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 const PayportReturn = () => {
   const [searchParams] = useSearchParams();
-  
-  // Get all query parameters
-  const allParams: Record<string, string> = {};
-  searchParams.forEach((value, key) => {
-    allParams[key] = value;
-  });
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<'loading' | 'redirecting'>('loading');
+
+  useEffect(() => {
+    const processPayment = async () => {
+      // Get all query parameters from PayPort callback
+      const params: Record<string, string> = {};
+      searchParams.forEach((value, key) => {
+        params[key] = value;
+      });
+
+      console.log('PayportReturn - Processing with params:', params);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('payport-return', {
+          body: params
+        });
+
+        console.log('PayportReturn - Response:', data, error);
+
+        setStatus('redirecting');
+
+        if (error) {
+          console.error('PayportReturn - Error:', error);
+          navigate('/mein-profil?payment=error');
+          return;
+        }
+
+        // Redirect to the URL provided by the edge function
+        const redirectUrl = data?.redirect || '/mein-profil?payment=unknown';
+        navigate(redirectUrl);
+      } catch (err) {
+        console.error('PayportReturn - Exception:', err);
+        navigate('/mein-profil?payment=error');
+      }
+    };
+
+    processPayment();
+  }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>PayPort Rückkehr</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Query-Parameter (Debug):
-          </div>
-          
-          <div className="bg-muted p-4 rounded-md overflow-auto max-h-64">
-            <pre className="text-xs whitespace-pre-wrap break-all">
-              {JSON.stringify(allParams, null, 2)}
-            </pre>
-          </div>
-
-          <Button asChild className="w-full">
-            <Link to="/mein-profil">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Zurück zum Dashboard
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+        <p className="text-muted-foreground">
+          {status === 'loading' ? 'Zahlung wird geprüft...' : 'Weiterleitung...'}
+        </p>
+      </div>
     </div>
   );
 };
