@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -87,6 +87,38 @@ const UserDashboard = () => {
   const labelAbout = getSetting('dashboard_label_about', 'Über mich');
   const labelCategories = getSetting('dashboard_label_categories', 'Kategorien');
   const photosTitle = getSetting('dashboard_photos_title', 'Fotos');
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Show toast for payment status from URL parameter
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast({
+        title: 'Zahlung erfolgreich!',
+        description: 'Dein Inserat ist jetzt aktiv.',
+      });
+      searchParams.delete('payment');
+      setSearchParams(searchParams, { replace: true });
+    } else if (paymentStatus === 'failed') {
+      toast({
+        title: 'Zahlung fehlgeschlagen',
+        description: 'Bitte versuche es erneut.',
+        variant: 'destructive',
+      });
+      searchParams.delete('payment');
+      setSearchParams(searchParams, { replace: true });
+    } else if (paymentStatus === 'hash_error' || paymentStatus === 'error') {
+      toast({
+        title: 'Ein Fehler ist aufgetreten',
+        description: 'Bitte kontaktiere den Support.',
+        variant: 'destructive',
+      });
+      searchParams.delete('payment');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   useEffect(() => {
     loadProfile();
