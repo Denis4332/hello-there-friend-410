@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
+import { PaymentMethodModal } from '@/components/PaymentMethodModal';
 
 const ProfileCreate = () => {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ const ProfileCreate = () => {
   const [currentStep, setCurrentStep] = useState<'form' | 'listing-type' | 'photos' | 'verification'>('form');
   const [agbAccepted, setAgbAccepted] = useState(false);
   const [uploadedPhotoCount, setUploadedPhotoCount] = useState(0);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const { getSetting } = useSiteSettingsContext();
   const seoTitle = getSetting('seo_profile_create_title', 'Inserat erstellen');
@@ -293,7 +295,8 @@ const ProfileCreate = () => {
     return prices[type] || 49;
   };
 
-  const startPaymentCheckout = async () => {
+  // WICHTIG: PayPort nur über Modal starten - nie direkt!
+  const startPaymentCheckoutWithMethod = async (method: 'PHONE' | 'SMS') => {
     if (!profileId) return;
 
     try {
@@ -309,13 +312,19 @@ const ProfileCreate = () => {
         body: {
           orderId: profileId,
           amountCents,
-          returnUrl: window.location.origin + '/payport/return'
+          returnUrl: window.location.origin + '/payport/return',
+          method  // PFLICHT-Parameter: 'PHONE' oder 'SMS'
         }
       });
       
       if (error) throw error;
       
-      console.log('PayPort Debug:', data.debug);
+      // Debug-Logging nur mit ?debug=1
+      const debug = new URLSearchParams(window.location.search).get('debug') === '1';
+      if (debug) {
+        console.log('PayPort Debug:', data.debug);
+      }
+      
       window.location.href = data.redirectUrl;
     } catch (error: any) {
       console.error('PayPort checkout error:', error);
@@ -324,24 +333,27 @@ const ProfileCreate = () => {
         description: error.message || 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
+      setShowPaymentModal(false);
       navigate('/mein-profil');
     }
   };
 
+  // Modal öffnen statt Auto-Redirect!
   const handleVerificationComplete = () => {
     toast({
       title: 'Inserat fast fertig!',
-      description: 'Du wirst jetzt zur Zahlung weitergeleitet...',
+      description: 'Bitte wähle eine Zahlungsmethode...',
     });
-    startPaymentCheckout();
+    setShowPaymentModal(true);
   };
 
+  // Modal öffnen statt Auto-Redirect!
   const handleVerificationSkip = () => {
     toast({
       title: 'Inserat fast fertig!',
-      description: 'Du wirst jetzt zur Zahlung weitergeleitet...',
+      description: 'Bitte wähle eine Zahlungsmethode...',
     });
-    startPaymentCheckout();
+    setShowPaymentModal(true);
   };
 
   return (
@@ -468,6 +480,13 @@ const ProfileCreate = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Method Modal - PayPort nur hier starten! */}
+      <PaymentMethodModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSelectMethod={startPaymentCheckoutWithMethod}
+      />
     </>
   );
 };

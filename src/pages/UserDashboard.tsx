@@ -58,7 +58,11 @@ const UserDashboard = () => {
       
       if (error) throw error;
       
-      console.log('PayPort Debug:', data.debug);
+      // Debug-Logging nur mit ?debug=1
+      const debug = new URLSearchParams(window.location.search).get('debug') === '1';
+      if (debug) {
+        console.log('PayPort Debug:', data.debug);
+      }
       window.location.href = data.redirectUrl;
     } catch (error: any) {
       toast({

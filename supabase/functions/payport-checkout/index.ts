@@ -48,7 +48,7 @@ serve(async (req) => {
       );
     }
 
-    // Determine pt and ps based on method parameter
+    // Determine pt and ps based on method parameter - PFLICHT!
     let pt: string;
     let ps: string | undefined;
     
@@ -57,10 +57,14 @@ serve(async (req) => {
       ps = 'TARIFF-CHANGE';
     } else if (method === 'SMS') {
       pt = 'SMS';
-      ps = 'VOUCHER';
+      ps = 'VERIFICATION';  // Geändert von VOUCHER
     } else {
-      pt = defaultPaymentType || 'SMS';
-      ps = defaultPaymentSource;
+      // Kein Fallback - method ist Pflicht
+      console.error('PAYPORT_CHECKOUT ERROR - Missing method parameter');
+      return new Response(
+        JSON.stringify({ error: 'Missing required field: method (PHONE or SMS)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Build params (alphabetically sorted keys)
@@ -94,7 +98,18 @@ serve(async (req) => {
 
     const redirectUrl = `${checkoutUrl}?${urlParams.toString()}`;
 
-    console.log('PAYPORT_CHECKOUT', { orderId, amountCents, payportId: id, method: pt });
+    // Erweitertes Logging (ohne Secrets)
+    console.log('PAYPORT_CHECKOUT REQUEST', { 
+      orderId, 
+      amountCents, 
+      method,       // Input-Parameter
+      pt,           // Payment Type
+      ps,           // Payment Source
+      a: params.a,
+      c: params.c,
+      cc: params.cc,
+      id: params.id
+    });
 
     // CRITICAL: Save payment_reference for reliable matching on return
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
