@@ -22,10 +22,11 @@ Deno.serve(async (req) => {
     // Get secrets
     const secret = Deno.env.get('PAYPORT_SECRET');
     const accessKey = Deno.env.get('PAYPORT_AK');
-    // PAYPORT_API_BASE_URL muss /api enthalten, z.B. "https://test-pip3api.payport.ch/api"
+    // PAYPORT_API_BASE_URL kann mit oder ohne /api kommen
+    // Für Backend-API-Calls (getTransactionStatus, releaseTransaction) MUSS /api entfernt werden
     const apiBaseUrlRaw = Deno.env.get('PAYPORT_API_BASE_URL') || 'https://test-pip3api.payport.ch/api';
-    // NUR trailing slash entfernen, /api NICHT entfernen!
-    const apiBaseUrl = apiBaseUrlRaw.replace(/\/$/, '');
+    // Trailing slash UND /api am Ende entfernen für Backend-API-Calls
+    const apiBaseUrl = apiBaseUrlRaw.replace(/\/$/, '').replace(/\/api$/, '');
     const apiInterface = Deno.env.get('PAYPORT_INTERFACE') || 'pip3';
 
     // Log config at start for debugging
