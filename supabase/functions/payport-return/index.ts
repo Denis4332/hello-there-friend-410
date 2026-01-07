@@ -22,11 +22,12 @@ Deno.serve(async (req) => {
     // Get secrets
     const secret = Deno.env.get('PAYPORT_SECRET');
     const accessKey = Deno.env.get('PAYPORT_AK');
-    // PAYPORT_API_BASE_URL kann mit oder ohne /api kommen
-    // Für Backend-API-Calls (getTransactionStatus, releaseTransaction) MUSS /api entfernt werden
+    // PAYPORT_API_BASE_URL MUSS /api enthalten: "https://test-pip3api.payport.ch/api"
+    // Laut PayPort Support: API-Endpoints direkt unter /api/, KEIN /{interface}/ im Pfad!
     const apiBaseUrlRaw = Deno.env.get('PAYPORT_API_BASE_URL') || 'https://test-pip3api.payport.ch/api';
-    // Trailing slash UND /api am Ende entfernen für Backend-API-Calls
-    const apiBaseUrl = apiBaseUrlRaw.replace(/\/$/, '').replace(/\/api$/, '');
+    // NUR trailing slash entfernen, /api BLEIBT!
+    const apiBaseUrl = apiBaseUrlRaw.replace(/\/$/, '');
+    // Interface nur noch für Logging, NICHT für API-Pfade
     const apiInterface = Deno.env.get('PAYPORT_INTERFACE') || 'pip3';
 
     // Log config at start for debugging
@@ -117,12 +118,15 @@ Deno.serve(async (req) => {
     const prehashStatus = sortedStatusKeys.map(k => `${k}=${statusParams[k]}`).join(';') + ';' + secret;
     const hashStatus = await sha1(prehashStatus);
 
-    const statusUrl = `${apiBaseUrl}/${apiInterface}/getTransactionStatus?ak=${accessKey}&tk=${tk}&ts=${tsStatus}&h=${hashStatus}`;
-    console.log('PayPortReturn STATUS_CALL', statusUrl.replace(accessKey, 'AK'));
+    // Laut PayPort Support: KEIN /{interface}/ im Pfad! Direkt /api/getTransactionStatus
+    const statusUrl = `${apiBaseUrl}/getTransactionStatus?ak=${accessKey}&tk=${tk}&ts=${tsStatus}&h=${hashStatus}`;
+    // Log URL mit maskiertem ak und h
+    console.log('PayPortReturn STATUS_CALL', statusUrl.replace(accessKey, 'AK').replace(hashStatus, 'HASH'));
 
     const statusResponse = await fetch(statusUrl);
+    console.log('PayPortReturn STATUS_HTTP', { status: statusResponse.status, contentType: statusResponse.headers.get('content-type') });
     const statusText = await statusResponse.text();
-    console.log('PayPortReturn STATUS_RAW', statusText);
+    console.log('PayPortReturn STATUS_RAW', statusText.substring(0, 300));
 
     let statusData: any;
     try {
@@ -161,12 +165,15 @@ Deno.serve(async (req) => {
     const prehashRelease = sortedReleaseKeys.map(k => `${k}=${releaseParams[k]}`).join(';') + ';' + secret;
     const hashRelease = await sha1(prehashRelease);
 
-    const releaseUrl = `${apiBaseUrl}/${apiInterface}/releaseTransaction?ak=${accessKey}&tk=${tk}&ts=${tsRelease}&h=${hashRelease}`;
-    console.log('PayPortReturn RELEASE_CALL', releaseUrl.replace(accessKey, 'AK'));
+    // Laut PayPort Support: KEIN /{interface}/ im Pfad! Direkt /api/releaseTransaction
+    const releaseUrl = `${apiBaseUrl}/releaseTransaction?ak=${accessKey}&tk=${tk}&ts=${tsRelease}&h=${hashRelease}`;
+    // Log URL mit maskiertem ak und h
+    console.log('PayPortReturn RELEASE_CALL', releaseUrl.replace(accessKey, 'AK').replace(hashRelease, 'HASH'));
 
     const releaseResponse = await fetch(releaseUrl);
+    console.log('PayPortReturn RELEASE_HTTP', { status: releaseResponse.status, contentType: releaseResponse.headers.get('content-type') });
     const releaseText = await releaseResponse.text();
-    console.log('PayPortReturn RELEASE_RAW', releaseText);
+    console.log('PayPortReturn RELEASE_RAW', releaseText.substring(0, 300));
 
     // Parse and verify release response
     let releaseData: any = null;
