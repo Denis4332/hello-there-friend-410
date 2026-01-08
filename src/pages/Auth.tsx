@@ -60,8 +60,8 @@ const Auth = () => {
   // Check if registration is enabled (default: true)
   const isRegistrationEnabled = allowSelfRegistration !== 'false';
   
-  // Get redirect target from query params
-  const nextPath = searchParams.get('next') || '/';
+  // Get redirect target from query params - default to /mein-profil for logged-in users
+  const nextPath = searchParams.get('next') || '/mein-profil';
 
   useEffect(() => {
     if (user) {

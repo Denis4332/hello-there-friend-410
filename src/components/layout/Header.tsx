@@ -145,14 +145,18 @@ export const Header = () => {
               </Button>
             </Link>
             
-            {!user && (
-              <Link to="/auth">
-                <Button variant="ghost" size="touch" className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" aria-label="Anmelden">
-                  <User className="h-6 w-6" aria-hidden="true" />
-                  <span className="sr-only">Anmelden</span>
-                </Button>
-              </Link>
-            )}
+            {/* Account Icon - immer sichtbar */}
+            <Link to={user ? "/mein-profil" : "/auth"}>
+              <Button 
+                variant="ghost" 
+                size="touch" 
+                className="text-primary-foreground hover:text-primary-foreground/80 active:text-primary-foreground/60" 
+                aria-label={user ? "Mein Profil" : "Anmelden"}
+              >
+                <User className="h-6 w-6" aria-hidden="true" />
+                <span className="sr-only">{user ? "Mein Profil" : "Anmelden"}</span>
+              </Button>
+            </Link>
             
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>

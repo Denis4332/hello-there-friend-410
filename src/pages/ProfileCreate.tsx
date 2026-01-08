@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
 import { PaymentMethodModal } from '@/components/PaymentMethodModal';
+import { ArrowLeft } from 'lucide-react';
 
 const ProfileCreate = () => {
   const navigate = useNavigate();
@@ -430,6 +431,7 @@ const ProfileCreate = () => {
                     selectedType={listingType}
                     onSelect={(type) => setListingType(type)}
                     onContinue={handleListingTypeSubmit}
+                    onBack={() => setCurrentStep('form')}
                   />
                 )}
               </TabsContent>
@@ -437,6 +439,16 @@ const ProfileCreate = () => {
               <TabsContent value="photos" className="mt-6">
                 {profileId && (
                   <div className="space-y-6">
+                    {/* Zurück zur Paket-Auswahl */}
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setCurrentStep('listing-type')} 
+                      className="gap-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Paket ändern
+                    </Button>
+
                     <div>
                       <h2 className="text-xl font-semibold mb-2">{photosTitle || 'Fotos hochladen'}</h2>
                       <p className="text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import { Crown, Star, CheckCircle2, Camera, Video } from 'lucide-react';
+import { Crown, Star, CheckCircle2, Camera, Video, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
@@ -7,12 +7,14 @@ interface ListingTypeSelectorProps {
   selectedType: 'basic' | 'premium' | 'top';
   onSelect: (type: 'basic' | 'premium' | 'top') => void;
   onContinue: () => void;
+  onBack?: () => void;
 }
 
 export const ListingTypeSelector = ({
   selectedType,
   onSelect,
   onContinue,
+  onBack,
 }: ListingTypeSelectorProps) => {
   const { getSetting } = useSiteSettingsContext();
   
@@ -23,6 +25,14 @@ export const ListingTypeSelector = ({
 
   return (
     <div className="space-y-6">
+      {/* Zurück-Button */}
+      {onBack && (
+        <Button variant="outline" onClick={onBack} className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Zurück zum Formular
+        </Button>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold mb-2">Wähle dein Inserat-Paket</h2>
         <p className="text-muted-foreground">
