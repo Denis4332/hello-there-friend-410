@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
@@ -15,14 +15,13 @@ import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
 import { useRotationKey } from '@/hooks/useRotationKey';
 import { BannerDisplay } from '@/components/BannerDisplay';
-import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
-import { useAdvertisementsRealtime } from '@/hooks/useAdvertisementsRealtime';
+// Realtime hooks removed from /suche for performance - not needed for search snapshots
 
 const ITEMS_PER_PAGE = 24;
+const DEBOUNCE_MS = 300; // Debounce for GPS radius/filter changes
 
 const Suche = () => {
-  useProfilesRealtime();
-  useAdvertisementsRealtime();
+  // Realtime hooks removed - /suche shows snapshot data, realtime not needed here
   const rotationKey = useRotationKey();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -79,7 +78,28 @@ const Suche = () => {
     rotationSeed: rotationKey,
   });
   
-  // Auto-refetch GPS results when radius or category changes
+  // Debounced refetch for GPS results when radius or category changes
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const debouncedGpsRefetch = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      refetchGpsProfiles();
+    }, DEBOUNCE_MS);
+  }, [refetchGpsProfiles]);
+  
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+  
+  // Auto-refetch GPS results when radius or category changes (debounced)
   useEffect(() => {
     if (userLat && userLng) {
       const params = new URLSearchParams();
@@ -89,9 +109,9 @@ const Suche = () => {
       if (detectedLocation) params.set('location', detectedLocation);
       if (category) params.set('kategorie', category);
       setSearchParams(params, { replace: true });
-      refetchGpsProfiles();
+      debouncedGpsRefetch();
     }
-  }, [radius, category, userLat, userLng]);
+  }, [radius, category, userLat, userLng, debouncedGpsRefetch]);
   
   // GPS active: ONLY show profiles within radius
   // GPS inactive: Show canton-based text search results
