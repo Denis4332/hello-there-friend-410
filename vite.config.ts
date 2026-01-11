@@ -25,13 +25,24 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer', // Defer SW registration to not block render
-      includeAssets: ['robots.txt'], // favicon.ico removed - using HTML favicon instead
+      includeAssets: ['favicon.ico', 'favicon.png', 'robots.txt'],
       manifest: {
         name: 'ESCORIA',
         short_name: 'ESCORIA',
         description: 'Verifizierte Anbieter in der Schweiz',
         theme_color: '#ffffff',
-        icons: [] // Icons cleared - using HTML favicon from index.html
+        icons: [
+          {
+            src: '/favicon.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/favicon.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
