@@ -124,6 +124,8 @@ const ProfileCardComponent = ({
                 alt={profile.display_name}
                 loading={priority ? "eager" : "lazy"}
                 decoding="async"
+                width={200}
+                height={267}
                 className="absolute inset-0 w-full h-full object-cover"
               />
             )}

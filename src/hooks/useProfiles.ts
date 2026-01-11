@@ -75,7 +75,9 @@ export const useSearchProfiles = (filters: {
 
   return useQuery<{ profiles: ProfileWithRelations[]; totalCount: number }>({
     queryKey: ['search-profiles-paginated', filters.location, filters.categoryId, filters.keyword, page, rotationSeed],
-    staleTime: 0, // No caching - always fetch fresh data for filters
+    staleTime: 30 * 1000, // 30 seconds cache to prevent flickering on filter changes
+    placeholderData: (previousData) => previousData, // Keep old results visible during refetch
+    refetchOnWindowFocus: false, // Don't refetch on tab switch
     enabled: filters.enabled ?? true,
     queryFn: async () => {
       // Canton-Name Lookup falls nötig
@@ -239,10 +241,11 @@ export const useProfilesByRadius = (
 
   return useQuery<{ profiles: (ProfileWithRelations & { distance_km: number })[]; totalCount: number }>({
     queryKey: ['profiles-by-radius-paginated', userLat, userLng, radiusKm, filters.categoryId, filters.keyword, page, rotationSeed],
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    staleTime: 10 * 1000, // 10 seconds cache to reduce flickering
+    gcTime: 30 * 1000, // Keep in cache for 30 seconds
+    refetchOnMount: true, // Refetch on mount but not 'always'
+    refetchOnWindowFocus: false, // Don't refetch on tab switch
+    placeholderData: (previousData) => previousData, // Keep old results visible during refetch
     queryFn: async () => {
       if (!userLat || !userLng) return { profiles: [], totalCount: 0 };
       
