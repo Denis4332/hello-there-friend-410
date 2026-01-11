@@ -53,11 +53,17 @@ const Profil = () => {
   const photos = profile?.photos || [];
   const mediaItems = photos.map((p) => {
     const isVideo = (p as any).media_type === 'video';
-    const url = supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl;
+    const baseUrl = supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl;
+    
+    // For lightbox: Use optimized URL with max 1920px width for images (reduces data volume)
+    // For videos: Use original URL
+    const lightboxUrl = isVideo 
+      ? baseUrl 
+      : `${baseUrl}?width=1920&quality=80`;
     
     return {
-      url,
-      originalUrl: url, // Same URL since we don't have transforms
+      url: baseUrl,
+      originalUrl: lightboxUrl, // Optimized URL for lightbox instead of full original
       mediaType: (p as any).media_type || 'image',
       isVideo,
     };
@@ -374,6 +380,8 @@ const Profil = () => {
                 src={mediaItems[lightboxIndex]?.originalUrl}
                 alt={`${profile.display_name} - Foto ${lightboxIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
+                loading="eager"
+                decoding="async"
               />
             )}
             

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/layout/Header';
@@ -29,6 +30,7 @@ const authSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const { checkRateLimit, recordAttempt } = useAuthRateLimit();
@@ -124,6 +126,24 @@ const Auth = () => {
     }
 
     if (!error) {
+      // Prefetch dashboard data in background for faster /mein-profil load
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          queryClient.prefetchQuery({
+            queryKey: ['profile-own'],
+            queryFn: async () => {
+              const { data: { user: currentUser } } = await supabase.auth.getUser();
+              if (!currentUser) return null;
+              const { data } = await supabase
+                .from('profiles')
+                .select('*, profile_categories(category_id, categories(name))')
+                .eq('user_id', currentUser.id)
+                .maybeSingle();
+              return data;
+            },
+          });
+        }, { timeout: 100 });
+      }
       navigate(nextPath, { replace: true });
     }
   };
