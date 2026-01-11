@@ -127,22 +127,27 @@ const Auth = () => {
 
     if (!error) {
       // Prefetch dashboard data in background for faster /mein-profil load
+      const doPrefetch = () => {
+        queryClient.prefetchQuery({
+          queryKey: ['profile-own'],
+          queryFn: async () => {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (!currentUser) return null;
+            const { data } = await supabase
+              .from('profiles')
+              .select('*, profile_categories(category_id, categories(name))')
+              .eq('user_id', currentUser.id)
+              .maybeSingle();
+            return data;
+          },
+        });
+      };
+      
       if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => {
-          queryClient.prefetchQuery({
-            queryKey: ['profile-own'],
-            queryFn: async () => {
-              const { data: { user: currentUser } } = await supabase.auth.getUser();
-              if (!currentUser) return null;
-              const { data } = await supabase
-                .from('profiles')
-                .select('*, profile_categories(category_id, categories(name))')
-                .eq('user_id', currentUser.id)
-                .maybeSingle();
-              return data;
-            },
-          });
-        }, { timeout: 100 });
+        requestIdleCallback(doPrefetch, { timeout: 100 });
+      } else {
+        // Fallback for Safari < 16.4 and other browsers
+        setTimeout(doPrefetch, 0);
       }
       navigate(nextPath, { replace: true });
     }
