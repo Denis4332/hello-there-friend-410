@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer', // Defer SW registration to not block render
-      includeAssets: ['favicon.ico', 'favicon.png', 'robots.txt'],
+      includeAssets: ['favicon.png', 'robots.txt'],
       manifest: {
         name: 'ESCORIA',
         short_name: 'ESCORIA',
