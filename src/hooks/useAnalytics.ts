@@ -96,25 +96,22 @@ export const useAnalytics = () => {
     trackEvent('page_view', { page });
   }, [trackEvent]);
 
-  const trackProfileView = useCallback(async (profileId: string) => {
+  // FIRE-AND-FORGET: UI wartet nicht auf Tracking-Response
+  const trackProfileView = useCallback((profileId: string) => {
     if (isOptedOut()) return;
 
-    // Profile views still sent immediately (important for stats)
-    try {
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-profile-view`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({
-          profile_id: profileId,
-          session_id: sessionId.current,
-        }),
-      });
-    } catch (error) {
-      // Silently fail
-    }
+    // Profile views sent immediately but non-blocking
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-profile-view`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        profile_id: profileId,
+        session_id: sessionId.current,
+      }),
+    }).catch(() => {}); // Silent fail - UI never blocked
   }, []);
 
   const trackSearch = useCallback((searchParams: {

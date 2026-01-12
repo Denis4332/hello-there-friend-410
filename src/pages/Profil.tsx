@@ -55,15 +55,14 @@ const Profil = () => {
     const isVideo = (p as any).media_type === 'video';
     const baseUrl = supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl;
     
-    // For lightbox: Use optimized URL with max 1920px width for images (reduces data volume)
-    // For videos: Use original URL
-    const lightboxUrl = isVideo 
-      ? baseUrl 
-      : `${baseUrl}?width=1920&quality=80`;
+    // OPTIMIERT: Carousel 800px (schnell), Lightbox 1920px (hohe Qualität)
+    // Videos bleiben unverändert
+    const carouselUrl = isVideo ? baseUrl : `${baseUrl}?width=800&quality=70`;
+    const lightboxUrl = isVideo ? baseUrl : `${baseUrl}?width=1920&quality=80`;
     
     return {
-      url: baseUrl,
-      originalUrl: lightboxUrl, // Optimized URL for lightbox instead of full original
+      url: carouselUrl,       // ← Carousel: kleinere Bilder = schnelleres Laden
+      originalUrl: lightboxUrl, // Lightbox: hohe Qualität beim Zoomen
       mediaType: (p as any).media_type || 'image',
       isVideo,
     };

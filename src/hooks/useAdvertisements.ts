@@ -35,22 +35,16 @@ export const useAdvertisements = (position?: Advertisement['position']) => {
   };
 };
 
+// FIRE-AND-FORGET: Keine getSession() mehr (blockiert), anon key reicht
 export const useTrackImpression = () => {
   return useMutation({
     mutationFn: async (adId: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
+      // Non-blocking fire-and-forget
+      void fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          ad_id: adId,
-          event_type: 'impression',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ad_id: adId, event_type: 'impression' }),
       });
-      if (!response.ok) throw new Error('Failed to track impression');
     },
   });
 };
@@ -58,19 +52,12 @@ export const useTrackImpression = () => {
 export const useTrackClick = () => {
   return useMutation({
     mutationFn: async (adId: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
+      // Non-blocking fire-and-forget
+      void fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          ad_id: adId,
-          event_type: 'click',
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ad_id: adId, event_type: 'click' }),
       });
-      if (!response.ok) throw new Error('Failed to track click');
     },
   });
 };
