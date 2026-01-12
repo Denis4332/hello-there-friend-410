@@ -240,7 +240,7 @@ export const useProfilesByRadius = (
   const rotationSeed = filters.rotationSeed || 0;
   
   // Feature Flag: V2 mit embedded relations (nach Test auf true setzen)
-  const USE_V2 = false;
+  const USE_V2 = true;
 
   return useQuery<{ profiles: (ProfileWithRelations & { distance_km: number })[]; totalCount: number }>({
     queryKey: ['profiles-by-radius-paginated', userLat, userLng, radiusKm, filters.categoryId, filters.keyword, page, rotationSeed, USE_V2 ? 'v2' : 'v1'],
