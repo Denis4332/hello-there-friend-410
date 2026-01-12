@@ -63,40 +63,23 @@ export const BannerManager = () => {
     }
   };
 
-  const handleImpression = async () => {
+  // FIRE-AND-FORGET: UI wartet nicht auf Tracking-Responses
+  const handleImpression = () => {
     if (!currentAd) return;
-    try {
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ad_id: currentAd.id,
-          event_type: 'impression',
-        }),
-      });
-    } catch (error) {
-      console.error('Failed to track impression:', error);
-    }
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ad_id: currentAd.id, event_type: 'impression' }),
+    }).catch(() => {}); // Silent fail
   };
 
-  const handleClick = async () => {
+  const handleClick = () => {
     if (!currentAd) return;
-    try {
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ad_id: currentAd.id,
-          event_type: 'click',
-        }),
-      });
-    } catch (error) {
-      console.error('Failed to track click:', error);
-    }
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ad_id: currentAd.id, event_type: 'click' }),
+    }).catch(() => {}); // Silent fail
   };
 
   // Zeige Demo-Popup wenn konfiguriert
