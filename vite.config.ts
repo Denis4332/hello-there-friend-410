@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer', // Defer SW registration to not block render
-      includeAssets: ['favicon.png', 'robots.txt'],
+      includeAssets: ['robots.txt'],
       manifest: {
         name: 'ESCORIA',
         short_name: 'ESCORIA',
@@ -33,14 +33,14 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#ffffff',
         icons: [
           {
-            src: '/favicon.png',
+            src: 'https://storage.googleapis.com/gpt-engineer-file-uploads/N44JxG6l9FfXwXIyhVxr0FQRzKG2/uploads/1768215135421-WhatsApp Image 2026-01-12 at 11.51.44.jpeg',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/jpeg'
           },
           {
-            src: '/favicon.png',
+            src: 'https://storage.googleapis.com/gpt-engineer-file-uploads/N44JxG6l9FfXwXIyhVxr0FQRzKG2/uploads/1768215135421-WhatsApp Image 2026-01-12 at 11.51.44.jpeg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/jpeg'
           }
         ]
       },

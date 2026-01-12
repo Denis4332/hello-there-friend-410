@@ -9,7 +9,7 @@ import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useDesignSettings } from "./hooks/useDesignSettings";
-import { useFaviconSetting } from "./hooks/useFaviconSetting";
+// Favicon is now hardcoded in index.html - no dynamic setting needed
 import { BannerManager } from "./components/BannerManager";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
@@ -96,7 +96,6 @@ const PageViewTracker = () => {
 
 const AppContent = () => {
   useDesignSettings(); // Load dynamic colors, font, border-radius from database
-  useFaviconSetting(); // Load dynamic favicon from CMS
   
   return (
     <AuthProvider>
