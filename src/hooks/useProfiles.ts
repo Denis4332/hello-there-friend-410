@@ -219,9 +219,9 @@ export const useCategoryProfiles = (
     enabled: !!categoryId,
   });
 };
-
 /**
  * GPS-basierte Suche mit Server-Side Rotation und Pagination
+ * V2: Embedded Photos + Categories (1 Request statt 3)
  */
 export const useProfilesByRadius = (
   userLat: number | null,
@@ -238,17 +238,57 @@ export const useProfilesByRadius = (
   const page = filters.page || 1;
   const pageSize = filters.pageSize || 24;
   const rotationSeed = filters.rotationSeed || 0;
+  
+  // Feature Flag: V2 mit embedded relations (nach Test auf true setzen)
+  const USE_V2 = false;
 
   return useQuery<{ profiles: (ProfileWithRelations & { distance_km: number })[]; totalCount: number }>({
-    queryKey: ['profiles-by-radius-paginated', userLat, userLng, radiusKm, filters.categoryId, filters.keyword, page, rotationSeed],
-    staleTime: 10 * 1000, // 10 seconds cache to reduce flickering
-    gcTime: 30 * 1000, // Keep in cache for 30 seconds
-    refetchOnMount: true, // Refetch on mount but not 'always'
-    refetchOnWindowFocus: false, // Don't refetch on tab switch
-    placeholderData: (previousData) => previousData, // Keep old results visible during refetch
+    queryKey: ['profiles-by-radius-paginated', userLat, userLng, radiusKm, filters.categoryId, filters.keyword, page, rotationSeed, USE_V2 ? 'v2' : 'v1'],
+    staleTime: 10 * 1000,
+    gcTime: 30 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
       if (!userLat || !userLng) return { profiles: [], totalCount: 0 };
       
+      // === V2: Alles in 1 Request (Photos + Categories embedded) ===
+      if (USE_V2) {
+        try {
+          const { data, error } = await supabase.rpc('search_profiles_by_radius_v2', {
+            user_lat: userLat,
+            user_lng: userLng,
+            radius_km: radiusKm,
+            filter_category_id: filters.categoryId || null,
+            filter_keyword: filters.keyword || null,
+            p_page: page,
+            p_page_size: pageSize,
+            p_rotation_seed: rotationSeed,
+          });
+          
+          if (error) throw error;
+          
+          const rawProfiles = data || [];
+          const totalCount = rawProfiles.length > 0 ? Number(rawProfiles[0].total_count) : 0;
+          
+          // Photos/Categories sind bereits als JSONB eingebettet - Shape anpassen
+          const profilesWithRelations = rawProfiles.map((profile: any) => ({
+            ...profile,
+            photos: profile.photos || [],
+            profile_categories: profile.profile_categories || [],
+          }));
+          
+          const profiles = validateProfilesResponse(profilesWithRelations) as (ProfileWithRelations & { distance_km: number })[];
+          return { profiles, totalCount };
+          
+        } catch (v2Error) {
+          // FALLBACK: Bei V2-Fehler automatisch V1 nutzen
+          console.warn('GPS V2 failed, falling back to V1:', v2Error);
+          // Weiter zu V1 Code unten...
+        }
+      }
+      
+      // === V1: Bestehender Code (3 Requests) - Fallback ===
       const { data, error } = await supabase.rpc('search_profiles_by_radius', {
         user_lat: userLat,
         user_lng: userLng,
@@ -265,22 +305,19 @@ export const useProfilesByRadius = (
       const rawProfiles = data || [];
       const totalCount = rawProfiles.length > 0 ? Number(rawProfiles[0].total_count) : 0;
       
-      // OPTIMIERT: 2 Batch-Queries statt 2*N Queries (N+1 Problem behoben)
+      // Batch queries for photos + categories (N+1 Fix aus Phase 1)
       const profileIds = rawProfiles.map((p: any) => p.id);
       
-      // Hole alle Photos in EINEM Call
       const { data: allPhotos } = await supabase
         .from('photos')
         .select('profile_id, storage_path, is_primary')
         .in('profile_id', profileIds);
       
-      // Hole alle Categories in EINEM Call
       const { data: allCategories } = await supabase
         .from('profile_categories')
         .select('profile_id, category_id, categories(id, name, slug)')
         .in('profile_id', profileIds);
       
-      // GroupBy profile_id
       const photosByProfile = (allPhotos || []).reduce((acc, photo) => {
         if (!acc[photo.profile_id]) acc[photo.profile_id] = [];
         acc[photo.profile_id].push({ storage_path: photo.storage_path, is_primary: photo.is_primary });
@@ -293,7 +330,6 @@ export const useProfilesByRadius = (
         return acc;
       }, {} as Record<string, any[]>);
       
-      // Zusammenbauen mit identischem Shape
       const profilesWithRelations = rawProfiles.map((profile: any) => ({
         ...profile,
         photos: photosByProfile[profile.id] || [],
@@ -301,7 +337,6 @@ export const useProfilesByRadius = (
       }));
       
       const profiles = validateProfilesResponse(profilesWithRelations) as (ProfileWithRelations & { distance_km: number })[];
-      
       return { profiles, totalCount };
     },
     enabled: !!userLat && !!userLng,
