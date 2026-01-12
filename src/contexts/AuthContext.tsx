@@ -21,6 +21,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Role cache to avoid repeated fetches for the same user
+const roleCache = new Map<string, UserRole>();
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -81,6 +84,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const loadUserRole = async (userId: string) => {
+    // Check cache first for instant role resolution
+    const cachedRole = roleCache.get(userId);
+    if (cachedRole !== undefined) {
+      setRole(cachedRole);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -90,7 +101,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       
-      setRole(data?.role || 'user');
+      const userRole = data?.role || 'user';
+      roleCache.set(userId, userRole); // Cache for subsequent calls
+      setRole(userRole);
     } catch (error) {
       // Silent error handling - default to user role
       setRole('user');
