@@ -306,7 +306,7 @@ const Suche = () => {
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
               {totalCount} {totalCount === 1 ? 'Ergebnis' : 'Ergebnisse'}
-              {!userLat && !userLng && !canton && !category && !keyword && ' (nur TOP)'}
+              {!userLat && !userLng && !canton && !category && !keyword && ' (Top zuerst)'}
             </p>
           </div>
 

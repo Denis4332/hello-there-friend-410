@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
  * Used to ensure profile sorting rotates automatically without page reload.
  */
 export const useRotationKey = () => {
-  const getRotationKey = () => Math.floor(Date.now() / (30 * 60 * 1000));
+  const getRotationKey = () => Math.floor(Date.now() / (10 * 60 * 1000)); // 10 Minuten statt 30
   
   const [rotationKey, setRotationKey] = useState(getRotationKey);
 

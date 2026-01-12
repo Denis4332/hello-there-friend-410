@@ -265,27 +265,40 @@ export const useProfilesByRadius = (
       const rawProfiles = data || [];
       const totalCount = rawProfiles.length > 0 ? Number(rawProfiles[0].total_count) : 0;
       
-      // Fetch photos and categories for each profile
-      const profilesWithRelations = await Promise.all(
-        rawProfiles.map(async (profile: any) => {
-          const [photosResult, categoriesResult] = await Promise.all([
-            supabase
-              .from('photos')
-              .select('storage_path, is_primary')
-              .eq('profile_id', profile.id),
-            supabase
-              .from('profile_categories')
-              .select('category_id, categories(id, name, slug)')
-              .eq('profile_id', profile.id),
-          ]);
-          
-          return {
-            ...profile,
-            photos: photosResult.data || [],
-            profile_categories: categoriesResult.data || [],
-          };
-        })
-      );
+      // OPTIMIERT: 2 Batch-Queries statt 2*N Queries (N+1 Problem behoben)
+      const profileIds = rawProfiles.map((p: any) => p.id);
+      
+      // Hole alle Photos in EINEM Call
+      const { data: allPhotos } = await supabase
+        .from('photos')
+        .select('profile_id, storage_path, is_primary')
+        .in('profile_id', profileIds);
+      
+      // Hole alle Categories in EINEM Call
+      const { data: allCategories } = await supabase
+        .from('profile_categories')
+        .select('profile_id, category_id, categories(id, name, slug)')
+        .in('profile_id', profileIds);
+      
+      // GroupBy profile_id
+      const photosByProfile = (allPhotos || []).reduce((acc, photo) => {
+        if (!acc[photo.profile_id]) acc[photo.profile_id] = [];
+        acc[photo.profile_id].push({ storage_path: photo.storage_path, is_primary: photo.is_primary });
+        return acc;
+      }, {} as Record<string, { storage_path: string; is_primary: boolean | null }[]>);
+      
+      const categoriesByProfile = (allCategories || []).reduce((acc, cat) => {
+        if (!acc[cat.profile_id]) acc[cat.profile_id] = [];
+        acc[cat.profile_id].push(cat);
+        return acc;
+      }, {} as Record<string, any[]>);
+      
+      // Zusammenbauen mit identischem Shape
+      const profilesWithRelations = rawProfiles.map((profile: any) => ({
+        ...profile,
+        photos: photosByProfile[profile.id] || [],
+        profile_categories: categoriesByProfile[profile.id] || [],
+      }));
       
       const profiles = validateProfilesResponse(profilesWithRelations) as (ProfileWithRelations & { distance_km: number })[];
       
