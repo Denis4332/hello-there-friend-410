@@ -1480,6 +1480,10 @@ export type Database = {
         Args: { p_ad_id: string; p_column: string }
         Returns: undefined
       }
+      increment_ad_counter_v2: {
+        Args: { p_ad_id: string; p_column: string; p_delta?: number }
+        Returns: undefined
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
