@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Advertisement } from '@/types/advertisement';
+import { queueAdEvent } from '@/lib/adEventQueue';
 
 // PERFORMANCE: Single query for all active ads, filter client-side
 export const useAllActiveAdvertisements = () => {
@@ -35,16 +36,11 @@ export const useAdvertisements = (position?: Advertisement['position']) => {
   };
 };
 
-// FIRE-AND-FORGET: Keine getSession() mehr (blockiert), anon key reicht
+// FIRE-AND-FORGET: Uses queue for batched sending
 export const useTrackImpression = () => {
   return useMutation({
     mutationFn: async (adId: string) => {
-      // Non-blocking fire-and-forget
-      void fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad_id: adId, event_type: 'impression' }),
-      });
+      queueAdEvent(adId, 'impression');
     },
   });
 };
@@ -52,12 +48,7 @@ export const useTrackImpression = () => {
 export const useTrackClick = () => {
   return useMutation({
     mutationFn: async (adId: string) => {
-      // Non-blocking fire-and-forget
-      void fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad_id: adId, event_type: 'click' }),
-      });
+      queueAdEvent(adId, 'click');
     },
   });
 };

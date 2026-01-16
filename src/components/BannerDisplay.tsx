@@ -2,6 +2,7 @@ import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
 import { useEffect } from 'react';
 import { AdvertisementCTA } from './AdvertisementCTA';
+import { queueAdEvent } from '@/lib/adEventQueue';
 
 interface BannerDisplayProps {
   position: 'top' | 'grid';
@@ -15,17 +16,8 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
     // Open link FIRST (synchronously) to prevent mobile popup blockers
     window.open(ad.link_url, '_blank', 'noopener,noreferrer');
     
-    // Track click in background
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ad_id: ad.id,
-        event_type: 'click',
-      }),
-    }).catch(error => console.error('Failed to track click:', error));
+    // Track click in background via queue
+    queueAdEvent(ad.id, 'click');
   };
 
   useEffect(() => {
@@ -35,18 +27,7 @@ export const BannerDisplay = ({ position, className = '' }: BannerDisplayProps) 
     
     // Delay impression tracking by 3 seconds (user must actually see it)
     const impressionTimer = setTimeout(() => {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ad_id: displayedAd.id,
-          event_type: 'impression',
-        }),
-      }).catch(() => {
-        // Silently fail - don't log to console
-      });
+      queueAdEvent(displayedAd.id, 'impression');
     }, 3000);
     
     return () => clearTimeout(impressionTimer);

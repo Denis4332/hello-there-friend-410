@@ -4,6 +4,7 @@ import { PopupBanner } from './PopupBanner';
 import { DemoPopupBanner } from './DemoPopupBanner';
 import { useAdvertisements } from '@/hooks/useAdvertisements';
 import { Advertisement } from '@/types/advertisement';
+import { queueAdEvent } from '@/lib/adEventQueue';
 
 const STORAGE_KEY_PREFIX = 'popup_shown_session_';
 const DEMO_POPUP_KEY = 'demo_popup_shown_this_session';
@@ -66,20 +67,12 @@ export const BannerManager = () => {
   // FIRE-AND-FORGET: UI wartet nicht auf Tracking-Responses
   const handleImpression = () => {
     if (!currentAd) return;
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ad_id: currentAd.id, event_type: 'impression' }),
-    }).catch(() => {}); // Silent fail
+    queueAdEvent(currentAd.id, 'impression');
   };
 
   const handleClick = () => {
     if (!currentAd) return;
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-ad-event`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ad_id: currentAd.id, event_type: 'click' }),
-    }).catch(() => {}); // Silent fail
+    queueAdEvent(currentAd.id, 'click');
   };
 
   // Zeige Demo-Popup wenn konfiguriert
