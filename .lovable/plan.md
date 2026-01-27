@@ -1,137 +1,45 @@
 
-# Favicon-Bereinigung Plan
+# Favicon-Fix: Korrektes Herz-Logo einsetzen
 
-## Aktueller Zustand (Probleme)
+## Ausgangslage
 
-| Datei | Zeile | Problem |
-|-------|-------|---------|
-| `index.html` | 29-30 | Externe JPEG-URLs mit Leerzeichen (`WhatsApp Image...`) |
-| `vite.config.ts` | 36-44 | PWA manifest icons zeigen auf externe JPEG-URLs |
-| `vite.config.ts` | 28 | `includeAssets` enthält kein favicon |
-| `public/` | - | **Keine lokale favicon.png vorhanden!** |
+| Was | Status |
+|-----|--------|
+| `index.html` Zeilen 29-30 | ✅ Zeigt auf `/favicon.png` |
+| `vite.config.ts` PWA manifest | ✅ Zeigt auf `/favicon.png` |
+| `public/favicon.png` | ❌ **Falsches Bild** - muss ersetzt werden |
 
-### Warum Safari 2 Favicons zeigt:
-1. Externe URL mit Leerzeichen kann zu Encoding-Problemen führen
-2. Safari cached aggressiv und zeigt evtl. alte + neue Version
-3. PWA manifest und index.html haben beide Favicon-Definitionen
+## Änderung
 
----
+### Einzige Aktion: Favicon-Datei ersetzen
 
-## Änderungen
-
-### 1. Neue Datei erstellen
-
-**`public/favicon.png`** (muss vom User bereitgestellt werden)
-- Format: PNG
-- Größe: 256x256px (skaliert gut für alle Anwendungen)
-- Inhalt: Herz-Icon OHNE weißen Rand
-
-**`public/apple-touch-icon.png`** (optional, 180x180px)
-- Kann Kopie von favicon.png sein
-
----
-
-### 2. index.html anpassen
-
-**Zeilen 29-30 ersetzen:**
-
-```html
-<!-- VORHER (Lines 29-30): -->
-<link rel="icon" type="image/jpeg" href="https://storage.googleapis.com/gpt-engineer-file-uploads/.../WhatsApp Image....jpeg">
-<link rel="apple-touch-icon" href="https://storage.googleapis.com/gpt-engineer-file-uploads/.../WhatsApp Image....jpeg">
-
-<!-- NACHHER: -->
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/favicon.png">
+```text
+user-uploads://Gold_and_White_Real_Estate_Agency_Logo_Template_-_1-3.png
+                              ↓
+                    public/favicon.png
 ```
 
----
+| Datei | Aktion |
+|-------|--------|
+| `public/favicon.png` | **Überschreiben** mit dem hochgeladenen Doppel-Herz-Logo |
 
-### 3. vite.config.ts anpassen
+### Keine weiteren Änderungen nötig
 
-**Zeile 28 - includeAssets erweitern:**
-```typescript
-// VORHER:
-includeAssets: ['robots.txt'],
+- `index.html` - bleibt unverändert (zeigt bereits auf `/favicon.png`)
+- `vite.config.ts` - bleibt unverändert (PWA icons zeigen auf `/favicon.png`)
 
-// NACHHER:
-includeAssets: ['favicon.png', 'robots.txt'],
-```
+## Sicherheitsbestätigung
 
-**Zeilen 34-45 - PWA manifest icons auf lokale PNGs:**
-```typescript
-// VORHER:
-icons: [
-  {
-    src: 'https://storage.googleapis.com/.../WhatsApp Image....jpeg',
-    sizes: '192x192',
-    type: 'image/jpeg'
-  },
-  {
-    src: 'https://storage.googleapis.com/.../WhatsApp Image....jpeg',
-    sizes: '512x512',
-    type: 'image/jpeg'
-  }
-]
+**GPS, Rotation, Tiers, PayPort bleiben UNVERÄNDERT** - diese Änderung betrifft ausschließlich das Favicon-Bild.
 
-// NACHHER:
-icons: [
-  {
-    src: '/favicon.png',
-    sizes: '192x192',
-    type: 'image/png'
-  },
-  {
-    src: '/favicon.png',
-    sizes: '512x512',
-    type: 'image/png'
-  }
-]
-```
+## Nach dem Deploy: Test-Schritte
 
----
+### Safari iOS
+1. Einstellungen → Safari → Verlauf und Websitedaten löschen
+2. Safari komplett schliessen (aus App Switcher wischen)
+3. Website neu öffnen
+4. Tab-Übersicht prüfen: Zwei rote Herzen sichtbar
 
-## Zusammenfassung der Änderungen
-
-| Datei | Änderung |
-|-------|----------|
-| `public/favicon.png` | NEU erstellen (User muss Bild liefern) |
-| `index.html` | Zeilen 29-30: Externe URLs → `/favicon.png` |
-| `vite.config.ts` | Zeile 28: `includeAssets` erweitern |
-| `vite.config.ts` | Zeilen 34-45: Icons auf lokale PNGs |
-
----
-
-## Bestätigung
-
-**GPS/Rotation/Tiers/PayPort bleiben unverändert** - dieser Plan berührt NUR:
-- `index.html` (Favicon-Links)
-- `vite.config.ts` (PWA manifest)
-- `public/` (neue Datei)
-
----
-
-## Voraussetzung
-
-**Du musst mir das Favicon-Bild als Upload bereitstellen**, bevor ich die Änderungen durchführen kann:
-- Das rechte Herz-Icon OHNE weißen Rand
-- PNG-Format
-- Ideale Größe: 256x256px oder 512x512px
-
----
-
-## Test nach Deploy
-
-1. **Safari iOS:**
-   - Einstellungen → Safari → Verlauf und Websitedaten löschen
-   - Safari komplett schließen (aus App Switcher)
-   - Website neu öffnen
-   - Tab-Übersicht prüfen: NUR 1 Icon
-
-2. **Chrome Desktop:**
-   - Hard Refresh (Cmd+Shift+R)
-   - Tab-Favicon prüfen
-
-3. **PWA Installation:**
-   - "Zum Home-Bildschirm" testen
-   - Icon auf Homescreen = korrektes Herz
+### Chrome Desktop
+1. Hard Refresh: `Cmd+Shift+R` (Mac) / `Ctrl+Shift+R` (Windows)
+2. Tab-Favicon prüfen: Zwei rote Herzen
