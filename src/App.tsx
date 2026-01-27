@@ -1,21 +1,17 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy, useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
-import { SiteSettingsProvider } from "./contexts/SiteSettingsContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useDesignSettings } from "./hooks/useDesignSettings";
-// Favicon is now hardcoded in index.html - no dynamic setting needed
 import { BannerManager } from "./components/BannerManager";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
 import { PageSkeleton } from "./components/PageSkeleton";
-
 
 // Eager load only homepage and auth
 import Index from "./pages/Index";
@@ -48,6 +44,7 @@ const ProfileUpgrade = lazy(() => import("./pages/ProfileUpgrade"));
 const ZahlungErfolg = lazy(() => import("./pages/ZahlungErfolg"));
 const ZahlungAbgebrochen = lazy(() => import("./pages/ZahlungAbgebrochen"));
 const PayportReturn = lazy(() => import("./pages/PayportReturn"));
+const DebugIcons = lazy(() => import("./pages/DebugIcons"));
 
 // Lazy load admin pages
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -70,19 +67,6 @@ const AdminPendingPayments = lazy(() => import("./pages/admin/AdminPendingPaymen
 const AdminExport = lazy(() => import("./pages/admin/AdminExport"));
 const AdminTierDashboard = lazy(() => import("./pages/admin/AdminTierDashboard"));
 
-// Optimized QueryClient with aggressive caching
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh
-      gcTime: 10 * 60 * 1000, // 10 minutes - garbage collection time (formerly cacheTime)
-      refetchOnWindowFocus: false, // Don't refetch on window focus
-      refetchOnMount: false, // Don't refetch on component mount if data exists
-      retry: 1, // Only retry failed requests once
-    },
-  },
-});
-
 const PageViewTracker = () => {
   const location = useLocation();
   const { trackPageView } = useAnalytics();
@@ -94,7 +78,7 @@ const PageViewTracker = () => {
   return null;
 };
 
-const AppContent = () => {
+const App = () => {
   useDesignSettings(); // Load dynamic colors, font, border-radius from database
   
   return (
@@ -110,88 +94,89 @@ const AppContent = () => {
             <BannerManager />
             <Suspense fallback={<PageSkeleton />}>
               <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/suche" element={<Suche />} />
-            <Route path="/profil/:slug" element={<Profil />} />
-            <Route path="/stadt/:slug" element={<Stadt />} />
-            <Route path="/kategorie/:slug" element={<Kategorie />} />
-            <Route path="/staedte" element={<Navigate to="/kantone" replace />} />
-            <Route path="/kantone" element={<Kantone />} />
-            <Route path="/kategorien" element={<Categories />} />
-            <Route path="/kontakt" element={<Kontakt />} />
-            <Route path="/agb" element={<AGB />} />
-            <Route path="/datenschutz" element={<Datenschutz />} />
-            <Route path="/impressum" element={<Impressum />} />
-            <Route path="/bannerpreise" element={<Bannerpreise />} />
-            <Route path="/banner/buchen" element={<BannerBuchen />} />
-            <Route path="/preise" element={<Preise />} />
-            <Route path="/zahlung/erfolg" element={<ZahlungErfolg />} />
-            <Route path="/zahlung/abgebrochen" element={<ZahlungAbgebrochen />} />
-            <Route path="/payport/return" element={<PayportReturn />} />
-            <Route path="/500" element={<ServerError />} />
-            <Route
-              path="/profil/erstellen"
-              element={
-                <UserProtectedRoute>
-                  <ProfileCreate />
-                </UserProtectedRoute>
-              }
-            />
-            <Route
-              path="/mein-profil"
-              element={
-                <UserProtectedRoute>
-                  <UserDashboard />
-                </UserProtectedRoute>
-              }
-            />
-            <Route
-              path="/favoriten"
-              element={
-                <UserProtectedRoute>
-                  <UserFavorites />
-                </UserProtectedRoute>
-              }
-            />
-            <Route
-              path="/profil/bearbeiten"
-              element={
-                <UserProtectedRoute>
-                  <ProfileEdit />
-                </UserProtectedRoute>
-              }
-            />
-            <Route
-              path="/user/upgrade"
-              element={
-                <UserProtectedRoute>
-                  <ProfileUpgrade />
-                </UserProtectedRoute>
-              }
-            />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
-            <Route path="/admin/account" element={<ProtectedRoute><AdminAccount /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
-            <Route path="/admin/categories" element={<ProtectedRoute><AdminCategories /></ProtectedRoute>} />
-            <Route path="/admin/cities" element={<ProtectedRoute><AdminCities /></ProtectedRoute>} />
-            <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
-            <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
-            <Route path="/admin/dropdowns" element={<ProtectedRoute><AdminDropdowns /></ProtectedRoute>} />
-            <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
-            <Route path="/admin/advertisements" element={<ProtectedRoute><AdminAdvertisements /></ProtectedRoute>} />
-            <Route path="/admin/pending-payments" element={<ProtectedRoute><AdminPendingPayments /></ProtectedRoute>} />
-            <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
-              <Route path="/admin/rate-limits" element={<ProtectedRoute><AdminRateLimits /></ProtectedRoute>} />
-              <Route path="/admin/performance" element={<ProtectedRoute><AdminPerformance /></ProtectedRoute>} />
-              <Route path="/admin/export" element={<ProtectedRoute><AdminExport /></ProtectedRoute>} />
-              <Route path="/admin/tier-dashboard" element={<ProtectedRoute><AdminTierDashboard /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/suche" element={<Suche />} />
+                <Route path="/profil/:slug" element={<Profil />} />
+                <Route path="/stadt/:slug" element={<Stadt />} />
+                <Route path="/kategorie/:slug" element={<Kategorie />} />
+                <Route path="/staedte" element={<Navigate to="/kantone" replace />} />
+                <Route path="/kantone" element={<Kantone />} />
+                <Route path="/kategorien" element={<Categories />} />
+                <Route path="/kontakt" element={<Kontakt />} />
+                <Route path="/agb" element={<AGB />} />
+                <Route path="/datenschutz" element={<Datenschutz />} />
+                <Route path="/impressum" element={<Impressum />} />
+                <Route path="/bannerpreise" element={<Bannerpreise />} />
+                <Route path="/banner/buchen" element={<BannerBuchen />} />
+                <Route path="/preise" element={<Preise />} />
+                <Route path="/zahlung/erfolg" element={<ZahlungErfolg />} />
+                <Route path="/zahlung/abgebrochen" element={<ZahlungAbgebrochen />} />
+                <Route path="/payport/return" element={<PayportReturn />} />
+                <Route path="/500" element={<ServerError />} />
+                <Route path="/debug/icons" element={<DebugIcons />} />
+                <Route
+                  path="/profil/erstellen"
+                  element={
+                    <UserProtectedRoute>
+                      <ProfileCreate />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/mein-profil"
+                  element={
+                    <UserProtectedRoute>
+                      <UserDashboard />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/favoriten"
+                  element={
+                    <UserProtectedRoute>
+                      <UserFavorites />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profil/bearbeiten"
+                  element={
+                    <UserProtectedRoute>
+                      <ProfileEdit />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/user/upgrade"
+                  element={
+                    <UserProtectedRoute>
+                      <ProfileUpgrade />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
+                <Route path="/admin/account" element={<ProtectedRoute><AdminAccount /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+                <Route path="/admin/categories" element={<ProtectedRoute><AdminCategories /></ProtectedRoute>} />
+                <Route path="/admin/cities" element={<ProtectedRoute><AdminCities /></ProtectedRoute>} />
+                <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
+                <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
+                <Route path="/admin/dropdowns" element={<ProtectedRoute><AdminDropdowns /></ProtectedRoute>} />
+                <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
+                <Route path="/admin/advertisements" element={<ProtectedRoute><AdminAdvertisements /></ProtectedRoute>} />
+                <Route path="/admin/pending-payments" element={<ProtectedRoute><AdminPendingPayments /></ProtectedRoute>} />
+                <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
+                <Route path="/admin/rate-limits" element={<ProtectedRoute><AdminRateLimits /></ProtectedRoute>} />
+                <Route path="/admin/performance" element={<ProtectedRoute><AdminPerformance /></ProtectedRoute>} />
+                <Route path="/admin/export" element={<ProtectedRoute><AdminExport /></ProtectedRoute>} />
+                <Route path="/admin/tier-dashboard" element={<ProtectedRoute><AdminTierDashboard /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </BrowserRouter>
@@ -200,13 +185,5 @@ const AppContent = () => {
     </AuthProvider>
   );
 };
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <SiteSettingsProvider>
-      <AppContent />
-    </SiteSettingsProvider>
-  </QueryClientProvider>
-);
 
 export default App;
