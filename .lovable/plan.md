@@ -233,14 +233,15 @@
 - Rotation funktioniert (10 Min Intervall)
 
 **Bedingungen vor Go-Live:**
-1. ⚠️ RLS ERROR im Linter pruefen (1 Tabelle ohne RLS)
-2. ⚠️ Realtime auf /stadt und /kategorie entfernen (SAFE WIN)
-3. ⚠️ GPS staleTime auf 60s erhoehen (SAFE WIN)
+1. ⚠️ RLS ERROR im Linter pruefen (2 ERRORS: Security Definer View + RLS Disabled)
+2. ✅ Realtime auf /stadt und /kategorie entfernt (ERLEDIGT)
+3. ✅ GPS staleTime auf 60s erhoeht (ERLEDIGT)
 
 **Nach Soft-Launch optimieren:**
 - Admin Dashboard RPC konsolidieren
 - Auth Flow parallelisieren
 - site_settings lazy loading evaluieren
+- RLS Warnings (4x "always true" policies) pruefen - absichtlich fuer public access
 
 ---
 

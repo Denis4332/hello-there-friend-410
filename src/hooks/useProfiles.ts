@@ -244,8 +244,8 @@ export const useProfilesByRadius = (
 
   return useQuery<{ profiles: (ProfileWithRelations & { distance_km: number })[]; totalCount: number }>({
     queryKey: ['profiles-by-radius-paginated', userLat, userLng, radiusKm, filters.categoryId, filters.keyword, page, rotationSeed, USE_V2 ? 'v2' : 'v1'],
-    staleTime: 10 * 1000,
-    gcTime: 30 * 1000,
+    staleTime: 60 * 1000, // 60s cache - prevents refetch on back-navigation
+    gcTime: 2 * 60 * 1000, // 2 min garbage collection
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
