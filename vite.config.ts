@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer', // Defer SW registration to not block render
-      includeAssets: ['favicon.png', 'robots.txt'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'pwa-192.png', 'pwa-512.png', 'robots.txt'],
       manifest: {
         name: 'ESCORIA',
         short_name: 'ESCORIA',
@@ -33,12 +33,12 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#ffffff',
         icons: [
           {
-            src: '/favicon.png',
+            src: '/pwa-192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/favicon.png',
+            src: '/pwa-512.png',
             sizes: '512x512',
             type: 'image/png'
           }
