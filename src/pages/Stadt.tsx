@@ -12,14 +12,11 @@ import { SEO } from '@/components/SEO';
 import { BannerDisplay } from '@/components/BannerDisplay';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { useRotationKey } from '@/hooks/useRotationKey';
-import { useProfilesRealtime } from '@/hooks/useProfilesRealtime';
-import { useAdvertisementsRealtime } from '@/hooks/useAdvertisementsRealtime';
 
 const ITEMS_PER_PAGE = 24;
 
 const Stadt = () => {
-  useProfilesRealtime();
-  useAdvertisementsRealtime();
+  // Realtime entfernt - Snapshot reicht für Stadt-Seiten (SAFE WIN aus Audit)
   const rotationKey = useRotationKey();
   const { slug } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
