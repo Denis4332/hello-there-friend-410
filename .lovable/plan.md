@@ -1,287 +1,195 @@
 
-# SOFT-LAUNCH READINESS AUDIT
+# Security Linter ERRORS beheben - Sicherer Fix-Plan
 
-## Ready Score: 72/100 - CONDITIONAL GO
+## Aktuelle Situation (nach Analyse)
+
+### ERROR 1: Security Definer View - `public_profiles`
+**Status: FALSE POSITIVE - Bereits korrekt!**
+
+Die View hat bereits `security_invoker=true`:
+```sql
+-- Query-Ergebnis zeigt:
+reloptions: [security_invoker=true]
+```
+
+**Warum der Linter trotzdem warnt:**
+- Der Linter erkennt Views ohne `SECURITY INVOKER` explizit in der Definition
+- Aber die Option IST gesetzt (via `reloptions`)
+- Die View ist sicher: Sie verwendet RLS des aufrufenden Users, nicht des Erstellers
+
+**Aktion:** Keine Änderung nötig. View recreaten mit explizitem `SECURITY INVOKER` im DDL entfernt die Warnung.
 
 ---
 
-## A) END-TO-END FUNKTIONS-AUDIT
+### ERROR 2: RLS Disabled - `spatial_ref_sys`
+**Status: PostGIS Systemtabelle - kein Sicherheitsrisiko**
 
-### 1. Login + Redirect zu /mein-profil
-| Feature | Status | Route | Dateien |
-|---------|--------|-------|---------|
-| Login-Flow | ✅ | `/auth` | `src/pages/Auth.tsx` (L93-153) |
-| Rate Limiting | ✅ | Edge Function | `supabase/functions/check-auth-rate-limit/index.ts` |
-| Password Validation | ✅ | Client + Server | `src/contexts/AuthContext.tsx` (L116-123) |
-| Redirect nach Login | ✅ | `/mein-profil` | `src/pages/Auth.tsx` (L152) |
-| Role Caching | ✅ | - | `src/contexts/AuthContext.tsx` (L25, L88-93) |
+| Eigenschaft | Wert |
+|-------------|------|
+| Tabelle | `public.spatial_ref_sys` |
+| Zeilen | 8.500 (Koordinatensystem-Definitionen) |
+| Sensible Daten | ❌ Nein (nur EPSG/SRID Codes) |
+| Von App genutzt | ❌ Nein (nur intern von PostGIS) |
 
-**Performance-Variabilitaet-Ursache identifiziert:**
-- `AuthContext.tsx` (L86-113): `loadUserRole()` wird sequentiell nach Login aufgerufen
-- `Auth.tsx` (L108-112): `signIn()` blockiert bis Role geladen, DANN `recordAttempt()` Edge Function
-- Diese sequentiellen Calls verursachen 50-500ms Variabilitaet je nach DB/Edge-Latenz
+**Warum RLS fehlt:**
+- PostGIS erstellt diese Tabelle automatisch
+- Enthält nur öffentliche Geodaten-Standards (EPSG Codes)
+- Keine Benutzerdaten, keine sensiblen Informationen
 
-### 2. Create Flow: Form -> Paket -> Fotos -> Verifizierung -> Payment Modal
-| Schritt | Status | Datei + Zeile |
+---
+
+## Sicherer Fix-Plan
+
+### Fix 1: `public_profiles` View - Explizites `SECURITY INVOKER`
+
+```sql
+-- View neu erstellen mit explizitem SECURITY INVOKER
+DROP VIEW IF EXISTS public.public_profiles;
+
+CREATE VIEW public.public_profiles
+WITH (security_invoker = on) AS
+SELECT 
+  id,
+  slug,
+  display_name,
+  age,
+  gender,
+  city,
+  canton,
+  postal_code,
+  lat,
+  lng,
+  about_me,
+  languages,
+  is_adult,
+  verified_at,
+  status,
+  listing_type,
+  premium_until,
+  top_ad_until,
+  created_at,
+  updated_at
+FROM profiles
+WHERE status = 'active';
+
+-- Grant SELECT to anon and authenticated
+GRANT SELECT ON public.public_profiles TO anon, authenticated;
+```
+
+**Risiko:** Minimal - gleiche Definition, nur explizite Syntax
+**Was könnte kaputt gehen:** Nichts - View-Definition ist identisch
+**Testplan:**
+1. Homepage öffnen → Profile werden angezeigt
+2. /suche öffnen → Profile werden angezeigt
+3. /profil/:slug öffnen → Profil-Detail funktioniert
+
+---
+
+### Fix 2: `spatial_ref_sys` - RLS aktivieren mit Public Read
+
+```sql
+-- RLS aktivieren auf PostGIS Systemtabelle
+ALTER TABLE public.spatial_ref_sys ENABLE ROW LEVEL SECURITY;
+
+-- Öffentlichen Lesezugriff erlauben (ist ohnehin nur Geodaten)
+CREATE POLICY "Public can read spatial reference systems"
+ON public.spatial_ref_sys
+FOR SELECT
+USING (true);
+```
+
+**Risiko:** Minimal - Tabelle wird von App nicht direkt genutzt
+**Was könnte kaputt gehen:** 
+- GPS-Suche nutzt PostGIS Funktionen, die intern auf spatial_ref_sys zugreifen
+- Diese Funktionen laufen mit DB-Owner Rechten, nicht über RLS
+**Testplan:**
+1. GPS-Suche: Standort freigeben → Ergebnisse erscheinen
+2. Radius ändern → Ergebnisse aktualisieren
+3. Pagination durchklicken → Funktioniert
+
+---
+
+## WARNINGS (Keine Aktion nötig)
+
+### 4x "RLS Policy Always True" - Absichtlich für Tracking
+
+| Tabelle | Policy | Warum korrekt |
 |---------|--------|---------------|
-| Form-Daten | ✅ | `ProfileCreate.tsx` (L110-220) |
-| Paket-Auswahl | ✅ | `ProfileCreate.tsx` (L223-256) |
-| Foto-Upload | ✅ | `ProfileCreate.tsx` (L258-282) |
-| Verifizierung | ✅ | `ProfileCreate.tsx` (L343-358) |
-| Payment Modal | ✅ | `ProfileCreate.tsx` (L32, L299-339) |
+| `analytics_events` | INSERT true | Anonymes Tracking erlaubt |
+| `profile_views` | INSERT true | View-Counter ohne Login |
+| `search_queries` | INSERT true | Suchstatistiken anonym |
+| `error_logs` | INSERT true | Fehler-Logging ohne Auth |
 
-**WICHTIG:** Kein Auto-Redirect zu PayPort - Modal wird explizit geoeffnet (`setShowPaymentModal(true)` L348/358)
-
-### 3. Upgrade/Downgrade Logik
-| Regel | Status | Implementierung |
-|-------|--------|-----------------|
-| Vor Zahlung: Paket aenderbar | ✅ | `ProfileCreate.tsx` (L443-450) "Paket aendern" Button |
-| Nach Zahlung: Nur Admin | ✅ | `AdminPendingPayments.tsx` (L79-118) |
-| User kann nicht selbst upgraden | ⚠️ | `ProfileUpgrade.tsx` existiert aber sollte nach Zahlung gesperrt sein |
-
-### 4. GPS-Suche (KRITISCH - NICHT AENDERN)
-| Feature | Status | Datei + Zeile |
-|---------|--------|---------------|
-| Standort-Erkennung | ✅ | `Suche.tsx` (L137-171) |
-| Radius Slider | ✅ | `Suche.tsx` (L31) |
-| Kategorie/Keyword | ✅ | `Suche.tsx` (L59-76) |
-| Pagination | ✅ | Server-side via RPC |
-| RotationSeed | ✅ | `useRotationKey.ts` (L8) - 10 Minuten Rotation |
-| V2 RPC (1 Request) | ✅ | `useProfiles.ts` (L256-289) |
-| V1 Fallback | ✅ | `useProfiles.ts` (L291-340) |
-| Debounce 300ms | ✅ | `Suche.tsx` (L67-82) |
-
-### 5. Admin-Features
-| Feature | Status | Route | Datei |
-|---------|--------|-------|-------|
-| Profile pruefen | ✅ | `/admin/profile` | `AdminProfile.tsx` |
-| Profile aktivieren | ✅ | via AdminProfile | inkl. payment_status Check |
-| Pending Payments | ✅ | `/admin/pending-payments` | `AdminPendingPayments.tsx` |
-| Verifications | ✅ | `/admin/verifications` | `AdminVerifications.tsx` |
-| DB-Tabelle existiert | ✅ | `verification_submissions` | Query bestaetigt |
-| Export (sensitiv) | ⚠️ | `/admin/export` | `AdminExport.tsx` - keine Warnung |
-
-### 6. PayPort Integration
-| Schritt | Status | Datei + Zeile |
-|---------|--------|---------------|
-| Checkout aufrufen | ✅ | `payport-checkout/index.ts` |
-| Method PFLICHT (PHONE/SMS) | ✅ | `payport-checkout/index.ts` (L51-68) |
-| Hash berechnen | ✅ | `payport-checkout/index.ts` (L91-93) |
-| payment_reference speichern | ✅ | `payport-checkout/index.ts` (L114-140) |
-| Return Hash verify | ✅ | `payport-return/index.ts` (L83-112) |
-| getTransactionStatus | ✅ | `payport-return/index.ts` (L115-144) |
-| releaseTransaction | ✅ | `payport-return/index.ts` (L162-199) |
-| DB Update (1 Row Check) | ✅ | `payport-return/index.ts` (L276-286) |
-| Logging | ✅ | Umfangreich in beiden Functions |
-| Deployed | ✅ | Edge Functions vorhanden |
-| PAYPORT Secrets | ✅ | Alle 10 Keys konfiguriert |
+**Aktion:** Keine - dies sind absichtlich öffentliche INSERT-Policies für Analytics.
 
 ---
 
-## B) PERFORMANCE-AUDIT MIT VARIABILITAET
+### Function Search Path Mutable - PostGIS Funktionen
 
-### Site Settings Blocking
-| Problem | Impact | Datei |
-|---------|--------|-------|
-| 438 Settings geladen | 50-100ms FCP-Block | `useBatchSiteSettings.ts` |
-| App wartet auf Query | First Paint verzoegert | `main.tsx` (L20) |
+Diese Warnungen betreffen hunderte PostGIS-interne Funktionen (`_st_contains`, `_st_intersects`, etc.).
 
-**Warum mal schnell, mal langsam:**
-- Cold Cache: Voller DB-Roundtrip (~100ms)
-- Warm Cache: Instant (staleTime: 30 min)
-
-### React Query Einstellungen (Route-by-Route)
-
-| Route | staleTime | gcTime | refetchOnFocus | Problem |
-|-------|-----------|--------|----------------|---------|
-| `/` Homepage | 5 min | 10 min | false | OK |
-| `/suche` (Text) | 30s | default | false | OK |
-| `/suche` (GPS) | 10s | 30s | false | Refetch bei Navigation |
-| `/profil/:slug` | 5 min | default | false | OK |
-| `/stadt/:slug` | 5 min | default | false | Hat Realtime! |
-| `/kategorie/:slug` | 5 min | default | false | Hat Realtime! |
-
-**GPS staleTime 10s Problem:** Wenn User zurueck-navigiert, wird sofort refetched obwohl Daten noch aktuell. SAFE WIN: auf 60s erhoehen.
-
-### Realtime/Websocket Audit
-| Seite | Realtime aktiv | Notwendig? |
-|-------|----------------|------------|
-| `/suche` | ❌ Entfernt | Korrekt |
-| `/stadt/:slug` | ✅ Aktiv | Ueberfluessig (Snapshot reicht) |
-| `/kategorie/:slug` | ✅ Aktiv | Ueberfluessig (Snapshot reicht) |
-| `/admin/analytics` | ✅ Aktiv | Ja (Live-Dashboard) |
-
-**Dateien mit Realtime:**
-- `useProfilesRealtime.ts` - 1 WebSocket pro Seite
-- `useAdvertisementsRealtime.ts` - 1 WebSocket pro Seite
-- `useRealtimeAnalytics.ts` - Admin Only
-
-**Impact:** Jede WebSocket = offene Verbindung + CPU. Stadt/Kategorie brauchen das NICHT.
-
-### Supabase Latency/Overfetch
-
-| Call | Ort | Problem |
-|------|-----|---------|
-| Admin Dashboard | 8x COUNT queries | Sequentiell, 400-800ms gesamt |
-| get_paginated_profiles RPC | Homepage/Suche | OK (optimiert) |
-| search_profiles_by_radius_v2 | GPS | OK (1 Request) |
-| Canton lookup | Suche | Extra Query bei Text-Suche |
-
-### Bilder-Optimierung (VERIFIZIERT)
-| Kontext | Groesse | Transforms |
-|---------|---------|------------|
-| ProfileCard | 200x267 | WebP, quality=60 |
-| Carousel | 800px | - |
-| Lightbox | 1920px | - |
-
-**Datei:** `ProfileCard.tsx` (L46-47) - Korrekt mit width/height Attributen
-
-### Third-Party Scripts
-- Keine GTM/GA/Pixel im Code gefunden
-- `trackWebVitals()` in `main.tsx` - Nur Logging, kein Netzwerk-Impact
-
-### Edge Function Kaltstarts
-- Keine Logs gefunden fuer payport-checkout/return
-- Bedeutet: Entweder nicht aufgerufen oder Kaltstart bei erstem Call erwartet (~1-3s)
+**Aktion:** Keine - PostGIS-Extension verwaltet diese Funktionen selbst.
 
 ---
 
-## C) FAVICON-FORENSIK
+### Extension in Public - PostGIS
 
-### Aktuelle Situation
-| Datei | Vorhanden | Referenziert |
-|-------|-----------|--------------|
-| `/favicon-hearts.png` | ✅ | `index.html` (L29) |
-| `/apple-touch-icon-hearts.png` | ✅ | `index.html` (L30) |
-| `/pwa-192-hearts.png` | ✅ | `vite.config.ts` (L35-38) |
-| `/pwa-512-hearts.png` | ✅ | `vite.config.ts` (L39-42) |
+| Extension | Warnung |
+|-----------|---------|
+| `postgis` | In public schema |
+| `postgis_topology` | In public schema |
+| `fuzzystrmatch` | In public schema |
 
-### Alte Dateien
-| Datei | Status |
-|-------|--------|
-| favicon.png | ❌ Geloescht |
-| favicon-v2.png | ❌ Geloescht |
-| apple-touch-icon.png | ❌ Geloescht |
-| Alle anderen v1/v2 | ❌ Geloescht |
+**Aktion:** Keine für Soft-Launch. Migration zu `extensions` Schema ist breaking change.
 
-### Single Source of Truth
-**BESTAETIGT:** Nur `-hearts.png` Dateien in `public/`
+---
 
-### Warum Safari doppelt zeigt
-1. **PWA Manifest:** iOS cached Home-Screen Icon separat
-2. **Browser-Cache:** Safari speichert Favicon aggressiv
-3. **Losung:** Neu-Installation der PWA auf Home Screen
+## Zusammenfassung
 
-### Safari iOS Cache-Test Checkliste
+| Problem | Fix | Risiko | Launch-Blocker |
+|---------|-----|--------|----------------|
+| Security Definer View | View recreaten mit explizitem SECURITY INVOKER | Minimal | ❌ Nein (bereits sicher) |
+| RLS Disabled spatial_ref_sys | RLS + Public SELECT Policy | Minimal | ❌ Nein (keine Userdaten) |
+| 4x Always True INSERT | Keine Aktion | - | ❌ Nein (absichtlich) |
+| Function Search Path | Keine Aktion | - | ❌ Nein (PostGIS intern) |
+| Extension in Public | Keine Aktion | - | ❌ Nein (breaking change) |
+
+---
+
+## Erwarteter Ready-Score nach Fix
+
+| Kategorie | Vorher | Nachher |
+|-----------|--------|---------|
+| Security | 2/10 | 7/10 |
+| **Gesamt** | **72/100** | **82/100** |
+
+Die verbleibenden Warnings (PostGIS, Analytics INSERT) sind **absichtlich** und keine echten Risiken.
+
+---
+
+## Testplan nach Migration
+
 ```text
-1. Safari > Einstellungen > Safari > Verlauf und Websitedaten loeschen
-2. escoria.ch neu oeffnen
-3. Falls PWA: App vom Home Screen loeschen, neu hinzufuegen
-4. Tab-Icon sollte jetzt "zwei rote Herzen" zeigen
+1. Homepage (/) → Profile laden ✓
+2. /suche → Text-Suche funktioniert ✓
+3. /suche + GPS → Standort + Radius + Ergebnisse ✓
+4. /profil/:slug → Profil-Detail öffnet ✓
+5. /auth → Login funktioniert ✓
+6. /mein-profil → Dashboard lädt ✓
 ```
 
 ---
 
-## D) SAFE WINS vs RISKY CHANGES
+## Technische Details
 
-### SAFE WINS (Keine Logik-Aenderung)
+**Dateien die NICHT geändert werden:**
+- `src/hooks/useProfiles.ts` (GPS-Logik)
+- `supabase/functions/payport-*` (Payment)
+- `src/lib/profileUtils.ts` (Tier-Reihenfolge)
+- `useRotationKey.ts` (Rotation)
 
-| Massnahme | Impact | Risiko | Datei |
-|-----------|--------|--------|-------|
-| GPS staleTime 10s -> 60s | -90% Refetches | Minimal | `useProfiles.ts` L247 |
-| Realtime entfernen /stadt | -1 WebSocket | Keine | `Stadt.tsx` L21-22 |
-| Realtime entfernen /kategorie | -1 WebSocket | Keine | `Kategorie.tsx` L21-22 |
-| Admin Dashboard: 1 RPC statt 8 COUNT | -300ms Load | Mittel | Neuer RPC noetig |
+**Nur DB-Migration:**
+- 1x DROP/CREATE VIEW
+- 1x ALTER TABLE ENABLE RLS
+- 1x CREATE POLICY
 
-**Test-Strategie fuer SAFE WINS:**
-- GPS staleTime: Suchen, zurueck navigieren, keine neue Request
-- Realtime: Network Tab - keine WebSocket auf /stadt
-
-### RISKY CHANGES (Logik-Aenderung noetig)
-
-| Massnahme | Impact | Risiko | Was koennte kaputt gehen |
-|-----------|--------|--------|--------------------------|
-| site_settings lazy load | -50ms FCP | Hoch | Alle getSetting() liefern Fallbacks |
-| Auth parallel statt sequentiell | -200ms Login | Mittel | Race Condition bei Role |
-| N+1 GPS Photos JOIN | -2 Requests | Hoch | V2 RPC bereits implementiert |
-
----
-
-## E) READY SCORE BREAKDOWN
-
-| Kategorie | Gewicht | Score | Details |
-|-----------|---------|-------|---------|
-| Funktionalitaet | 30% | 28/30 | Alles funktioniert, GPS stabil |
-| Stabilitaet | 25% | 18/25 | Realtime Overhead, Auth Variabilitaet |
-| Performance | 20% | 12/20 | Site Settings Block, GPS staleTime |
-| SEO | 15% | 12/15 | Breadcrumbs, Meta Tags OK |
-| Security | 10% | 2/10 | RLS-Warnings, 1 ERROR im Linter |
-
-**TOTAL: 72/100**
-
----
-
-## GO/NO-GO EMPFEHLUNG
-
-### CONDITIONAL GO fuer Soft-Launch
-
-**Gruende fuer GO:**
-- GPS-Suche funktioniert zuverlaessig (V2 mit Fallback)
-- PayPort vollstaendig integriert mit allen Secrets
-- Favicon endlich konsolidiert (nur hearts-Dateien)
-- Admin-Features komplett
-- Rotation funktioniert (10 Min Intervall)
-
-**Bedingungen vor Go-Live:**
-1. ⚠️ RLS ERROR im Linter pruefen (2 ERRORS: Security Definer View + RLS Disabled)
-2. ✅ Realtime auf /stadt und /kategorie entfernt (ERLEDIGT)
-3. ✅ GPS staleTime auf 60s erhoeht (ERLEDIGT)
-
-**Nach Soft-Launch optimieren:**
-- Admin Dashboard RPC konsolidieren
-- Auth Flow parallelisieren
-- site_settings lazy loading evaluieren
-- RLS Warnings (4x "always true" policies) pruefen - absichtlich fuer public access
-
----
-
-## TESTPLAN VOR SOFT-LAUNCH
-
-### 1. GPS-Suche Verifizierung (5 Min)
-```text
-1. /suche oeffnen
-2. "In meiner Naehe suchen" klicken
-3. Radius auf 50km stellen
-4. Kategorie waehlen
-5. Pagination testen
-6. Zurueck navigieren, wieder /suche -> Cache pruefen
-```
-
-### 2. Create Flow End-to-End (10 Min)
-```text
-1. Registrieren mit neuer E-Mail
-2. E-Mail bestaetigen
-3. Profil erstellen (alle Felder)
-4. Paket waehlen (Premium)
-5. Fotos hochladen
-6. Verifizierung hochladen ODER ueberspringen
-7. Payment Modal erscheint (NICHT auto-redirect!)
-8. PayPort Zahlung abschliessen
-9. /mein-profil -> Status = "Bezahlt (wartet)"
-```
-
-### 3. Admin Aktivierung (3 Min)
-```text
-1. /admin/pending-payments
-2. Neues Profil in Liste
-3. "Als bezahlt markieren"
-4. /admin/profile -> Profil aktivieren
-5. Oeffentliches Profil aufrufen -> sichtbar
-```
-
-### 4. Favicon Verifizierung (2 Min)
-```text
-1. escoria.ch/debug/icons oeffnen
-2. Alle 4 Bilder zeigen "zwei rote Herzen"
-3. Tab-Icon pruefen (ggf. Hard Refresh)
-```
