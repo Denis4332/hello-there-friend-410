@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AdminHeader } from '@/components/layout/AdminHeader';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -16,12 +16,36 @@ const AdminVerifications = () => {
   const [selectedVerifications, setSelectedVerifications] = useState<string[]>([]);
   const [filterNew, setFilterNew] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'profile'>('date');
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const loadSignedUrls = async () => {
+      if (!verifications || verifications.length === 0) return;
+      
+      const urls: Record<string, string> = {};
+      
+      for (const verification of verifications) {
+        try {
+          const { data, error } = await supabase.storage
+            .from('verification-photos')
+            .createSignedUrl(verification.storage_path, 3600);
+          
+          if (data?.signedUrl && !error) {
+            urls[verification.storage_path] = data.signedUrl;
+          }
+        } catch (err) {
+          console.error('Error creating signed URL:', err);
+        }
+      }
+      
+      setSignedUrls(urls);
+    };
+    
+    loadSignedUrls();
+  }, [verifications]);
 
   const getPhotoUrl = (storagePath: string) => {
-    const { data } = supabase.storage
-      .from('verification-photos')
-      .getPublicUrl(storagePath);
-    return data.publicUrl;
+    return signedUrls[storagePath] || '';
   };
 
   const handleApprove = () => {
