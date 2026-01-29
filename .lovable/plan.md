@@ -1,75 +1,67 @@
 
-# Fix: Signierte URLs für Verifizierungsfotos
+
+# Fix: 10 Minuten Pause vor jedem Popup
 
 ## Problem
-Der `verification-photos` Bucket ist privat (korrekt aus Sicherheitsgründen), aber `getPublicUrl()` funktioniert nur bei öffentlichen Buckets. Daher werden die Verifizierungsfotos nicht angezeigt (403 Forbidden).
+
+Das Popup erscheint aktuell sofort bei jedem Seitenwechsel. Der Zeitstempel wird zwar beim Schliessen gespeichert, aber nie geprüft.
 
 ## Lösung
 
-### Datei: `src/pages/admin/AdminVerifications.tsx`
+Vor dem Anzeigen prüfen, ob seit dem letzten Popup mindestens 10 Minuten vergangen sind.
 
-#### 1. Import erweitern (Zeile 1)
+---
+
+## Änderung
+
+### Datei: `src/components/BannerManager.tsx`
+
+**Zeile 9:** Konstante hinzufügen:
 ```typescript
-import { useState, useMemo, useEffect } from 'react';
+const POPUP_COOLDOWN_MS = 10 * 60 * 1000; // 10 Minuten
 ```
 
-#### 2. Neuen State für signierte URLs hinzufügen (nach Zeile 18)
+**Zeile 35-43:** Cooldown-Prüfung einbauen:
 ```typescript
-const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
-const [urlsLoading, setUrlsLoading] = useState(false);
-```
-
-#### 3. useEffect für das Laden der signierten URLs hinzufügen (nach den States)
-```typescript
-useEffect(() => {
-  const loadSignedUrls = async () => {
-    if (!verifications || verifications.length === 0) return;
-    
-    setUrlsLoading(true);
-    const urls: Record<string, string> = {};
-    
-    for (const verification of verifications) {
-      try {
-        const { data, error } = await supabase.storage
-          .from('verification-photos')
-          .createSignedUrl(verification.storage_path, 3600); // 1 Stunde gültig
-        
-        if (data?.signedUrl && !error) {
-          urls[verification.storage_path] = data.signedUrl;
-        }
-      } catch (err) {
-        console.error('Error creating signed URL:', err);
-      }
-    }
-    
-    setSignedUrls(urls);
-    setUrlsLoading(false);
-  };
+if (popupAds.length > 0) {
+  const selectedAd = popupAds[0];
+  const storageKey = `${STORAGE_KEY_PREFIX}${selectedAd.id}`;
+  const lastShown = localStorage.getItem(storageKey);
   
-  loadSignedUrls();
-}, [verifications]);
+  // Prüfe ob 10 Minuten seit letztem Popup vergangen sind
+  if (lastShown) {
+    const timeSinceLastShown = Date.now() - new Date(lastShown).getTime();
+    if (timeSinceLastShown < POPUP_COOLDOWN_MS) {
+      return; // Noch nicht genug Zeit vergangen
+    }
+  }
+  
+  const delay = selectedAd.popup_delay_seconds || 5;
+  
+  const timer = setTimeout(() => {
+    setCurrentAd(selectedAd);
+  }, delay * 1000);
+
+  return () => clearTimeout(timer);
+}
 ```
 
-#### 4. getPhotoUrl-Funktion anpassen (Zeile 20-25)
-```typescript
-const getPhotoUrl = (storagePath: string) => {
-  return signedUrls[storagePath] || '';
-};
-```
+---
 
-## Technische Details
+## Was bleibt unverändert
 
-| Aspekt | Wert |
-|--------|------|
-| URL-Gültigkeit | 1 Stunde (3600 Sekunden) |
-| Sicherheit | Nur Admins können signierte URLs generieren (RLS) |
-| Performance | URLs werden einmal beim Laden gecacht |
-| Fallback | Leerer String wenn URL noch nicht geladen |
+- Erlaubte Seiten (WHITELIST)
+- Demo-Popup Logik
+- Tracking (Impressions/Clicks)
+- Delay vor dem Anzeigen
+- handleClose Funktion
 
-## Erwartetes Ergebnis
+---
 
-1. Admin öffnet `/admin/verifications`
-2. Hook lädt alle pending Verifizierungen
-3. useEffect generiert signierte URLs für alle Einträge
-4. Bilder werden korrekt in Tabelle und Dialog angezeigt
-5. Nach 1 Stunde: Seite neu laden für frische URLs
+## Erwartetes Verhalten
+
+1. User besucht Seite → Popup erscheint (erstmalig)
+2. User schliesst Popup → Zeitstempel wird gespeichert
+3. User navigiert → Kein Popup (10 Min Cooldown)
+4. Nach 10 Minuten → Popup erscheint wieder
+
