@@ -17,11 +17,16 @@ const AdminVerifications = () => {
   const [filterNew, setFilterNew] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'profile'>('date');
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [urlsLoading, setUrlsLoading] = useState(true);
 
   useEffect(() => {
     const loadSignedUrls = async () => {
-      if (!verifications || verifications.length === 0) return;
+      if (!verifications || verifications.length === 0) {
+        setUrlsLoading(false);
+        return;
+      }
       
+      setUrlsLoading(true);
       const urls: Record<string, string> = {};
       
       for (const verification of verifications) {
@@ -39,6 +44,7 @@ const AdminVerifications = () => {
       }
       
       setSignedUrls(urls);
+      setUrlsLoading(false);
     };
     
     loadSignedUrls();
@@ -179,11 +185,15 @@ const AdminVerifications = () => {
                           />
                         </td>
                         <td className="p-3">
-                          <img
-                            src={getPhotoUrl(verification.storage_path)}
-                            alt="Verifizierung"
-                            className="w-16 h-16 object-cover rounded"
-                          />
+                          {urlsLoading || !signedUrls[verification.storage_path] ? (
+                            <div className="w-16 h-16 bg-muted animate-pulse rounded" />
+                          ) : (
+                            <img
+                              src={signedUrls[verification.storage_path]}
+                              alt="Verifizierung"
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          )}
                         </td>
                         <td className="p-3">
                           <span className="font-medium">{verification.profiles?.display_name}</span>
