@@ -8,6 +8,7 @@ import { queueAdEvent } from '@/lib/adEventQueue';
 
 const STORAGE_KEY_PREFIX = 'popup_shown_session_';
 const DEMO_POPUP_KEY = 'demo_popup_shown_this_session';
+const POPUP_COOLDOWN_MS = 10 * 60 * 1000; // 10 Minuten
 
 // WHITELIST: Popup NUR auf diesen "Browse"-Seiten
 const POPUP_ALLOWED_PATHS = ['/', '/suche', '/kantone', '/kategorien'];
@@ -34,6 +35,17 @@ export const BannerManager = () => {
     // Fall 1: Echte Ads vorhanden - zeige erste aktive
     if (popupAds.length > 0) {
       const selectedAd = popupAds[0];
+      const storageKey = `${STORAGE_KEY_PREFIX}${selectedAd.id}`;
+      const lastShown = localStorage.getItem(storageKey);
+      
+      // Prüfe ob 10 Minuten seit letztem Popup vergangen sind
+      if (lastShown) {
+        const timeSinceLastShown = Date.now() - new Date(lastShown).getTime();
+        if (timeSinceLastShown < POPUP_COOLDOWN_MS) {
+          return; // Noch nicht genug Zeit vergangen
+        }
+      }
+      
       const delay = selectedAd.popup_delay_seconds || 5;
       
       const timer = setTimeout(() => {
