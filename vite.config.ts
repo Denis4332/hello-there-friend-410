@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script-defer', // Defer SW registration to not block render
-      includeAssets: ['favicon-hearts.png', 'apple-touch-icon-hearts.png', 'pwa-192-hearts.png', 'pwa-512-hearts.png', 'robots.txt'],
+      includeAssets: ['favicon-hearts.png?v=3', 'apple-touch-icon-hearts.png?v=3', 'pwa-192-hearts.png?v=3', 'pwa-512-hearts.png?v=3', 'robots.txt'],
       manifest: {
         name: 'ESCORIA',
         short_name: 'ESCORIA',
