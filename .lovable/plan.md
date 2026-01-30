@@ -1,52 +1,66 @@
 
 
-# Mini UI-Fixes
+# UI-Lock für Kategorien (nur visuell)
 
-## Änderung 1: Geschlecht-Dropdown entfernen
+## Was passiert
 
-**Datei:** `src/components/profile/sections/BasicInfoSection.tsx`
+Rein visuelles "disabled" auf den Checkboxen - keine Logikänderung.
 
-Zeilen 46-60 löschen (das komplette Geschlecht-Select). User wählt Geschlecht jetzt über die Kategorien (Damen/Männer/Trans).
+## Änderung
 
-**Vorher:**
-- Anzeigename
-- Volljährigkeits-Checkbox
-- Geschlecht-Dropdown ← WEG
+**Datei:** `src/components/profile/sections/CategoriesSection.tsx`
 
-**Nachher:**
-- Anzeigename
-- Volljährigkeits-Checkbox
+Statt einer gemeinsamen `renderCategory`-Funktion, separate Logik für Geschlecht und Services:
 
----
+### Geschlecht-Checkboxen
+```tsx
+// Wenn ein Geschlecht gewählt ist, die anderen disablen
+const selectedGenderId = genderCategories.find(g => selectedCategories.includes(g.id))?.id;
 
-## Änderung 2: Checkbox-Text erweitern
-
-**Datei:** `src/components/profile/sections/BasicInfoSection.tsx`
-
-Zeile 38 ändern:
-
-**Von:**
-```
-Ich bestätige, dass ich volljährig bin (18+) *
-```
-
-**Zu:**
-```
-Ich bestätige, dass ich volljährig bin (18+) und akzeptiere die AGB *
+{genderCategories.map(cat => (
+  <div key={cat.id} className="flex items-center space-x-2">
+    <Checkbox
+      id={`cat-${cat.id}`}
+      checked={selectedCategories.includes(cat.id)}
+      onCheckedChange={() => onToggle(cat.id)}
+      disabled={selectedGenderId && selectedGenderId !== cat.id}
+    />
+    <label ...>{cat.name}</label>
+  </div>
+))}
 ```
 
----
+### Service-Checkboxen
+```tsx
+// Zähle gewählte Services
+const selectedServiceIds = serviceCategories
+  .filter(s => selectedCategories.includes(s.id))
+  .map(s => s.id);
 
-## Betroffene Dateien
+{serviceCategories.map(cat => (
+  <div key={cat.id} className="flex items-center space-x-2">
+    <Checkbox
+      id={`cat-${cat.id}`}
+      checked={selectedCategories.includes(cat.id)}
+      onCheckedChange={() => onToggle(cat.id)}
+      disabled={selectedServiceIds.length >= 2 && !selectedServiceIds.includes(cat.id)}
+    />
+    <label ...>{cat.name}</label>
+  </div>
+))}
+```
 
-| Datei | Änderung |
-|-------|----------|
-| `BasicInfoSection.tsx` | Geschlecht-Dropdown raus + Checkbox-Text erweitern |
+## Ergebnis
+
+| Bereich | Verhalten |
+|---------|-----------|
+| Geschlecht | 1 gewählt → andere 2 ausgegraut |
+| Services | 2 gewählt → restliche ausgegraut |
 
 ## Keine Änderung an
 
-- Validierung / Logik
-- CategoriesSection
-- ProfileForm
+- `ProfileForm.tsx` (toggleCategory bleibt)
+- Zod-Validierung (bleibt min 1, max 2)
+- Filterung / Speicherung
 - Datenbank
 
