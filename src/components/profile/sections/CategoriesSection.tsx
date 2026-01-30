@@ -11,14 +11,12 @@ interface CategoriesSectionProps {
   errors: FieldErrors<ProfileFormData>;
 }
 
-// Geschlechts-Kategorien (Slugs)
-const GENDER_SLUGS = ['damen', 'maenner', 'manner', 'transsexuelle-ts', 'trans', 'transsexuelle'];
+// Geschlechts-Kategorien (exakte Slugs)
+const GENDER_SLUGS = ['damen', 'maenner', 'transsexuelle'];
 
 export const CategoriesSection = ({ categories, selectedCategories, onToggle, errors }: CategoriesSectionProps) => {
   // Kategorien in Geschlecht und Services aufteilen
-  const genderCategories = categories.filter(cat => 
-    GENDER_SLUGS.some(slug => cat.slug.toLowerCase().includes(slug) || cat.name.toLowerCase().includes('dame') || cat.name.toLowerCase().includes('männer') || cat.name.toLowerCase().includes('trans'))
-  );
+  const genderCategories = categories.filter(cat => GENDER_SLUGS.includes(cat.slug));
   const serviceCategories = categories.filter(cat => !genderCategories.includes(cat));
 
   const renderCategory = (cat: { id: string; name: string; slug: string }) => (
