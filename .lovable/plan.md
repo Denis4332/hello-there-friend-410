@@ -1,60 +1,52 @@
 
-# Mini-Fix: Geschlecht-Filterung korrigieren
 
-## Problem
-Die aktuelle Filterung matched zu viele Kategorien als "Geschlecht":
-- "MILF & Reife Damen" wird als Geschlecht erkannt (wegen "Damen")
-- "Gay & Männer" wird als Geschlecht erkannt (wegen "Männer")
+# Mini UI-Fixes
 
-## Lösung
-Nur die **exakten 3 Slugs** matchen statt Teilstring-Suche.
+## Änderung 1: Geschlecht-Dropdown entfernen
 
-## Änderung
+**Datei:** `src/components/profile/sections/BasicInfoSection.tsx`
 
-**Datei:** `src/components/profile/sections/CategoriesSection.tsx`
+Zeilen 46-60 löschen (das komplette Geschlecht-Select). User wählt Geschlecht jetzt über die Kategorien (Damen/Männer/Trans).
 
-**Zeile 14 ändern von:**
-```tsx
-const GENDER_SLUGS = ['damen', 'maenner', 'manner', 'transsexuelle-ts', 'trans', 'transsexuelle'];
+**Vorher:**
+- Anzeigename
+- Volljährigkeits-Checkbox
+- Geschlecht-Dropdown ← WEG
+
+**Nachher:**
+- Anzeigename
+- Volljährigkeits-Checkbox
+
+---
+
+## Änderung 2: Checkbox-Text erweitern
+
+**Datei:** `src/components/profile/sections/BasicInfoSection.tsx`
+
+Zeile 38 ändern:
+
+**Von:**
+```
+Ich bestätige, dass ich volljährig bin (18+) *
 ```
 
 **Zu:**
-```tsx
-const GENDER_SLUGS = ['damen', 'maenner', 'transsexuelle'];
+```
+Ich bestätige, dass ich volljährig bin (18+) und akzeptiere die AGB *
 ```
 
-**Zeile 18-20 ändern von:**
-```tsx
-const genderCategories = categories.filter(cat => 
-  GENDER_SLUGS.some(slug => cat.slug.toLowerCase().includes(slug) || cat.name.toLowerCase().includes('dame') || cat.name.toLowerCase().includes('männer') || cat.name.toLowerCase().includes('trans'))
-);
-```
+---
 
-**Zu:**
-```tsx
-const genderCategories = categories.filter(cat => 
-  GENDER_SLUGS.includes(cat.slug)
-);
-```
+## Betroffene Dateien
 
-## Ergebnis
-
-**Geschlecht (oben):**
-- Damen
-- Männer
-- Transsexuelle & TS
-
-**Service / Angebot (unten):**
-- Paare & Swinger
-- Domina & BDSM
-- Begleitung
-- Erotische Massagen
-- MILF & Reife Damen
-- Gay & Männer
-- Webcam & Online
+| Datei | Änderung |
+|-------|----------|
+| `BasicInfoSection.tsx` | Geschlecht-Dropdown raus + Checkbox-Text erweitern |
 
 ## Keine Änderung an
-- Validierung (bleibt: min 1, max 2)
-- Logik
-- Speicherung
-- Admin-Formular
+
+- Validierung / Logik
+- CategoriesSection
+- ProfileForm
+- Datenbank
+
