@@ -1425,54 +1425,57 @@ const AdminProfile = () => {
                                   </Button>
                                 </div>
                                 
-                                {/* Profil löschen Section */}
-                                <div className="border-t pt-4 mt-4">
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button 
-                                        variant="destructive" 
-                                        className="w-full"
-                                        disabled={deleteProfileMutation.isPending}
-                                      >
-                                        {deleteProfileMutation.isPending ? 'Lösche...' : selectedProfile?.user_id ? '🗑️ Profil + Nutzer löschen' : '🗑️ Profil löschen'}
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                          {selectedProfile?.user_id ? 'Profil UND Nutzer wirklich löschen?' : 'Profil wirklich löschen?'}
-                                        </AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Diese Aktion kann nicht rückgängig gemacht werden.{' '}
-                                          {selectedProfile?.user_id ? (
-                                            <>
-                                              Das Profil von <strong>{selectedProfile?.display_name}</strong> sowie der zugehörige <strong>Nutzer-Account (E-Mail/Login)</strong> werden dauerhaft gelöscht.
-                                            </>
-                                          ) : (
-                                            <>
-                                              Das Admin-erstellte Profil von <strong>{selectedProfile?.display_name}</strong> wird dauerhaft gelöscht. (Kein Nutzer-Account vorhanden)
-                                            </>
-                                          )}
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                          onClick={() => {
-                                            if (selectedProfile) {
-                                              deleteProfileMutation.mutate({
-                                                profileId: selectedProfile.id,
-                                                userId: selectedProfile.user_id || null
-                                              });
-                                            }
-                                          }}
+                                {/* Gefahrenzone - Profil löschen Section */}
+                                <div className="border-t pt-6 mt-6 border-destructive/30">
+                                  <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
+                                    <h4 className="text-sm font-semibold text-destructive mb-3">⚠️ Gefahrenzone</h4>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button 
+                                          variant="destructive" 
+                                          className="w-full"
+                                          disabled={deleteProfileMutation.isPending}
                                         >
-                                          {selectedProfile?.user_id ? 'Ja, beides löschen' : 'Ja, Profil löschen'}
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                          {deleteProfileMutation.isPending ? 'Lösche...' : selectedProfile?.user_id ? '🗑️ Profil + Nutzer löschen' : '🗑️ Profil löschen'}
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            {selectedProfile?.user_id ? 'Profil UND Nutzer wirklich löschen?' : 'Profil wirklich löschen?'}
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Diese Aktion kann nicht rückgängig gemacht werden.{' '}
+                                            {selectedProfile?.user_id ? (
+                                              <>
+                                                Das Profil von <strong>{selectedProfile?.display_name}</strong> sowie der zugehörige <strong>Nutzer-Account (E-Mail/Login)</strong> werden dauerhaft gelöscht.
+                                              </>
+                                            ) : (
+                                              <>
+                                                Das Admin-erstellte Profil von <strong>{selectedProfile?.display_name}</strong> wird dauerhaft gelöscht. (Kein Nutzer-Account vorhanden)
+                                              </>
+                                            )}
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            onClick={() => {
+                                              if (selectedProfile) {
+                                                deleteProfileMutation.mutate({
+                                                  profileId: selectedProfile.id,
+                                                  userId: selectedProfile.user_id || null
+                                                });
+                                              }
+                                            }}
+                                          >
+                                            {selectedProfile?.user_id ? 'Ja, beides löschen' : 'Ja, Profil löschen'}
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
                                 </div>
                               </div>
                             )}

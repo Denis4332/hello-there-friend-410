@@ -481,11 +481,23 @@ const ProfileCreate = () => {
 
               <TabsContent value="verification" className="mt-6">
                 {profileId && (
-                  <VerificationUploader
-                    profileId={profileId}
-                    onComplete={handleVerificationComplete}
-                    onSkip={handleVerificationSkip}
-                  />
+                  <div className="space-y-6">
+                    {/* Zurück zu Fotos Button */}
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setCurrentStep('photos')} 
+                      className="gap-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Zurück zu Fotos
+                    </Button>
+
+                    <VerificationUploader
+                      profileId={profileId}
+                      onComplete={handleVerificationComplete}
+                      onSkip={handleVerificationSkip}
+                    />
+                  </div>
                 )}
               </TabsContent>
             </Tabs>
@@ -498,6 +510,12 @@ const ProfileCreate = () => {
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSelectMethod={startPaymentCheckoutWithMethod}
+        listingType={listingType}
+        amount={getAmountForListingType(listingType)}
+        onChangePackage={() => {
+          setShowPaymentModal(false);
+          setCurrentStep('listing-type');
+        }}
       />
     </>
   );

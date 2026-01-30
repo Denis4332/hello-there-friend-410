@@ -148,6 +148,27 @@ const ZahlungErfolg = () => {
               </div>
             )}
 
+            {/* Nächste Schritte - für pending und paid Status */}
+            {(paymentStatus === 'pending' || paymentStatus === 'paid') && (
+              <div className="bg-muted/50 rounded-lg p-4 text-left">
+                <h3 className="font-semibold mb-3 text-sm">Was passiert jetzt?</h3>
+                <ol className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="font-medium text-foreground">1.</span>
+                    <span>Dein Inserat wird von unserem Team geprüft</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-medium text-foreground">2.</span>
+                    <span>Freischaltung innerhalb von 24 Stunden</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-medium text-foreground">3.</span>
+                    <span>Du erhältst eine Bestätigung per E-Mail</span>
+                  </li>
+                </ol>
+              </div>
+            )}
+
             {paymentStatus === 'failed' && (
               <div className="bg-destructive/10 rounded-lg p-4 space-y-3">
                 <p className="text-sm text-muted-foreground">
