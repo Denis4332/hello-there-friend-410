@@ -404,6 +404,10 @@ export default function AdminSettings() {
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
+                  ) : (!searchSettings || searchSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
+                    </div>
                   ) : (
                     searchSettings?.map(renderSettingField)
                   )}
@@ -423,6 +427,10 @@ export default function AdminSettings() {
                   {profileLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (!profileSettings || profileSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
                     </div>
                   ) : (
                     profileSettings?.map(renderSettingField)
@@ -444,6 +452,10 @@ export default function AdminSettings() {
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
+                  ) : (!listingsSettings || listingsSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
+                    </div>
                   ) : (
                     listingsSettings?.map(renderSettingField)
                   )}
@@ -463,6 +475,10 @@ export default function AdminSettings() {
                   {authLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (!authSettings || authSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
                     </div>
                   ) : (
                     authSettings?.map(renderSettingField)
@@ -484,6 +500,10 @@ export default function AdminSettings() {
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
+                  ) : (!dashboardSettings || dashboardSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
+                    </div>
                   ) : (
                     dashboardSettings?.map(renderSettingField)
                   )}
@@ -503,6 +523,10 @@ export default function AdminSettings() {
                   {contactLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (!contactSettings || contactSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
                     </div>
                   ) : (
                     contactSettings?.map(renderSettingField)
@@ -524,6 +548,10 @@ export default function AdminSettings() {
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
+                  ) : (!configSettings || configSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
+                    </div>
                   ) : (
                     configSettings?.map(renderSettingField)
                   )}
@@ -543,6 +571,10 @@ export default function AdminSettings() {
                   {advancedLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (!advancedSettings || advancedSettings.length === 0) ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Keine Einstellungen für diese Kategorie konfiguriert.</p>
                     </div>
                   ) : (
                     advancedSettings?.map(renderSettingField)

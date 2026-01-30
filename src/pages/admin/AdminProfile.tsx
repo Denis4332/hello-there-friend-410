@@ -4,9 +4,11 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { AdminProfileCreateDialog } from '@/components/admin/AdminProfileCreateDialog';
 import { BulkImageCompressor } from '@/components/admin/BulkImageCompressor';
 import { RotationDebugTool } from '@/components/admin/RotationDebugTool';
+import VerificationsTab from '@/components/admin/VerificationsTab';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -25,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useAgbAcceptances } from '@/hooks/useAgbAcceptances';
-import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2, Camera } from 'lucide-react';
+import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2, Camera, Shield, Users } from 'lucide-react';
 import type { Profile } from '@/types/dating';
 import { compressImage } from '@/utils/imageCompression';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
@@ -48,6 +50,7 @@ const AdminProfile = () => {
   const { data: premiumPrice } = useSiteSetting('pricing_premium_price');
   const { data: topPrice } = useSiteSetting('pricing_top_price');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profiles');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
   const [verifiedFilter, setVerifiedFilter] = useState(searchParams.get('verified') || '');
   const [paymentFilter, setPaymentFilter] = useState(searchParams.get('payment') || '');
@@ -701,58 +704,71 @@ const AdminProfile = () => {
       <main className="flex-1 py-8 bg-muted">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">Profile verwalten</h1>
+            <h1 className="text-3xl font-bold">Profile & Verifizierungen</h1>
             <AdminProfileCreateDialog />
           </div>
 
-          <BulkImageCompressor />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="profiles" className="gap-2">
+                <Users className="h-4 w-4" />
+                Profile prüfen
+              </TabsTrigger>
+              <TabsTrigger value="verifications" className="gap-2">
+                <Shield className="h-4 w-4" />
+                Verifizierungen
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Rotation Debug Tool */}
-          <RotationDebugTool profiles={profiles || []} />
+            <TabsContent value="profiles" className="space-y-4">
+              <BulkImageCompressor />
 
-          <div className="bg-card border rounded-lg p-4 mb-4">
-            <div className="flex gap-4 flex-wrap">
-              <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">Alle</option>
-                  <option value="pending">Zu prüfen</option>
-                  <option value="active">Aktiv</option>
-                  <option value="rejected">Abgelehnt</option>
-                </select>
+              {/* Rotation Debug Tool */}
+              <RotationDebugTool profiles={profiles || []} />
+
+              <div className="bg-card border rounded-lg p-4 mb-4">
+                <div className="flex gap-4 flex-wrap">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Status</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="">Alle</option>
+                      <option value="pending">Zu prüfen</option>
+                      <option value="active">Aktiv</option>
+                      <option value="rejected">Abgelehnt</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Verifiziert</label>
+                    <select
+                      value={verifiedFilter}
+                      onChange={(e) => setVerifiedFilter(e.target.value)}
+                      className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="">Alle</option>
+                      <option value="true">Ja</option>
+                      <option value="false">Nein</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Zahlung</label>
+                    <select
+                      value={paymentFilter}
+                      onChange={(e) => setPaymentFilter(e.target.value)}
+                      className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="">Alle Zahlungen</option>
+                      <option value="paid">✅ Bezahlt</option>
+                      <option value="pending">⏳ Ausstehend</option>
+                      <option value="free">🎁 Gratis</option>
+                      <option value="failed">❌ Fehlgeschlagen</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Verifiziert</label>
-                <select
-                  value={verifiedFilter}
-                  onChange={(e) => setVerifiedFilter(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">Alle</option>
-                  <option value="true">Ja</option>
-                  <option value="false">Nein</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Zahlung</label>
-                <select
-                  value={paymentFilter}
-                  onChange={(e) => setPaymentFilter(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  <option value="">Alle Zahlungen</option>
-                  <option value="paid">✅ Bezahlt</option>
-                  <option value="pending">⏳ Ausstehend</option>
-                  <option value="free">🎁 Gratis</option>
-                  <option value="failed">❌ Fehlgeschlagen</option>
-                </select>
-              </div>
-            </div>
-          </div>
 
           <div className="bg-card border rounded-lg overflow-hidden">
             {isLoading ? (
@@ -1490,6 +1506,12 @@ const AdminProfile = () => {
               </div>
             )}
           </div>
+            </TabsContent>
+
+            <TabsContent value="verifications">
+              <VerificationsTab />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
