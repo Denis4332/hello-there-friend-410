@@ -28,7 +28,7 @@ const profileSchema = z.object({
     })
     .optional(),
   languages: z.array(z.string()).min(1, 'Mindestens eine Sprache erforderlich'),
-  category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich').max(2, 'Maximal 2 Kategorien erlaubt'),
+  category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich').max(3, 'Maximal 3 Kategorien erlaubt'),
   // GPS coordinates (automatically geocoded from PLZ)
   lat: z.number().optional(),
   lng: z.number().optional(),
@@ -103,10 +103,9 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     const current = selectedCategories;
     if (current.includes(catId)) {
       setValue('category_ids', current.filter((c) => c !== catId));
-    } else if (current.length < 2) {
-      setValue('category_ids', [...current, catId]);
     } else {
-      showCustomError('Du kannst maximal 2 Kategorien auswählen');
+      // UI-Lock in CategoriesSection handles limits, just add
+      setValue('category_ids', [...current, catId]);
     }
   };
 
