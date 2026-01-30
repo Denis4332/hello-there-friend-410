@@ -17,6 +17,13 @@ import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
 import { PaymentMethodModal } from '@/components/PaymentMethodModal';
 import { ArrowLeft } from 'lucide-react';
 
+// Foto/Video-Limits pro Paket
+const MEDIA_LIMITS = {
+  basic: { photos: 5, videos: 0 },
+  premium: { photos: 10, videos: 1 },
+  top: { photos: 15, videos: 2 },
+};
+
 const ProfileCreate = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -211,8 +218,41 @@ const ProfileCreate = () => {
     }
   };
 
+  // Prüft ob die hochgeladenen Medien zum gewählten Paket passen
+  const validateMediaForNewPackage = async (newType: 'basic' | 'premium' | 'top'): Promise<boolean> => {
+    if (!profileId) return true; // Keine Fotos = OK
+
+    const limits = MEDIA_LIMITS[newType];
+
+    const { data: photos } = await supabase
+      .from('photos')
+      .select('id, media_type')
+      .eq('profile_id', profileId);
+
+    if (!photos || photos.length === 0) return true;
+
+    const imageCount = photos.filter(p => p.media_type === 'image' || !p.media_type).length;
+    const videoCount = photos.filter(p => p.media_type === 'video').length;
+
+    if (imageCount > limits.photos || videoCount > limits.videos) {
+      const typeNames = { basic: 'Standard', premium: 'Premium', top: 'TOP AD' };
+      toast({
+        title: 'Zu viele Medien für dieses Paket',
+        description: `${typeNames[newType]} erlaubt max. ${limits.photos} Fotos${limits.videos > 0 ? ` und ${limits.videos} Video(s)` : ''}. Du hast ${imageCount} Foto(s)${videoCount > 0 ? ` und ${videoCount} Video(s)` : ''}. Bitte lösche erst überzählige Medien.`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleListingTypeSubmit = async () => {
     if (!profileId) return;
+
+    // NEU: Medien-Limit prüfen bevor Paket gespeichert wird
+    const isValid = await validateMediaForNewPackage(listingType);
+    if (!isValid) return;
 
     try {
       // Only save listing_type - premium_until will be set by admin on activation
@@ -472,7 +512,10 @@ const ProfileCreate = () => {
         onSelectMethod={startPaymentCheckoutWithMethod}
         listingType={listingType}
         amount={getAmountForListingType(listingType)}
-        onChangePackage={() => {
+        onChangePackage={async () => {
+          // Auch hier prüfen ob Downgrade erlaubt ist
+          const isValid = await validateMediaForNewPackage(listingType);
+          if (!isValid) return;
           setShowPaymentModal(false);
           setCurrentStep('listing-type');
         }}
