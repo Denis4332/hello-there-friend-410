@@ -35,7 +35,7 @@ export const BasicInfoSection = ({ register, errors, setValue, genders, onGender
         />
         <div className="space-y-1 leading-none">
           <Label htmlFor="is_adult" className="cursor-pointer">
-            Ich bestätige, dass ich volljährig bin (18+) *
+            Ich bestätige, dass ich volljährig bin (18+) und akzeptiere die AGB *
           </Label>
           {errors.is_adult && (
             <p className="text-sm text-destructive">{errors.is_adult.message}</p>
@@ -43,21 +43,6 @@ export const BasicInfoSection = ({ register, errors, setValue, genders, onGender
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="gender">Geschlecht</Label>
-        <Select onValueChange={onGenderChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Wähle dein Geschlecht" />
-          </SelectTrigger>
-          <SelectContent>
-            {genders.map((gender) => (
-              <SelectItem key={gender.value} value={gender.value}>
-                {gender.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
     </>
   );
 };
