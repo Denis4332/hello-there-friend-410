@@ -17,20 +17,15 @@ const GENDER_SLUGS = ['damen', 'maenner', 'transsexuelle'];
 export const CategoriesSection = ({ categories, selectedCategories, onToggle, errors }: CategoriesSectionProps) => {
   // Kategorien in Geschlecht und Services aufteilen
   const genderCategories = categories.filter(cat => GENDER_SLUGS.includes(cat.slug));
-  const serviceCategories = categories.filter(cat => !genderCategories.includes(cat));
+  const serviceCategories = categories.filter(cat => !GENDER_SLUGS.includes(cat.slug));
 
-  const renderCategory = (cat: { id: string; name: string; slug: string }) => (
-    <div key={cat.id} className="flex items-center space-x-2">
-      <Checkbox
-        id={`cat-${cat.id}`}
-        checked={selectedCategories.includes(cat.id)}
-        onCheckedChange={() => onToggle(cat.id)}
-      />
-      <label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
-        {cat.name}
-      </label>
-    </div>
-  );
+  // UI-Lock: Welches Geschlecht ist gewählt?
+  const selectedGenderId = genderCategories.find(g => selectedCategories.includes(g.id))?.id;
+  
+  // UI-Lock: Welche Services sind gewählt?
+  const selectedServiceIds = serviceCategories
+    .filter(s => selectedCategories.includes(s.id))
+    .map(s => s.id);
 
   return (
     <div>
@@ -43,7 +38,22 @@ export const CategoriesSection = ({ categories, selectedCategories, onToggle, er
       <div className="mt-3">
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Geschlecht</p>
         <div className="grid grid-cols-2 gap-2">
-          {genderCategories.map(renderCategory)}
+          {genderCategories.map(cat => (
+            <div key={cat.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={`cat-${cat.id}`}
+                checked={selectedCategories.includes(cat.id)}
+                onCheckedChange={() => onToggle(cat.id)}
+                disabled={!!selectedGenderId && selectedGenderId !== cat.id}
+              />
+              <label 
+                htmlFor={`cat-${cat.id}`} 
+                className={`text-sm cursor-pointer ${selectedGenderId && selectedGenderId !== cat.id ? 'text-muted-foreground' : ''}`}
+              >
+                {cat.name}
+              </label>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -53,7 +63,22 @@ export const CategoriesSection = ({ categories, selectedCategories, onToggle, er
       <div>
         <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Service / Angebot</p>
         <div className="grid grid-cols-2 gap-2">
-          {serviceCategories.map(renderCategory)}
+          {serviceCategories.map(cat => (
+            <div key={cat.id} className="flex items-center space-x-2">
+              <Checkbox
+                id={`cat-${cat.id}`}
+                checked={selectedCategories.includes(cat.id)}
+                onCheckedChange={() => onToggle(cat.id)}
+                disabled={selectedServiceIds.length >= 2 && !selectedServiceIds.includes(cat.id)}
+              />
+              <label 
+                htmlFor={`cat-${cat.id}`} 
+                className={`text-sm cursor-pointer ${selectedServiceIds.length >= 2 && !selectedServiceIds.includes(cat.id) ? 'text-muted-foreground' : ''}`}
+              >
+                {cat.name}
+              </label>
+            </div>
+          ))}
         </div>
       </div>
 
