@@ -1,8 +1,8 @@
 import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProfileFormData } from '../ProfileForm';
 
 interface BasicInfoSectionProps {
@@ -35,8 +35,18 @@ export const BasicInfoSection = ({ register, errors, setValue, genders, onGender
         />
         <div className="space-y-1 leading-none">
           <Label htmlFor="is_adult" className="cursor-pointer">
-            Ich bestätige, dass ich volljährig bin (18+) und akzeptiere die AGB *
+            Ich bestätige, dass ich volljährig (18+) bin und akzeptiere die AGB und Datenschutzbestimmungen für Inserate *
           </Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Lies unsere{' '}
+            <Link to="/agb" className="text-primary underline hover:no-underline" target="_blank">
+              AGB
+            </Link>{' '}
+            und{' '}
+            <Link to="/datenschutz" className="text-primary underline hover:no-underline" target="_blank">
+              Datenschutzbestimmungen
+            </Link>
+          </p>
           {errors.is_adult && (
             <p className="text-sm text-destructive">{errors.is_adult.message}</p>
           )}

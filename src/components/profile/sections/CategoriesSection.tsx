@@ -31,7 +31,7 @@ export const CategoriesSection = ({ categories, selectedCategories, onToggle, er
     <div>
       <Label>Ich bin / Ich biete *</Label>
       <p className="text-sm text-muted-foreground mb-2">
-        Wähle dein Geschlecht und optional einen Service (max. 2)
+        Wähle dein Geschlecht (Pflicht) und bis zu 2 Services (optional)
       </p>
       
       {/* Geschlecht */}

@@ -27,7 +27,7 @@ const ProfileCreate = () => {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [listingType, setListingType] = useState<'basic' | 'premium' | 'top'>('basic');
   const [currentStep, setCurrentStep] = useState<'form' | 'listing-type' | 'photos' | 'verification'>('form');
-  const [agbAccepted, setAgbAccepted] = useState(false);
+  
   const [uploadedPhotoCount, setUploadedPhotoCount] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
@@ -110,15 +110,6 @@ const ProfileCreate = () => {
   const handleFormSubmit = async (data: ProfileFormData) => {
     if (!user) return;
 
-    // Check AGB acceptance
-    if (!agbAccepted) {
-      toast({
-        title: 'AGB nicht akzeptiert',
-        description: 'Bitte akzeptiere die Inserat-AGB, um fortzufahren.',
-        variant: 'destructive',
-      });
-      return;
-    }
 
     setIsSubmitting(true);
     try {
@@ -386,42 +377,11 @@ const ProfileCreate = () => {
               </TabsList>
 
               <TabsContent value="form" className="mt-6">
-                {/* AGB Checkbox for Profile Creation */}
-                <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id="profile-agb-acceptance"
-                      checked={agbAccepted}
-                      onCheckedChange={(checked) => setAgbAccepted(checked === true)}
-                      className="mt-0.5"
-                    />
-                    <div className="grid gap-1.5 leading-none">
-                      <label
-                        htmlFor="profile-agb-acceptance"
-                        className="text-sm font-medium leading-snug cursor-pointer"
-                      >
-                        Ich akzeptiere die Inserat-AGB *
-                      </label>
-                      <p className="text-xs text-muted-foreground">
-                        Mit dem Erstellen eines Inserats akzeptierst du unsere{' '}
-                        <Link to="/agb" className="text-primary underline hover:no-underline" target="_blank">
-                          AGB
-                        </Link>{' '}
-                        und{' '}
-                        <Link to="/datenschutz" className="text-primary underline hover:no-underline" target="_blank">
-                          Datenschutzbestimmungen
-                        </Link>{' '}
-                        für Inserate. Deine E-Mail wird als Nachweis gespeichert.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 <ProfileForm
                   onSubmit={handleFormSubmit}
                   cantons={cantons}
                   categories={categories}
-                  isSubmitting={isSubmitting || !agbAccepted}
+                  isSubmitting={isSubmitting}
                 />
               </TabsContent>
 
