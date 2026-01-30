@@ -72,7 +72,7 @@ const AdminDashboard = () => {
       return [
         { 
           label: 'Zu prüfen', 
-          value: pendingCount || 0, 
+          value: (pendingCount || 0) + (pendingVerifications || 0), 
           link: '/admin/profile?status=pending',
           icon: AlertCircle,
           color: 'text-orange-500',
@@ -117,14 +117,6 @@ const AdminDashboard = () => {
           icon: Flag,
           color: 'text-red-500',
           bgColor: 'bg-red-50 dark:bg-red-950'
-        },
-        { 
-          label: 'Verifizierungen', 
-          value: pendingVerifications || 0, 
-          link: '/admin/verifications',
-          icon: Shield,
-          color: 'text-cyan-500',
-          bgColor: 'bg-cyan-50 dark:bg-cyan-950'
         },
         { 
           label: 'Gesperrte Accounts', 
