@@ -1,79 +1,88 @@
 
-# Zwei Bestätigungen zusammenführen
+# Toast X-Button Fix + Bilder-Limit Validierung bei Paket-Wechsel
 
-## Problem
-Aktuell gibt es zwei separate Checkboxen:
-1. **In ProfileCreate.tsx** (oben, vor dem Formular): "Ich akzeptiere die Inserat-AGB"
-2. **In BasicInfoSection.tsx** (im Formular): "Ich bestätige, dass ich volljährig bin (18+) und akzeptiere die AGB"
+## Problem 1: Toast-Meldungen nicht wegklickbar
 
-Das ist doppelt und verwirrend.
+Die Toasts zeigen zwar einen X-Button, aber es gibt möglicherweise ein Z-Index oder Touch-Target Problem auf Mobile.
 
----
+### Lösung
+In `src/components/ui/toast.tsx` den ToastClose Button größer und besser klickbar machen:
 
-## Lösung
-
-Alles in **eine Checkbox** im Formular kombinieren und die separate Checkbox in ProfileCreate.tsx entfernen.
-
----
-
-## Änderung 1: ProfileCreate.tsx - Separate AGB-Checkbox entfernen
-
-**Datei:** `src/pages/ProfileCreate.tsx`
-
-**Zeilen 390-418 löschen** (der komplette AGB-Block vor dem ProfileForm):
 ```tsx
-{/* AGB Checkbox for Profile Creation */}
-<div className="mb-6 p-4 bg-muted/50 rounded-lg border">
-  ...
-</div>
+// Zeile 69-71 - größeres Touch-Target und bessere Sichtbarkeit
+className={cn(
+  "absolute right-2 top-2 rounded-md p-2 text-foreground/50 opacity-100 transition-opacity hover:text-foreground focus:outline-none focus:ring-2",
+  // p-1 → p-2 für größeres Klick-Target auf Mobile
+  className,
+)}
 ```
-
-**agbAccepted State** und die Validierung in `handleFormSubmit` anpassen - `is_adult` im Formular übernimmt alles.
 
 ---
 
-## Änderung 2: BasicInfoSection.tsx - Kombinierte Checkbox
+## Problem 2: Bilder-Limit beim Paket-Wechsel nicht geprüft
 
-**Datei:** `src/components/profile/sections/BasicInfoSection.tsx`
+Aktuell kann jemand:
+1. TOP AD wählen → 15 Fotos hochladen
+2. Zurück zu "Paket ändern" → Basic wählen
+3. Mit 15 Fotos als Basic-Inserat weitermachen (Exploit!)
 
-**Zeile 37-38** - Der Text wird erweitert:
+### Lösung
 
-**Von:**
-```
-Ich bestätige, dass ich volljährig bin (18+) und akzeptiere die AGB *
-```
+In `src/pages/ProfileCreate.tsx` beim Paket-Wechsel prüfen, ob die hochgeladenen Fotos das neue Limit überschreiten.
 
-**Zu:**
-```
-Ich bestätige, dass ich volljährig (18+) bin und akzeptiere die AGB und Datenschutzbestimmungen für Inserate *
-```
+**Neue Funktion:** `validateMediaForNewPackage()`
 
-Zusätzlich einen Hinweistext mit Links hinzufügen:
 ```tsx
-<p className="text-xs text-muted-foreground mt-1">
-  Lies unsere <Link to="/agb">AGB</Link> und <Link to="/datenschutz">Datenschutzbestimmungen</Link>
-</p>
+// Foto/Video-Limits pro Paket
+const MEDIA_LIMITS = {
+  basic: { photos: 5, videos: 0 },
+  premium: { photos: 10, videos: 1 },
+  top: { photos: 15, videos: 2 },
+};
+
+const validateMediaForNewPackage = async (newType: 'basic' | 'premium' | 'top') => {
+  if (!profileId) return true; // Keine Fotos = OK
+  
+  const limits = MEDIA_LIMITS[newType];
+  
+  // Aktuelle Medien aus DB holen
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('id, media_type')
+    .eq('profile_id', profileId);
+  
+  if (!photos) return true;
+  
+  const imageCount = photos.filter(p => p.media_type === 'image' || !p.media_type).length;
+  const videoCount = photos.filter(p => p.media_type === 'video').length;
+  
+  if (imageCount > limits.photos || videoCount > limits.videos) {
+    toast({
+      title: 'Zu viele Medien',
+      description: `${newType.toUpperCase()} erlaubt max. ${limits.photos} Fotos${limits.videos > 0 ? ` und ${limits.videos} Video(s)` : ''}. Du hast ${imageCount} Fotos${videoCount > 0 ? ` und ${videoCount} Videos` : ''}. Bitte lösche erst überzählige Medien.`,
+      variant: 'destructive',
+    });
+    return false;
+  }
+  
+  return true;
+};
 ```
 
----
+**Anpassungen:**
 
-## Änderung 3: ProfileCreate.tsx - agbAccepted State entfernen
+1. **ListingTypeSelector `onContinue`** - Vor dem Weiter prüfen:
+```tsx
+const handleListingTypeSubmit = async () => {
+  // NEU: Medien-Limit prüfen bevor gespeichert wird
+  const isValid = await validateMediaForNewPackage(listingType);
+  if (!isValid) return;
+  
+  // ... Rest bleibt gleich
+};
+```
 
-Da `is_adult` jetzt alles abdeckt:
-- `agbAccepted` State entfernen (Zeile 30)
-- Prüfung in `handleFormSubmit` anpassen (Zeilen 113-121)
-- `disabled={isSubmitting || !agbAccepted}` ändern zu `disabled={isSubmitting}`
-
----
-
-## Kategorien-Text
-
-Der aktuelle Text "max. 2" bei Services ist **korrekt** - Services sind optional (0-2).
-Der Text "Wähle dein Geschlecht und optional einen Service (max. 2)" beschreibt das richtig.
-
-Falls gewünscht, kann ich den Text klarer machen:
-- **Vorher:** "Wähle dein Geschlecht und optional einen Service (max. 2)"
-- **Nachher:** "Wähle dein Geschlecht (Pflicht) und bis zu 2 Services (optional)"
+2. **PaymentMethodModal "Ändern" Button** - Auch hier prüfen beim Wechsel zurück
 
 ---
 
@@ -81,13 +90,11 @@ Falls gewünscht, kann ich den Text klarer machen:
 
 | Datei | Änderung |
 |-------|----------|
-| `ProfileCreate.tsx` | AGB-Checkbox Block entfernen, agbAccepted State entfernen |
-| `BasicInfoSection.tsx` | Checkbox-Text erweitern + Links zu AGB/Datenschutz |
-| `CategoriesSection.tsx` | Text optional klarer machen |
+| `toast.tsx` | ToastClose Button größer (p-2 statt p-1) |
+| `ProfileCreate.tsx` | `validateMediaForNewPackage()` Funktion + Aufruf in `handleListingTypeSubmit` |
 
 ## Ergebnis
 
-Nur noch **eine Checkbox** die alles abdeckt:
-- ✅ Volljährigkeit
-- ✅ AGB-Akzeptanz  
-- ✅ Datenschutzbestimmungen
+- ✅ Toast-Meldungen auf Mobile/Desktop wegklickbar
+- ✅ Downgrade von TOP→Basic blockiert wenn zu viele Fotos
+- ✅ Nutzer müssen erst überzählige Medien löschen
