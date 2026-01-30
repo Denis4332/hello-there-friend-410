@@ -397,8 +397,8 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     );
   };
 
-  // Validation: require city selection with GPS AND AGB acceptance with customer email
-  const isValid = displayName.trim() && city.trim() && canton.trim() && lat !== null && lng !== null && agbAccepted && customerEmail.trim();
+  // Validation: require city selection with GPS AND AGB acceptance with customer email AND at least 1 category
+  const isValid = displayName.trim() && city.trim() && canton.trim() && lat !== null && lng !== null && agbAccepted && customerEmail.trim() && selectedCategories.length >= 1;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -635,7 +635,8 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
           
           {/* Kategorien */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm border-b pb-2">Kategorien (max. 2)</h3>
+            <h3 className="font-semibold text-sm border-b pb-2">Kategorien * (max. 2)</h3>
+            <p className="text-sm text-muted-foreground">Mindestens 1 Kategorie erforderlich</p>
             <div className="grid grid-cols-2 gap-2">
               {categories?.map((cat) => (
                 <div key={cat.id} className="flex items-center space-x-2">
