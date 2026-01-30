@@ -1,123 +1,94 @@
 
-# Fix: Verifizierungsfotos in Admin-Tabelle anzeigen
 
-## Problem
+# Implementierungsplan: Visuelle Verbesserungen
 
-Die Verifizierungsfotos werden im Admin-Dashboard nicht in der Tabellen-Übersicht angezeigt, obwohl sie im "Prüfen"-Dialog sichtbar sind.
+## Harte Regeln - UNANTASTBAR
 
-### Ursache
+| Bereich | Status |
+|---------|--------|
+| Banner-System (BannerDisplay, BannerManager, PopupBanner) | ❌ NICHT ANFASSEN |
+| Banner-Aussehen (CSS, Layout) | ❌ NICHT ANFASSEN |
+| 3-Sekunden Ad-Timer (3000ms) | ❌ NICHT ANFASSEN |
+| Ad-Event-Queue (adEventQueue.ts) | ❌ NICHT ANFASSEN |
+| Inserat-Aussehen (ProfileCard.tsx) | ❌ NICHT ANFASSEN |
+| Rotation-Algorithmus (profileUtils.ts) | ❌ NICHT ANFASSEN |
+| Rotation-Key (useRotationKey.ts) | ❌ NICHT ANFASSEN |
+| Sortierung TOP > Premium > Basic | ❌ NICHT ANFASSEN |
+| GPS-Suche, Filter, Pagination | ❌ NICHT ANFASSEN |
+| Payment-Modal-Workflow Logik | ❌ NICHT ANFASSEN |
+| CMS-Settings Hooks | ❌ NICHT ANFASSEN |
 
-Die Signed URLs werden asynchron geladen. Wenn die Tabelle gerendert wird, sind die URLs noch nicht bereit. `getPhotoUrl()` gibt dann einen leeren String zurück.
+---
 
-**Aktueller Ablauf:**
-```
-1. Verifications laden (API-Call)
-2. Tabelle rendert sofort mit leeren src=""
-3. useEffect startet → URLs werden geladen
-4. State updated → aber img-Tags sind schon "broken"
+## Änderungen (nur visuelle/Layout)
+
+### 1. AdminProfile.tsx - Gefahrenzone markieren
+
+**Was:** Den Delete-AlertDialog in einen roten Rahmen einpacken für bessere visuelle Trennung
+
+**Änderung:**
+```tsx
+<div className="border-t pt-6 mt-6 border-destructive/30">
+  <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
+    <h4 className="text-sm font-semibold text-destructive mb-3">⚠️ Gefahrenzone</h4>
+    <!-- bestehendes AlertDialog -->
+  </div>
+</div>
 ```
 
 ---
 
-## Lösung
+### 2. ZahlungErfolg.tsx - Nächste Schritte Liste
 
-### Teil 1: Loading-State für Bilder hinzufügen
+**Was:** Strukturierte Liste einfügen die erklärt was nach der Zahlung passiert
 
-Zeige einen Skeleton/Platzhalter während die URLs laden.
-
-**Datei:** `src/pages/admin/AdminVerifications.tsx`
-
-**Zeile 19:** Loading-State hinzufügen:
-```typescript
-const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
-const [urlsLoading, setUrlsLoading] = useState(true);
-```
-
-**Zeile 21-45:** Loading-State setzen:
-```typescript
-useEffect(() => {
-  const loadSignedUrls = async () => {
-    if (!verifications || verifications.length === 0) {
-      setUrlsLoading(false);
-      return;
-    }
-    
-    setUrlsLoading(true);
-    const urls: Record<string, string> = {};
-    
-    for (const verification of verifications) {
-      try {
-        const { data, error } = await supabase.storage
-          .from('verification-photos')
-          .createSignedUrl(verification.storage_path, 3600);
-        
-        if (data?.signedUrl && !error) {
-          urls[verification.storage_path] = data.signedUrl;
-        }
-      } catch (err) {
-        console.error('Error creating signed URL:', err);
-      }
-    }
-    
-    setSignedUrls(urls);
-    setUrlsLoading(false);
-  };
-  
-  loadSignedUrls();
-}, [verifications]);
-```
-
-### Teil 2: Skeleton während URL-Laden anzeigen
-
-**Zeile 181-187:** Conditional Rendering für Bilder:
-```typescript
-<td className="p-3">
-  {urlsLoading || !signedUrls[verification.storage_path] ? (
-    <div className="w-16 h-16 bg-muted animate-pulse rounded" />
-  ) : (
-    <img
-      src={signedUrls[verification.storage_path]}
-      alt="Verifizierung"
-      className="w-16 h-16 object-cover rounded"
-    />
-  )}
-</td>
+**Änderung:** Nach Status-Block, vor Buttons einfügen:
+```tsx
+{(paymentStatus === 'pending' || paymentStatus === 'paid') && (
+  <div className="bg-muted/50 rounded-lg p-4 text-left">
+    <h3 className="font-semibold mb-3 text-sm">Was passiert jetzt?</h3>
+    <ol className="space-y-2 text-sm text-muted-foreground">
+      <li>1. Dein Inserat wird geprüft</li>
+      <li>2. Freischaltung in 24h</li>
+      <li>3. Bestätigung per E-Mail</li>
+    </ol>
+  </div>
+)}
 ```
 
 ---
 
-## Teil 2: Favicon-Problem (Safari Cache)
+### 3. PaymentMethodModal.tsx - Paket-Info anzeigen
 
-Das Favicon zeigt in Safari/iOS ein falsches Icon wegen aggressivem Caching.
+**Was:** Optionale Props für Paket-Anzeige + Ändern-Link + Hinweistext
 
-### Mögliche Lösungen:
-
-1. **Dateinamen komplett ändern** (z.B. `favicon-v4.png`)
-2. **Timestamp als Query-Parameter** statt `?v=3`
-3. **Manifest.json aktualisieren** mit neuen Pfaden
-
-Da Edge das richtige Icon zeigt, ist das Deployment korrekt. Das Problem ist rein clientseitiger Cache.
-
-**Empfehlung:** 
-- `/debug/icons` Seite nutzen um zu verifizieren dass die richtigen Dateien served werden
-- Safari Cache manuell löschen: Einstellungen → Safari → Verlauf und Websitedaten löschen
-- PWA neu installieren falls installiert
+**Änderungen:**
+- Props erweitern (optional, rückwärtskompatibel)
+- Paket-Info Block vor Zahlungs-Buttons
+- Hinweistext am Ende
 
 ---
 
-## Zusammenfassung
+### 4. ProfileCreate.tsx - Zurück-Button + Modal Props
 
-| Problem | Ursache | Lösung |
-|---------|---------|--------|
-| Tabellen-Bilder fehlen | Async URL-Loading | Loading-State + Skeleton |
-| Dialog-Bilder funktionieren | URLs sind dann bereit | - |
-| Falsches Favicon (Safari) | Browser-Cache | Cache löschen / Dateinamen ändern |
+**Was:** 
+- Zurück-Button im Verifizierungs-Schritt
+- PaymentModal mit Paket-Info aufrufen
+
+**Änderungen:**
+- Button "Zurück zu Fotos" vor VerificationUploader
+- Modal-Aufruf mit listingType, amount, onChangePackage Props
 
 ---
 
-## Erwartetes Ergebnis
+## Dateien die geändert werden
 
-Nach dem Fix:
-- Tabellen-Übersicht zeigt Skeleton während URLs laden
-- Dann erscheinen die Verifizierungsfotos korrekt
-- Dialog zeigt weiterhin Bilder wie bisher
+| Datei | Änderung |
+|-------|----------|
+| `src/pages/admin/AdminProfile.tsx` | Gefahrenzone visuell markieren |
+| `src/pages/ZahlungErfolg.tsx` | Nächste Schritte Liste |
+| `src/components/PaymentMethodModal.tsx` | Paket-Info + Hinweistext |
+| `src/pages/ProfileCreate.tsx` | Zurück-Button + Modal Props |
+
+## Keine Änderungen an Logik oder bestehenden Funktionen
+
