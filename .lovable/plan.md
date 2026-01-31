@@ -1,262 +1,143 @@
 
-# Banner System v2.0 - Kritische Fixes
+# Banner System komplett entfernen
 
-## Zusammenfassung der 3 Probleme
+## Übersicht
 
-| # | Problem | Datei | Status |
-|---|---------|-------|--------|
-| 1 | Popup-Banner zeigt sich quadratisch statt 3:4 Portrait | `PopupBanner.tsx` | ✅ BEREITS KORREKT |
-| 2 | Horizontale Banner-CTA Text passt nicht in 728x90 | `BannerCTA.tsx` | ❌ FIX BENÖTIGT |
-| 3 | InContentBanner wird nicht verwendet | `Suche.tsx` | ❌ FIX BENÖTIGT |
+Das gesamte Banner/Werbung-System wird aus dem Projekt entfernt. Dies umfasst 15 Dateien zum Löschen und 11 Dateien zum Ändern.
 
 ---
 
-## Analyse Problem 1: PopupBanner Format
+## Phase 1: Dateien löschen (15 Dateien)
 
-**Aktueller Code ist KORREKT!**
-
-Zeile 114-119 (Demo Popup):
-```tsx
-<div
-  className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
-    isVisible ? 'scale-100' : 'scale-95'
-  }`}
-  style={{ aspectRatio: '3/4' }}
-  onClick={(e) => e.stopPropagation()}
->
+### 1.1 Banner-Komponenten Ordner (8 Dateien)
+```
+src/components/banners/
+├── BannerCTA.tsx
+├── BaseBanner.tsx
+├── FooterBanner.tsx
+├── HeaderBanner.tsx
+├── InContentBanner.tsx
+├── InGridBanner.tsx
+├── PopupBanner.tsx
+└── index.ts
 ```
 
-Zeile 145-150 (Real Popup):
-```tsx
-<div
-  className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
-    isVisible ? 'scale-100' : 'scale-95'
-  }`}
-  style={{ aspectRatio: '3/4' }}
-  onClick={(e) => e.stopPropagation()}
->
+### 1.2 Seiten (3 Dateien)
+```
+src/pages/Bannerpreise.tsx
+src/pages/BannerBuchen.tsx
+src/pages/admin/AdminBanners.tsx
 ```
 
-Das `aspectRatio: '3/4'` ist bereits auf dem Container gesetzt. Falls es trotzdem quadratisch erscheint, liegt das Problem möglicherweise daran, dass der innere `BannerCTA` das Format nicht respektiert.
+### 1.3 Hooks (2 Dateien)
+```
+src/hooks/useAdvertisements.ts
+src/hooks/useAdvertisementsRealtime.ts
+```
 
----
-
-## Fix 1: BannerCTA für Popup muss h-full haben
-
-**Datei:** `src/components/banners/BannerCTA.tsx`
-
-Das Problem: Der BannerCTA füllt den Container nicht vollständig aus.
-
-**Zeile 17-26 ersetzen durch:**
-
-```tsx
-return (
-  <div className={`${className} flex justify-center h-full`}>
-    <Card 
-      className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 h-full ${
-        isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-[728px]'
-      }`}
-      style={{
-        aspectRatio: isVertical ? '3/4' : `${config.desktop.width}/${config.desktop.height}`,
-      }}
-    >
+### 1.4 Types und Lib (2 Dateien)
+```
+src/types/advertisement.ts
+src/lib/adEventQueue.ts
 ```
 
 ---
 
-## Fix 2: Horizontale Banner-CTA einzeilig machen
+## Phase 2: Dateien ändern (11 Dateien)
 
-**Datei:** `src/components/banners/BannerCTA.tsx`
+### 2.1 src/App.tsx
+**Entfernen:**
+- Zeile 10: `import { PopupBanner } from "./components/banners";`
+- Zeile 37-38: Lazy imports für Bannerpreise und BannerBuchen
+- Zeile 62: Lazy import für AdminBanners
+- Zeile 94: `<PopupBanner />`
+- Zeile 112-113: Routes für /bannerpreise und /banner/buchen
+- Zeile 172: Route für /admin/banners
 
-**Zeile 37-60 komplett ersetzen durch:**
+### 2.2 src/pages/Index.tsx
+**Entfernen:**
+- Zeile 10: `import { HeaderBanner, FooterBanner } from '@/components/banners';`
+- Zeile 76: `<HeaderBanner className="..." />`
+- Zeile 101: `<FooterBanner className="..." />`
 
-```tsx
-{/* Responsive Layout: Horizontal für flache, Vertikal für Portrait */}
-<div className={`relative h-full flex items-center justify-center overflow-hidden ${
-  isVertical 
-    ? 'flex-col text-center space-y-3 p-4' 
-    : 'flex-row gap-3 px-4 py-2'
-}`}>
-  {isVertical ? (
-    <>
-      <Badge variant="secondary" className="mb-2">
-        <TrendingUp className="w-3 h-3 mr-1" />
-        {config.name} verfügbar
-      </Badge>
-      
-      <h3 className="text-lg font-bold text-foreground">
-        Hier könnte Ihre Werbung stehen!
-      </h3>
-      
-      <p className="text-muted-foreground text-sm max-w-xs">
-        Erreichen Sie tausende potenzielle Kunden.
-      </p>
-      
-      <div className="text-xs text-muted-foreground">
-        ab CHF {config.pricePerDay}/Tag
-      </div>
-      
-      <Button asChild size="default" className="font-semibold">
-        <Link to="/bannerpreise">Jetzt buchen</Link>
-      </Button>
-    </>
-  ) : (
-    <>
-      <Badge variant="secondary" className="shrink-0">
-        <TrendingUp className="w-3 h-3 mr-1" />
-        Werbeplatz
-      </Badge>
-      <span className="text-sm font-medium text-foreground truncate">
-        Hier werben – ab CHF {config.pricePerDay}/Tag
-      </span>
-      <Button asChild size="sm" className="shrink-0">
-        <Link to="/bannerpreise">Buchen</Link>
-      </Button>
-    </>
-  )}
-</div>
-```
+### 2.3 src/pages/Suche.tsx
+**Entfernen:**
+- Zeile 17: `import { HeaderBanner, InContentBanner } from '@/components/banners';`
+- Zeile 295: `<HeaderBanner className="my-6" />`
+- Zeile 297: `<InContentBanner className="my-6" />`
 
-**Änderungen:**
-- Horizontale Banner: `flex-row` mit `gap-3 px-4 py-2`
-- Einzeilig: Badge + kurzer Text + Button
-- Vertikale Banner: Behalten mehrzeiliges Layout
-- `overflow-hidden` auf Content-Container
+### 2.4 src/pages/Kategorie.tsx
+**Entfernen:**
+- Zeile 12: `import { HeaderBanner } from '@/components/banners';`
+- Zeile 83: `<HeaderBanner className="mb-8" />`
 
----
+### 2.5 src/pages/Stadt.tsx
+**Entfernen:**
+- Zeile 12: `import { HeaderBanner } from '@/components/banners';`
+- Zeile 89: `<HeaderBanner className="mb-8" />`
 
-## Fix 3: InContentBanner in Suche.tsx einbinden
+### 2.6 src/components/search/SearchResults.tsx
+**Entfernen:**
+- Zeile 5: `import { InGridBanner } from '@/components/banners';`
+- Zeile 25-32: Die `profileChunks` useMemo Logik
+- Zeile 56-73: Die Chunk-Iteration mit Banner
 
-**Datei:** `src/pages/Suche.tsx`
+**Ersetzen mit:** Einfaches Profile-Mapping ohne Chunks
 
-### Änderung 1: Import erweitern (Zeile 17)
+### 2.7 src/components/home/FeaturedProfilesSection.tsx
+**Entfernen:**
+- Zeile 18: `import { InGridBanner } from '@/components/banners';`
+- Zeile 48-53: Die Chunk-Logik
+- Zeile 79-101: Die Chunk-Iteration mit Banner
 
-```tsx
-// VORHER:
-import { HeaderBanner } from '@/components/banners';
+**Ersetzen mit:** Einfaches Profile-Mapping ohne Chunks
 
-// NACHHER:
-import { HeaderBanner, InContentBanner } from '@/components/banners';
-```
+### 2.8 src/components/layout/Header.tsx
+**Entfernen:**
+- Zeile 26: `const navBanners = getSetting('nav_banners', 'Werbung');`
+- Zeile 67-69: Desktop Nav Link zu /bannerpreise
+- Zeile 183-185: Mobile Nav Link zu /bannerpreise
 
-### Änderung 2: InContentBanner nach HeaderBanner hinzufügen (nach Zeile 295)
+### 2.9 src/components/layout/Footer.tsx
+**Entfernen:**
+- Zeile 26: `const linkAdvertising = getSetting('footer_link_advertising', 'Werbung schalten');`
+- Zeile 50-53: Footer Link zu /bannerpreise
 
-```tsx
-<HeaderBanner className="my-6" />
+### 2.10 src/components/layout/AdminHeader.tsx
+**Entfernen:**
+- Zeile 59: `{ path: '/admin/banners', label: 'Banner' }` aus navLinks Array
+- Zeile 178-186: Desktop Nav Link zu /admin/banners
 
-<InContentBanner className="my-6" />
-```
+### 2.11 src/pages/admin/AdminMessages.tsx
+**Entfernen:**
+- Zeile 77: `<TabsTrigger value="banner">Banner-Anfragen</TabsTrigger>`
+- Zeile 50-52: Banner case im getTypeBadge (kann bleiben für Legacy-Daten)
+- Zeile 193-194: Banner-spezifischer Leertext
+- Zeile 230-263: Banner-Metadata Anzeige im Dialog (kann bleiben für Legacy)
+- Zeile 293-302: "Banner erstellen" Button
 
 ---
 
-## Erwartetes Ergebnis nach Fixes
+## Phase 3: AdminPendingPayments.tsx
 
-| Banner | Format | CTA-Layout |
-|--------|--------|------------|
-| Header | 728x90 | Eine Zeile: `[Badge] [Text] [Button]` |
-| InContent | 728x90 | Eine Zeile: `[Badge] [Text] [Button]` |
-| Footer | 728x90 | Eine Zeile: `[Badge] [Text] [Button]` |
-| InGrid | 300x400 | Mehrzeilig vertikal |
-| Popup | 300x400 | Mehrzeilig vertikal, PORTRAIT Format! |
+Diese Seite bleibt BESTEHEN, da sie auch Profil-Zahlungen verwaltet. Die Banner-Tab-Funktionalität bleibt für historische Daten erhalten, aber es werden keine neuen Banner-Zahlungen mehr angezeigt, sobald keine ausstehenden mehr vorhanden sind.
+
+**Keine Änderungen erforderlich** - die Seite funktioniert weiterhin für:
+- Profil-Zahlungen (Hauptfunktion)
+- Historische Banner-Zahlungen (falls vorhanden)
 
 ---
 
-## Dateien die geändert werden
+## Zusammenfassung
 
-| # | Datei | Änderung |
-|---|-------|----------|
-| 1 | `src/components/banners/BannerCTA.tsx` | h-full hinzufügen + horizontales Layout einzeilig |
-| 2 | `src/pages/Suche.tsx` | InContentBanner Import + Verwendung |
+| Aktion | Anzahl | Dateien |
+|--------|--------|---------|
+| Löschen | 15 | Banner-Komponenten, Seiten, Hooks, Types, Lib |
+| Ändern | 10 | App.tsx, Index.tsx, Suche.tsx, Kategorie.tsx, Stadt.tsx, SearchResults.tsx, FeaturedProfilesSection.tsx, Header.tsx, Footer.tsx, AdminHeader.tsx |
+| Behalten | 1 | AdminPendingPayments.tsx (für Profil-Zahlungen) |
 
 ---
 
-## Technische Details
+## Nach der Entfernung
 
-### BannerCTA.tsx - Vollständiger neuer Code
-
-```tsx
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp } from 'lucide-react';
-import { BannerPosition, BANNER_CONFIG } from '@/types/advertisement';
-
-interface BannerCTAProps {
-  position: BannerPosition;
-  className?: string;
-}
-
-export const BannerCTA = ({ position, className = '' }: BannerCTAProps) => {
-  const config = BANNER_CONFIG[position];
-  const isVertical = position === 'in_grid' || position === 'popup';
-  
-  return (
-    <div className={`${className} flex justify-center h-full`}>
-      <Card 
-        className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 h-full ${
-          isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-[728px]'
-        }`}
-        style={{
-          aspectRatio: isVertical ? '3/4' : `${config.desktop.width}/${config.desktop.height}`,
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background">
-          <img 
-            src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=40&w=800"
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover opacity-[0.08]"
-          />
-        </div>
-        
-        {/* Responsive Layout: Horizontal für flache, Vertikal für Portrait */}
-        <div className={`relative h-full flex items-center justify-center overflow-hidden ${
-          isVertical 
-            ? 'flex-col text-center space-y-3 p-4' 
-            : 'flex-row gap-3 px-4 py-2'
-        }`}>
-          {isVertical ? (
-            <>
-              <Badge variant="secondary" className="mb-2">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                {config.name} verfügbar
-              </Badge>
-              
-              <h3 className="text-lg font-bold text-foreground">
-                Hier könnte Ihre Werbung stehen!
-              </h3>
-              
-              <p className="text-muted-foreground text-sm max-w-xs">
-                Erreichen Sie tausende potenzielle Kunden.
-              </p>
-              
-              <div className="text-xs text-muted-foreground">
-                ab CHF {config.pricePerDay}/Tag
-              </div>
-              
-              <Button asChild size="default" className="font-semibold">
-                <Link to="/bannerpreise">Jetzt buchen</Link>
-              </Button>
-            </>
-          ) : (
-            <>
-              <Badge variant="secondary" className="shrink-0">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                Werbeplatz
-              </Badge>
-              <span className="text-sm font-medium text-foreground truncate">
-                Hier werben – ab CHF {config.pricePerDay}/Tag
-              </span>
-              <Button asChild size="sm" className="shrink-0">
-                <Link to="/bannerpreise">Buchen</Link>
-              </Button>
-            </>
-          )}
-        </div>
-      </Card>
-    </div>
-  );
-};
-```
+Die `advertisements` Datenbank-Tabelle bleibt bestehen (für historische Daten).
