@@ -15,7 +15,7 @@
  */
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
-import { BannerDisplay } from '@/components/BannerDisplay';
+import { InGridBanner } from '@/components/banners';
 import { Pagination } from '@/components/Pagination';
 import { ProfileWithRelations } from '@/types/common';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -95,7 +95,7 @@ export const FeaturedProfilesSection = ({
                 {/* Banner AFTER each grid (except the last one) */}
                 {chunkIndex < chunks.length - 1 && (
                   <div className="mt-8">
-                    <BannerDisplay position="grid" className="w-full" />
+                    <InGridBanner className="w-full" />
                   </div>
                 )}
               </div>

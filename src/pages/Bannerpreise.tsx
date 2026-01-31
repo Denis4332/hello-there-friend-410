@@ -5,13 +5,16 @@ import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Zap, Eye, Grid3x3, Star } from 'lucide-react';
+import { Check, Zap, Eye, Grid3x3, Star, LayoutGrid } from 'lucide-react';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
+import { BANNER_CONFIG, BannerPosition } from '@/types/advertisement';
 
-const positionIcons = {
+const positionIcons: Record<BannerPosition, typeof Zap> = {
   popup: Zap,
-  top: Star,
-  grid: Grid3x3,
+  header_banner: Star,
+  in_content: Eye,
+  in_grid: Grid3x3,
+  footer_banner: LayoutGrid,
 };
 
 export default function Bannerpreise() {
@@ -91,41 +94,23 @@ export default function Bannerpreise() {
     'Exklusive Platzierung'
   ]);
 
-  const packages = [
-    {
-      position: 'popup',
-      icon: positionIcons.popup,
-      name: popupName || 'Pop-up Banner',
-      description: popupDescription || 'Maximale Aufmerksamkeit beim Seitenaufruf',
-      priceDay: popupPriceDay || 'CHF 80',
-      priceWeek: popupPriceWeek || 'CHF 504',
-      priceMonth: popupPriceMonth || 'CHF 2\'040',
-      features: popupFeatures,
-      badge: 'EXKLUSIV',
-    },
-    {
-      position: 'top',
-      icon: positionIcons.top,
-      name: topName || 'Top-Banner',
-      description: topDescription || 'Prominent im Kopfbereich jeder Seite',
-      priceDay: topPriceDay || 'CHF 50',
-      priceWeek: topPriceWeek || 'CHF 315',
-      priceMonth: topPriceMonth || 'CHF 1\'275',
-      features: topFeatures,
-      badge: 'EXKLUSIV',
-    },
-    {
-      position: 'grid',
-      icon: positionIcons.grid,
-      name: gridName || 'Grid-Banner',
-      description: gridDescription || 'Integriert zwischen den Suchergebnissen',
-      priceDay: gridPriceDay || 'CHF 30',
-      priceWeek: gridPriceWeek || 'CHF 189',
-      priceMonth: gridPriceMonth || 'CHF 765',
-      features: gridFeatures,
-      badge: 'EXKLUSIV',
-    },
-  ];
+  // Generate packages from BANNER_CONFIG
+  const packages = Object.entries(BANNER_CONFIG).map(([position, config]) => ({
+    position: position as BannerPosition,
+    icon: positionIcons[position as BannerPosition],
+    name: config.name,
+    description: `${config.desktop.width}×${config.desktop.height}px Desktop`,
+    priceDay: `CHF ${config.pricePerDay}`,
+    priceWeek: `CHF ${config.pricePerWeek}`,
+    priceMonth: `CHF ${config.pricePerMonth}`,
+    features: [
+      `Desktop: ${config.desktop.width}×${config.desktop.height}px`,
+      `Mobile: ${config.mobile.width}×${config.mobile.height}px`,
+      `Max. ${config.maxSlots} gleichzeitig`,
+      'Faire Rotation',
+    ],
+    badge: position === 'popup' ? 'PREMIUM' : position === 'header_banner' ? 'TOP' : undefined,
+  }));
 
   return (
     <>

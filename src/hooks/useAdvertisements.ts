@@ -1,7 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Advertisement } from '@/types/advertisement';
+import { Advertisement, BannerPosition, BANNER_CONFIG } from '@/types/advertisement';
 import { queueAdEvent } from '@/lib/adEventQueue';
+import { useMemo } from 'react';
+
+// Weighted random selection based on priority (1-100)
+function selectWeightedRandom<T extends { priority: number }>(items: T[]): T | null {
+  if (items.length === 0) return null;
+  if (items.length === 1) return items[0];
+  
+  const totalWeight = items.reduce((sum, item) => sum + (item.priority || 50), 0);
+  let random = Math.random() * totalWeight;
+  
+  for (const item of items) {
+    random -= item.priority || 50;
+    if (random <= 0) return item;
+  }
+  
+  return items[0];
+}
 
 // PERFORMANCE: Single query for all active ads, filter client-side
 export const useAllActiveAdvertisements = () => {
@@ -20,13 +37,38 @@ export const useAllActiveAdvertisements = () => {
   });
 };
 
-// Legacy hook - uses cached data from useAllActiveAdvertisements
-export const useAdvertisements = (position?: Advertisement['position']) => {
+// Returns ONE rotating banner for a specific position using weighted random
+export const useAdvertisement = (position: BannerPosition) => {
   const { data: allAds, isLoading, error } = useAllActiveAdvertisements();
   
+  const ad = useMemo(() => {
+    if (!allAds) return null;
+    const positionAds = allAds.filter(a => a.position === position);
+    return selectWeightedRandom(positionAds);
+  }, [allAds, position]);
+  
+  return {
+    ad,
+    isLoading,
+    error,
+  };
+};
+
+// Legacy hook - returns all ads for a position (for backwards compatibility)
+export const useAdvertisements = (position?: BannerPosition | 'top' | 'grid') => {
+  const { data: allAds, isLoading, error } = useAllActiveAdvertisements();
+  
+  // Map legacy positions to new positions
+  const mappedPosition = useMemo(() => {
+    if (!position) return undefined;
+    if (position === 'top') return 'header_banner';
+    if (position === 'grid') return 'in_grid';
+    return position as BannerPosition;
+  }, [position]);
+  
   // Filter client-side instead of separate API call
-  const filteredAds = position 
-    ? allAds?.filter(ad => ad.position === position) 
+  const filteredAds = mappedPosition 
+    ? allAds?.filter(ad => ad.position === mappedPosition) 
     : allAds;
   
   return {
@@ -34,6 +76,39 @@ export const useAdvertisements = (position?: Advertisement['position']) => {
     isLoading,
     error,
   };
+};
+
+// Count active ads per position for slot management
+export const useBannerSlotCounts = () => {
+  const { data: allAds } = useAllActiveAdvertisements();
+  
+  const counts = useMemo(() => {
+    const result: Record<BannerPosition, { used: number; max: number }> = {
+      header_banner: { used: 0, max: BANNER_CONFIG.header_banner.maxSlots },
+      in_content: { used: 0, max: BANNER_CONFIG.in_content.maxSlots },
+      in_grid: { used: 0, max: BANNER_CONFIG.in_grid.maxSlots },
+      footer_banner: { used: 0, max: BANNER_CONFIG.footer_banner.maxSlots },
+      popup: { used: 0, max: BANNER_CONFIG.popup.maxSlots },
+    };
+    
+    if (allAds) {
+      for (const ad of allAds) {
+        if (result[ad.position as BannerPosition]) {
+          result[ad.position as BannerPosition].used++;
+        }
+      }
+    }
+    
+    return result;
+  }, [allAds]);
+  
+  return counts;
+};
+
+// Check if position has available slots
+export const usePositionAvailable = (position: BannerPosition) => {
+  const counts = useBannerSlotCounts();
+  return counts[position].used < counts[position].max;
 };
 
 // FIRE-AND-FORGET: Uses queue for batched sending
