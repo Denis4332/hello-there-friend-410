@@ -18,8 +18,11 @@ export const BannerCTA = ({ position, className = '' }: BannerCTAProps) => {
     <div className={`${className} flex justify-center`}>
       <Card 
         className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${
-          isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-md'
+          isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-[728px]'
         }`}
+        style={{
+          aspectRatio: isVertical ? '3/4' : `${config.desktop.width}/${config.desktop.height}`,
+        }}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background">
           <img 

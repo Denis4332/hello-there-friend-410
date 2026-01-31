@@ -54,11 +54,11 @@ export const BaseBanner = ({ position, className = '' }: BaseBannerProps) => {
     <div className={`${className} flex justify-center`}>
       <div
         onClick={handleClick}
-        className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow ${
-          isVertical 
-            ? 'w-[300px] max-w-[300px]' 
-            : 'w-full max-w-md mx-auto'
-        }`}
+      className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow ${
+        isVertical 
+          ? 'w-[300px] max-w-[300px]' 
+          : 'w-full max-w-[728px] mx-auto'
+      }`}
         style={{
           aspectRatio: `${config.desktop.width} / ${config.desktop.height}`,
         }}

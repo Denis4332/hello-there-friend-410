@@ -112,9 +112,10 @@ export const PopupBanner = () => {
         onClick={handleClose}
       >
         <div
-          className={`relative bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+          className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
             isVisible ? 'scale-100' : 'scale-95'
           }`}
+          style={{ aspectRatio: '3/4' }}
           onClick={(e) => e.stopPropagation()}
         >
           <Button
@@ -142,9 +143,10 @@ export const PopupBanner = () => {
       onClick={handleClose}
     >
       <div
-        className={`relative w-[90vw] max-w-[400px] md:max-w-[500px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+        className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
           isVisible ? 'scale-100' : 'scale-95'
         }`}
+        style={{ aspectRatio: '3/4' }}
         onClick={(e) => e.stopPropagation()}
       >
         <Button
@@ -157,14 +159,14 @@ export const PopupBanner = () => {
         </Button>
 
         <div
-          className="cursor-pointer rounded-lg overflow-hidden"
+          className="cursor-pointer rounded-lg overflow-hidden w-full h-full"
           onClick={handleClick}
         >
           <img
             src={ad.image_url}
             alt={ad.title}
             loading="lazy"
-            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+            className="w-full h-full object-cover rounded-lg"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}
