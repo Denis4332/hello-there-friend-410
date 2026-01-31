@@ -512,10 +512,7 @@ const ProfileCreate = () => {
         onSelectMethod={startPaymentCheckoutWithMethod}
         listingType={listingType}
         amount={getAmountForListingType(listingType)}
-        onChangePackage={async () => {
-          // Auch hier prüfen ob Downgrade erlaubt ist
-          const isValid = await validateMediaForNewPackage(listingType);
-          if (!isValid) return;
+        onChangePackage={() => {
           setShowPaymentModal(false);
           setCurrentStep('listing-type');
         }}
