@@ -41,6 +41,7 @@ export const SEO = ({
   const canonicalBase = getSetting('seo_canonical_base');
   const noindexPages = getSetting('noindex_pages');
   const globalKeywords = getSetting('meta_keywords');
+  const faviconUrl = getSetting('design_favicon_url');
   
   const fullTitle = `${title} | ${siteName}`;
   const currentUrl = url || window.location.href;
@@ -84,6 +85,10 @@ export const SEO = ({
         
         {/* Canonical URL */}
         <link rel="canonical" href={canonicalBase ? `${canonicalBase}${new URL(currentUrl).pathname}` : currentUrl} />
+        
+        {/* Dynamic Favicon */}
+        {faviconUrl && <link rel="icon" type="image/png" href={faviconUrl} />}
+        {faviconUrl && <link rel="apple-touch-icon" href={faviconUrl} />}
       </Helmet>
       
       {/* Tracking Scripts */}
