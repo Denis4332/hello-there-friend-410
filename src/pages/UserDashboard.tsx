@@ -432,7 +432,19 @@ const UserDashboard = () => {
                     </div>
                   )}
 
-                  {profile.listing_type !== 'top' && (
+                  {/* Wenn Zahlung ausstehend: "Paket ändern" zeigen */}
+                  {profile.payment_status === 'pending' && (
+                    <Button 
+                      onClick={() => navigate('/profil/erstellen')} 
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Paket ändern
+                    </Button>
+                  )}
+
+                  {/* Wenn bezahlt und nicht TOP: Upgrade anbieten */}
+                  {profile.payment_status === 'paid' && profile.listing_type !== 'top' && (
                     <Button 
                       onClick={() => navigate('/user/upgrade')} 
                       className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
@@ -442,13 +454,14 @@ const UserDashboard = () => {
                     </Button>
                   )}
 
-                  {profile.listing_type === 'top' && (
+                  {/* Wenn bezahlt und TOP: Verlängern anbieten */}
+                  {profile.payment_status === 'paid' && profile.listing_type === 'top' && (
                     <Button 
                       onClick={() => navigate('/user/upgrade')} 
                       variant="outline"
                       className="w-full"
                     >
-                      {extendButton || 'Paket verlängern'}
+                      {extendButton || 'Inserat verlängern'}
                     </Button>
                   )}
                 </div>
