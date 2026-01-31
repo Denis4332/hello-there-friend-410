@@ -1,104 +1,78 @@
 
 
-# Fix: "Paket ändern" Button für unbezahlte Profile
+# Saubere Synchronisation: "Paket ändern" Flow
 
-## Problem
+## Das Problem
 
-Im Screenshot ist zu sehen:
-- User hat ein TOP-Paket gewählt
-- Zahlung ist ausstehend (`payment_status = 'pending'`)
-- ABER: Es wird "Inserat verlängern" angezeigt
+Wenn du auf **"Paket ändern"** klickst:
+1. Du wirst zu `/profil/erstellen` geleitet
+2. ABER: Weil du bereits Fotos hast, springt das System automatisch zum Verifizierungs-Step
+3. Du landest NICHT bei der Paketauswahl
 
-Das macht keinen Sinn - man kann nicht verlängern, was man nicht bezahlt hat.
+## Die saubere Lösung
 
-## Lösung
+**Nur 2 minimale Änderungen** - keine neue Logik, nur eine Erweiterung:
 
-Die Button-Logik im Paket-Bereich muss den `payment_status` berücksichtigen:
-
-| payment_status | listing_type | Button |
-|----------------|--------------|--------|
-| `pending` | egal | **"Paket ändern"** → `/profil/erstellen` |
-| `paid` | basic/premium | "Paket upgraden" → `/user/upgrade` |
-| `paid` | top | "Inserat verlängern" → `/user/upgrade` |
-
-## Technische Änderung
-
-**Datei:** `src/pages/UserDashboard.tsx`
-
-**Zeilen 435-453** - Aktuelle Logik (FALSCH):
+### Änderung 1: UserDashboard.tsx (Zeile 438)
 
 ```tsx
-{profile.listing_type !== 'top' && (
-  <Button onClick={() => navigate('/user/upgrade')} ...>
-    Paket upgraden
-  </Button>
-)}
+// VORHER:
+onClick={() => navigate('/profil/erstellen')}
 
-{profile.listing_type === 'top' && (
-  <Button onClick={() => navigate('/user/upgrade')} ...>
-    Paket verlängern
-  </Button>
-)}
+// NACHHER:
+onClick={() => navigate('/profil/erstellen?step=listing-type')}
 ```
 
-**Neue Logik (RICHTIG):**
+### Änderung 2: ProfileCreate.tsx (Zeile 81-88)
 
 ```tsx
-{/* Wenn Zahlung ausstehend: "Paket ändern" zeigen */}
-{profile.payment_status === 'pending' && (
-  <Button 
-    onClick={() => navigate('/profil/erstellen')} 
-    variant="outline"
-    className="w-full"
-  >
-    Paket ändern
-  </Button>
-)}
+// VORHER:
+if (!existingProfile.listing_type) {
+  setCurrentStep('listing-type');
+} else if (!photos || photos.length === 0) {
+  setCurrentStep('photos');
+} else {
+  setCurrentStep('verification');
+}
 
-{/* Wenn bezahlt und nicht TOP: Upgrade anbieten */}
-{profile.payment_status === 'paid' && profile.listing_type !== 'top' && (
-  <Button 
-    onClick={() => navigate('/user/upgrade')} 
-    className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
-  >
-    <Crown className="h-4 w-4 mr-2" />
-    {upgradeButton || 'Paket upgraden'}
-  </Button>
-)}
+// NACHHER:
+const urlParams = new URLSearchParams(window.location.search);
+const requestedStep = urlParams.get('step');
 
-{/* Wenn bezahlt und TOP: Verlängern anbieten */}
-{profile.payment_status === 'paid' && profile.listing_type === 'top' && (
-  <Button 
-    onClick={() => navigate('/user/upgrade')} 
-    variant="outline"
-    className="w-full"
-  >
-    {extendButton || 'Inserat verlängern'}
-  </Button>
-)}
+// URL-Parameter hat Priorität (für "Paket ändern")
+if (requestedStep === 'listing-type') {
+  setCurrentStep('listing-type');
+} else if (!existingProfile.listing_type) {
+  setCurrentStep('listing-type');
+} else if (!photos || photos.length === 0) {
+  setCurrentStep('photos');
+} else {
+  setCurrentStep('verification');
+}
 ```
 
-## Verhalten nach dem Fix
+## Warum das sauber ist
 
-### Vor Zahlung (payment_status = 'pending'):
-1. User sieht sein gewähltes Paket (z.B. TOP AD)
-2. Button zeigt "Paket ändern"
-3. Klick führt zu `/profil/erstellen`
-4. Dort kann er das Paket wechseln und zur Zahlung gehen
+- **Bestehende Logik bleibt unverändert** - normaler Erstellungsflow funktioniert exakt wie vorher
+- **Nur ein URL-Parameter** - keine neuen States, keine komplexen Conditions
+- **Keine Datenbank-Änderungen** - alles rein Frontend
+- **Rückwärtskompatibel** - ohne `?step=` Parameter verhält sich alles wie bisher
 
-### Nach Zahlung (payment_status = 'paid'):
-1. User sieht sein aktives Paket
-2. Basic/Premium → "Paket upgraden" Button
-3. TOP → "Inserat verlängern" Button
-4. Beide führen zu `/user/upgrade` für bezahlte Upgrades/Verlängerungen
+## Benutzer-Flow nach dem Fix
 
-## Zusammenfassung der Änderungen
+```
+User mit unbezahltem Profil:
 
-| Datei | Zeilen | Was wird geändert |
-|-------|--------|-------------------|
-| `src/pages/UserDashboard.tsx` | 435-453 | Button-Logik nach `payment_status` konditionieren |
+1. Dashboard → "Paket ändern" klicken
+2. → /profil/erstellen?step=listing-type
+3. → Landet DIREKT bei Paketauswahl ✓
+4. → Wählt neues Paket, geht zur Zahlung
+```
 
-## Risiko
+## Zusammenfassung
 
-**MINIMAL** - Es werden nur UI-Buttons konditioniert. Die eigentliche Zahlungslogik bleibt unberührt. Die Navigation zu `/profil/erstellen` nutzt den bereits existierenden Draft-Detection-Flow mit Medien-Validierung.
+| Datei | Zeile | Änderung |
+|-------|-------|----------|
+| `UserDashboard.tsx` | 438 | `?step=listing-type` Parameter hinzufügen |
+| `ProfileCreate.tsx` | 81-88 | URL-Parameter vor automatischer Step-Detection prüfen |
 
