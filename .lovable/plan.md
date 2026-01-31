@@ -1,104 +1,22 @@
 
-# Banner System v2.0 - Korrekturen
+# Banner System v2.0 - Kritische Fixes
 
-## Zusammenfassung der 4 Änderungen
+## Zusammenfassung der 3 Probleme
 
-| # | Datei | Änderung |
-|---|-------|----------|
-| 1 | `Index.tsx` | FooterBanner vor `</main>` hinzufügen |
-| 2 | `BaseBanner.tsx` | `max-w-md` → `max-w-[728px]` für horizontale Banner |
-| 3 | `BannerCTA.tsx` | `max-w-md` → `max-w-[728px]` + aspect-ratio |
-| 4 | `PopupBanner.tsx` | `w-[90vw] max-w-[300px]` + aspect-ratio 3/4 |
-
----
-
-## Änderung 1: Index.tsx
-
-**Problem:** FooterBanner wird importiert aber nicht gerendert.
-
-**Zeile 99-100** - FooterBanner vor `</main>` einfügen:
-
-```tsx
-// VORHER (Zeile 99-100):
-        </Suspense>
-      </main>
-
-// NACHHER:
-        </Suspense>
-        
-        <FooterBanner className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24 pb-8" />
-      </main>
-```
+| # | Problem | Datei | Status |
+|---|---------|-------|--------|
+| 1 | Popup-Banner zeigt sich quadratisch statt 3:4 Portrait | `PopupBanner.tsx` | ✅ BEREITS KORREKT |
+| 2 | Horizontale Banner-CTA Text passt nicht in 728x90 | `BannerCTA.tsx` | ❌ FIX BENÖTIGT |
+| 3 | InContentBanner wird nicht verwendet | `Suche.tsx` | ❌ FIX BENÖTIGT |
 
 ---
 
-## Änderung 2: BaseBanner.tsx
+## Analyse Problem 1: PopupBanner Format
 
-**Problem:** Horizontale Banner auf `max-w-md` (448px) begrenzt statt 728px.
+**Aktueller Code ist KORREKT!**
 
-**Zeile 57-61** - Breitenbegrenzung korrigieren:
-
+Zeile 114-119 (Demo Popup):
 ```tsx
-// VORHER:
-className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow ${
-  isVertical 
-    ? 'w-[300px] max-w-[300px]' 
-    : 'w-full max-w-md mx-auto'
-}`}
-
-// NACHHER:
-className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow ${
-  isVertical 
-    ? 'w-[300px] max-w-[300px]' 
-    : 'w-full max-w-[728px] mx-auto'
-}`}
-```
-
----
-
-## Änderung 3: BannerCTA.tsx
-
-**Problem:** Horizontale CTA-Platzhalter auf `max-w-md` begrenzt, kein festes aspect-ratio.
-
-**Zeile 19-23** - Card mit korrekter Breite und aspect-ratio:
-
-```tsx
-// VORHER:
-<Card 
-  className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${
-    isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-md'
-  }`}
->
-
-// NACHHER:
-<Card 
-  className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${
-    isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-[728px]'
-  }`}
-  style={{
-    aspectRatio: isVertical ? '3/4' : `${config.desktop.width}/${config.desktop.height}`,
-  }}
->
-```
-
----
-
-## Änderung 4: PopupBanner.tsx
-
-**Problem:** Popup-Format zu gross (400-500px) und inkonsistent.
-
-### 4a) Demo Popup Container (Zeile 114-118)
-
-```tsx
-// VORHER:
-<div
-  className={`relative bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
-    isVisible ? 'scale-100' : 'scale-95'
-  }`}
-  onClick={(e) => e.stopPropagation()}
->
-
-// NACHHER:
 <div
   className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
     isVisible ? 'scale-100' : 'scale-95'
@@ -108,18 +26,8 @@ className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl 
 >
 ```
 
-### 4b) Real Popup Container (Zeile 144-148)
-
+Zeile 145-150 (Real Popup):
 ```tsx
-// VORHER:
-<div
-  className={`relative w-[90vw] max-w-[400px] md:max-w-[500px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
-    isVisible ? 'scale-100' : 'scale-95'
-  }`}
-  onClick={(e) => e.stopPropagation()}
->
-
-// NACHHER:
 <div
   className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
     isVisible ? 'scale-100' : 'scale-95'
@@ -129,59 +37,226 @@ className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl 
 >
 ```
 
-### 4c) Bild-Container (Zeile 159-172)
+Das `aspectRatio: '3/4'` ist bereits auf dem Container gesetzt. Falls es trotzdem quadratisch erscheint, liegt das Problem möglicherweise daran, dass der innere `BannerCTA` das Format nicht respektiert.
+
+---
+
+## Fix 1: BannerCTA für Popup muss h-full haben
+
+**Datei:** `src/components/banners/BannerCTA.tsx`
+
+Das Problem: Der BannerCTA füllt den Container nicht vollständig aus.
+
+**Zeile 17-26 ersetzen durch:**
 
 ```tsx
-// VORHER:
-<div
-  className="cursor-pointer rounded-lg overflow-hidden"
-  onClick={handleClick}
->
-  <img
-    src={ad.image_url}
-    alt={ad.title}
-    loading="lazy"
-    className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-    onError={(e) => {
-      e.currentTarget.src = '/placeholder.svg';
-    }}
-  />
-</div>
-
-// NACHHER:
-<div
-  className="cursor-pointer rounded-lg overflow-hidden w-full h-full"
-  onClick={handleClick}
->
-  <img
-    src={ad.image_url}
-    alt={ad.title}
-    loading="lazy"
-    className="w-full h-full object-cover rounded-lg"
-    onError={(e) => {
-      e.currentTarget.src = '/placeholder.svg';
-    }}
-  />
-</div>
+return (
+  <div className={`${className} flex justify-center h-full`}>
+    <Card 
+      className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 h-full ${
+        isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-[728px]'
+      }`}
+      style={{
+        aspectRatio: isVertical ? '3/4' : `${config.desktop.width}/${config.desktop.height}`,
+      }}
+    >
 ```
 
 ---
 
-## Erwartetes Ergebnis
+## Fix 2: Horizontale Banner-CTA einzeilig machen
 
-| Position | Desktop | Mobile | Verhalten |
-|----------|---------|--------|-----------|
-| header_banner | 728×90 | 728×90 | Volle Breite bis 728px |
-| in_content | 728×90 | 728×90 | Volle Breite bis 728px |
-| in_grid | 300×400 | 300×400 | Festes Portrait 3:4 |
-| footer_banner | 728×90 | 728×90 | Volle Breite bis 728px |
-| popup | 90vw max 300×400 | 90vw max 300×400 | Mobile: 90% Breite, Desktop: fix 300px |
+**Datei:** `src/components/banners/BannerCTA.tsx`
+
+**Zeile 37-60 komplett ersetzen durch:**
+
+```tsx
+{/* Responsive Layout: Horizontal für flache, Vertikal für Portrait */}
+<div className={`relative h-full flex items-center justify-center overflow-hidden ${
+  isVertical 
+    ? 'flex-col text-center space-y-3 p-4' 
+    : 'flex-row gap-3 px-4 py-2'
+}`}>
+  {isVertical ? (
+    <>
+      <Badge variant="secondary" className="mb-2">
+        <TrendingUp className="w-3 h-3 mr-1" />
+        {config.name} verfügbar
+      </Badge>
+      
+      <h3 className="text-lg font-bold text-foreground">
+        Hier könnte Ihre Werbung stehen!
+      </h3>
+      
+      <p className="text-muted-foreground text-sm max-w-xs">
+        Erreichen Sie tausende potenzielle Kunden.
+      </p>
+      
+      <div className="text-xs text-muted-foreground">
+        ab CHF {config.pricePerDay}/Tag
+      </div>
+      
+      <Button asChild size="default" className="font-semibold">
+        <Link to="/bannerpreise">Jetzt buchen</Link>
+      </Button>
+    </>
+  ) : (
+    <>
+      <Badge variant="secondary" className="shrink-0">
+        <TrendingUp className="w-3 h-3 mr-1" />
+        Werbeplatz
+      </Badge>
+      <span className="text-sm font-medium text-foreground truncate">
+        Hier werben – ab CHF {config.pricePerDay}/Tag
+      </span>
+      <Button asChild size="sm" className="shrink-0">
+        <Link to="/bannerpreise">Buchen</Link>
+      </Button>
+    </>
+  )}
+</div>
+```
+
+**Änderungen:**
+- Horizontale Banner: `flex-row` mit `gap-3 px-4 py-2`
+- Einzeilig: Badge + kurzer Text + Button
+- Vertikale Banner: Behalten mehrzeiliges Layout
+- `overflow-hidden` auf Content-Container
+
+---
+
+## Fix 3: InContentBanner in Suche.tsx einbinden
+
+**Datei:** `src/pages/Suche.tsx`
+
+### Änderung 1: Import erweitern (Zeile 17)
+
+```tsx
+// VORHER:
+import { HeaderBanner } from '@/components/banners';
+
+// NACHHER:
+import { HeaderBanner, InContentBanner } from '@/components/banners';
+```
+
+### Änderung 2: InContentBanner nach HeaderBanner hinzufügen (nach Zeile 295)
+
+```tsx
+<HeaderBanner className="my-6" />
+
+<InContentBanner className="my-6" />
+```
+
+---
+
+## Erwartetes Ergebnis nach Fixes
+
+| Banner | Format | CTA-Layout |
+|--------|--------|------------|
+| Header | 728x90 | Eine Zeile: `[Badge] [Text] [Button]` |
+| InContent | 728x90 | Eine Zeile: `[Badge] [Text] [Button]` |
+| Footer | 728x90 | Eine Zeile: `[Badge] [Text] [Button]` |
+| InGrid | 300x400 | Mehrzeilig vertikal |
+| Popup | 300x400 | Mehrzeilig vertikal, PORTRAIT Format! |
 
 ---
 
 ## Dateien die geändert werden
 
-1. `src/pages/Index.tsx` - 1 Zeile hinzufügen
-2. `src/components/banners/BaseBanner.tsx` - 1 Zeile ändern
-3. `src/components/banners/BannerCTA.tsx` - 4 Zeilen ändern
-4. `src/components/banners/PopupBanner.tsx` - 3 Blöcke ändern
+| # | Datei | Änderung |
+|---|-------|----------|
+| 1 | `src/components/banners/BannerCTA.tsx` | h-full hinzufügen + horizontales Layout einzeilig |
+| 2 | `src/pages/Suche.tsx` | InContentBanner Import + Verwendung |
+
+---
+
+## Technische Details
+
+### BannerCTA.tsx - Vollständiger neuer Code
+
+```tsx
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { TrendingUp } from 'lucide-react';
+import { BannerPosition, BANNER_CONFIG } from '@/types/advertisement';
+
+interface BannerCTAProps {
+  position: BannerPosition;
+  className?: string;
+}
+
+export const BannerCTA = ({ position, className = '' }: BannerCTAProps) => {
+  const config = BANNER_CONFIG[position];
+  const isVertical = position === 'in_grid' || position === 'popup';
+  
+  return (
+    <div className={`${className} flex justify-center h-full`}>
+      <Card 
+        className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 h-full ${
+          isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-[728px]'
+        }`}
+        style={{
+          aspectRatio: isVertical ? '3/4' : `${config.desktop.width}/${config.desktop.height}`,
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-background">
+          <img 
+            src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=40&w=800"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover opacity-[0.08]"
+          />
+        </div>
+        
+        {/* Responsive Layout: Horizontal für flache, Vertikal für Portrait */}
+        <div className={`relative h-full flex items-center justify-center overflow-hidden ${
+          isVertical 
+            ? 'flex-col text-center space-y-3 p-4' 
+            : 'flex-row gap-3 px-4 py-2'
+        }`}>
+          {isVertical ? (
+            <>
+              <Badge variant="secondary" className="mb-2">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                {config.name} verfügbar
+              </Badge>
+              
+              <h3 className="text-lg font-bold text-foreground">
+                Hier könnte Ihre Werbung stehen!
+              </h3>
+              
+              <p className="text-muted-foreground text-sm max-w-xs">
+                Erreichen Sie tausende potenzielle Kunden.
+              </p>
+              
+              <div className="text-xs text-muted-foreground">
+                ab CHF {config.pricePerDay}/Tag
+              </div>
+              
+              <Button asChild size="default" className="font-semibold">
+                <Link to="/bannerpreise">Jetzt buchen</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Badge variant="secondary" className="shrink-0">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                Werbeplatz
+              </Badge>
+              <span className="text-sm font-medium text-foreground truncate">
+                Hier werben – ab CHF {config.pricePerDay}/Tag
+              </span>
+              <Button asChild size="sm" className="shrink-0">
+                <Link to="/bannerpreise">Buchen</Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+};
+```
