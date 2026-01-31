@@ -644,6 +644,12 @@ const UserDashboard = () => {
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSelectMethod={handlePaymentMethodSelect}
+        listingType={profile?.listing_type as 'basic' | 'premium' | 'top' | undefined}
+        amount={getAmountForListingType(profile?.listing_type || 'basic')}
+        onChangePackage={() => {
+          setShowPaymentModal(false);
+          navigate('/profil/erstellen');
+        }}
       />
     </>
   );
