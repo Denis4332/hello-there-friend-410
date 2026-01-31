@@ -7,7 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useDesignSettings } from "./hooks/useDesignSettings";
-import { BannerManager } from "./components/BannerManager";
+import { PopupBanner } from "./components/banners";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
@@ -59,7 +59,7 @@ const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminDropdowns = lazy(() => import("./pages/admin/AdminDropdowns"));
 const AdminVerifications = lazy(() => import("./pages/admin/AdminVerifications"));
-const AdminAdvertisements = lazy(() => import("./pages/admin/AdminAdvertisements"));
+const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminRateLimits = lazy(() => import("./pages/admin/AdminRateLimits"));
 const AdminPerformance = lazy(() => import("./pages/admin/AdminPerformance"));
@@ -91,7 +91,7 @@ const App = () => {
             <ScrollToTop />
             <PageViewTracker />
             
-            <BannerManager />
+            <PopupBanner />
             <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -169,7 +169,7 @@ const App = () => {
                 <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
                 <Route path="/admin/dropdowns" element={<ProtectedRoute><AdminDropdowns /></ProtectedRoute>} />
                 <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
-                <Route path="/admin/advertisements" element={<ProtectedRoute><AdminAdvertisements /></ProtectedRoute>} />
+                <Route path="/admin/banners" element={<ProtectedRoute><AdminBanners /></ProtectedRoute>} />
                 <Route path="/admin/pending-payments" element={<ProtectedRoute><AdminPendingPayments /></ProtectedRoute>} />
                 <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
                 <Route path="/admin/rate-limits" element={<ProtectedRoute><AdminRateLimits /></ProtectedRoute>} />

@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { Pagination } from '@/components/Pagination';
-import { BannerDisplay } from '@/components/BannerDisplay';
+import { InGridBanner } from '@/components/banners';
 import type { ProfileWithRelations } from '@/types/common';
 
 interface SearchResultsProps {
@@ -67,7 +67,7 @@ const SearchResultsComponent = ({
           
           {/* Grid banner after every 8 profiles (except after the last chunk) */}
           {chunkIndex < profileChunks.length - 1 && (
-            <BannerDisplay position="grid" className="my-6" />
+            <InGridBanner className="my-6" />
           )}
         </div>
       ))}

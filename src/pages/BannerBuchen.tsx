@@ -15,45 +15,63 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Zap, Star, Grid3x3, Upload, Calendar, CheckCircle } from 'lucide-react';
-import { BannerPackage } from '@/types/advertisement';
+import { Zap, Star, Grid3x3, Upload, Calendar, CheckCircle, Eye, LayoutGrid } from 'lucide-react';
+import { BannerPackage, BannerPosition, BANNER_CONFIG } from '@/types/advertisement';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
-const BANNER_PACKAGES: BannerPackage[] = [
+// Generate packages from BANNER_CONFIG
+const BANNER_PACKAGES: (BannerPackage & { position: BannerPosition })[] = [
   {
     position: 'popup',
-    name: 'Pop-up Banner',
-    price_per_day: 80,
-    price_per_week: 504,
-    price_per_month: 2040,
+    name: BANNER_CONFIG.popup.name,
+    price_per_day: BANNER_CONFIG.popup.pricePerDay,
+    price_per_week: BANNER_CONFIG.popup.pricePerWeek,
+    price_per_month: BANNER_CONFIG.popup.pricePerMonth,
     description: 'Maximale Aufmerksamkeit garantiert!',
     features: [],
-    badge: 'EXKLUSIV',
+    badge: 'PREMIUM',
   },
   {
-    position: 'top',
-    name: 'Top-Banner',
-    price_per_day: 50,
-    price_per_week: 315,
-    price_per_month: 1275,
+    position: 'header_banner',
+    name: BANNER_CONFIG.header_banner.name,
+    price_per_day: BANNER_CONFIG.header_banner.pricePerDay,
+    price_per_week: BANNER_CONFIG.header_banner.pricePerWeek,
+    price_per_month: BANNER_CONFIG.header_banner.pricePerMonth,
     description: 'Erste Position auf der Startseite.',
     features: [],
-    badge: 'EXKLUSIV',
+    badge: 'TOP',
   },
   {
-    position: 'grid',
-    name: 'Grid-Banner',
-    price_per_day: 30,
-    price_per_week: 189,
-    price_per_month: 765,
-    description: 'Natürliche Integration in die Suchergebnisse.',
+    position: 'in_content',
+    name: BANNER_CONFIG.in_content.name,
+    price_per_day: BANNER_CONFIG.in_content.pricePerDay,
+    price_per_week: BANNER_CONFIG.in_content.pricePerWeek,
+    price_per_month: BANNER_CONFIG.in_content.pricePerMonth,
+    description: 'Zwischen den Suchergebnissen.',
     features: [],
-    badge: 'EXKLUSIV',
+  },
+  {
+    position: 'in_grid',
+    name: BANNER_CONFIG.in_grid.name,
+    price_per_day: BANNER_CONFIG.in_grid.pricePerDay,
+    price_per_week: BANNER_CONFIG.in_grid.pricePerWeek,
+    price_per_month: BANNER_CONFIG.in_grid.pricePerMonth,
+    description: 'Natürliche Integration im Profil-Grid.',
+    features: [],
+  },
+  {
+    position: 'footer_banner',
+    name: BANNER_CONFIG.footer_banner.name,
+    price_per_day: BANNER_CONFIG.footer_banner.pricePerDay,
+    price_per_week: BANNER_CONFIG.footer_banner.pricePerWeek,
+    price_per_month: BANNER_CONFIG.footer_banner.pricePerMonth,
+    description: 'Sichtbar am Ende jeder Seite.',
+    features: [],
   },
 ];
 
 const formSchema = z.object({
-  position: z.enum(['popup', 'top', 'grid'], { required_error: 'Bitte wählen Sie eine Position' }),
+  position: z.enum(['popup', 'header_banner', 'in_content', 'in_grid', 'footer_banner'], { required_error: 'Bitte wählen Sie eine Position' }),
   duration: z.enum(['day', 'week', 'month'], { required_error: 'Bitte wählen Sie eine Laufzeit' }),
   title: z.string().min(3, 'Titel muss mindestens 3 Zeichen lang sein').max(100),
   link_url: z.string().url('Bitte geben Sie eine gültige URL ein'),
@@ -65,10 +83,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const positionIcons = {
+const positionIcons: Record<string, typeof Zap> = {
   popup: Zap,
-  top: Star,
-  grid: Grid3x3,
+  header_banner: Star,
+  in_content: Eye,
+  in_grid: Grid3x3,
+  footer_banner: Star,
 };
 
 const durationLabels: Record<string, string> = {
