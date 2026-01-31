@@ -1,40 +1,67 @@
 
-# GitHub CI Build Fix
+
+# CI Workflow vereinfachen
 
 ## Problem
 
-Der GitHub Actions CI Workflow schlägt fehl, weil das npm Script `test:coverage` in `package.json` fehlt. Der CI Workflow ruft `npm run test:coverage` auf (Zeile in `.github/workflows/ci.yml`), aber dieses Script existiert nicht.
+Der aktuelle CI Workflow hat 5 Jobs (lint-and-format, type-check, test, build, bundle-size), die alle `test:coverage` und andere Scripts benötigen, die in `package.json` fehlen. Dies führt zu Build-Fehlern.
 
 ## Lösung
 
-Zwei Test-Scripts in `package.json` hinzufügen.
+Den CI Workflow auf einen einfachen Build-Check reduzieren, wie vom User angegeben.
 
 ---
 
 ## Änderung
 
-**Datei:** `package.json`
+**Datei:** `.github/workflows/ci.yml`
 
-**Zeilen 6-12** (scripts Objekt) ändern:
+Die gesamte Datei wird ersetzt mit:
 
-```json
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "build:dev": "vite build --mode development",
-  "lint": "eslint .",
-  "preview": "vite preview",
-  "test": "vitest run",
-  "test:coverage": "vitest run --coverage"
-},
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build production bundle
+        run: npm run build
+      
+      - name: Build successful
+        run: echo "✅ Build completed successfully"
 ```
 
 ---
 
-## Zusammenfassung
+## Entfernte Jobs
 
-| Datei | Änderung |
-|-------|----------|
-| `package.json` | 2 neue Scripts: `test` und `test:coverage` |
+| Job | Warum entfernt |
+|-----|----------------|
+| lint-and-format | Benötigt ESLint/Prettier Config |
+| type-check | Optional für CI |
+| test | Benötigt `test:coverage` Script |
+| bundle-size | Optional für CI |
 
-Nach dieser Änderung wird der GitHub CI Build erfolgreich durchlaufen.
+## Ergebnis
+
+Der CI Workflow führt nur noch einen Build-Check durch. Das behebt den Fehler und beschleunigt die Pipeline.
+
