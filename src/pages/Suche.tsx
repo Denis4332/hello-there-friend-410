@@ -14,7 +14,6 @@ import { SearchResults } from '@/components/search/SearchResults';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { SEO } from '@/components/SEO';
 import { useRotationKey } from '@/hooks/useRotationKey';
-import { HeaderBanner, InContentBanner } from '@/components/banners';
 // Realtime hooks removed from /suche for performance - not needed for search snapshots
 
 const ITEMS_PER_PAGE = 24;
@@ -291,10 +290,6 @@ const Suche = () => {
             setCategoryOpen={setCategoryOpen}
             setCategoryGpsOpen={setCategoryGpsOpen}
           />
-
-          <HeaderBanner className="my-6" />
-
-          <InContentBanner className="my-6" />
 
           {!userLat && !userLng && !canton && !category && !keyword && (
             <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">

@@ -7,7 +7,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAnalytics } from "./hooks/useAnalytics";
 import { useDesignSettings } from "./hooks/useDesignSettings";
-import { PopupBanner } from "./components/banners";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { ProtectedRoute } from "./components/admin/ProtectedRoute";
 import { UserProtectedRoute } from "./components/UserProtectedRoute";
@@ -34,8 +33,6 @@ const AGB = lazy(() => import("./pages/AGB"));
 const Datenschutz = lazy(() => import("./pages/Datenschutz"));
 const Impressum = lazy(() => import("./pages/Impressum"));
 const Preise = lazy(() => import("./pages/Preise"));
-const Bannerpreise = lazy(() => import("./pages/Bannerpreise"));
-const BannerBuchen = lazy(() => import("./pages/BannerBuchen"));
 const ProfileCreate = lazy(() => import("./pages/ProfileCreate"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 const UserFavorites = lazy(() => import("./pages/UserFavorites"));
@@ -59,7 +56,6 @@ const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminDropdowns = lazy(() => import("./pages/admin/AdminDropdowns"));
 const AdminVerifications = lazy(() => import("./pages/admin/AdminVerifications"));
-const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminRateLimits = lazy(() => import("./pages/admin/AdminRateLimits"));
 const AdminPerformance = lazy(() => import("./pages/admin/AdminPerformance"));
@@ -91,7 +87,6 @@ const App = () => {
             <ScrollToTop />
             <PageViewTracker />
             
-            <PopupBanner />
             <Suspense fallback={<PageSkeleton />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -109,8 +104,6 @@ const App = () => {
                 <Route path="/agb" element={<AGB />} />
                 <Route path="/datenschutz" element={<Datenschutz />} />
                 <Route path="/impressum" element={<Impressum />} />
-                <Route path="/bannerpreise" element={<Bannerpreise />} />
-                <Route path="/banner/buchen" element={<BannerBuchen />} />
                 <Route path="/preise" element={<Preise />} />
                 <Route path="/zahlung/erfolg" element={<ZahlungErfolg />} />
                 <Route path="/zahlung/abgebrochen" element={<ZahlungAbgebrochen />} />
@@ -169,7 +162,6 @@ const App = () => {
                 <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
                 <Route path="/admin/dropdowns" element={<ProtectedRoute><AdminDropdowns /></ProtectedRoute>} />
                 <Route path="/admin/verifications" element={<ProtectedRoute><AdminVerifications /></ProtectedRoute>} />
-                <Route path="/admin/banners" element={<ProtectedRoute><AdminBanners /></ProtectedRoute>} />
                 <Route path="/admin/pending-payments" element={<ProtectedRoute><AdminPendingPayments /></ProtectedRoute>} />
                 <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
                 <Route path="/admin/rate-limits" element={<ProtectedRoute><AdminRateLimits /></ProtectedRoute>} />

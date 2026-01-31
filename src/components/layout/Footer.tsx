@@ -23,7 +23,6 @@ export const Footer = () => {
   const sectionCta = getSetting('footer_section_cta', 'Inserat erstellen');
   const ctaDescription = getSetting('footer_cta_description', 'Erstelle jetzt dein Inserat und erreiche tausende potenzielle Interessenten in der ganzen Schweiz.');
   const linkPrices = getSetting('footer_link_prices', 'Preise & Pakete');
-  const linkAdvertising = getSetting('footer_link_advertising', 'Werbung schalten');
   const impressumText = getSetting('footer_impressum', 'Impressum');
   const agbNotice = getSetting('footer_agb_notice');
 
@@ -45,11 +44,6 @@ export const Footer = () => {
               <li>
                 <Link to="/preise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {linkPrices}
-                </Link>
-              </li>
-              <li>
-                <Link to="/bannerpreise" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {linkAdvertising}
                 </Link>
               </li>
               <li>

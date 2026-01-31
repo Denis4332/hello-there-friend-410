@@ -56,7 +56,6 @@ export const AdminHeader = () => {
     { path: '/admin/cities', label: 'Städte' },
     { path: '/admin/reports', label: 'Meldungen' },
     { path: '/admin/messages', label: 'Nachrichten', badge: unreadCount },
-    { path: '/admin/banners', label: 'Banner' },
     { path: '/admin/pending-payments', label: 'Zahlungen' },
     { path: '/admin/settings', label: 'Einstellungen' },
     { path: '/admin/dropdowns', label: 'Dropdowns' },
@@ -174,15 +173,6 @@ export const AdminHeader = () => {
                     {unreadCount}
                   </Badge>
                 )}
-              </Link>
-              <Link 
-                to="/admin/banners" 
-                className={cn(
-                  "hover:text-primary transition-colors",
-                  isActive("/admin/banners") && "text-primary font-semibold border-b-2 border-primary pb-1"
-                )}
-              >
-                Banner
               </Link>
               <Link 
                 to="/admin/pending-payments" 
