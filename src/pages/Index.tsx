@@ -7,7 +7,6 @@ import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
 import { useCantons } from '@/hooks/useCitiesByCantonSlim';
 import { SEO } from '@/components/SEO';
-import { HeaderBanner, FooterBanner } from '@/components/banners';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { useRotationKey } from '@/hooks/useRotationKey';
@@ -73,8 +72,6 @@ const Index = () => {
           categories={categories}
         />
 
-        <HeaderBanner className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24 py-4" />
-
         <Suspense fallback={
           <section className="py-12 bg-muted">
             <div className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24">
@@ -97,8 +94,6 @@ const Index = () => {
             onPageChange={setCurrentPage}
           />
         </Suspense>
-        
-        <FooterBanner className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24 pb-8" />
       </main>
       <Footer />
     </div>

@@ -1,8 +1,7 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { Pagination } from '@/components/Pagination';
-import { InGridBanner } from '@/components/banners';
 import type { ProfileWithRelations } from '@/types/common';
 
 interface SearchResultsProps {
@@ -22,15 +21,6 @@ const SearchResultsComponent = ({
   onPageChange,
   noResultsText,
 }: SearchResultsProps) => {
-  // Split profiles into chunks of 8 with grid banner between
-  const profileChunks = useMemo(() => {
-    const chunks: ProfileWithRelations[][] = [];
-    for (let i = 0; i < profiles.length; i += 8) {
-      chunks.push(profiles.slice(i, i + 8));
-    }
-    return chunks;
-  }, [profiles]);
-
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
@@ -53,24 +43,15 @@ const SearchResultsComponent = ({
 
   return (
     <>
-      {profileChunks.map((chunk, chunkIndex) => (
-        <div key={chunkIndex}>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-            {chunk.map((profile, index) => (
-              <ProfileCard 
-                key={profile.id} 
-                profile={profile} 
-                priority={chunkIndex === 0 && index < 4} 
-              />
-            ))}
-          </div>
-          
-          {/* Grid banner after every 8 profiles (except after the last chunk) */}
-          {chunkIndex < profileChunks.length - 1 && (
-            <InGridBanner className="my-6" />
-          )}
-        </div>
-      ))}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+        {profiles.map((profile, index) => (
+          <ProfileCard 
+            key={profile.id} 
+            profile={profile} 
+            priority={index < 4} 
+          />
+        ))}
+      </div>
       
       {totalPages > 1 && (
         <div className="mt-8">

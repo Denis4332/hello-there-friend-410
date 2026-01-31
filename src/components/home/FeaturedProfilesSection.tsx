@@ -15,7 +15,6 @@
  */
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
-import { InGridBanner } from '@/components/banners';
 import { Pagination } from '@/components/Pagination';
 import { ProfileWithRelations } from '@/types/common';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -44,17 +43,10 @@ export const FeaturedProfilesSection = ({
   const { favorites, toggleFavorite, isToggling } = useFavorites();
   
   // Profiles are PRE-SORTED by parent - no sorting here to avoid duplication
-  
-  // Split profiles into chunks of 8
-  const chunkSize = 8;
-  const chunks = [];
-  for (let i = 0; i < profiles.length; i += chunkSize) {
-    chunks.push(profiles.slice(i, i + chunkSize));
-  }
 
   // First 4 profiles get priority loading (above-the-fold on most screens)
-  const getPriority = (chunkIndex: number, indexInChunk: number): boolean => {
-    return chunkIndex === 0 && indexInChunk < 4;
+  const getPriority = (index: number): boolean => {
+    return index < 4;
   };
 
   // Calculate min-height to prevent CLS: ~500px per row of 2 cards on mobile
@@ -76,30 +68,18 @@ export const FeaturedProfilesSection = ({
           </div>
         ) : profiles.length > 0 ? (
           <div className="space-y-8">
-            {chunks.map((chunk, chunkIndex) => (
-              <div key={`chunk-${chunkIndex}`}>
-                {/* Grid for up to 8 profiles */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
-                  {chunk.map((profile, indexInChunk) => (
-                    <ProfileCard 
-                      key={profile.id} 
-                      profile={profile} 
-                      priority={getPriority(chunkIndex, indexInChunk)}
-                      isFavorite={favorites.includes(profile.id)}
-                      onToggleFavorite={toggleFavorite}
-                      isTogglingFavorite={isToggling}
-                    />
-                  ))}
-                </div>
-                
-                {/* Banner AFTER each grid (except the last one) */}
-                {chunkIndex < chunks.length - 1 && (
-                  <div className="mt-8">
-                    <InGridBanner className="w-full" />
-                  </div>
-                )}
-              </div>
-            ))}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">
+              {profiles.map((profile, index) => (
+                <ProfileCard 
+                  key={profile.id} 
+                  profile={profile} 
+                  priority={getPriority(index)}
+                  isFavorite={favorites.includes(profile.id)}
+                  onToggleFavorite={toggleFavorite}
+                  isTogglingFavorite={isToggling}
+                />
+              ))}
+            </div>
             
             {/* Pagination - nur wenn mehr als 1 Seite */}
             {totalPages && totalPages > 1 && onPageChange && (

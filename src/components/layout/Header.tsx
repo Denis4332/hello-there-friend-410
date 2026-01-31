@@ -23,7 +23,6 @@ export const Header = () => {
   const navHome = getSetting('nav_home', 'Start');
   const navCantons = getSetting('nav_cantons', 'Kantone');
   const navCategories = getSetting('nav_categories', 'Kategorien');
-  const navBanners = getSetting('nav_banners', 'Werbung');
   const navContact = getSetting('nav_contact', 'Kontakt');
   const navLogin = getSetting('nav_login', 'Anmelden');
   const navMyAccount = getSetting('nav_my_account', 'Mein Account');
@@ -63,9 +62,6 @@ export const Header = () => {
             </Link>
             <Link to="/preise" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navPrices}
-            </Link>
-            <Link to="/bannerpreise" className="hover:underline active:text-primary-foreground/80 transition-colors">
-              {navBanners}
             </Link>
             <Link to="/kontakt" className="hover:underline active:text-primary-foreground/80 transition-colors">
               {navContact}
@@ -179,9 +175,6 @@ export const Header = () => {
                   </Link>
                   <Link to="/preise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
                     {navPrices}
-                  </Link>
-                  <Link to="/bannerpreise" onClick={() => setMobileMenuOpen(false)} className="text-lg font-medium hover:text-primary active:text-primary/80 py-2 transition-colors">
-                    {navBanners}
                   </Link>
 
                   <Separator />

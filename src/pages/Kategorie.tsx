@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { useCategoryProfiles } from '@/hooks/useProfiles';
 import { useCategoryBySlug } from '@/hooks/useCategories';
 import { SEO } from '@/components/SEO';
-import { HeaderBanner } from '@/components/banners';
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs';
 import { useRotationKey } from '@/hooks/useRotationKey';
 
@@ -79,8 +78,6 @@ const Kategorie = () => {
           {category?.intro_text && (
             <p className="text-muted-foreground mb-8 max-w-3xl">{category.intro_text}</p>
           )}
-
-          <HeaderBanner className="mb-8" />
 
           {loadingProfiles ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6">

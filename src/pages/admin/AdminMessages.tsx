@@ -21,11 +21,9 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { ExternalLink, Image as ImageIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Image as ImageIcon } from 'lucide-react';
 
 export default function AdminMessages() {
-  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [typeFilter, setTypeFilter] = useState<MessageType>('all');
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
@@ -48,8 +46,6 @@ export default function AdminMessages() {
 
   const getTypeBadge = (type: string | null) => {
     switch (type) {
-      case 'banner':
-        return <Badge variant="outline" className="bg-purple-100 text-purple-800">Banner-Anfrage</Badge>;
       case 'ad_inquiry':
         return <Badge variant="outline" className="bg-blue-100 text-blue-800">Inserat-Anfrage</Badge>;
       default:
@@ -74,7 +70,6 @@ export default function AdminMessages() {
             <TabsList>
               <TabsTrigger value="all">Alle</TabsTrigger>
               <TabsTrigger value="general">Allgemein</TabsTrigger>
-              <TabsTrigger value="banner">Banner-Anfragen</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -190,9 +185,7 @@ export default function AdminMessages() {
         ) : (
           <div className="text-center py-12 border rounded-lg">
             <p className="text-muted-foreground">
-              {typeFilter === 'banner' 
-                ? 'Keine Banner-Anfragen vorhanden'
-                : statusFilter === 'all' 
+              {statusFilter === 'all' 
                 ? 'Noch keine Kontaktanfragen vorhanden'
                 : statusFilter === 'unread'
                 ? 'Keine ungelesenen Nachrichten'
@@ -226,61 +219,17 @@ export default function AdminMessages() {
                   </div>
                 </div>
 
-                {/* Banner-specific metadata */}
-                {selectedMessage.type === 'banner' && selectedMessage.metadata && (
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg space-y-3">
-                    <h4 className="font-semibold text-purple-800 dark:text-purple-200">Banner-Details</h4>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Position:</span>
-                        <span className="ml-2 font-medium">{selectedMessage.metadata.position_name || selectedMessage.metadata.position}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Laufzeit:</span>
-                        <span className="ml-2 font-medium">{selectedMessage.metadata.duration_label}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Preis:</span>
-                        <span className="ml-2 font-bold text-green-600">CHF {selectedMessage.metadata.calculated_price}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Telefon:</span>
-                        <span className="ml-2">{selectedMessage.metadata.contact_phone}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-muted-foreground">Titel:</span>
-                        <span className="ml-2">{selectedMessage.metadata.title}</span>
-                      </div>
-                      <div className="col-span-2">
-                        <span className="text-muted-foreground">Link:</span>
-                        <a href={selectedMessage.metadata.link_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-primary hover:underline flex items-center gap-1">
-                          {selectedMessage.metadata.link_url}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Attachment preview */}
-                {(selectedMessage.attachment_url || selectedMessage.metadata?.image_base64) && (
+                {selectedMessage.attachment_url && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Banner-Bild</p>
-                    {selectedMessage.attachment_url ? (
-                      <a href={selectedMessage.attachment_url} target="_blank" rel="noopener noreferrer">
-                        <img 
-                          src={selectedMessage.attachment_url} 
-                          alt="Banner Preview" 
-                          className="max-w-full h-auto rounded-lg border max-h-64 object-contain"
-                        />
-                      </a>
-                    ) : selectedMessage.metadata?.image_base64 && (
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Anhang</p>
+                    <a href={selectedMessage.attachment_url} target="_blank" rel="noopener noreferrer">
                       <img 
-                        src={selectedMessage.metadata.image_base64} 
-                        alt="Banner Preview (Base64)" 
+                        src={selectedMessage.attachment_url} 
+                        alt="Anhang Preview" 
                         className="max-w-full h-auto rounded-lg border max-h-64 object-contain"
                       />
-                    )}
+                    </a>
                   </div>
                 )}
 
@@ -290,17 +239,6 @@ export default function AdminMessages() {
                 </div>
 
                 <div className="flex gap-2 justify-end pt-4 border-t">
-                  {selectedMessage.type === 'banner' && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        navigate('/admin/advertisements');
-                        setSelectedMessage(null);
-                      }}
-                    >
-                      → Banner erstellen
-                    </Button>
-                  )}
                   {selectedMessage.status === 'unread' && (
                     <Button
                       onClick={() => {
