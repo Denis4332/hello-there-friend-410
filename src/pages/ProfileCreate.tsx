@@ -78,8 +78,14 @@ const ProfileCreate = () => {
         // Foto-Count setzen
         setUploadedPhotoCount(photos?.length || 0);
         
+        // URL-Parameter hat Priorität (für "Paket ändern" Button)
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedStep = urlParams.get('step');
+        
         // Determine correct step based on profile state
-        if (!existingProfile.listing_type) {
+        if (requestedStep === 'listing-type') {
+          setCurrentStep('listing-type');
+        } else if (!existingProfile.listing_type) {
           setCurrentStep('listing-type');
         } else if (!photos || photos.length === 0) {
           setCurrentStep('photos');
