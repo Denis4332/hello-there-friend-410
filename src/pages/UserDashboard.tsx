@@ -435,7 +435,7 @@ const UserDashboard = () => {
                   {/* Wenn Zahlung ausstehend: "Paket ändern" zeigen */}
                   {profile.payment_status === 'pending' && (
                     <Button 
-                      onClick={() => navigate('/profil/erstellen')} 
+                      onClick={() => navigate('/profil/erstellen?step=listing-type')} 
                       variant="outline"
                       className="w-full"
                     >
