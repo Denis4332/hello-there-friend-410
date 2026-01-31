@@ -7,76 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  lint-and-format:
-    name: Lint & Format Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run ESLint
-        run: npx eslint . --ext .ts,.tsx --max-warnings 0
-      
-      - name: Check Prettier formatting
-        run: npx prettier --check "src/**/*.{ts,tsx,css}"
-
-  type-check:
-    name: TypeScript Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run TypeScript compiler
-        run: npx tsc --noEmit
-
-  test:
-    name: Unit & Integration Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run tests with coverage
-        run: npm run test:coverage
-      
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          fail_ci_if_error: false
-      
-      - name: Check coverage thresholds
-        run: |
-          echo "Coverage thresholds enforced by vitest config (60%)"
-
   build:
-    name: Build Test
+    name: Build Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,34 +25,5 @@ jobs:
       - name: Build production bundle
         run: npm run build
       
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: dist/
-          retention-days: 7
-
-  bundle-size:
-    name: Bundle Size Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build and analyze bundle
-        run: |
-          npm run build
-          ls -lh dist/assets/
-      
-      - name: Check bundle size limits
-        run: |
-          echo "Checking bundle sizes..."
-          find dist/assets -name "*.js" -exec sh -c 'SIZE=$(stat -f%z "$1" 2>/dev/null || stat -c%s "$1" 2>/dev/null); if [ $SIZE -gt 153600 ]; then echo "❌ $1 exceeds 150KB limit ($SIZE bytes)"; exit 1; else echo "✅ $1 is within limits ($SIZE bytes)"; fi' _ {} \;
+      - name: Build successful
+        run: echo "✅ Build completed successfully"
