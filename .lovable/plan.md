@@ -1,262 +1,187 @@
 
-# Banner System v2.0 - Komplettes Upgrade
+# Banner System v2.0 - Korrekturen
 
-## Übersicht
+## Zusammenfassung der 4 Änderungen
 
-Dieses Upgrade transformiert das bestehende Banner-System zu einem professionellen Werbesystem mit:
-- **5 Positionen** statt 3 (header_banner, in_content, in_grid, footer_banner, popup)
-- **IAB Standard-Grössen** mit korrektem Cropping
-- **Faire Rotation** mit Priority-basierter gewichteter Auswahl
-- **Feste Slot-Limits** pro Position (z.B. max. 3 Header-Banner, max. 5 In-Grid-Banner)
-- **Neues Admin-Dashboard** mit Übersicht, Tabs und Slot-Verfügbarkeit
+| # | Datei | Änderung |
+|---|-------|----------|
+| 1 | `Index.tsx` | FooterBanner vor `</main>` hinzufügen |
+| 2 | `BaseBanner.tsx` | `max-w-md` → `max-w-[728px]` für horizontale Banner |
+| 3 | `BannerCTA.tsx` | `max-w-md` → `max-w-[728px]` + aspect-ratio |
+| 4 | `PopupBanner.tsx` | `w-[90vw] max-w-[300px]` + aspect-ratio 3/4 |
 
-## Phasen-Übersicht
+---
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                    BANNER SYSTEM v2.0 UPGRADE                        │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  PHASE 1: Dateien löschen (7 Komponenten)                           │
-│     ↓                                                                │
-│  PHASE 2: Datenbank-Migration (Positionen + Priority-Default)       │
-│     ↓                                                                │
-│  PHASE 3: Types aktualisieren (BannerPosition + BANNER_CONFIG)      │
-│     ↓                                                                │
-│  PHASE 4: Hooks erweitern (Rotation, Slot-Counts, neue API)         │
-│     ↓                                                                │
-│  PHASE 5: Neue Banner-Komponenten (5 + Index)                       │
-│     ↓                                                                │
-│  PHASE 6: Neues Admin-Dashboard (AdminBanners.tsx)                  │
-│     ↓                                                                │
-│  PHASE 7: Seiten aktualisieren (Index, Suche, App.tsx, Routes)      │
-│     ↓                                                                │
-│  PHASE 8: BannerBuchen.tsx mit neuer Config                         │
-│     ↓                                                                │
-│  PHASE 9: Bannerpreise.tsx dynamisch generieren                     │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+## Änderung 1: Index.tsx
+
+**Problem:** FooterBanner wird importiert aber nicht gerendert.
+
+**Zeile 99-100** - FooterBanner vor `</main>` einfügen:
+
+```tsx
+// VORHER (Zeile 99-100):
+        </Suspense>
+      </main>
+
+// NACHHER:
+        </Suspense>
+        
+        <FooterBanner className="px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-24 pb-8" />
+      </main>
 ```
 
 ---
 
-## Phase 1: Dateien löschen
+## Änderung 2: BaseBanner.tsx
 
-Diese Dateien werden komplett gelöscht und durch neue ersetzt:
+**Problem:** Horizontale Banner auf `max-w-md` (448px) begrenzt statt 728px.
 
-| Datei | Grund |
-|-------|-------|
-| `src/components/BannerDisplay.tsx` | Neu als separate Komponenten |
-| `src/components/PopupBanner.tsx` | Neue Version mit Cooldown-Logik integriert |
-| `src/components/BannerManager.tsx` | Nicht mehr benötigt |
-| `src/components/DemoPopupBanner.tsx` | Entfernt |
-| `src/components/AdvertisementCTA.tsx` | Neu mit allen 5 Positionen |
-| `src/components/admin/ImageCropper.tsx` | In Admin-Dashboard integriert |
-| `src/pages/admin/AdminAdvertisements.tsx` | Ersetzt durch AdminBanners.tsx |
+**Zeile 57-61** - Breitenbegrenzung korrigieren:
 
-**BEHALTEN:**
-- `src/lib/adEventQueue.ts` - Bestehendes Tracking-System bleibt unverändert
-- `src/hooks/useAdvertisementsRealtime.ts` - Bleibt
+```tsx
+// VORHER:
+className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow ${
+  isVertical 
+    ? 'w-[300px] max-w-[300px]' 
+    : 'w-full max-w-md mx-auto'
+}`}
 
----
-
-## Phase 2: Datenbank-Migration
-
-```sql
--- Alte Positionen zu neuen migrieren
-ALTER TABLE advertisements 
-  DROP CONSTRAINT IF EXISTS advertisements_position_check;
-
-ALTER TABLE advertisements 
-  ADD CONSTRAINT advertisements_position_check 
-  CHECK (position IN (
-    'header_banner',
-    'in_content', 
-    'in_grid',
-    'footer_banner',
-    'popup'
-  ));
-
--- Bestehende Daten migrieren
-UPDATE advertisements SET position = 'header_banner' WHERE position = 'top';
-UPDATE advertisements SET position = 'in_grid' WHERE position = 'grid';
--- 'popup' bleibt 'popup'
-
--- Priority Default
-ALTER TABLE advertisements 
-  ALTER COLUMN priority SET DEFAULT 50;
-
-UPDATE advertisements SET priority = 50 WHERE priority IS NULL OR priority = 0;
+// NACHHER:
+className={`cursor-pointer rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow ${
+  isVertical 
+    ? 'w-[300px] max-w-[300px]' 
+    : 'w-full max-w-[728px] mx-auto'
+}`}
 ```
 
 ---
 
-## Phase 3: Types aktualisieren
+## Änderung 3: BannerCTA.tsx
 
-**Datei:** `src/types/advertisement.ts`
+**Problem:** Horizontale CTA-Platzhalter auf `max-w-md` begrenzt, kein festes aspect-ratio.
 
-Neue Struktur:
+**Zeile 19-23** - Card mit korrekter Breite und aspect-ratio:
 
-```typescript
-export type BannerPosition = 
-  | 'header_banner'
-  | 'in_content'
-  | 'in_grid'
-  | 'footer_banner'
-  | 'popup';
+```tsx
+// VORHER:
+<Card 
+  className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${
+    isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-md'
+  }`}
+>
 
-export const BANNER_CONFIG: Record<BannerPosition, {
-  name: string;
-  desktop: { width: number; height: number };
-  mobile: { width: number; height: number };
-  maxSlots: number;
-  pricePerDay: number;
-  pricePerWeek: number;
-  pricePerMonth: number;
-  aspectRatio: number;
-}> = {
-  header_banner: {
-    name: 'Header Banner',
-    desktop: { width: 728, height: 90 },
-    mobile: { width: 320, height: 100 },
-    maxSlots: 3,
-    pricePerDay: 60,
-    pricePerWeek: 380,
-    pricePerMonth: 1400,
-    aspectRatio: 728 / 90,
-  },
-  // ... weitere Positionen
-};
+// NACHHER:
+<Card 
+  className={`relative overflow-hidden border-dashed border-2 border-primary/30 bg-muted/30 ${
+    isVertical ? 'w-[300px] max-w-[300px]' : 'w-full max-w-[728px]'
+  }`}
+  style={{
+    aspectRatio: isVertical ? '3/4' : `${config.desktop.width}/${config.desktop.height}`,
+  }}
+>
 ```
 
 ---
 
-## Phase 4: Hooks erweitern
+## Änderung 4: PopupBanner.tsx
 
-**Datei:** `src/hooks/useAdvertisements.ts`
+**Problem:** Popup-Format zu gross (400-500px) und inkonsistent.
 
-Neue Funktionen:
+### 4a) Demo Popup Container (Zeile 114-118)
 
-| Hook | Funktion |
-|------|----------|
-| `selectWeightedRandom()` | Gewichtete Zufallsauswahl basierend auf Priority |
-| `useAdvertisement(position)` | Gibt EINEN rotierenden Banner zurück |
-| `useBannerSlotCounts()` | Zählt aktive Banner pro Position |
-| `useAllActiveAdvertisements()` | Cached Query für alle aktiven Banner |
+```tsx
+// VORHER:
+<div
+  className={`relative bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+    isVisible ? 'scale-100' : 'scale-95'
+  }`}
+  onClick={(e) => e.stopPropagation()}
+>
 
-Die gewichtete Rotation funktioniert so:
-1. Alle Banner für Position laden
-2. Jeder Banner hat eine Priority (1-100, Default: 50)
-3. Höhere Priority = höhere Chance gewählt zu werden
-4. Bei gleicher Priority: faire Verteilung
+// NACHHER:
+<div
+  className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+    isVisible ? 'scale-100' : 'scale-95'
+  }`}
+  style={{ aspectRatio: '3/4' }}
+  onClick={(e) => e.stopPropagation()}
+>
+```
 
----
+### 4b) Real Popup Container (Zeile 144-148)
 
-## Phase 5: Neue Banner-Komponenten
+```tsx
+// VORHER:
+<div
+  className={`relative w-[90vw] max-w-[400px] md:max-w-[500px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+    isVisible ? 'scale-100' : 'scale-95'
+  }`}
+  onClick={(e) => e.stopPropagation()}
+>
 
-Erstelle Ordner `src/components/banners/` mit:
+// NACHHER:
+<div
+  className={`relative w-[90vw] max-w-[300px] bg-background rounded-lg shadow-2xl transform transition-all duration-300 ${
+    isVisible ? 'scale-100' : 'scale-95'
+  }`}
+  style={{ aspectRatio: '3/4' }}
+  onClick={(e) => e.stopPropagation()}
+>
+```
 
-| Komponente | Position | Desktop-Grösse | Mobile-Grösse |
-|------------|----------|----------------|---------------|
-| `HeaderBanner.tsx` | header_banner | 728×90 | 320×100 |
-| `InContentBanner.tsx` | in_content | 728×90 | 320×100 |
-| `InGridBanner.tsx` | in_grid | 300×400 | 300×400 |
-| `FooterBanner.tsx` | footer_banner | 728×90 | 320×100 |
-| `PopupBanner.tsx` | popup | 300×400 | 300×400 |
-| `index.ts` | Export-Datei | - | - |
+### 4c) Bild-Container (Zeile 159-172)
 
-Jede Komponente:
-- Nutzt `useAdvertisement(position)` für Rotation
-- Tracked Impressions nach 2s Delay via `queueAdEvent()`
-- Tracked Clicks beim Öffnen des Links
-- Responsives Design mit `hidden md:block` / `md:hidden`
+```tsx
+// VORHER:
+<div
+  className="cursor-pointer rounded-lg overflow-hidden"
+  onClick={handleClick}
+>
+  <img
+    src={ad.image_url}
+    alt={ad.title}
+    loading="lazy"
+    className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+    onError={(e) => {
+      e.currentTarget.src = '/placeholder.svg';
+    }}
+  />
+</div>
 
----
-
-## Phase 6: Neues Admin-Dashboard
-
-**Neue Datei:** `src/pages/admin/AdminBanners.tsx`
-
-Features:
-- **Slot-Übersicht Cards**: Zeigt für jede Position verwendet/maximal (z.B. "2/3")
-- **Tabs nach Position**: Alle, Header, In-Content, In-Grid, Footer, Popup
-- **Integrierter Cropper**: Schneidet Bilder automatisch auf Position-Grösse zu
-- **Priority-Slider**: 1-100 für Rotations-Gewichtung
-- **Position Info-Box**: Zeigt Pixelgrössen und Preise
-- **Slot-Warnung**: Blockiert Erstellung wenn Position voll
-
----
-
-## Phase 7: Seiten aktualisieren
-
-### Index.tsx
-- `<BannerDisplay position="top" />` → `<HeaderBanner />`
-- Vor Footer: `<FooterBanner />`
-- Am Ende: `<PopupBanner />`
-
-### Suche.tsx
-- Header: `<HeaderBanner />`
-- Nach jedem 6. Profil im Grid: `<InGridBanner />`
-- Zwischen Suchfiltern und Ergebnissen: `<InContentBanner />`
-- Footer: `<FooterBanner />`
-
-### App.tsx
-- Entferne `BannerManager` Import
-- Route `/admin/advertisements` → `/admin/banners`
-
-### AdminHeader.tsx
-- Link zu `/admin/banners` aktualisieren
-
----
-
-## Phase 8 & 9: BannerBuchen & Bannerpreise
-
-Beide Seiten werden aktualisiert um:
-- `BANNER_CONFIG` zu importieren und dynamisch zu rendern
-- Slot-Verfügbarkeit anzuzeigen
-- Korrekte Pixelgrössen für Desktop UND Mobile zu zeigen
-- Preise aus Config zu nehmen
+// NACHHER:
+<div
+  className="cursor-pointer rounded-lg overflow-hidden w-full h-full"
+  onClick={handleClick}
+>
+  <img
+    src={ad.image_url}
+    alt={ad.title}
+    loading="lazy"
+    className="w-full h-full object-cover rounded-lg"
+    onError={(e) => {
+      e.currentTarget.src = '/placeholder.svg';
+    }}
+  />
+</div>
+```
 
 ---
 
-## Preisübersicht nach dem Upgrade
+## Erwartetes Ergebnis
 
-| Position | Desktop | Mobile | Slots | CHF/Tag | CHF/Woche | CHF/Monat |
-|----------|---------|--------|-------|---------|-----------|-----------|
-| Header Banner | 728×90 | 320×100 | 3 | 60 | 380 | 1'400 |
-| In-Content | 728×90 | 320×100 | 5 | 35 | 220 | 800 |
-| In-Grid | 300×400 | 300×400 | 5 | 30 | 190 | 700 |
-| Footer Banner | 728×90 | 320×100 | 3 | 25 | 160 | 600 |
-| Popup | 300×400 | 300×400 | 2 | 80 | 500 | 1'800 |
-
----
-
-## Dateiänderungen Zusammenfassung
-
-| Aktion | Dateien |
-|--------|---------|
-| **LÖSCHEN** | 7 Dateien (BannerDisplay, PopupBanner, BannerManager, DemoPopupBanner, AdvertisementCTA, ImageCropper, AdminAdvertisements) |
-| **NEU ERSTELLEN** | 7 Dateien (HeaderBanner, InContentBanner, InGridBanner, FooterBanner, PopupBanner, index.ts, AdminBanners.tsx) |
-| **AKTUALISIEREN** | 6 Dateien (advertisement.ts, useAdvertisements.ts, Index.tsx, Suche.tsx, App.tsx, AdminHeader.tsx) |
-| **OPTIONAL** | 2 Dateien (BannerBuchen.tsx, Bannerpreise.tsx) |
-| **MIGRATION** | 1 SQL-Migration für Datenbank |
+| Position | Desktop | Mobile | Verhalten |
+|----------|---------|--------|-----------|
+| header_banner | 728×90 | 728×90 | Volle Breite bis 728px |
+| in_content | 728×90 | 728×90 | Volle Breite bis 728px |
+| in_grid | 300×400 | 300×400 | Festes Portrait 3:4 |
+| footer_banner | 728×90 | 728×90 | Volle Breite bis 728px |
+| popup | 90vw max 300×400 | 90vw max 300×400 | Mobile: 90% Breite, Desktop: fix 300px |
 
 ---
 
-## Was unverändert bleibt
+## Dateien die geändert werden
 
-- `src/lib/adEventQueue.ts` - Bestehendes Tracking-System
-- `src/hooks/useAdvertisementsRealtime.ts` - Realtime-Listener
-- Profil-Komponenten, Auth, Suche-Logik - Nur Banner-Integration
-- 3-Sekunden Impression-Timer (jetzt 2 Sekunden gemäss Dokument)
-
----
-
-## Testing nach Deployment
-
-1. **Alle 5 Positionen** auf Desktop UND Mobile prüfen
-2. **Rotation testen**: 2+ Banner für gleiche Position erstellen → wechseln sie?
-3. **Slot-Limits**: Versuchen mehr als erlaubt zu erstellen → wird blockiert?
-4. **Cropper**: Verschiedene Bildgrössen hochladen → korrekt zugeschnitten?
-5. **Tracking**: Klicks und Impressions werden gezählt?
-6. **Admin Dashboard**: Alle Tabs, Filter, CRUD funktionieren?
+1. `src/pages/Index.tsx` - 1 Zeile hinzufügen
+2. `src/components/banners/BaseBanner.tsx` - 1 Zeile ändern
+3. `src/components/banners/BannerCTA.tsx` - 4 Zeilen ändern
+4. `src/components/banners/PopupBanner.tsx` - 3 Blöcke ändern
