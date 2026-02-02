@@ -80,7 +80,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "terser": "^5.44.1",
-    "vaul": "^0.9.9",
+    "vaul": "^1.1.2",
     "vite-plugin-pwa": "^1.1.0",
     "vitest": "^4.0.8",
     "web-vitals": "^5.1.0",
