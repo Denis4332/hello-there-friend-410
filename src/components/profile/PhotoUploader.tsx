@@ -13,6 +13,7 @@ interface PhotoUploaderProps {
 }
 
 interface MediaPreview {
+  id?: string; // DB ID für existierende Fotos
   url: string;
   file?: File;
   uploaded: boolean;
@@ -36,11 +37,52 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const { showSuccess, showError, showCustomError } = useToastMessages();
   
   const limits = MEDIA_LIMITS[listingType];
   const photoCount = previews.filter(p => p.mediaType === 'image').length;
   const videoCount = previews.filter(p => p.mediaType === 'video').length;
+
+  // Lade existierende Fotos beim Mounten (für Tab-Wechsel Persistenz)
+  useEffect(() => {
+    const loadExistingPhotos = async () => {
+      if (!profileId) {
+        setIsLoadingExisting(false);
+        return;
+      }
+      
+      try {
+        const { data: photos } = await supabase
+          .from('photos')
+          .select('id, storage_path, is_primary, media_type')
+          .eq('profile_id', profileId)
+          .order('created_at', { ascending: true });
+        
+        if (photos && photos.length > 0) {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const existingPreviews: MediaPreview[] = photos.map(photo => ({
+            id: photo.id,
+            url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${photo.storage_path}`,
+            uploaded: true,
+            mediaType: (photo.media_type as 'image' | 'video') || 'image',
+          }));
+          
+          setPreviews(existingPreviews);
+          
+          // Primary Index setzen
+          const primaryIdx = photos.findIndex(p => p.is_primary);
+          if (primaryIdx >= 0) setPrimaryIndex(primaryIdx);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden existierender Fotos:', error);
+      } finally {
+        setIsLoadingExisting(false);
+      }
+    };
+    
+    loadExistingPhotos();
+  }, [profileId]);
 
   // Browser-Warnung beim Verlassen während Upload
   useEffect(() => {
@@ -175,14 +217,15 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
 
       const results: { previewUrl: string; uploadedUrl: string }[] = [];
 
-      // Upload files sequentially to track progress
-      for (let i = 0; i < filesToUpload.length; i++) {
-        const preview = filesToUpload[i];
+      // PARALLELER Upload in 3er-Batches für bessere Performance
+      const BATCH_SIZE = 3;
+      
+      // Helper function to upload a single file
+      const uploadSingleFile = async (preview: MediaPreview, fileIndex: number) => {
         const file = preview.file!;
         const previewIndex = previews.findIndex(p => p.url === preview.url);
 
         // Generate cryptographically random filename
-        // Use .webp extension for images (already compressed to WebP format by compressImage)
         const originalExt = file.name.split('.').pop()?.toLowerCase();
         const fileExt = preview.mediaType === 'image' ? 'webp' : originalExt;
         const randomBytes = new Uint8Array(16);
@@ -223,10 +266,25 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
 
         if (dbError) throw dbError;
 
-        results.push({ previewUrl: preview.url, uploadedUrl: data.url });
+        return { previewUrl: preview.url, uploadedUrl: data.url };
+      };
 
-        // Update progress after each file
-        setUploadProgress({ current: i + 1, total: filesToUpload.length });
+      // Process files in batches of BATCH_SIZE for parallel upload
+      for (let i = 0; i < filesToUpload.length; i += BATCH_SIZE) {
+        const batch = filesToUpload.slice(i, i + BATCH_SIZE);
+        
+        // Upload batch in parallel
+        const batchResults = await Promise.all(
+          batch.map((preview, batchIndex) => uploadSingleFile(preview, i + batchIndex))
+        );
+        
+        results.push(...batchResults);
+        
+        // Update progress after each batch
+        setUploadProgress({ 
+          current: Math.min(i + BATCH_SIZE, filesToUpload.length), 
+          total: filesToUpload.length 
+        });
       }
       
       // Update previews to mark as uploaded
