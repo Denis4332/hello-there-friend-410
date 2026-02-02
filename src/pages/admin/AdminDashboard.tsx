@@ -5,9 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   AlertCircle, 
   CheckCircle, 
-  Users, 
   Mail, 
-  Flag, 
   Shield, 
   FolderKanban, 
   MapPin,
@@ -15,118 +13,57 @@ import {
   ShieldAlert,
   Download,
   Layers,
-  CreditCard
+  Bell,
+  Flag
 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      // Count pending profiles
-      const { count: pendingCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+      // Parallel queries for all counts
+      const [
+        pendingProfilesRes,
+        paidPendingRes,
+        activeRes,
+        reportsRes,
+        messagesRes,
+        verificationsRes,
+        changeRequestsRes
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending').eq('payment_status', 'paid'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+        supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('status', 'unread'),
+        supabase.from('verification_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('profile_change_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+      ]);
       
-      // Count paid but pending profiles (waiting for admin activation)
-      const { count: paidPendingCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending')
-        .eq('payment_status', 'paid');
-      
-      // Count verified profiles
-      const { count: verifiedCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .not('verified_at', 'is', null);
-      
-      // Count active profiles
-      const { count: activeCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
-      
-      // Count open reports
-      const { count: reportsCount } = await supabase
-        .from('reports')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'open');
-      
-      // Count unread messages
-      const { count: unreadMessages } = await supabase
-        .from('contact_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'unread');
-      
-      // Count pending verifications
-      const { count: pendingVerifications } = await supabase
-        .from('verification_submissions')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      
-      // Count locked accounts
-      const { data: rateLimitsData } = await supabase.rpc('get_rate_limits_for_admin');
-      const lockedAccounts = (rateLimitsData as any[])?.filter(r => r.is_locked).length || 0;
-      
-      return [
-        { 
-          label: 'Zu prüfen', 
-          value: (pendingCount || 0) + (pendingVerifications || 0), 
-          link: '/admin/profile?status=pending',
-          icon: AlertCircle,
-          color: 'text-orange-500',
-          bgColor: 'bg-orange-50 dark:bg-orange-950'
+      const pendingCount = pendingProfilesRes.count || 0;
+      const paidPendingCount = paidPendingRes.count || 0;
+      const activeCount = activeRes.count || 0;
+      const reportsCount = reportsRes.count || 0;
+      const unreadMessages = messagesRes.count || 0;
+      const pendingVerifications = verificationsRes.count || 0;
+      const changeRequestsCount = changeRequestsRes.count || 0;
+
+      // Consolidated 4 tiles
+      return {
+        actionsNeeded: {
+          total: paidPendingCount + changeRequestsCount + reportsCount,
+          paidPending: paidPendingCount,
+          changeRequests: changeRequestsCount,
+          reports: reportsCount
         },
-        { 
-          label: 'Bezahlt (wartet)', 
-          value: paidPendingCount || 0, 
-          link: '/admin/profile?status=pending&payment=paid',
-          icon: CreditCard,
-          color: 'text-green-500',
-          bgColor: 'bg-green-50 dark:bg-green-950'
+        toReview: {
+          total: pendingCount + pendingVerifications,
+          profiles: pendingCount,
+          verifications: pendingVerifications
         },
-        { 
-          label: 'Verifiziert', 
-          value: verifiedCount || 0, 
-          link: '/admin/profile?verified=true',
-          icon: CheckCircle,
-          color: 'text-green-500',
-          bgColor: 'bg-green-50 dark:bg-green-950'
-        },
-        { 
-          label: 'Live (Active)', 
-          value: activeCount || 0, 
-          link: '/admin/profile?status=active',
-          icon: Users,
-          color: 'text-blue-500',
-          bgColor: 'bg-blue-50 dark:bg-blue-950'
-        },
-        { 
-          label: 'Nachrichten', 
-          value: unreadMessages || 0, 
-          link: '/admin/messages',
-          icon: Mail,
-          color: 'text-purple-500',
-          bgColor: 'bg-purple-50 dark:bg-purple-950'
-        },
-        { 
-          label: 'Meldungen', 
-          value: reportsCount || 0, 
-          link: '/admin/reports',
-          icon: Flag,
-          color: 'text-red-500',
-          bgColor: 'bg-red-50 dark:bg-red-950'
-        },
-        { 
-          label: 'Gesperrte Accounts', 
-          value: lockedAccounts, 
-          link: '/admin/rate-limits',
-          icon: ShieldAlert,
-          color: 'text-yellow-500',
-          bgColor: 'bg-yellow-50 dark:bg-yellow-950'
-        },
-      ];
+        live: activeCount,
+        messages: unreadMessages
+      };
     }
   });
 
@@ -139,7 +76,7 @@ const AdminDashboard = () => {
           
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-card border rounded-xl p-6">
                   <div className="h-4 bg-muted rounded w-24 mb-2 animate-pulse" />
                   <div className="h-8 bg-muted rounded w-12 animate-pulse" />
@@ -148,24 +85,66 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {stats?.map((stat) => {
-                const Icon = stat.icon;
-                return (
-                  <Link key={stat.label} to={stat.link} className="group">
-                    <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-primary/50">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                          <Icon className={`h-6 w-6 ${stat.color}`} />
-                        </div>
-                        <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
-                      </div>
-                      <div className="text-sm text-muted-foreground font-medium">
-                        {stat.label}
-                      </div>
+              {/* Aktionen nötig */}
+              <Link to="/admin/profile?status=pending&payment=paid" className="group">
+                <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-destructive/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 rounded-lg bg-destructive/10">
+                      <Bell className="h-6 w-6 text-destructive" />
                     </div>
-                  </Link>
-                );
-              })}
+                    <div className="text-3xl font-bold text-destructive">{stats?.actionsNeeded.total || 0}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium mb-2">Aktionen nötig</div>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <div>{stats?.actionsNeeded.paidPending || 0} bezahlt warten</div>
+                    <div>{stats?.actionsNeeded.changeRequests || 0} Änderungsanfragen</div>
+                    <div>{stats?.actionsNeeded.reports || 0} Meldungen</div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Zu prüfen */}
+              <Link to="/admin/profile?status=pending" className="group">
+                <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-orange-500/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 rounded-lg bg-orange-500/10">
+                      <AlertCircle className="h-6 w-6 text-orange-500" />
+                    </div>
+                    <div className="text-3xl font-bold text-orange-500">{stats?.toReview.total || 0}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium mb-2">Zu prüfen</div>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <div>{stats?.toReview.profiles || 0} Profile</div>
+                    <div>{stats?.toReview.verifications || 0} Verifikationen</div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Live */}
+              <Link to="/admin/profile?status=active" className="group">
+                <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-green-500/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 rounded-lg bg-green-500/10">
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                    </div>
+                    <div className="text-3xl font-bold text-green-500">{stats?.live || 0}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">Live</div>
+                </div>
+              </Link>
+
+              {/* Nachrichten */}
+              <Link to="/admin/messages" className="group">
+                <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-blue-500/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 rounded-lg bg-blue-500/10">
+                      <Mail className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <div className="text-3xl font-bold text-blue-500">{stats?.messages || 0}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">Nachrichten</div>
+                </div>
+              </Link>
             </div>
           )}
 

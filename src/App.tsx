@@ -37,6 +37,7 @@ const ProfileCreate = lazy(() => import("./pages/ProfileCreate"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 const UserFavorites = lazy(() => import("./pages/UserFavorites"));
 const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
+const ProfileChangeRequest = lazy(() => import("./pages/ProfileChangeRequest"));
 const ProfileUpgrade = lazy(() => import("./pages/ProfileUpgrade"));
 const ZahlungErfolg = lazy(() => import("./pages/ZahlungErfolg"));
 const ZahlungAbgebrochen = lazy(() => import("./pages/ZahlungAbgebrochen"));
@@ -139,6 +140,14 @@ const App = () => {
                   element={
                     <UserProtectedRoute>
                       <ProfileEdit />
+                    </UserProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profil/aenderung-anfragen"
+                  element={
+                    <UserProtectedRoute>
+                      <ProfileChangeRequest />
                     </UserProtectedRoute>
                   }
                 />

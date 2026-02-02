@@ -276,6 +276,35 @@ const ProfileEdit = () => {
     return null;
   }
 
+  // SECURITY: Active profiles cannot be edited directly - must use change request
+  if (profile.status === 'active') {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-background">
+          <div className="container mx-auto px-4 py-8">
+            <Card className="max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle>Profil ist aktiv</CardTitle>
+                <CardDescription>
+                  Dein Profil ist bereits freigeschaltet. Änderungen müssen zur Prüfung eingereicht werden, um die Einhaltung unserer AGB sicherzustellen.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button onClick={() => navigate('/profil/aenderung-anfragen')}>
+                  Änderung anfragen
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/mein-profil')}>
+                  Zurück zum Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // Calculate media limits based on listing type
   const listingType = (profile.listing_type as 'basic' | 'premium' | 'top') || 'basic';
   const currentLimits = MEDIA_LIMITS[listingType];
