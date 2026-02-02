@@ -367,18 +367,28 @@ const UserDashboard = () => {
 
             {profile.status === 'active' && (
               <Card className="mb-6 border-green-500/50 bg-green-500/5">
-                <CardContent className="pt-6 flex items-center justify-between">
+                <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
                   <p className="text-sm">
                     Dein Profil ist online und für alle sichtbar!
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/profil/${profile.slug}`)}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Öffentliches Profil ansehen
-                  </Button>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/profil/aenderung-anfragen')}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Änderung anfragen
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/profil/${profile.slug}`)}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Öffentliches Profil ansehen
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
