@@ -37,6 +37,9 @@ const ProfileCreate = () => {
   
   const [uploadedPhotoCount, setUploadedPhotoCount] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  
+  // NEU: State für Formular-Persistenz
+  const [profileData, setProfileData] = useState<ProfileFormData | null>(null);
 
   const { getSetting } = useSiteSettingsContext();
   const seoTitle = getSetting('seo_profile_create_title', 'Inserat erstellen');
@@ -57,7 +60,7 @@ const ProfileCreate = () => {
     const checkExistingProfile = async () => {
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id, status, listing_type, payment_status')
+        .select('id, status, listing_type, payment_status, display_name, is_adult, gender, city, canton, postal_code, about_me, languages, lat, lng')
         .eq('user_id', user.id)
         .maybeSingle();
       
@@ -68,6 +71,41 @@ const ProfileCreate = () => {
         if (existingProfile.listing_type) {
           setListingType(existingProfile.listing_type as 'basic' | 'premium' | 'top');
         }
+        
+        // NEU: Profildaten für Formular-Persistenz laden
+        const [catsRes, contactsRes] = await Promise.all([
+          supabase
+            .from('profile_categories')
+            .select('category_id')
+            .eq('profile_id', existingProfile.id),
+          supabase
+            .from('profile_contacts')
+            .select('*')
+            .eq('profile_id', existingProfile.id)
+            .maybeSingle()
+        ]);
+        
+        const formData: ProfileFormData = {
+          display_name: existingProfile.display_name,
+          is_adult: existingProfile.is_adult,
+          gender: existingProfile.gender || undefined,
+          city: existingProfile.city,
+          canton: existingProfile.canton,
+          postal_code: existingProfile.postal_code || undefined,
+          about_me: existingProfile.about_me || undefined,
+          languages: existingProfile.languages || [],
+          lat: existingProfile.lat || undefined,
+          lng: existingProfile.lng || undefined,
+          category_ids: catsRes.data?.map(c => c.category_id) || [],
+          email: contactsRes.data?.email || undefined,
+          phone: contactsRes.data?.phone || undefined,
+          whatsapp: contactsRes.data?.whatsapp || undefined,
+          telegram: contactsRes.data?.telegram || undefined,
+          instagram: contactsRes.data?.instagram || undefined,
+          website: contactsRes.data?.website || undefined,
+        };
+        
+        setProfileData(formData);
         
         // Check photos to determine correct step
         const { data: photos } = await supabase
@@ -428,6 +466,7 @@ const ProfileCreate = () => {
                   cantons={cantons}
                   categories={categories}
                   isSubmitting={isSubmitting}
+                  defaultValues={profileData || undefined}
                 />
               </TabsContent>
 
