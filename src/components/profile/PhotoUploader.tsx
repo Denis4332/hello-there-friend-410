@@ -37,7 +37,9 @@ const ALLOWED_VIDEO_FORMATS = ['video/mp4', 'video/webm'];
 export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUploadComplete, onSetPrimary, currentPrimaryId }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
-  const [primaryIndex, setPrimaryIndex] = useState(0);
+  // For NEW (not yet uploaded) photos: which one should become primary after upload
+  // This is a separate concept from currentPrimaryId (which is for DB photos)
+  const [pendingPrimaryIndex, setPendingPrimaryIndex] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [isLoadingExisting, setIsLoadingExisting] = useState(true);
   const { showSuccess, showError, showCustomError } = useToastMessages();
@@ -45,6 +47,9 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
   const limits = MEDIA_LIMITS[listingType];
   const photoCount = previews.filter(p => p.mediaType === 'image').length;
   const videoCount = previews.filter(p => p.mediaType === 'video').length;
+
+  // Check if there's already a primary in DB
+  const hasDbPrimary = Boolean(currentPrimaryId);
 
   // Lade existierende Fotos beim Mounten (für Tab-Wechsel Persistenz)
   useEffect(() => {
@@ -65,16 +70,14 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
           const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
           const existingPreviews: MediaPreview[] = photos.map(photo => ({
             id: photo.id,
-            url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${photo.storage_path}`,
+            url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${photo.storage_path}?v=${photo.id}`,
             uploaded: true,
             mediaType: (photo.media_type as 'image' | 'video') || 'image',
           }));
           
           setPreviews(existingPreviews);
-          
-          // Primary Index setzen
-          const primaryIdx = photos.findIndex(p => p.is_primary);
-          if (primaryIdx >= 0) setPrimaryIndex(primaryIdx);
+          // Reset pending primary since we loaded from DB
+          setPendingPrimaryIndex(null);
         }
       } catch (error) {
         console.error('Fehler beim Laden existierender Fotos:', error);
@@ -84,7 +87,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     };
     
     loadExistingPhotos();
-  }, [profileId]);
+  }, [profileId, currentPrimaryId]); // Re-load when currentPrimaryId changes
 
   // Browser-Warnung beim Verlassen während Upload
   useEffect(() => {
@@ -256,7 +259,10 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         }
 
         // Determine if this should be primary (only for images)
-        const shouldBePrimary = preview.mediaType === 'image' && existingImagesCount === 0 && previewIndex === primaryIndex;
+        // If no existing images AND this is marked as pending primary OR first new image
+        const isFirstNewImage = existingImagesCount === 0 && previewIndex === 0;
+        const isPendingPrimary = pendingPrimaryIndex !== null && previewIndex === pendingPrimaryIndex;
+        const shouldBePrimary = preview.mediaType === 'image' && !hasDbPrimary && (isPendingPrimary || isFirstNewImage);
 
         // Insert photo record into database
         const { error: dbError } = await supabase.from('photos').insert({
@@ -325,20 +331,47 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
   const removePreview = (index: number) => {
     setPreviews(prev => {
       const newPreviews = prev.filter((_, i) => i !== index);
-      // Adjust primaryIndex if needed (only for images)
-      const imageIndices = newPreviews.map((p, i) => p.mediaType === 'image' ? i : -1).filter(i => i >= 0);
-      if (primaryIndex >= newPreviews.length || newPreviews[primaryIndex]?.mediaType !== 'image') {
-        setPrimaryIndex(imageIndices[0] ?? 0);
-      } else if (index < primaryIndex) {
-        setPrimaryIndex(primaryIndex - 1);
+      // Adjust pendingPrimaryIndex if needed (only for non-uploaded images)
+      if (pendingPrimaryIndex !== null) {
+        if (pendingPrimaryIndex === index) {
+          // Removed the pending primary, reset
+          setPendingPrimaryIndex(null);
+        } else if (index < pendingPrimaryIndex) {
+          // Adjust index since we removed before it
+          setPendingPrimaryIndex(pendingPrimaryIndex - 1);
+        }
       }
       return newPreviews;
     });
   };
 
-  const setPrimary = (index: number) => {
-    if (previews[index]?.mediaType === 'image') {
-      setPrimaryIndex(index);
+  // Set a NEW (not yet uploaded) photo as pending primary
+  const setPendingPrimary = (index: number) => {
+    const preview = previews[index];
+    if (preview?.mediaType === 'image' && !preview.uploaded) {
+      setPendingPrimaryIndex(index);
+    }
+  };
+
+  // Check if a photo should show as primary in UI
+  const isPrimaryPhoto = (preview: MediaPreview, index: number): boolean => {
+    if (preview.uploaded) {
+      // For uploaded photos: check against DB primary
+      return preview.id === currentPrimaryId;
+    } else {
+      // For new photos: check against pending primary
+      // If no pending primary selected and no DB primary, first new image is "default"
+      if (pendingPrimaryIndex !== null) {
+        return index === pendingPrimaryIndex;
+      }
+      // If no DB primary exists, first new image becomes default primary
+      if (!hasDbPrimary) {
+        const newImageIndices = previews
+          .map((p, i) => (!p.uploaded && p.mediaType === 'image') ? i : -1)
+          .filter(i => i >= 0);
+        return newImageIndices.length > 0 && index === newImageIndices[0];
+      }
+      return false;
     }
   };
 
@@ -427,23 +460,25 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
                     // Für bereits hochgeladene Fotos: DB aktualisieren
                     if (preview.uploaded && preview.id && onSetPrimary) {
                       onSetPrimary(preview.id);
-                    } else {
+                    } else if (!preview.uploaded) {
                       // Für neue, noch nicht hochgeladene Fotos: lokaler State
-                      setPrimary(index);
+                      setPendingPrimary(index);
                     }
                   }}
                   className={cn(
                     "absolute top-2 left-2 p-1.5 rounded-full transition-all",
-                    (preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex)
+                    isPrimaryPhoto(preview, index)
                       ? "bg-primary text-primary-foreground"
                       : "bg-black/50 text-white/70 hover:text-yellow-400"
                   )}
-                  title={(preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex) ? "Hauptfoto" : "Als Hauptfoto setzen"}
+                  title={isPrimaryPhoto(preview, index) 
+                    ? (preview.uploaded ? "Hauptfoto" : "Wird Hauptfoto nach Upload") 
+                    : "Als Hauptfoto setzen"}
                 >
                   <Star 
                     className={cn(
                       "w-4 h-4",
-                      (preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex) && "fill-current"
+                      isPrimaryPhoto(preview, index) && "fill-current"
                     )} 
                   />
                 </button>
@@ -458,9 +493,14 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
                 </button>
 
                 {/* Primary badge */}
-                {(preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex) && (
-                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
-                    Hauptfoto
+                {isPrimaryPhoto(preview, index) && (
+                  <div className={cn(
+                    "absolute bottom-2 left-2 px-2 py-1 text-xs rounded",
+                    preview.uploaded 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-amber-500 text-white"
+                  )}>
+                    {preview.uploaded ? "Hauptfoto" : "→ Hauptfoto"}
                   </div>
                 )}
 

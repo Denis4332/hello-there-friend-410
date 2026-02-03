@@ -45,6 +45,9 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        // Force new service worker to take over immediately
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,jpg,jpeg}'],
         runtimeCaching: [
           // Aggressive image caching for profile photos

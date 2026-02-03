@@ -1,10 +1,11 @@
-import { useForm } from 'react-hook-form';
+import { useForm, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { geocodePlz } from '@/lib/geocoding';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useToastMessages } from '@/hooks/useToastMessages';
+import { toast } from 'sonner';
 import { BasicInfoSection } from './sections/BasicInfoSection';
 import { LocationSection } from './sections/LocationSection';
 import { AboutMeSection } from './sections/AboutMeSection';
@@ -113,20 +114,53 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
   };
 
   const handleFormSubmit = async (data: ProfileFormData) => {
-    // Geocode PLZ to GPS coordinates if postal_code is provided
-    if (data.postal_code && data.city && !data.lat && !data.lng) {
-      const coords = await geocodePlz(data.postal_code, data.city);
-      if (coords) {
-        data.lat = coords.lat;
-        data.lng = coords.lng;
-      }
-    }
+    // Show loading toast
+    toast.loading('Speichern...', { id: 'profile-save' });
     
-    await onSubmit(data);
+    try {
+      // Geocode PLZ to GPS coordinates if postal_code is provided
+      if (data.postal_code && data.city && !data.lat && !data.lng) {
+        const coords = await geocodePlz(data.postal_code, data.city);
+        if (coords) {
+          data.lat = coords.lat;
+          data.lng = coords.lng;
+        }
+      }
+      
+      await onSubmit(data);
+      toast.dismiss('profile-save');
+    } catch (error) {
+      toast.dismiss('profile-save');
+      throw error; // Re-throw so parent can handle
+    }
+  };
+
+  // Handler for validation errors - scroll to first error and show toast
+  const handleFormInvalid = (errors: FieldErrors<ProfileFormData>) => {
+    console.log('[ProfileForm] Validation failed:', errors);
+    
+    // Show toast with error summary
+    const errorCount = Object.keys(errors).length;
+    toast.error(`Bitte prüfe ${errorCount} markierte${errorCount > 1 ? 'n' : 's'} Feld${errorCount > 1 ? 'er' : ''}`, {
+      duration: 5000,
+    });
+    
+    // Get first error field name
+    const firstErrorField = Object.keys(errors)[0];
+    if (firstErrorField) {
+      // Try to scroll to and focus the first error field
+      setTimeout(() => {
+        const element = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus();
+        }
+      }, 100);
+    }
   };
 
   return (
-    <form id={formId} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(handleFormSubmit, handleFormInvalid)} className="space-y-6">
       <BasicInfoSection
         register={register}
         errors={errors}
