@@ -14,8 +14,7 @@ import {
   Download,
   Layers,
   Bell,
-  Flag,
-  FileEdit
+  Flag
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -29,16 +28,14 @@ const AdminDashboard = () => {
         activeRes,
         reportsRes,
         messagesRes,
-        verificationsRes,
-        changeRequestsRes
+        verificationsRes
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending').eq('payment_status', 'paid'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
         supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('status', 'unread'),
-        supabase.from('verification_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('profile_change_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+        supabase.from('verification_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending')
       ]);
       
       const pendingCount = pendingProfilesRes.count || 0;
@@ -47,14 +44,12 @@ const AdminDashboard = () => {
       const reportsCount = reportsRes.count || 0;
       const unreadMessages = messagesRes.count || 0;
       const pendingVerifications = verificationsRes.count || 0;
-      const changeRequestsCount = changeRequestsRes.count || 0;
 
-      // Consolidated 4 tiles
+      // Consolidated tiles
       return {
         actionsNeeded: {
-          total: paidPendingCount + changeRequestsCount + reportsCount,
+          total: paidPendingCount + reportsCount,
           paidPending: paidPendingCount,
-          changeRequests: changeRequestsCount,
           reports: reportsCount
         },
         toReview: {
@@ -87,7 +82,7 @@ const AdminDashboard = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {/* Aktionen nötig */}
-              <Link to="/admin/change-requests" className="group">
+              <Link to="/admin/profile?status=pending&payment_status=paid" className="group">
                 <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-destructive/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 rounded-lg bg-destructive/10">
@@ -98,7 +93,6 @@ const AdminDashboard = () => {
                   <div className="text-sm text-muted-foreground font-medium mb-2">Aktionen nötig</div>
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     <div>{stats?.actionsNeeded.paidPending || 0} bezahlt warten</div>
-                    <div>{stats?.actionsNeeded.changeRequests || 0} Änderungsanfragen</div>
                     <div>{stats?.actionsNeeded.reports || 0} Meldungen</div>
                   </div>
                 </div>
@@ -231,15 +225,6 @@ const AdminDashboard = () => {
                     <h3 className="font-semibold">Tier-Monitor</h3>
                   </div>
                   <p className="text-sm text-muted-foreground">Tier-Verteilung & Rotation überwachen</p>
-                </div>
-              </Link>
-              <Link to="/admin/change-requests">
-                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
-                  <div className="flex items-center gap-3 mb-2">
-                    <FileEdit className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
-                    <h3 className="font-semibold">Änderungsanfragen</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Profiländerungen prüfen & genehmigen</p>
                 </div>
               </Link>
             </div>

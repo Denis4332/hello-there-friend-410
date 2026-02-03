@@ -36,7 +36,7 @@ const ProfileCreate = lazy(() => import("./pages/ProfileCreate"));
 const UserDashboard = lazy(() => import("./pages/UserDashboard"));
 const UserFavorites = lazy(() => import("./pages/UserFavorites"));
 const ProfileEdit = lazy(() => import("./pages/ProfileEdit"));
-const ProfileChangeRequest = lazy(() => import("./pages/ProfileChangeRequest"));
+
 const ProfileUpgrade = lazy(() => import("./pages/ProfileUpgrade"));
 const ZahlungErfolg = lazy(() => import("./pages/ZahlungErfolg"));
 const ZahlungAbgebrochen = lazy(() => import("./pages/ZahlungAbgebrochen"));
@@ -62,7 +62,7 @@ const AdminPerformance = lazy(() => import("./pages/admin/AdminPerformance"));
 const AdminPendingPayments = lazy(() => import("./pages/admin/AdminPendingPayments"));
 const AdminExport = lazy(() => import("./pages/admin/AdminExport"));
 const AdminTierDashboard = lazy(() => import("./pages/admin/AdminTierDashboard"));
-const AdminChangeRequests = lazy(() => import("./pages/admin/AdminChangeRequests"));
+
 
 const PageViewTracker = () => {
   const location = useLocation();
@@ -143,14 +143,6 @@ const App = () => {
                   }
                 />
                 <Route
-                  path="/profil/aenderung-anfragen"
-                  element={
-                    <UserProtectedRoute>
-                      <ProfileChangeRequest />
-                    </UserProtectedRoute>
-                  }
-                />
-                <Route
                   path="/user/upgrade"
                   element={
                     <UserProtectedRoute>
@@ -176,7 +168,7 @@ const App = () => {
                 <Route path="/admin/performance" element={<ProtectedRoute><AdminPerformance /></ProtectedRoute>} />
                 <Route path="/admin/export" element={<ProtectedRoute><AdminExport /></ProtectedRoute>} />
                 <Route path="/admin/tier-dashboard" element={<ProtectedRoute><AdminTierDashboard /></ProtectedRoute>} />
-                <Route path="/admin/change-requests" element={<ProtectedRoute><AdminChangeRequests /></ProtectedRoute>} />
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
