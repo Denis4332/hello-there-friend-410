@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Lock, Heart, Plus, MessageCircle } from 'lucide-react';
+import { Loader2, ExternalLink, Edit, Trash2, Star, Crown, Shield, Lock, Plus, MessageCircle } from 'lucide-react';
 import { PaymentMethodModal } from '@/components/PaymentMethodModal';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 
@@ -78,7 +78,6 @@ const UserDashboard = () => {
   const { getSetting } = useSiteSettingsContext();
   const seoTitle = getSetting('seo_dashboard_title', 'Dashboard');
   const editProfileButton = getSetting('dashboard_edit_profile_button', 'Profil bearbeiten');
-  const favoritesButton = getSetting('dashboard_favorites_button', 'Favoriten');
   const statusPending = getSetting('dashboard_status_pending', 'In Prüfung');
   const statusActive = getSetting('dashboard_status_active', 'Aktiv');
   const statusRejected = getSetting('dashboard_status_rejected', 'Abgelehnt');
@@ -285,12 +284,6 @@ const UserDashboard = () => {
                   <Link to="/kontakt">
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Support
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/favoriten">
-                    <Heart className="h-4 w-4 mr-2" />
-                    {favoritesButton || 'Favoriten'}
                   </Link>
                 </Button>
                 {getStatusBadge(profile.status)}

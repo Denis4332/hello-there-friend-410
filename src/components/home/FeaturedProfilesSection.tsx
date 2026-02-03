@@ -17,8 +17,6 @@ import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { Pagination } from '@/components/Pagination';
 import { ProfileWithRelations } from '@/types/common';
-import { useFavorites } from '@/hooks/useFavorites';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface FeaturedProfilesSectionProps {
   profiles: ProfileWithRelations[];
@@ -40,10 +38,6 @@ export const FeaturedProfilesSection = ({
   totalPages,
   onPageChange,
 }: FeaturedProfilesSectionProps) => {
-  // PERFORMANCE: Single hook call for all 24 cards instead of 24 separate calls
-  const { favorites, toggleFavorite, isToggling } = useFavorites();
-  const { user } = useAuth();
-  
   // Profiles are PRE-SORTED by parent - no sorting here to avoid duplication
 
   // First 4 profiles get priority loading (above-the-fold on most screens)
@@ -71,10 +65,6 @@ export const FeaturedProfilesSection = ({
                   key={profile.id} 
                   profile={profile} 
                   priority={getPriority(index)}
-                  isFavorite={favorites.includes(profile.id)}
-                  onToggleFavorite={toggleFavorite}
-                  isTogglingFavorite={isToggling}
-                  currentUserId={user?.id}
                 />
               ))}
             </div>
