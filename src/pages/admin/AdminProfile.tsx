@@ -1309,6 +1309,14 @@ const AdminProfile = () => {
                                 {/* AGB-Akzeptanz Nachweis */}
                                 <AgbAcceptanceSection profileId={selectedProfile.id} />
                                 
+                                {/* Fix 6: Warnung bei Aktivierung ohne Kategorien */}
+                                {dialogStatus === 'active' && (!selectedProfile.profile_categories || selectedProfile.profile_categories.length === 0) && (
+                                  <div className="bg-destructive/10 border border-destructive/50 rounded p-3 text-sm">
+                                    ⚠️ <strong>Achtung:</strong> Dieses Profil hat keine Kategorien zugewiesen. 
+                                    Es kann nicht aktiviert werden, bis mindestens eine Kategorie gesetzt ist.
+                                  </div>
+                                )}
+                                
                                 <div>
                                   <label className="block text-sm font-medium mb-1">Status</label>
                                   <select
@@ -1319,11 +1327,16 @@ const AdminProfile = () => {
                                     <option value="pending">Zu prüfen</option>
                                     <option 
                                       value="active" 
-                                      disabled={!selectedProfile.photos || selectedProfile.photos.length === 0}
+                                      disabled={
+                                        (!selectedProfile.photos || selectedProfile.photos.length === 0) ||
+                                        (!selectedProfile.profile_categories || selectedProfile.profile_categories.length === 0)
+                                      }
                                     >
                                       {(!selectedProfile.photos || selectedProfile.photos.length === 0) 
                                         ? 'Freigeben (❌ Fotos fehlen!)' 
-                                        : 'Freigeben ✓'}
+                                        : (!selectedProfile.profile_categories || selectedProfile.profile_categories.length === 0)
+                                          ? 'Freigeben (❌ Kategorien fehlen!)'
+                                          : 'Freigeben ✓'}
                                     </option>
                                     <option value="rejected">Ablehnen</option>
                                   </select>
