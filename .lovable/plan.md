@@ -1,130 +1,177 @@
 
-# Fix: Änderungsanfragen-System - "undefined" Anzeige & Foto-Upload
+# Vereinfachung: Änderungsanfrage-System entfernen
 
-## Zusammenfassung der Probleme
+## Das Ziel
+Statt dem komplexen "Change Request" System soll es ganz einfach funktionieren:
 
-### Problem 1: "undefined: undefined" wird angezeigt
-**Ursache**: Die User-Seite (`ProfileChangeRequest.tsx`) verwendet beim Parsen der Anfragen das falsche Schema für das neue kombinierte Format.
+1. **Nicht bezahlt/freigeschaltet**: Direkt bearbeiten → Profil bleibt/geht auf `pending`
+2. **Bezahlt & aktiv**: Direkt bearbeiten mit Warnung → Profil geht auf `pending` zur erneuten Prüfung
 
-**Aktueller Code (Zeile 1585-1597)**:
-```typescript
-const changes = JSON.parse(request.description);
-if (Array.isArray(changes)) {
-  return changes.map((c) => `${c.field}: ${c.new_value}`).join(', ');
+## Vorteile der Vereinfachung
+- Keine separate Änderungsanfrage-Seite mehr
+- Kein Admin-Review für Änderungen separat
+- Nutzer kann einfach Schritt zurück / bearbeiten
+- Admin prüft wie bei neuen Profilen
+
+---
+
+## Was entfernt wird
+
+### 1. Frontend-Dateien löschen
+- `src/pages/ProfileChangeRequest.tsx` (1665 Zeilen) - Komplett löschen
+- `src/pages/admin/AdminChangeRequests.tsx` - Komplett löschen
+
+### 2. Routing entfernen (App.tsx)
+- Route `/profil/aenderung-anfragen` entfernen
+- Route `/admin/change-requests` entfernen
+- Lazy import `ProfileChangeRequest` entfernen
+
+### 3. Utils entfernen
+- `src/lib/changeRequestUtils.ts` - Komplett löschen
+
+### 4. Links/Buttons entfernen
+**UserDashboard.tsx (Zeile 375-382)**:
+```tsx
+// ENTFERNEN:
+<Button onClick={() => navigate('/profil/aenderung-anfragen')}>
+  Änderung anfragen
+</Button>
+```
+Stattdessen:
+```tsx
+<Button onClick={() => navigate('/profil/bearbeiten')}>
+  Profil bearbeiten
+</Button>
+```
+
+**AdminDashboard.tsx**:
+- Links zu `/admin/change-requests` entfernen
+
+---
+
+## Was geändert wird
+
+### ProfileEdit.tsx - Hauptänderung
+
+**Aktuell (Zeile 279-306)**: Blockiert Bearbeitung für aktive Profile
+```tsx
+if (profile.status === 'active') {
+  return (
+    <Card>
+      <CardTitle>Profil ist aktiv</CardTitle>
+      <Button onClick={() => navigate('/profil/aenderung-anfragen')}>
+        Änderung anfragen
+      </Button>
+    </Card>
+  );
 }
 ```
 
-**Problem**: Bei kombinierten Anfragen hat jedes Array-Element die Struktur `{type: "text", changes: [...]}` - nicht direkt `{field, new_value}`.
+**Neu**: Warnung anzeigen + Bearbeitung erlauben + Status auf `pending` setzen
 
-### Problem 2: Foto nach Genehmigung nicht auf Profil sichtbar
-**Ursache**: In `AdminChangeRequests.tsx` werden Media-URLs nur für Requests mit `request_type === 'photos'` geladen:
-```typescript
-requests
-  .filter(r => r.request_type === 'photos')  // ← Filtert 'combined' aus!
-  .forEach(r => loadMediaForRequest(r.id));
+```tsx
+// Warnung für aktive Profile (statt Block)
+const [showEditWarning, setShowEditWarning] = useState(false);
+const isActiveProfile = profile?.status === 'active';
+
+// Bei Submit: Status auf 'pending' setzen wenn Profil aktiv war
+const handleFormSubmit = async (data: ProfileFormData) => {
+  const updateData = {
+    ...data,
+    // Wenn aktiv → pending, sonst Status behalten
+    status: isActiveProfile ? 'pending' : profile.status,
+    updated_at: new Date().toISOString()
+  };
+  // ... rest of update logic
+};
 ```
 
-Da die Anfrage `request_type: 'combined'` hat, werden die Medien nie geladen, und `applyChangesToProfile()` erhält ein leeres `mediaUrls`-Objekt.
-
----
-
-## Lösung
-
-### Fix 1: ProfileChangeRequest.tsx - Korrekte Anzeige der Änderungen
-
-**Datei**: `src/pages/ProfileChangeRequest.tsx`  
-**Zeilen**: 1585-1597
-
-**Änderung**: Nutze `parseDescription` aus den Utils, um beide Formate korrekt zu handhaben.
-
-```typescript
-import { parseDescription } from '@/lib/changeRequestUtils';
-
-// In der Anzeige der existierenden Anfragen:
-{(() => {
-  const changeGroups = parseDescription(request.description);
-  if (changeGroups) {
-    // Neues kombiniertes Format
-    return changeGroups.flatMap(group => 
-      group.changes.map(c => `${c.field}: ${c.new_value}`)
-    ).join(', ');
-  }
-  // Legacy Format oder Plain Text
-  try {
-    const legacyChanges = JSON.parse(request.description);
-    if (Array.isArray(legacyChanges)) {
-      return legacyChanges.map((c) => `${c.field}: ${c.new_value}`).join(', ');
-    }
-  } catch {}
-  return request.description;
-})()}
+**Warnung-Dialog für aktive Profile**:
+```tsx
+<AlertDialog open={showEditWarning}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>⚠️ Achtung: Profil ist aktiv</AlertDialogTitle>
+      <AlertDialogDescription>
+        Wenn du dein Profil jetzt bearbeitest, muss es erneut geprüft werden. 
+        Das dauert bis zu 24 Stunden und dein Profil ist in dieser Zeit 
+        nicht sichtbar.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel onClick={() => navigate('/mein-profil')}>
+        Abbrechen
+      </AlertDialogCancel>
+      <AlertDialogAction onClick={() => setShowEditWarning(false)}>
+        Verstanden, trotzdem bearbeiten
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 ```
 
 ---
 
-### Fix 2: AdminChangeRequests.tsx - Medien auch für 'combined' Requests laden
+## Datenbank-Aufräumen (Optional)
 
-**Datei**: `src/pages/admin/AdminChangeRequests.tsx`  
-**Zeilen**: 157-163
+Die Tabellen können später entfernt werden:
+- `profile_change_requests`
+- `change_request_media`
+- Storage Bucket `change-request-media`
 
-**Änderung**: Lade Medien für ALLE Requests, die potentiell Fotos enthalten (nicht nur `request_type === 'photos'`).
-
-```typescript
-// Alt:
-requests
-  .filter(r => r.request_type === 'photos')
-  .forEach(r => loadMediaForRequest(r.id));
-
-// Neu:
-requests
-  .filter(r => 
-    r.request_type === 'photos' || 
-    r.request_type === 'combined' ||
-    (r.description && r.description.includes('"new_photos"'))
-  )
-  .forEach(r => loadMediaForRequest(r.id));
-```
+Empfehlung: Vorerst behalten falls alte Daten benötigt werden.
 
 ---
 
-### Fix 3: AdminChangeRequests.tsx - Media-Vorschau auch für 'combined' anzeigen
+## Zusammenfassung der Änderungen
 
-**Datei**: `src/pages/admin/AdminChangeRequests.tsx`  
-**Zeilen**: 407-442
-
-**Änderung**: Zeige den Media-Bereich nicht nur für `photos`-Requests, sondern auch wenn Medien existieren.
-
-```typescript
-// Alt:
-{request.request_type === 'photos' && (
-
-// Neu:
-{(request.request_type === 'photos' || 
-  request.request_type === 'combined' ||
-  mediaUrls[request.id]?.length > 0) && (
-```
-
----
-
-## Erwartetes Ergebnis
-
-1. **User-Seite**: Statt `undefined: undefined` wird z.B. angezeigt:
-   - `display_name: Testfbbefbbertagbtre, about_me: testbterbrtbrtgbnnbngeertathgbtrea, categories: Damen, MILF...`
-
-2. **Admin-Seite**: 
-   - Bilder werden auch bei `combined`-Anfragen geladen und angezeigt
-   - Bei Genehmigung werden die Bilder korrekt auf das Profil kopiert
+| Datei | Aktion |
+|-------|--------|
+| `src/pages/ProfileChangeRequest.tsx` | Löschen |
+| `src/pages/admin/AdminChangeRequests.tsx` | Löschen |
+| `src/lib/changeRequestUtils.ts` | Löschen |
+| `src/App.tsx` | Routes + Imports entfernen |
+| `src/pages/ProfileEdit.tsx` | Erlauben + Warnung + Status-Update |
+| `src/pages/UserDashboard.tsx` | Button ändern |
+| `src/pages/admin/AdminDashboard.tsx` | Link entfernen |
 
 ---
 
 ## Technische Details
 
-### Betroffene Dateien:
-1. `src/pages/ProfileChangeRequest.tsx` - Zeilen 1585-1597
-2. `src/pages/admin/AdminChangeRequests.tsx` - Zeilen 157-163 und 407-442
+### Logik-Flow nach Änderung:
 
-### Kein Datenbankschema-Änderung erforderlich
-Die Daten sind korrekt gespeichert - nur die Frontend-Logik muss angepasst werden.
+```text
+Nutzer klickt "Profil bearbeiten"
+         │
+         ▼
+    Ist Profil aktiv?
+         │
+    ┌────┴────┐
+    │ JA      │ NEIN
+    ▼         ▼
+Warnung     Direkt
+anzeigen    bearbeiten
+    │
+    ▼
+"Verstanden"
+    │
+    ▼
+Bearbeitung möglich
+    │
+    ▼
+Speichern → status = 'pending'
+    │
+    ▼
+Admin prüft wie normales Profil
+    │
+    ▼
+Genehmigt → status = 'active'
+```
 
-### Risiko: Niedrig
-Beide Fixes sind rückwärtskompatibel mit dem Legacy-Format.
+### Betroffene Status-Übergänge:
+- `active` → nach Bearbeitung → `pending`
+- `pending` → nach Bearbeitung → `pending` (bleibt)
+- `draft` → nach Bearbeitung → `draft` (bleibt, bis Foto hochgeladen)
+- `rejected` → nach Bearbeitung → `pending`
+
