@@ -279,20 +279,38 @@ const ProfileEdit = () => {
   };
 
   const handleSetPrimary = async (photoId: string) => {
-    if (!profile) return;
+    if (!profile || !photoId) return;
+
+    // Guard: Don't process if already primary
+    const currentPrimary = photos.find(p => p.is_primary);
+    if (currentPrimary?.id === photoId) {
+      console.log('[ProfileEdit] Photo is already primary, skipping');
+      return;
+    }
 
     try {
-      await supabase
+      // Step 1: Clear ALL existing primaries for this profile (explicit filter)
+      const { error: clearError } = await supabase
         .from('photos')
         .update({ is_primary: false })
-        .eq('profile_id', profile.id);
+        .eq('profile_id', profile.id)
+        .eq('is_primary', true); // Only update rows that are actually primary
 
-      const { error } = await supabase
+      if (clearError) {
+        console.error('[ProfileEdit] Failed to clear primary:', clearError);
+        throw clearError;
+      }
+
+      // Step 2: Set the new primary
+      const { error: setError } = await supabase
         .from('photos')
         .update({ is_primary: true })
         .eq('id', photoId);
 
-      if (error) throw error;
+      if (setError) {
+        console.error('[ProfileEdit] Failed to set primary:', setError);
+        throw setError;
+      }
 
       // Set to pending if was active
       await ensurePendingIfActive();
@@ -304,13 +322,17 @@ const ProfileEdit = () => {
           : 'Das Foto wurde als Hauptfoto festgelegt',
       });
 
-      loadData();
+      // Reload to sync state
+      await loadData();
     } catch (error) {
+      console.error('[ProfileEdit] handleSetPrimary error:', error);
       toast({
         title: 'Fehler',
         description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
+      // Reload anyway to restore consistent state
+      await loadData();
     }
   };
 
