@@ -446,125 +446,156 @@ const ProfileChangeRequest = () => {
     setFilePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Build structured description based on active tab
-  const buildDescription = () => {
-    const changes: { field: string; old_value: string; new_value: string }[] = [];
+  // Build ALL changes across all tabs
+  const buildAllChanges = () => {
+    const allChanges: { 
+      type: string; 
+      changes: { field: string; old_value: string; new_value: string }[] 
+    }[] = [];
 
-    switch (activeTab) {
-      case 'text':
-        if (newName !== profile?.display_name) {
-          changes.push({ field: 'display_name', old_value: profile?.display_name || '', new_value: newName });
-        }
-        if (newAboutMe !== (profile?.about_me || '')) {
-          changes.push({ field: 'about_me', old_value: profile?.about_me || '', new_value: newAboutMe });
-        }
-        if (textNote) {
-          changes.push({ field: 'note', old_value: '', new_value: textNote });
-        }
-        break;
-
-      case 'location':
-        if (selectedCanton !== profile?.canton) {
-          changes.push({ field: 'canton', old_value: profile?.canton || '', new_value: selectedCanton });
-        }
-        if (selectedCity !== profile?.city) {
-          changes.push({ field: 'city', old_value: profile?.city || '', new_value: selectedCity });
-        }
-        if (selectedPostalCode !== (profile?.postal_code || '')) {
-          changes.push({ field: 'postal_code', old_value: profile?.postal_code || '', new_value: selectedPostalCode });
-        }
-        if (selectedLat && selectedLng) {
-          changes.push({ field: 'coordinates', old_value: `${profile?.lat || ''},${profile?.lng || ''}`, new_value: `${selectedLat},${selectedLng}` });
-        }
-        break;
-
-      case 'categories':
-        const oldCatNames = currentCategories.map(id => categories.find(c => c.id === id)?.name || id).join(', ');
-        const newCatNames = selectedCategories.map(id => categories.find(c => c.id === id)?.name || id).join(', ');
-        if (oldCatNames !== newCatNames) {
-          changes.push({ field: 'categories', old_value: oldCatNames, new_value: newCatNames });
-        }
-        break;
-
-      case 'contact':
-        if (contactPhone !== (currentContacts?.phone || '')) {
-          changes.push({ field: 'phone', old_value: currentContacts?.phone || '', new_value: contactPhone });
-        }
-        if (contactWhatsapp !== (currentContacts?.whatsapp || '')) {
-          changes.push({ field: 'whatsapp', old_value: currentContacts?.whatsapp || '', new_value: contactWhatsapp });
-        }
-        if (contactEmail !== (currentContacts?.email || '')) {
-          changes.push({ field: 'email', old_value: currentContacts?.email || '', new_value: contactEmail });
-        }
-        if (contactWebsite !== (currentContacts?.website || '')) {
-          changes.push({ field: 'website', old_value: currentContacts?.website || '', new_value: contactWebsite });
-        }
-        if (contactTelegram !== (currentContacts?.telegram || '')) {
-          changes.push({ field: 'telegram', old_value: currentContacts?.telegram || '', new_value: contactTelegram });
-        }
-        if (contactInstagram !== (currentContacts?.instagram || '')) {
-          changes.push({ field: 'instagram', old_value: currentContacts?.instagram || '', new_value: contactInstagram });
-        }
-        break;
-
-      case 'photos':
-        // Löschungen
-        if (photosToDelete.length > 0) {
-          const deleteNames = photosToDelete.map(id => {
-            const idx = existingPhotos.findIndex(p => p.id === id);
-            return `Foto ${idx + 1}`;
-          }).join(', ');
-          changes.push({ 
-            field: 'delete_photos', 
-            old_value: `${photosToDelete.length} Fotos`, 
-            new_value: deleteNames 
-          });
-        }
-        
-        // Neue Reihenfolge
-        if (orderChanged) {
-          const oldOrder = existingPhotos.map((_, i) => i + 1).join(' → ');
-          const newOrderStr = newPhotoOrder.map(id => {
-            const idx = existingPhotos.findIndex(p => p.id === id);
-            return idx + 1;
-          }).join(' → ');
-          changes.push({ 
-            field: 'reorder_photos', 
-            old_value: oldOrder,
-            new_value: newOrderStr 
-          });
-        }
-        
-        // Neues Hauptfoto
-        if (newPrimaryPhotoId) {
-          const currentPrimary = existingPhotos.find(p => p.is_primary);
-          if (currentPrimary?.id !== newPrimaryPhotoId) {
-            const oldIdx = existingPhotos.findIndex(p => p.is_primary) + 1;
-            const newIdx = existingPhotos.findIndex(p => p.id === newPrimaryPhotoId) + 1;
-            changes.push({ 
-              field: 'primary_photo', 
-              old_value: `Foto ${oldIdx}`,
-              new_value: `Foto ${newIdx}` 
-            });
-          }
-        }
-        
-        // Neue Uploads
-        if (selectedFiles.length > 0) {
-          changes.push({ field: 'new_photos', old_value: '', new_value: `${selectedFiles.length} neue Bilder` });
-        }
-        
-        // Anmerkung
-        if (photoNote.trim()) {
-          changes.push({ field: 'photo_note', old_value: '', new_value: photoNote });
-        }
-        break;
+    // Text changes
+    const textChanges: { field: string; old_value: string; new_value: string }[] = [];
+    if (newName !== profile?.display_name) {
+      textChanges.push({ field: 'display_name', old_value: profile?.display_name || '', new_value: newName });
+    }
+    if (newAboutMe !== (profile?.about_me || '')) {
+      textChanges.push({ field: 'about_me', old_value: profile?.about_me || '', new_value: newAboutMe });
+    }
+    if (textNote.trim()) {
+      textChanges.push({ field: 'note', old_value: '', new_value: textNote });
+    }
+    if (textChanges.length > 0) {
+      allChanges.push({ type: 'text', changes: textChanges });
     }
 
-    return JSON.stringify(changes, null, 2);
+    // Location changes
+    const locationChanges: { field: string; old_value: string; new_value: string }[] = [];
+    if (selectedCanton !== profile?.canton) {
+      locationChanges.push({ field: 'canton', old_value: profile?.canton || '', new_value: selectedCanton });
+    }
+    if (selectedCity !== profile?.city) {
+      locationChanges.push({ field: 'city', old_value: profile?.city || '', new_value: selectedCity });
+    }
+    if (selectedPostalCode !== (profile?.postal_code || '')) {
+      locationChanges.push({ field: 'postal_code', old_value: profile?.postal_code || '', new_value: selectedPostalCode });
+    }
+    if (selectedLat && selectedLng && (selectedLat !== profile?.lat || selectedLng !== profile?.lng)) {
+      locationChanges.push({ field: 'coordinates', old_value: `${profile?.lat || ''},${profile?.lng || ''}`, new_value: `${selectedLat},${selectedLng}` });
+    }
+    if (locationChanges.length > 0) {
+      allChanges.push({ type: 'location', changes: locationChanges });
+    }
+
+    // Category changes
+    const categoriesChanged = JSON.stringify([...selectedCategories].sort()) !== JSON.stringify([...currentCategories].sort());
+    if (categoriesChanged) {
+      const oldCatNames = currentCategories.map(id => categories.find(c => c.id === id)?.name || id).join(', ');
+      const newCatNames = selectedCategories.map(id => categories.find(c => c.id === id)?.name || id).join(', ');
+      allChanges.push({ 
+        type: 'categories', 
+        changes: [{ field: 'categories', old_value: oldCatNames, new_value: newCatNames }] 
+      });
+    }
+
+    // Contact changes
+    const contactChanges: { field: string; old_value: string; new_value: string }[] = [];
+    if (contactPhone !== (currentContacts?.phone || '')) {
+      contactChanges.push({ field: 'phone', old_value: currentContacts?.phone || '', new_value: contactPhone });
+    }
+    if (contactWhatsapp !== (currentContacts?.whatsapp || '')) {
+      contactChanges.push({ field: 'whatsapp', old_value: currentContacts?.whatsapp || '', new_value: contactWhatsapp });
+    }
+    if (contactEmail !== (currentContacts?.email || '')) {
+      contactChanges.push({ field: 'email', old_value: currentContacts?.email || '', new_value: contactEmail });
+    }
+    if (contactWebsite !== (currentContacts?.website || '')) {
+      contactChanges.push({ field: 'website', old_value: currentContacts?.website || '', new_value: contactWebsite });
+    }
+    if (contactTelegram !== (currentContacts?.telegram || '')) {
+      contactChanges.push({ field: 'telegram', old_value: currentContacts?.telegram || '', new_value: contactTelegram });
+    }
+    if (contactInstagram !== (currentContacts?.instagram || '')) {
+      contactChanges.push({ field: 'instagram', old_value: currentContacts?.instagram || '', new_value: contactInstagram });
+    }
+    if (contactChanges.length > 0) {
+      allChanges.push({ type: 'contact', changes: contactChanges });
+    }
+
+    // Photo changes
+    const photoChanges: { field: string; old_value: string; new_value: string }[] = [];
+    if (photosToDelete.length > 0) {
+      const deleteNames = photosToDelete.map(id => {
+        const idx = existingPhotos.findIndex(p => p.id === id);
+        return `Foto ${idx + 1}`;
+      }).join(', ');
+      photoChanges.push({ field: 'delete_photos', old_value: `${photosToDelete.length} Fotos`, new_value: deleteNames });
+    }
+    if (orderChanged) {
+      const oldOrder = existingPhotos.map((_, i) => i + 1).join(' → ');
+      const newOrderStr = newPhotoOrder.map(id => {
+        const idx = existingPhotos.findIndex(p => p.id === id);
+        return idx + 1;
+      }).join(' → ');
+      photoChanges.push({ field: 'reorder_photos', old_value: oldOrder, new_value: newOrderStr });
+    }
+    if (newPrimaryPhotoId) {
+      const currentPrimary = existingPhotos.find(p => p.is_primary);
+      if (currentPrimary?.id !== newPrimaryPhotoId) {
+        const oldIdx = existingPhotos.findIndex(p => p.is_primary) + 1;
+        const newIdx = existingPhotos.findIndex(p => p.id === newPrimaryPhotoId) + 1;
+        photoChanges.push({ field: 'primary_photo', old_value: `Foto ${oldIdx}`, new_value: `Foto ${newIdx}` });
+      }
+    }
+    if (selectedFiles.length > 0) {
+      photoChanges.push({ field: 'new_photos', old_value: '', new_value: `${selectedFiles.length} neue Bilder` });
+    }
+    if (photoNote.trim()) {
+      photoChanges.push({ field: 'photo_note', old_value: '', new_value: photoNote });
+    }
+    if (photoChanges.length > 0) {
+      allChanges.push({ type: 'photos', changes: photoChanges });
+    }
+
+    return allChanges;
   };
 
-  // Check if there are actual changes
+  // Check if there are ANY changes across all tabs
+  const hasAnyChanges = () => {
+    // Text
+    const textChanged = newName !== profile?.display_name || 
+                        newAboutMe !== (profile?.about_me || '') || 
+                        textNote.trim() !== '';
+    
+    // Location
+    const locationChanged = selectedCanton !== profile?.canton || 
+                            selectedCity !== profile?.city ||
+                            selectedPostalCode !== (profile?.postal_code || '');
+    
+    // Categories
+    const categoriesChanged = JSON.stringify([...selectedCategories].sort()) !== 
+                              JSON.stringify([...currentCategories].sort());
+    
+    // Contact
+    const contactChanged = contactPhone !== (currentContacts?.phone || '') ||
+                           contactWhatsapp !== (currentContacts?.whatsapp || '') ||
+                           contactEmail !== (currentContacts?.email || '') ||
+                           contactWebsite !== (currentContacts?.website || '') ||
+                           contactTelegram !== (currentContacts?.telegram || '') ||
+                           contactInstagram !== (currentContacts?.instagram || '');
+    
+    // Photos
+    const currentPrimary = existingPhotos.find(p => p.is_primary);
+    const primaryChanged = newPrimaryPhotoId !== null && newPrimaryPhotoId !== currentPrimary?.id;
+    const photosChanged = selectedFiles.length > 0 || 
+                          photoNote.trim() !== '' || 
+                          photosToDelete.length > 0 || 
+                          orderChanged ||
+                          primaryChanged;
+
+    return textChanged || locationChanged || categoriesChanged || contactChanged || photosChanged;
+  };
+
+  // Legacy hasChanges for current tab (still useful for tab-specific UI feedback)
   const hasChanges = () => {
     switch (activeTab) {
       case 'text':
@@ -602,7 +633,8 @@ const ProfileChangeRequest = () => {
     
     if (!profile || !user) return;
 
-    if (!hasChanges()) {
+    // Use hasAnyChanges to check all tabs, not just active
+    if (!hasAnyChanges()) {
       toast({
         title: 'Keine Änderungen',
         description: 'Du hast noch keine Änderungen vorgenommen.',
@@ -615,8 +647,11 @@ const ProfileChangeRequest = () => {
     const uploadedPaths: string[] = [];
 
     try {
-      // Upload images if present (for photo requests)
-      if (selectedFiles.length > 0 && activeTab === 'photos') {
+      // Build all changes across all tabs
+      const allChanges = buildAllChanges();
+      
+      // Upload images if present (regardless of active tab, check if photos were selected)
+      if (selectedFiles.length > 0) {
         setIsUploading(true);
         setUploadProgress({ current: 0, total: selectedFiles.length });
 
@@ -637,15 +672,17 @@ const ProfileChangeRequest = () => {
         setIsUploading(false);
       }
 
-      // Create the change request
-      const description = buildDescription();
+      // Determine request_type: 'combined' if multiple types, otherwise single type
+      const requestType = allChanges.length > 1 ? 'combined' : allChanges[0]?.type || 'other';
+      
+      // Create the change request with all changes
       const { data: request, error: requestError } = await supabase
         .from('profile_change_requests')
         .insert({
           profile_id: profile.id,
           user_id: user.id,
-          request_type: activeTab,
-          description: description,
+          request_type: requestType,
+          description: JSON.stringify(allChanges),
           status: 'pending',
         })
         .select()
@@ -669,22 +706,23 @@ const ProfileChangeRequest = () => {
 
       toast({
         title: 'Anfrage gesendet',
-        description: 'Deine Änderungsanfrage wurde eingereicht und wird in Kürze bearbeitet.',
+        description: `Deine Änderungsanfrage (${allChanges.length} Bereich${allChanges.length > 1 ? 'e' : ''}) wurde eingereicht.`,
       });
 
-      // Reset form for photos tab
-      if (activeTab === 'photos') {
-        setSelectedFiles([]);
+      // Reset all form fields
+      setTextNote('');
+      if (selectedFiles.length > 0) {
         filePreviews.forEach(url => URL.revokeObjectURL(url));
+        setSelectedFiles([]);
         setFilePreviews([]);
-        setPhotoNote('');
-        setPhotosToDelete([]);
-        setOrderChanged(false);
-        setNewPrimaryPhotoId(null);
-        // Reset order to original
-        setNewPhotoOrder(existingPhotos.map(p => p.id));
       }
+      setPhotoNote('');
+      setPhotosToDelete([]);
+      setOrderChanged(false);
+      setNewPrimaryPhotoId(null);
+      setNewPhotoOrder(existingPhotos.map(p => p.id));
       
+      // Reload data to show updated requests
       loadData();
 
     } catch (error) {
@@ -741,6 +779,7 @@ const ProfileChangeRequest = () => {
       contact: 'Kontakt',
       photos: 'Fotos',
       other: 'Sonstiges',
+      combined: 'Mehrere Bereiche',
     };
     return labels[type] || type;
   };
