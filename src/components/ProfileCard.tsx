@@ -1,10 +1,9 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrefetch } from '@/hooks/usePrefetch';
-import { Crown, CheckCircle2, Tag, MapPin, Heart, Play } from 'lucide-react';
+import { Crown, CheckCircle2, Tag, MapPin, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { useFavorites } from '@/hooks/useFavorites';
 import type { Profile, Photo } from '@/types/dating';
 
 interface ProfileCardProps {
@@ -25,23 +24,13 @@ interface ProfileCardProps {
     distance_km?: number;
   };
   priority?: boolean; // For eager loading above-the-fold images
-  // Performance: Favorites props passed from parent to avoid 24 hook instances
-  isFavorite?: boolean;
-  onToggleFavorite?: (profileId: string) => void;
-  isTogglingFavorite?: boolean;
-  currentUserId?: string; // To hide favorite button on own profile
 }
 
 const ProfileCardComponent = ({ 
   profile, 
   priority = false,
-  isFavorite: isFavoriteProp,
-  onToggleFavorite,
-  isTogglingFavorite,
-  currentUserId,
 }: ProfileCardProps) => {
   const distance = profile.distance_km;
-  const isOwnProfile = currentUserId && (profile as any).user_id === currentUserId;
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
   
   // OPTIMIZED: Smaller size + WebP for faster loading (200x267 instead of 300x400)
@@ -76,18 +65,6 @@ const ProfileCardComponent = ({
     delay: 100,
     onHover: true,
   });
-
-  // Use props if provided (optimized path from parent), otherwise fallback to hook
-  const favoriteHook = !onToggleFavorite ? useFavorites() : null;
-  const isProfileFavorite = isFavoriteProp ?? favoriteHook?.isFavorite(profile.id) ?? false;
-  const toggleFavoriteHandler = onToggleFavorite ?? favoriteHook?.toggleFavorite ?? (() => {});
-  const isToggling = isTogglingFavorite ?? favoriteHook?.isToggling ?? false;
-  
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleFavoriteHandler(profile.id);
-  };
 
   return (
     <Link 
@@ -154,23 +131,6 @@ const ProfileCardComponent = ({
             <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
             Online
           </div>
-        )}
-
-        {/* Favorite Heart - Bottom Right (hidden on own profile) */}
-        {!isOwnProfile && (
-          <button
-            onClick={handleFavoriteClick}
-            disabled={isToggling}
-            className="absolute bottom-4 right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95"
-            aria-label={isProfileFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
-          >
-            <Heart 
-              className={cn(
-                "h-5 w-5 transition-colors",
-                isProfileFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
-              )}
-            />
-          </button>
         )}
 
         {/* Badges - Top Left */}
