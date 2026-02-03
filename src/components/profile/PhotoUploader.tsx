@@ -220,7 +220,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       // Set upload progress
       setUploadProgress({ current: 0, total: filesToUpload.length });
 
-      const results: { previewUrl: string; uploadedUrl: string }[] = [];
+      const results: { previewUrl: string; uploadedUrl: string; insertedId?: string }[] = [];
 
       // PARALLELER Upload in 3er-Batches für bessere Performance
       const BATCH_SIZE = 3;
@@ -264,17 +264,17 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         const isPendingPrimary = pendingPrimaryIndex !== null && previewIndex === pendingPrimaryIndex;
         const shouldBePrimary = preview.mediaType === 'image' && !hasDbPrimary && (isPendingPrimary || isFirstNewImage);
 
-        // Insert photo record into database
-        const { error: dbError } = await supabase.from('photos').insert({
+        // Insert photo record into database and get the new ID back
+        const { data: insertedPhoto, error: dbError } = await supabase.from('photos').insert({
           profile_id: actualProfileId,
           storage_path: data.path,
           is_primary: shouldBePrimary,
           media_type: data.media_type || preview.mediaType,
-        });
+        }).select('id, is_primary, media_type, storage_path').single();
 
         if (dbError) throw dbError;
 
-        return { previewUrl: preview.url, uploadedUrl: data.url };
+        return { previewUrl: preview.url, uploadedUrl: data.url, insertedId: insertedPhoto?.id };
       };
 
       // Process files in batches of BATCH_SIZE for parallel upload
@@ -295,11 +295,17 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         });
       }
       
-      // Update previews to mark as uploaded
+      // Update previews to mark as uploaded WITH the real DB ID
       setPreviews(prev => prev.map(p => {
         const result = results.find(r => r.previewUrl === p.url);
         if (result) {
-          return { ...p, url: result.uploadedUrl, uploaded: true, file: undefined };
+          return { 
+            ...p, 
+            id: result.insertedId, // Store the real DB ID so primary check works
+            url: result.uploadedUrl, 
+            uploaded: true, 
+            file: undefined 
+          };
         }
         return p;
       }));
@@ -357,6 +363,10 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
   const isPrimaryPhoto = (preview: MediaPreview, index: number): boolean => {
     if (preview.uploaded) {
       // For uploaded photos: check against DB primary
+      // CRITICAL: Guard against undefined === undefined (causes double-star bug)
+      if (!preview.id || !currentPrimaryId) {
+        return false;
+      }
       return preview.id === currentPrimaryId;
     } else {
       // For new photos: check against pending primary
