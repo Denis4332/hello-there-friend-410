@@ -63,6 +63,7 @@ const AdminPerformance = lazy(() => import("./pages/admin/AdminPerformance"));
 const AdminPendingPayments = lazy(() => import("./pages/admin/AdminPendingPayments"));
 const AdminExport = lazy(() => import("./pages/admin/AdminExport"));
 const AdminTierDashboard = lazy(() => import("./pages/admin/AdminTierDashboard"));
+const AdminChangeRequests = lazy(() => import("./pages/admin/AdminChangeRequests"));
 
 const PageViewTracker = () => {
   const location = useLocation();
@@ -177,6 +178,7 @@ const App = () => {
                 <Route path="/admin/performance" element={<ProtectedRoute><AdminPerformance /></ProtectedRoute>} />
                 <Route path="/admin/export" element={<ProtectedRoute><AdminExport /></ProtectedRoute>} />
                 <Route path="/admin/tier-dashboard" element={<ProtectedRoute><AdminTierDashboard /></ProtectedRoute>} />
+                <Route path="/admin/change-requests" element={<ProtectedRoute><AdminChangeRequests /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

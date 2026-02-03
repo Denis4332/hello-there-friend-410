@@ -14,7 +14,8 @@ import {
   Download,
   Layers,
   Bell,
-  Flag
+  Flag,
+  FileEdit
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -86,7 +87,7 @@ const AdminDashboard = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {/* Aktionen nötig */}
-              <Link to="/admin/profile?status=pending&payment=paid" className="group">
+              <Link to="/admin/change-requests" className="group">
                 <div className="bg-card border rounded-xl p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-destructive/50">
                   <div className="flex items-center justify-between mb-4">
                     <div className="p-3 rounded-lg bg-destructive/10">
@@ -230,6 +231,15 @@ const AdminDashboard = () => {
                     <h3 className="font-semibold">Tier-Monitor</h3>
                   </div>
                   <p className="text-sm text-muted-foreground">Tier-Verteilung & Rotation überwachen</p>
+                </div>
+              </Link>
+              <Link to="/admin/change-requests">
+                <div className="border-2 rounded-lg p-5 hover:border-primary transition-all hover:shadow-md group">
+                  <div className="flex items-center gap-3 mb-2">
+                    <FileEdit className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+                    <h3 className="font-semibold">Änderungsanfragen</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Profiländerungen prüfen & genehmigen</p>
                 </div>
               </Link>
             </div>
