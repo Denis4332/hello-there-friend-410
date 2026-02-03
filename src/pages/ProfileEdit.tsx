@@ -139,13 +139,33 @@ const ProfileEdit = () => {
 
   const isActiveProfile = profile?.status === 'active';
 
+  // Helper: Set status to pending if profile was active (keeps payment_status!)
+  const ensurePendingIfActive = async () => {
+    if (!profile || profile.status !== 'active') return;
+    
+    console.log('[ProfileEdit] Setting active profile to pending...');
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: 'pending' })
+      .eq('id', profile.id);
+    
+    if (error) {
+      console.error('[ProfileEdit] Failed to set pending:', error);
+      throw error;
+    }
+    console.log('[ProfileEdit] Profile status set to pending');
+  };
+
   const handleFormSubmit = async (data: ProfileFormData) => {
     if (!user || !profile) return;
 
+    console.log('[ProfileEdit] handleFormSubmit started', { profileId: profile.id, isActive: isActiveProfile });
     setIsSubmitting(true);
+    
     try {
       // If profile was active, set to pending for re-review
       const newStatus = isActiveProfile ? 'pending' : profile.status;
+      console.log('[ProfileEdit] Will update status to:', newStatus);
       
       // SECURITY: Update profile data (no contact info)
       const { error: profileError } = await supabase
@@ -163,7 +183,10 @@ const ProfileEdit = () => {
         })
         .eq('id', profile.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('[ProfileEdit] Profile update error:', profileError);
+        throw profileError;
+      }
 
       // SECURITY: Update contact data in separate protected table
       const { error: contactError } = await supabase
@@ -178,7 +201,10 @@ const ProfileEdit = () => {
           website: data.website,
         });
 
-      if (contactError) throw contactError;
+      if (contactError) {
+        console.error('[ProfileEdit] Contact update error:', contactError);
+        throw contactError;
+      }
 
       await supabase
         .from('profile_categories')
@@ -194,8 +220,12 @@ const ProfileEdit = () => {
         .from('profile_categories')
         .insert(categoryInserts);
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        console.error('[ProfileEdit] Categories update error:', categoriesError);
+        throw categoriesError;
+      }
 
+      console.log('[ProfileEdit] Update successful!');
       toast({
         title: 'Profil aktualisiert',
         description: isActiveProfile 
@@ -205,8 +235,9 @@ const ProfileEdit = () => {
 
       navigate('/mein-profil');
     } catch (error) {
+      console.error('[ProfileEdit] handleFormSubmit error:', error);
       toast({
-        title: 'Fehler',
+        title: 'Fehler beim Speichern',
         description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
         variant: 'destructive',
       });
@@ -227,9 +258,14 @@ const ProfileEdit = () => {
 
       if (error) throw error;
 
+      // Set to pending if was active
+      await ensurePendingIfActive();
+
       toast({
         title: 'Foto gelöscht',
-        description: 'Das Foto wurde entfernt',
+        description: isActiveProfile 
+          ? 'Das Foto wurde entfernt. Dein Profil wird erneut geprüft.'
+          : 'Das Foto wurde entfernt',
       });
 
       loadData();
@@ -258,9 +294,14 @@ const ProfileEdit = () => {
 
       if (error) throw error;
 
+      // Set to pending if was active
+      await ensurePendingIfActive();
+
       toast({
         title: 'Hauptfoto aktualisiert',
-        description: 'Das Foto wurde als Hauptfoto festgelegt',
+        description: isActiveProfile 
+          ? 'Das Foto wurde als Hauptfoto festgelegt. Dein Profil wird erneut geprüft.'
+          : 'Das Foto wurde als Hauptfoto festgelegt',
       });
 
       loadData();
@@ -273,9 +314,21 @@ const ProfileEdit = () => {
     }
   };
 
-  const getPublicUrl = (storagePath: string) => {
+  // Handler for upload complete - also sets to pending if active
+  const handleUploadComplete = async () => {
+    try {
+      await ensurePendingIfActive();
+    } catch (error) {
+      console.error('[ProfileEdit] Failed to set pending after upload:', error);
+    }
+    loadData();
+    setUploadSuccess(true);
+  };
+
+  const getPublicUrl = (storagePath: string, cacheKey?: string) => {
     const { data } = supabase.storage.from('profile-photos').getPublicUrl(storagePath);
-    return data.publicUrl;
+    // Add cache buster to prevent stale images
+    return `${data.publicUrl}?v=${cacheKey || Date.now()}`;
   };
 
   if (loading) {
@@ -415,12 +468,10 @@ const ProfileEdit = () => {
                       profileId={profile.id}
                       userId={user?.id}
                       listingType={listingType}
-                      onUploadComplete={() => {
-                        loadData();
-                        setUploadSuccess(true);
-                      }}
+                      onUploadComplete={handleUploadComplete}
                       onSetPrimary={handleSetPrimary}
                       currentPrimaryId={photos.find(p => p.is_primary)?.id}
+                      key={`${profile.id}-${photos.find(p => p.is_primary)?.id || 'no-primary'}-${photos.length}`}
                     />
                     
                     {uploadSuccess && (
@@ -445,6 +496,7 @@ const ProfileEdit = () => {
                     <div className="grid grid-cols-2 gap-4">
                       {photos.map((photo) => {
                         const isVideo = photo.media_type === 'video';
+                        const cacheKey = photo.id + (photo.is_primary ? '-primary' : '');
                         
                         return (
                           <div key={photo.id} className="relative group">
@@ -452,7 +504,7 @@ const ProfileEdit = () => {
                               {isVideo ? (
                                 <div className="relative w-full h-full">
                                   <video
-                                    src={getPublicUrl(photo.storage_path)}
+                                    src={getPublicUrl(photo.storage_path, cacheKey)}
                                     className="w-full h-full object-cover"
                                     preload="metadata"
                                   />
@@ -462,7 +514,7 @@ const ProfileEdit = () => {
                                 </div>
                               ) : (
                                 <img
-                                  src={getPublicUrl(photo.storage_path)}
+                                  src={getPublicUrl(photo.storage_path, cacheKey)}
                                   alt="Profil Foto"
                                   className="w-full h-full object-cover"
                                   loading="lazy"
