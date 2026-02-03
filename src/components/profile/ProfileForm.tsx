@@ -66,9 +66,11 @@ interface ProfileFormProps {
   isSubmitting?: boolean;
   defaultValues?: Partial<ProfileFormData>;
   submitButtonText?: string;
+  formId?: string;
+  showSubmitButton?: boolean;
 }
 
-export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen' }: ProfileFormProps) => {
+export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defaultValues, submitButtonText = 'Profil erstellen', formId, showSubmitButton = true }: ProfileFormProps) => {
   const { data: languages = [] } = useDropdownOptions('languages');
   const { data: genders = [] } = useDropdownOptions('genders');
   const { showCustomError } = useToastMessages();
@@ -123,7 +125,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <BasicInfoSection
         register={register}
         errors={errors}
@@ -158,9 +160,11 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
 
       <ContactInfoSection register={register} errors={errors} />
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? 'Wird gespeichert...' : submitButtonText}
-      </Button>
+      {showSubmitButton && (
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Wird gespeichert...' : submitButtonText}
+        </Button>
+      )}
     </form>
   );
 };

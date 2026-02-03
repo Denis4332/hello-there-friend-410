@@ -388,6 +388,8 @@ const ProfileEdit = () => {
                 </CardHeader>
                 <CardContent>
                   <ProfileForm
+                    formId="profile-edit-form"
+                    showSubmitButton={false}
                     onSubmit={handleFormSubmit}
                     cantons={cantons}
                     categories={categories}
@@ -565,7 +567,6 @@ const ProfileEdit = () => {
               <div className="flex flex-col gap-4">
                 <div className="text-sm text-muted-foreground">
                   <p className="font-medium text-foreground">Hinweis:</p>
-                  <p>Profildaten werden gespeichert wenn du oben auf "Profil aktualisieren" klickst.</p>
                   <p>Foto-Uploads werden sofort gespeichert.</p>
                   {isActiveProfile && (
                     <p className="text-orange-600 mt-1">
@@ -574,6 +575,14 @@ const ProfileEdit = () => {
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    type="submit"
+                    form="profile-edit-form"
+                    disabled={isSubmitting}
+                    className="sm:flex-1"
+                  >
+                    {isSubmitting ? 'Wird gespeichert...' : 'Profil aktualisieren'}
+                  </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => navigate('/mein-profil')}
