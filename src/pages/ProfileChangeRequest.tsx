@@ -7,6 +7,7 @@ import { useCantons } from '@/hooks/useCantons';
 import { useCitiesByCantonSlim, CityWithCoordinates } from '@/hooks/useCitiesByCantonSlim';
 import { useCategories } from '@/hooks/useCategories';
 import { detectLocation } from '@/lib/geolocation';
+import { parseDescription } from '@/lib/changeRequestUtils';
 import { Header } from '@/components/layout/Header';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
@@ -1583,10 +1584,18 @@ const ProfileChangeRequest = () => {
                         </div>
                         <p className="text-sm text-muted-foreground line-clamp-2">
                           {(() => {
+                            // Try new combined format first
+                            const changeGroups = parseDescription(request.description);
+                            if (changeGroups) {
+                              return changeGroups.flatMap(group => 
+                                group.changes.map(c => `${c.field}: ${c.new_value}`)
+                              ).join(', ');
+                            }
+                            // Try legacy format
                             try {
-                              const changes = JSON.parse(request.description);
-                              if (Array.isArray(changes) && changes.length > 0) {
-                                return changes.map((c: { field: string; new_value: string }) => 
+                              const legacyChanges = JSON.parse(request.description);
+                              if (Array.isArray(legacyChanges) && legacyChanges.length > 0) {
+                                return legacyChanges.map((c: { field: string; new_value: string }) => 
                                   `${c.field}: ${c.new_value}`
                                 ).join(', ');
                               }
