@@ -1,72 +1,130 @@
 
+# Fix: Änderungsanfragen-System - "undefined" Anzeige & Foto-Upload
 
-# Fix: Flash of Unstyled Content (FOUC) verhindern
+## Zusammenfassung der Probleme
 
-## Problem
-Die Seite kann kurzzeitig "komisch" aussehen, weil:
-1. Die App rendert BEVOR die Design-Settings aus der Datenbank geladen sind
-2. Während des Ladens sind CSS-Variablen entweder leer oder zeigen Fallback-Werte
-3. Nach dem Laden "springt" die UI zu den korrekten Farben
+### Problem 1: "undefined: undefined" wird angezeigt
+**Ursache**: Die User-Seite (`ProfileChangeRequest.tsx`) verwendet beim Parsen der Anfragen das falsche Schema für das neue kombinierte Format.
+
+**Aktueller Code (Zeile 1585-1597)**:
+```typescript
+const changes = JSON.parse(request.description);
+if (Array.isArray(changes)) {
+  return changes.map((c) => `${c.field}: ${c.new_value}`).join(', ');
+}
+```
+
+**Problem**: Bei kombinierten Anfragen hat jedes Array-Element die Struktur `{type: "text", changes: [...]}` - nicht direkt `{field, new_value}`.
+
+### Problem 2: Foto nach Genehmigung nicht auf Profil sichtbar
+**Ursache**: In `AdminChangeRequests.tsx` werden Media-URLs nur für Requests mit `request_type === 'photos'` geladen:
+```typescript
+requests
+  .filter(r => r.request_type === 'photos')  // ← Filtert 'combined' aus!
+  .forEach(r => loadMediaForRequest(r.id));
+```
+
+Da die Anfrage `request_type: 'combined'` hat, werden die Medien nie geladen, und `applyChangesToProfile()` erhält ein leeres `mediaUrls`-Objekt.
+
+---
 
 ## Lösung
 
-### Schritt 1: Loading-State in SiteSettingsProvider
-Zeige einen minimalen Loading-Screen, bis die kritischen Design-Settings geladen sind.
+### Fix 1: ProfileChangeRequest.tsx - Korrekte Anzeige der Änderungen
 
-**Datei: `src/contexts/SiteSettingsContext.tsx`**
-```
-- Prüfe isLoading im Provider
-- Zeige kurzen Spinner/Blank-Screen bis Settings da sind
-- Verhindert das Flackern komplett
+**Datei**: `src/pages/ProfileChangeRequest.tsx`  
+**Zeilen**: 1585-1597
+
+**Änderung**: Nutze `parseDescription` aus den Utils, um beide Formate korrekt zu handhaben.
+
+```typescript
+import { parseDescription } from '@/lib/changeRequestUtils';
+
+// In der Anzeige der existierenden Anfragen:
+{(() => {
+  const changeGroups = parseDescription(request.description);
+  if (changeGroups) {
+    // Neues kombiniertes Format
+    return changeGroups.flatMap(group => 
+      group.changes.map(c => `${c.field}: ${c.new_value}`)
+    ).join(', ');
+  }
+  // Legacy Format oder Plain Text
+  try {
+    const legacyChanges = JSON.parse(request.description);
+    if (Array.isArray(legacyChanges)) {
+      return legacyChanges.map((c) => `${c.field}: ${c.new_value}`).join(', ');
+    }
+  } catch {}
+  return request.description;
+})()}
 ```
 
-### Schritt 2: Fallback-Werte in useDesignSettings verstärken
-Falls Settings noch nicht geladen sind, verwende die CSS-Defaults aus index.css.
+---
 
-**Datei: `src/hooks/useDesignSettings.ts`**
-```
-- Keine CSS-Variablen setzen wenn getSetting('') leer zurückgibt
-- Lasse die CSS-Defaults aus index.css aktiv
-- Erst überschreiben wenn echte Werte vorhanden
+### Fix 2: AdminChangeRequests.tsx - Medien auch für 'combined' Requests laden
+
+**Datei**: `src/pages/admin/AdminChangeRequests.tsx`  
+**Zeilen**: 157-163
+
+**Änderung**: Lade Medien für ALLE Requests, die potentiell Fotos enthalten (nicht nur `request_type === 'photos'`).
+
+```typescript
+// Alt:
+requests
+  .filter(r => r.request_type === 'photos')
+  .forEach(r => loadMediaForRequest(r.id));
+
+// Neu:
+requests
+  .filter(r => 
+    r.request_type === 'photos' || 
+    r.request_type === 'combined' ||
+    (r.description && r.description.includes('"new_photos"'))
+  )
+  .forEach(r => loadMediaForRequest(r.id));
 ```
 
-### Schritt 3: Critical CSS Inline (optional, Performance-Boost)
-Die wichtigsten Design-Variablen könnten auch direkt in index.html eingebettet werden.
+---
+
+### Fix 3: AdminChangeRequests.tsx - Media-Vorschau auch für 'combined' anzeigen
+
+**Datei**: `src/pages/admin/AdminChangeRequests.tsx`  
+**Zeilen**: 407-442
+
+**Änderung**: Zeige den Media-Bereich nicht nur für `photos`-Requests, sondern auch wenn Medien existieren.
+
+```typescript
+// Alt:
+{request.request_type === 'photos' && (
+
+// Neu:
+{(request.request_type === 'photos' || 
+  request.request_type === 'combined' ||
+  mediaUrls[request.id]?.length > 0) && (
+```
 
 ---
 
 ## Erwartetes Ergebnis
-- Kein Flackern mehr beim Laden
-- Seite sieht von Anfang an korrekt aus
-- Schnellerer gefühlter Seitenaufbau
 
-## Technische Details
+1. **User-Seite**: Statt `undefined: undefined` wird z.B. angezeigt:
+   - `display_name: Testfbbefbbertagbtre, about_me: testbterbrtbrtgbnnbngeertathgbtrea, categories: Damen, MILF...`
 
-### Änderung 1: SiteSettingsContext.tsx
-```typescript
-export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
-  const { settings, getSetting, isLoading } = useBatchSiteSettings();
-
-  // Zeige minimalen Loading-State für kritische Settings
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background" />
-    );
-  }
-
-  return (
-    <SiteSettingsContext.Provider value={{ settings, getSetting, isLoading }}>
-      {children}
-    </SiteSettingsContext.Provider>
-  );
-};
-```
-
-### Änderung 2: useDesignSettings.ts (bereits korrekt)
-Die aktuelle Implementierung prüft bereits `if (primaryColor)` - das Problem ist nur, dass die App VOR dem Laden schon rendert.
+2. **Admin-Seite**: 
+   - Bilder werden auch bei `combined`-Anfragen geladen und angezeigt
+   - Bei Genehmigung werden die Bilder korrekt auf das Profil kopiert
 
 ---
 
-## Risiko
-**Gering** - Die Änderung fügt nur einen kurzen Loading-State hinzu. Die CSS-Defaults aus index.css bleiben als Fallback erhalten.
+## Technische Details
 
+### Betroffene Dateien:
+1. `src/pages/ProfileChangeRequest.tsx` - Zeilen 1585-1597
+2. `src/pages/admin/AdminChangeRequests.tsx` - Zeilen 157-163 und 407-442
+
+### Kein Datenbankschema-Änderung erforderlich
+Die Daten sind korrekt gespeichert - nur die Frontend-Logik muss angepasst werden.
+
+### Risiko: Niedrig
+Beide Fixes sind rückwärtskompatibel mit dem Legacy-Format.
