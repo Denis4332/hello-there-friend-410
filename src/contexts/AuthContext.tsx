@@ -231,13 +231,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Important: If the server-side session is already gone (session_not_found),
+    // Supabase may return an error and not clear the local session.
+    // We still want to force a local sign-out so the UI cannot get "stuck" logged in.
+    const clearLocalAuth = () => {
+      try {
+        // supabase-js stores auth tokens in localStorage keys starting with "sb-".
+        // We remove only those keys to avoid nuking unrelated app storage.
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (!key) continue;
+          if (key.startsWith('sb-') && key.includes('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
-      showCustomError(error.message);
-    } else {
+      // Try a local-only signout as fallback (clears the browser session)
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch {
+        // ignore
+      }
+      clearLocalAuth();
+
+      // Force UI state to logged out even if the API returned an error
+      setSession(null);
+      setUser(null);
+      setRole(null);
       showSuccess('toast_logout_success');
+      return;
     }
+
+    showSuccess('toast_logout_success');
   };
 
   const resetPassword = async (email: string) => {
