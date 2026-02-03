@@ -50,7 +50,50 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
   photos: 'Fotos ändern',
   contact: 'Kontaktdaten',
   categories: 'Kategorien',
+  location: 'Standort ändern',
   other: 'Sonstiges',
+  combined: 'Mehrere Bereiche',
+};
+
+// Parse combined changes from description
+interface ChangeGroup {
+  type: string;
+  changes: { field: string; old_value: string; new_value: string }[];
+}
+
+const parseDescription = (description: string): ChangeGroup[] | null => {
+  try {
+    const parsed = JSON.parse(description);
+    // Check if it's the new combined format (array of change groups)
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type && parsed[0].changes) {
+      return parsed as ChangeGroup[];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  display_name: 'Name',
+  about_me: 'Über mich',
+  note: 'Anmerkung',
+  canton: 'Kanton',
+  city: 'Stadt',
+  postal_code: 'PLZ',
+  coordinates: 'Koordinaten',
+  categories: 'Kategorien',
+  phone: 'Telefon',
+  whatsapp: 'WhatsApp',
+  email: 'E-Mail',
+  website: 'Website',
+  telegram: 'Telegram',
+  instagram: 'Instagram',
+  delete_photos: 'Fotos löschen',
+  reorder_photos: 'Reihenfolge',
+  primary_photo: 'Hauptfoto',
+  new_photos: 'Neue Fotos',
+  photo_note: 'Foto-Anmerkung',
 };
 
 const AdminChangeRequests = () => {
@@ -283,13 +326,69 @@ const AdminChangeRequests = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* User description */}
+                    {/* User description - handle combined format */}
                     <div className="bg-muted/50 rounded-lg p-4">
-                      <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
                         <MessageSquare className="h-4 w-4" />
                         Anfrage des Users:
                       </p>
-                      <p className="text-sm whitespace-pre-wrap">{request.description}</p>
+                      {(() => {
+                        const changeGroups = parseDescription(request.description);
+                        if (changeGroups) {
+                          // New combined format
+                          return (
+                            <div className="space-y-3">
+                              {changeGroups.map((group, groupIdx) => (
+                                <div key={groupIdx} className="border-l-2 border-primary/30 pl-3">
+                                  <p className="text-xs font-semibold text-primary mb-1">
+                                    {REQUEST_TYPE_LABELS[group.type] || group.type}
+                                  </p>
+                                  <ul className="space-y-1">
+                                    {group.changes.map((change, changeIdx) => (
+                                      <li key={changeIdx} className="text-sm">
+                                        <span className="font-medium">{FIELD_LABELS[change.field] || change.field}:</span>{' '}
+                                        {change.old_value && (
+                                          <>
+                                            <span className="line-through text-muted-foreground">{change.old_value}</span>
+                                            {' → '}
+                                          </>
+                                        )}
+                                        <span className="text-primary">{change.new_value}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        } else {
+                          // Legacy format or plain text
+                          try {
+                            const legacyChanges = JSON.parse(request.description);
+                            if (Array.isArray(legacyChanges)) {
+                              return (
+                                <ul className="space-y-1">
+                                  {legacyChanges.map((change: { field: string; old_value: string; new_value: string }, idx: number) => (
+                                    <li key={idx} className="text-sm">
+                                      <span className="font-medium">{FIELD_LABELS[change.field] || change.field}:</span>{' '}
+                                      {change.old_value && (
+                                        <>
+                                          <span className="line-through text-muted-foreground">{change.old_value}</span>
+                                          {' → '}
+                                        </>
+                                      )}
+                                      <span className="text-primary">{change.new_value}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              );
+                            }
+                          } catch {
+                            // Not JSON, show as plain text
+                          }
+                          return <p className="text-sm whitespace-pre-wrap">{request.description}</p>;
+                        }
+                      })()}
                     </div>
 
                     {/* Media images for photo requests */}
