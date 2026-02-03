@@ -272,6 +272,35 @@ export type Database = {
         }
         Relationships: []
       }
+      change_request_media: {
+        Row: {
+          created_at: string | null
+          id: string
+          request_id: string
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          request_id: string
+          storage_path: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          request_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_request_media_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "profile_change_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cities: {
         Row: {
           canton_id: string

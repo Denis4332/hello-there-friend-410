@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, ArrowLeft, Send, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, ArrowLeft, Send, CheckCircle, Clock, XCircle, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { compressImage } from '@/utils/imageCompression';
 
 const REQUEST_TYPES = [
   { value: 'text', label: 'Texte ändern (Name, Beschreibung, etc.)' },
@@ -20,6 +22,10 @@ const REQUEST_TYPES = [
   { value: 'categories', label: 'Kategorien ändern' },
   { value: 'other', label: 'Sonstiges' },
 ];
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 interface ChangeRequest {
   id: string;
@@ -34,12 +40,39 @@ const ProfileChangeRequest = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [profile, setProfile] = useState<{ id: string; status: string } | null>(null);
   const [requestType, setRequestType] = useState('');
   const [description, setDescription] = useState('');
   const [existingRequests, setExistingRequests] = useState<ChangeRequest[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+
+  // Warn user before leaving if they have unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isUploading || selectedFiles.length > 0) {
+        e.preventDefault();
+        e.returnValue = 'Du hast ungesendete Änderungen. Wirklich verlassen?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isUploading, selectedFiles]);
+
+  // Cleanup file previews on unmount
+  useEffect(() => {
+    return () => {
+      filePreviews.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [filePreviews]);
 
   useEffect(() => {
     loadData();
@@ -49,7 +82,6 @@ const ProfileChangeRequest = () => {
     if (!user) return;
 
     try {
-      // Load profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, status')
@@ -63,7 +95,6 @@ const ProfileChangeRequest = () => {
         return;
       }
 
-      // If profile is not active, redirect to edit page
       if (profileData.status !== 'active') {
         navigate('/profil/bearbeiten');
         return;
@@ -71,7 +102,6 @@ const ProfileChangeRequest = () => {
 
       setProfile(profileData);
 
-      // Load existing change requests
       const { data: requestsData, error: requestsError } = await supabase
         .from('profile_change_requests')
         .select('*')
@@ -91,6 +121,61 @@ const ProfileChangeRequest = () => {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const remainingSlots = MAX_FILES - selectedFiles.length;
+    if (files.length > remainingSlots) {
+      toast({
+        title: 'Zu viele Bilder',
+        description: `Du kannst maximal ${MAX_FILES} Bilder hochladen.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const file of files) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        toast({
+          title: 'Ungültiger Dateityp',
+          description: `${file.name} ist kein gültiges Bildformat. Erlaubt: JPEG, PNG, WebP`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: 'Datei zu gross',
+          description: `${file.name} ist grösser als 5MB.`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      validFiles.push(file);
+      newPreviews.push(URL.createObjectURL(file));
+    }
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    setFilePreviews(prev => [...prev, ...newPreviews]);
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    URL.revokeObjectURL(filePreviews[index]);
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setFilePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -104,8 +189,35 @@ const ProfileChangeRequest = () => {
     }
 
     setSubmitting(true);
+    const uploadedPaths: string[] = [];
+
     try {
-      const { error } = await supabase
+      // 1. Upload images if present (for photo requests)
+      if (selectedFiles.length > 0 && requestType === 'photos') {
+        setIsUploading(true);
+        setUploadProgress({ current: 0, total: selectedFiles.length });
+
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          
+          // Compress image before upload
+          const compressedFile = await compressImage(file);
+          const extension = compressedFile.name.split('.').pop() || 'webp';
+          const path = `${profile.id}/${crypto.randomUUID()}.${extension}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('change-request-media')
+            .upload(path, compressedFile);
+
+          if (uploadError) throw uploadError;
+          uploadedPaths.push(path);
+          setUploadProgress({ current: i + 1, total: selectedFiles.length });
+        }
+        setIsUploading(false);
+      }
+
+      // 2. Create the change request
+      const { data: request, error: requestError } = await supabase
         .from('profile_change_requests')
         .insert({
           profile_id: profile.id,
@@ -113,20 +225,47 @@ const ProfileChangeRequest = () => {
           request_type: requestType,
           description: description.trim(),
           status: 'pending',
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (requestError) throw requestError;
+
+      // 3. Create media entries if we uploaded files
+      if (uploadedPaths.length > 0) {
+        const mediaInserts = uploadedPaths.map(path => ({
+          request_id: request.id,
+          storage_path: path,
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('change_request_media')
+          .insert(mediaInserts);
+
+        if (mediaError) throw mediaError;
+      }
 
       toast({
         title: 'Anfrage gesendet',
         description: 'Deine Änderungsanfrage wurde eingereicht und wird in Kürze bearbeitet.',
       });
 
-      // Reset form and reload requests
+      // Reset form
       setRequestType('');
       setDescription('');
+      setSelectedFiles([]);
+      filePreviews.forEach(url => URL.revokeObjectURL(url));
+      setFilePreviews([]);
       loadData();
+
     } catch (error) {
+      // CLEANUP: Delete already uploaded files on error
+      if (uploadedPaths.length > 0) {
+        await supabase.storage
+          .from('change-request-media')
+          .remove(uploadedPaths);
+      }
+
       toast({
         title: 'Fehler',
         description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
@@ -134,6 +273,7 @@ const ProfileChangeRequest = () => {
       });
     } finally {
       setSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -241,13 +381,87 @@ const ProfileChangeRequest = () => {
                     </p>
                   </div>
 
-                  <Button type="submit" disabled={submitting || !requestType || !description.trim()}>
-                    {submitting ? (
+                  {/* Image upload section - only shown for photo requests */}
+                  {requestType === 'photos' && (
+                    <div className="space-y-3">
+                      <Label className="flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4" />
+                        Neue Bilder hochladen (optional)
+                      </Label>
+                      
+                      <div 
+                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          multiple
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Klicke hier um Bilder auszuwählen
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Max. {MAX_FILES} Bilder, je max. 5MB (JPEG, PNG, WebP)
+                        </p>
+                      </div>
+
+                      {/* File previews */}
+                      {selectedFiles.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">
+                            {selectedFiles.length} Bild{selectedFiles.length > 1 ? 'er' : ''} ausgewählt:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {filePreviews.map((preview, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={preview}
+                                  alt={`Vorschau ${index + 1}`}
+                                  className="h-20 w-20 object-cover rounded-lg border"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeFile(index)}
+                                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upload progress */}
+                      {isUploading && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Lade Bilder hoch...</span>
+                            <span>{uploadProgress.current} / {uploadProgress.total}</span>
+                          </div>
+                          <Progress 
+                            value={(uploadProgress.current / uploadProgress.total) * 100} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Button 
+                    type="submit" 
+                    disabled={submitting || isUploading || !requestType || !description.trim()}
+                  >
+                    {submitting || isUploading ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : (
                       <Send className="h-4 w-4 mr-2" />
                     )}
-                    Anfrage senden
+                    {isUploading ? 'Bilder werden hochgeladen...' : 'Anfrage senden'}
                   </Button>
                 </form>
               </CardContent>
@@ -279,7 +493,7 @@ const ProfileChangeRequest = () => {
                           {request.description}
                         </p>
                         {request.admin_note && (
-                          <div className="bg-muted/50 rounded p-2 text-sm">
+                          <div className="bg-muted/50 rounded p-3 text-sm">
                             <span className="font-medium">Admin-Antwort:</span>{' '}
                             {request.admin_note}
                           </div>
