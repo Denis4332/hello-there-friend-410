@@ -9,9 +9,8 @@ import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { VerificationUploader } from '@/components/profile/VerificationUploader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Trash2, Star, Play, CheckCircle } from 'lucide-react';
+import { Loader2, Trash2, Star, Play, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-
 // Media limits per listing type
 const MEDIA_LIMITS = {
   basic: { photos: 5, videos: 0 },
@@ -26,6 +25,8 @@ const ProfileEdit = () => {
   const [loading, setLoading] = useState(true);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEditWarning, setShowEditWarning] = useState(false);
+  const [warningAccepted, setWarningAccepted] = useState(false);
   const [profile, setProfile] = useState<{
     id: string;
     user_id: string;
@@ -71,6 +72,13 @@ const ProfileEdit = () => {
     name: string;
     slug: string;
   }>>([]);
+
+  // Show warning dialog for active profiles on first load
+  useEffect(() => {
+    if (profile?.status === 'active' && !warningAccepted) {
+      setShowEditWarning(true);
+    }
+  }, [profile?.status, warningAccepted]);
 
   useEffect(() => {
     loadData();
@@ -128,11 +136,16 @@ const ProfileEdit = () => {
     }
   };
 
+  const isActiveProfile = profile?.status === 'active';
+
   const handleFormSubmit = async (data: ProfileFormData) => {
     if (!user || !profile) return;
 
     setIsSubmitting(true);
     try {
+      // If profile was active, set to pending for re-review
+      const newStatus = isActiveProfile ? 'pending' : profile.status;
+      
       // SECURITY: Update profile data (no contact info)
       const { error: profileError } = await supabase
         .from('profiles')
@@ -145,6 +158,7 @@ const ProfileEdit = () => {
           postal_code: data.postal_code,
           about_me: data.about_me,
           languages: data.languages,
+          status: newStatus,
         })
         .eq('id', profile.id);
 
@@ -183,7 +197,9 @@ const ProfileEdit = () => {
 
       toast({
         title: 'Profil aktualisiert',
-        description: 'Deine Änderungen wurden gespeichert',
+        description: isActiveProfile 
+          ? 'Deine Änderungen wurden gespeichert. Dein Profil wird erneut geprüft.'
+          : 'Deine Änderungen wurden gespeichert',
       });
 
       navigate('/mein-profil');
@@ -276,34 +292,6 @@ const ProfileEdit = () => {
     return null;
   }
 
-  // SECURITY: Active profiles cannot be edited directly - must use change request
-  if (profile.status === 'active') {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-background">
-          <div className="container mx-auto px-4 py-8">
-            <Card className="max-w-2xl mx-auto">
-              <CardHeader>
-                <CardTitle>Profil ist aktiv</CardTitle>
-                <CardDescription>
-                  Dein Profil ist bereits freigeschaltet. Änderungen müssen zur Prüfung eingereicht werden, um die Einhaltung unserer AGB sicherzustellen.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button onClick={() => navigate('/profil/aenderung-anfragen')}>
-                  Änderung anfragen
-                </Button>
-                <Button variant="outline" onClick={() => navigate('/mein-profil')}>
-                  Zurück zum Dashboard
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   // Calculate media limits based on listing type
   const listingType = (profile.listing_type as 'basic' | 'premium' | 'top') || 'basic';
@@ -339,6 +327,33 @@ const ProfileEdit = () => {
             <p className="text-muted-foreground mb-8">
               Aktualisiere deine Profildaten und Fotos
             </p>
+
+            {/* Warning Dialog for Active Profiles */}
+            <AlertDialog open={showEditWarning} onOpenChange={setShowEditWarning}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-orange-500" />
+                    Achtung: Profil ist aktiv
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Wenn du dein Profil jetzt bearbeitest, muss es erneut geprüft werden. 
+                    Das dauert bis zu 24 Stunden und dein Profil ist in dieser Zeit nicht mehr online sichtbar.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => navigate('/mein-profil')}>
+                    Abbrechen
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={() => {
+                    setWarningAccepted(true);
+                    setShowEditWarning(false);
+                  }}>
+                    Verstanden, trotzdem bearbeiten
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             {/* Draft Status Warning */}
             {profile.status === 'draft' && (
