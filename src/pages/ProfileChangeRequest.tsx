@@ -22,6 +22,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { 
   Loader2, ArrowLeft, Send, CheckCircle, Clock, XCircle, Upload, X, 
   Image as ImageIcon, MapPin, FileText, Tag, Phone, ChevronsUpDown, Check,
@@ -627,6 +638,46 @@ const ProfileChangeRequest = () => {
   // Category change helpers
   const addedCategories = selectedCategories.filter(id => !currentCategories.includes(id));
   const removedCategories = currentCategories.filter(id => !selectedCategories.includes(id));
+
+  // Delete a pending change request
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      // First, get and delete any associated media from storage
+      const { data: media } = await supabase
+        .from('change_request_media')
+        .select('storage_path')
+        .eq('request_id', requestId);
+
+      if (media && media.length > 0) {
+        await supabase.storage
+          .from('change-request-media')
+          .remove(media.map(m => m.storage_path));
+      }
+
+      // Delete the change request (RLS policy ensures only pending + own requests)
+      const { error } = await supabase
+        .from('profile_change_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Anfrage gelöscht',
+        description: 'Deine Änderungsanfrage wurde entfernt.',
+      });
+
+      // Reload data to refresh the list
+      loadData();
+    } catch (error) {
+      console.error('Delete request error:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Die Anfrage konnte nicht gelöscht werden.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1547,6 +1598,35 @@ const ProfileChangeRequest = () => {
                             <span className="font-medium">Admin-Notiz:</span>{' '}
                             {request.admin_note}
                           </div>
+                        )}
+                        
+                        {/* Delete button only for pending requests */}
+                        {request.status === 'pending' && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="mt-2 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Anfrage löschen
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Anfrage wirklich löschen?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Möchtest du diese Änderungsanfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteRequest(request.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Löschen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                       </div>
                     ))}
