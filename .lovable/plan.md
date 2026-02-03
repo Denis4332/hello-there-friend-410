@@ -1,168 +1,127 @@
 
-## Ziel (was danach garantiert funktionieren soll)
-1. **Profil aktualisieren** löst immer sichtbar eine Aktion aus (entweder Speichern + Erfolg oder klare Fehlermeldung).
-2. Wenn ein Profil **aktiv (grün)** ist und du **irgendeine Änderung** machst (Text, Kontakt, Kategorien, Fotos, Hauptfoto, Löschen), wird es **automatisch wieder „pending / in Prüfung“** – der **Bezahl-Status bleibt „bezahlt“**.
-3. **Hauptfoto**: Wenn du ein neues Hauptfoto auswählst, bleibt nicht mehr das alte „ausgewählt“ und es gibt **nie zwei Hauptfoto-Sterne gleichzeitig**.
-4. UI zeigt nach Änderungen **sofort konsistent** den echten Stand aus der Datenbank (keine „komisch übernommen / plötzlich wieder alt“ Effekte durch Cache/State).
+## Diagnose (warum “nix passiert” + warum 2 goldene Sterne)
+
+### 1) “Profil aktualisieren” macht scheinbar nichts
+In den Console-Logs steht es schon klar:
+- `[ProfileForm] Validation failed: gender: Expected string, received null`
+
+Ursache im Code:
+- In `ProfileForm.tsx` ist `gender: z.string().optional()`
+- Beim Edit kommt aber sehr wahrscheinlich `profile.gender === null` aus der DB rein (in `ProfileEdit.tsx` wird `defaultValues.gender = profile.gender` gesetzt).
+- `null` ist in Zod **nicht** “optional”, sondern ein eigener Typ → Validation blockt den Submit komplett.
+- Ergebnis: kein Speichern, du bleibst auf der Seite, wirkt wie “es passiert nix”.
+
+### 2) “Beide Bilder haben goldenen Stern”
+In `PhotoUploader.tsx` ist die Primary-Logik aktuell:
+- Für **uploaded** Previews: `return preview.id === currentPrimaryId;`
+Problem:
+- Bei frisch hochgeladenen Dateien setzen wir `uploaded: true`, aber **speichern keine `id`** zurück in `MediaPreview` (Insert macht kein `.select()`).
+- Gleichzeitig ist `currentPrimaryId` manchmal kurz `undefined`/leer (Timing beim initialen Laden).
+- Dann passiert: `undefined === undefined` → `true` → mehrere Sterne “aktiv”.
+
+Zusätzlich lädt `PhotoUploader` eigene Previews aus der DB, aber beim Upload werden Previews nicht zuverlässig mit DB-IDs synchronisiert.
 
 ---
 
-## Ist-Zustand (kurze Diagnose anhand Code)
-### A) Speichern wirkt wie “passiert nix”
-- In `ProfileEdit.tsx` ist der Button korrekt mit `type="submit" form="profile-edit-form"`.
-- Wenn “nix passiert”, ist es in React-Forms fast immer:
-  1) **Validation blockt** (Zod/React-Hook-Form), aber der User sieht die Fehlermeldung nicht (z.B. weit oben im Form), oder  
-  2) **Submit wird abgebrochen** (z.B. Modal/Overlay/disabled) ohne klares Feedback, oder  
-  3) **Backend-Update scheitert** (RLS/DB), aber Error wird nicht sichtbar/verschluckt.
-
-### B) Hauptfoto / Sterne doppelt ausgewählt
-- `PhotoUploader.tsx` hat **zwei “Primary-Quellen”**:
-  - Für bereits hochgeladene Medien: `currentPrimaryId` (DB-Primary)
-  - Für neue (noch nicht hochgeladene) Medien: `primaryIndex` (lokaler State)
-- Dadurch kann es real passieren, dass **ein DB-Primary** und **ein lokales Primary** gleichzeitig “markiert” sind → genau dein Screenshot/Problem.
-- Zusätzlich: Neue Uploads werden aktuell **nicht automatisch** als Primary gesetzt, wenn schon Bilder existieren (Upload-Logik setzt `is_primary` nur bei ersten Bildern).
-
-### C) Status “active (grün)” bleibt trotz Änderungen
-- `handleFormSubmit` setzt bei active korrekt `status: 'pending'` (das ist gut).
-- Aber bei **Medien-Änderungen** (Hauptfoto setzen, löschen, hochladen) wird Status derzeit **nicht zuverlässig** auf pending gesetzt (nur Draft→Pending beim ersten Foto).
-- Ergebnis: Du änderst Foto/Hauptfoto → Profil bleibt grün, obwohl es eigentlich in Prüfung müsste.
-
-### D) “Altes Foto bleibt / übernommen was vorher geändert”
-- Sehr wahrscheinlich eine Mischung aus:
-  - **Primary wurde nicht wirklich gewechselt** (nur UI-State, nicht DB oder nicht überall reloaded),
-  - und/oder **Browser/Storage-Cache** (Bild-URLs ohne Cache-Buster),
-  - und/oder PhotoUploader lädt existierende Previews nur beim Mount und “lebt dann weiter” ohne Hard-Refresh der Liste.
+## Ziel (nach Fix garantiert)
+1. Klick auf “Profil aktualisieren” führt immer zu:
+   - gespeichert + Erfolgsmeldung, oder
+   - klarer Fehler/Toast (und nicht “still”)
+2. Keine Doppel-Sterne mehr: Es kann **maximal 1 Hauptfoto** “gold” sein.
+3. Uploads bekommen nach dem Speichern echte DB-IDs im UI → Primary-Status ist stabil.
+4. Wenn Profil aktiv war: jede Änderung (Form + Fotos + Hauptfoto + Löschen) setzt Status sauber auf `pending`, Payment bleibt `paid` (dein gewünschtes Verhalten ist in `ProfileEdit.tsx` schon weitgehend vorhanden; wir stellen nur sicher, dass es nicht durch Validation/Sync verhindert wird).
 
 ---
 
-## Umsetzung (konkret, mit Files & Steps)
+## Umsetzung (konkret, Dateien + Schritte)
 
-### 1) Speichern “unkaputtbar” machen (Form Submit + sichtbare Fehler)
-**Dateien**
-- `src/components/profile/ProfileForm.tsx`
-- ggf. Sections (`BasicInfoSection`, `LocationSection`, …)
-- `src/pages/ProfileEdit.tsx`
+### A) Fix für “nix passiert”: `gender` Validation robust machen
+**Datei:** `src/components/profile/ProfileForm.tsx`  
+**Änderung:**
+- `gender` Schema so anpassen, dass `null`, `""` und `undefined` akzeptiert werden.
+- Empfohlen: `z.preprocess`:
+  - Wenn `null` oder `""` → `undefined`
+  - Dann `z.string().optional()`
 
-**Änderungen**
-1. In `ProfileForm` einen **onInvalid Handler** ergänzen:
-   - Wenn `handleSubmit` fehlschlägt (Validation), dann:
-     - Toast: “Bitte prüfe die markierten Felder”
-     - Automatisch zum **ersten Fehlerfeld scrollen** und es fokusieren.
-2. Zusätzlich: Wenn Submit startet, kurz **UI-Feedback** (Spinner/Toast “Speichern…”), damit es niemals “nix” wirkt.
-3. Debug nur temporär (optional): bei Submit Start/End in `ProfileEdit` `console.log` mit `profile.id`, `isActiveProfile`, `newStatus`, und bei Error die volle DB-Fehlermeldung.
+**Zusätzlich (zur Stabilität):**
+- In `ProfileEdit.tsx` beim `defaultValues` sicherstellen:
+  - `gender: profile.gender ?? ''` oder `undefined` (je nachdem, was wir im Schema wählen)
 
-**Ergebnis**
-- Du bekommst immer entweder “gespeichert” oder eine klare Erklärung warum nicht.
-
----
-
-### 2) Status-Regel sauber & einheitlich: Jede Änderung an aktivem Profil → pending
-**Dateien**
-- `src/pages/ProfileEdit.tsx`
-- `src/components/profile/PhotoUploader.tsx` (nur Trigger/Callback, Status-Update aber besser zentral in ProfileEdit)
-
-**Änderungen**
-1. In `ProfileEdit` eine kleine Helper-Funktion:
-   - `ensurePendingIfActive()`:
-     - wenn `profile.status === 'active'`, dann `profiles.update({ status: 'pending' })`
-     - **ohne** payment_status anzufassen.
-2. Diese Funktion wird aufgerufen bei:
-   - erfolgreichem `handleFormSubmit`
-   - erfolgreichem `handleSetPrimary`
-   - erfolgreichem `handleDeletePhoto`
-   - erfolgreichem Upload-Complete (nach Upload)
-3. Danach immer `loadData()` und UI aktualisieren.
-
-**Ergebnis**
-- Sobald du irgendwas änderst, geht grün → pending, aber bezahlt bleibt bezahlt.
+**Ergebnis:**
+- Submit wird nicht mehr blockiert nur weil `gender` aus DB `null` ist.
+- “Profil aktualisieren” funktioniert wieder.
 
 ---
 
-### 3) Hauptfoto-Logik neu: “Single Source of Truth” + kein Doppelstern
-**Dateien**
-- `src/components/profile/PhotoUploader.tsx`
-- `src/pages/ProfileEdit.tsx`
+### B) Fix für Doppel-Sterne: `isPrimaryPhoto()` gegen `undefined === undefined` absichern
+**Datei:** `src/components/profile/PhotoUploader.tsx`  
+**Änderung:**
+- In `isPrimaryPhoto` bei `preview.uploaded === true`:
+  - Wenn `!preview.id` oder `!currentPrimaryId` → **return false**
+  - Erst vergleichen, wenn beide IDs sicher vorhanden sind.
 
-**Änderungen (Kern)**
-1. **Nur eine Primary-Auswahl im UI**:
-   - Entweder DB-Primary (`currentPrimaryId`) oder “pending primary for upload” – aber niemals beides gleichzeitig als “Hauptfoto” markiert.
-2. Implementierungsvorschlag:
-   - Neuer State in `PhotoUploader`: `pendingPrimaryLocalKey` (z.B. Preview-URL oder index), **nur für unuploaded**.
-   - Anzeige-Regel:
-     - Wenn es ein `currentPrimaryId` gibt (existierende Bilder):  
-       - Sterne für uploaded richten sich nur nach `currentPrimaryId`.
-       - Unuploaded Sterne zeigen “Wird Hauptfoto nach Upload” (andere Farbe/Icon), aber nicht als “Hauptfoto”.
-     - Wenn kein `currentPrimaryId` (z.B. erstes Bild im Draft):  
-       - dann nutzt man `primaryIndex` wie bisher.
-3. Upload-Logik erweitern:
-   - Wenn User ein unuploaded Preview als “soll Hauptfoto werden” markiert:
-     - Beim Insert in `photos` `.select('id')` zurückgeben lassen.
-     - Nach Upload: `onSetPrimary(newPhotoId)` aufrufen (damit DB-Primary wirklich umgestellt wird).
-4. Nach `onSetPrimary`/`onUploadComplete`:
-   - PhotoUploader muss seine Preview-Liste **neu synchronisieren**:
-     - entweder über `key`-Remount (z.B. `key={profileId + ':' + currentPrimaryId + ':' + photosCount}` vom Parent)
-     - oder `useEffect` in PhotoUploader, das bei Änderung von `currentPrimaryId` und/oder `profileId` die Photos neu lädt.
-
-**Ergebnis**
-- Du kannst zuverlässig ein neues Hauptfoto setzen.
-- Es gibt nie wieder zwei Sterne als Hauptfoto.
-- Nach Reload/Navigation bleibt die Auswahl korrekt.
+**Ergebnis:**
+- Kein Bild kann “primary” sein, wenn die IDs nicht sauber gesetzt sind.
+- Doppelstern-Bug verschwindet sofort.
 
 ---
 
-### 4) “Altes Bild wird weiter angezeigt” verhindern (Cache Busting)
-**Dateien**
-- `src/components/profile/PhotoUploader.tsx`
-- `src/pages/UserDashboard.tsx` (falls dort Fotos angezeigt werden)
-- evtl. `src/components/ProfileCard.tsx`
+### C) Upload-Sync: Beim Insert DB-ID zurückholen und Preview updaten
+**Datei:** `src/components/profile/PhotoUploader.tsx`  
+**Problem aktuell:** Insert macht nur `.insert(...)` ohne `.select()`, daher hat UI keine `photo.id`.  
+**Änderung:**
+- Beim Insert in `photos`:
+  - `.insert({...}).select('id, is_primary, media_type, storage_path').single()` (oder `maybeSingle` + Guard)
+- Danach beim `setPreviews(...)`:
+  - Für das passende Preview-Element:
+    - `id: inserted.id`
+    - `uploaded: true`
+    - `url: …` (wie bisher)
+- Optional: nach Upload Complete einmal DB-Reload (oder Parent `loadData()`) ist schon da, aber wichtig ist: UI hat IDs sofort.
 
-**Änderungen**
-1. Für Bild-URLs einen **Cache-Buster** anhängen (z.B. `?v=${photo.id}` oder `?v=${photo.updated_at || created_at}`).
-2. Besonders beim Hauptfoto (weil das sich “ändert”, obwohl URL gleich aussehen kann).
-
-**Ergebnis**
-- Wenn du Hauptfoto wechselst, siehst du sofort das richtige Bild, nicht ein gecachtes.
-
----
-
-### 5) Favoriten: falls du es noch siehst, ist es sehr wahrscheinlich PWA/Service-Worker Cache
-Auch wenn wir Favoriten im Code entfernen: bei PWA kann das UI aus altem Cache kommen.
-
-**Dateien**
-- `vite.config.ts` / PWA config (vite-plugin-pwa)
-- optional: kleines “Update verfügbar” Banner
-
-**Änderungen**
-1. PWA so konfigurieren, dass neue Deployments **sofort** aktiv werden:
-   - `skipWaiting: true`, `clientsClaim: true`
-2. Optional: beim Start prüfen ob ServiceWorker ein Update hat und eine Meldung “Neue Version verfügbar → Neu laden” anzeigen.
-
-**Ergebnis**
-- Du bekommst zuverlässig die neue Version, ohne dass alte Buttons/Seiten “noch da” wirken.
+**Ergebnis:**
+- Uploaded Previews haben echte DB-IDs → `onSetPrimary(preview.id)` funktioniert zuverlässig.
+- Primary-Anzeige wird stabil.
 
 ---
 
-## Testplan (End-to-End, damit das wirklich stabil ist)
-1. Profil ist **active** → Text ändern → “Profil aktualisieren” → Toast Erfolg → Dashboard zeigt **pending**.
-2. Profil ist **active** → Hauptfoto wechseln (bei existierenden Bildern) → sofort UI korrekt → Dashboard zeigt **pending**.
-3. Profil ist **active** → neues Foto hochladen + als Hauptfoto markieren → nach Upload ist es wirklich Hauptfoto → keine Doppelsterne.
-4. Foto löschen → Status pending.
-5. Browser Hard-Reload + nochmals prüfen, dass Favoriten wirklich weg sind und UI nicht aus Cache kommt.
+### D) Pending-Status nach Änderungen: sicherstellen, dass Foto-Aktionen immer `pending` triggern
+**Datei:** `src/pages/ProfileEdit.tsx`  
+**Check/Feinschliff:**
+- `ensurePendingIfActive()` existiert bereits und wird aufgerufen in:
+  - `handleSetPrimary`
+  - `handleDeletePhoto`
+  - `handleUploadComplete`
+- Für Form-Submit ist der Statuswechsel schon in `handleFormSubmit` über `newStatus`.
+
+**Was wir ergänzen/verbessern:**
+- Nach erfolgreichem Speichern nicht nur `navigate('/mein-profil')`, sondern vorher sicherstellen:
+  - `await loadData()` oder `navigate` mit anschließender Dashboard-Reload-Mechanik (damit du den pending-status sofort siehst)
+- `currentPrimaryId` Prop stabilisieren:
+  - `currentPrimaryId={photos.find(p => p.is_primary)?.id ?? undefined}` (explizit)
+  - Key ist schon vorhanden, das ist gut.
+
+**Ergebnis:**
+- Sobald es wirklich speichert, geht “grün” zuverlässig zurück auf “pending”.
 
 ---
 
-## Risiken / Edge Cases die wir explizit abfangen
-- Validation blockt still → wir erzwingen Toast + Scroll-to-error.
-- Primary-Selection bei gemischten (uploaded + unuploaded) → wir trennen “Hauptfoto” vs “wird Hauptfoto nach Upload”.
-- Race-Conditions (SetPrimary, UploadComplete, loadData) → wir serialisieren Updates und re-syncen Previews.
-- Cache/PWA → wir sorgen für sofortige Aktivierung neuer Builds.
+## Testplan (damit wir es final abhaken)
+1) Auf `/profil/bearbeiten`: direkt “Profil aktualisieren” klicken  
+- Erwartung: Speichern klappt (kein gender-null Fehler mehr)
+
+2) Profil aktiv (grün) → Text ändern → speichern  
+- Erwartung: Toast sagt “erneut geprüft”, Dashboard zeigt `pending`, Payment bleibt “bezahlt”
+
+3) In Medien: 2 Bilder vorhanden → Bearbeiten öffnen  
+- Erwartung: genau 1 goldener Stern (nie 2)
+
+4) Neues Bild hochladen, danach Hauptfoto wechseln  
+- Erwartung: Stern wechselt sauber, keine doppelten goldenen Sterne, UI bleibt konsistent
 
 ---
 
-## Betroffene Dateien (Zusammenfassung)
-- `src/pages/ProfileEdit.tsx` (Status-Pending bei allen Änderungen, Submit/Reload Flow)
-- `src/components/profile/ProfileForm.tsx` (onInvalid: Toast + Scroll)
-- `src/components/profile/PhotoUploader.tsx` (Primary-Logik, Upload->Primary, Sync, Cache-Buster)
-- optional: `vite.config.ts` (PWA Update-Verhalten)
-- optional: Foto-Anzeigen-Komponenten (`UserDashboard`, `ProfileCard`) für Cache-Buster
-
+## Betroffene Dateien
+- `src/components/profile/ProfileForm.tsx` (gender null/empty robust machen)
+- `src/pages/ProfileEdit.tsx` (defaultValues.gender stabilisieren; optional Reload nach Save)
+- `src/components/profile/PhotoUploader.tsx` (Primary-Guard + Insert `.select()` + Preview-ID Sync)
