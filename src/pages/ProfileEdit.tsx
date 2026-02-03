@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +27,7 @@ const ProfileEdit = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showEditWarning, setShowEditWarning] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const [profile, setProfile] = useState<{
     id: string;
     user_id: string;
@@ -576,10 +577,19 @@ const ProfileEdit = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button 
-                    type="submit"
-                    form="profile-edit-form"
+                    type="button"
                     disabled={isSubmitting}
                     className="sm:flex-1"
+                    onClick={() => {
+                      // Find the form by ID first, then fallback to querySelector
+                      let form = document.getElementById('profile-edit-form') as HTMLFormElement;
+                      if (!form) {
+                        form = document.querySelector('form') as HTMLFormElement;
+                      }
+                      if (form) {
+                        form.requestSubmit();
+                      }
+                    }}
                   >
                     {isSubmitting ? 'Wird gespeichert...' : 'Profil aktualisieren'}
                   </Button>

@@ -11,9 +11,10 @@ interface BasicInfoSectionProps {
   setValue: UseFormSetValue<ProfileFormData>;
   genders: Array<{ value: string; label: string }>;
   onGenderChange: (value: string) => void;
+  isAdultChecked?: boolean;
 }
 
-export const BasicInfoSection = ({ register, errors, setValue, genders, onGenderChange }: BasicInfoSectionProps) => {
+export const BasicInfoSection = ({ register, errors, setValue, genders, onGenderChange, isAdultChecked }: BasicInfoSectionProps) => {
   return (
     <>
       <div>
@@ -31,6 +32,7 @@ export const BasicInfoSection = ({ register, errors, setValue, genders, onGender
       <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
         <Checkbox
           id="is_adult"
+          checked={isAdultChecked}
           onCheckedChange={(checked) => setValue('is_adult', checked === true)}
         />
         <div className="space-y-1 leading-none">

@@ -91,6 +91,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
 
   const selectedLanguages = watch('languages') || [];
   const selectedCategories = watch('category_ids') || [];
+  const isAdultChecked = watch('is_adult') ?? false;
 
   const toggleLanguage = (lang: string) => {
     const current = selectedLanguages;
@@ -132,6 +133,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
         setValue={setValue}
         genders={genders}
         onGenderChange={(value) => setValue('gender', value)}
+        isAdultChecked={isAdultChecked}
       />
 
       <LocationSection
