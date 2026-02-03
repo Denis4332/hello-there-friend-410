@@ -2,6 +2,8 @@ import { memo } from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { Pagination } from '@/components/Pagination';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useAuth } from '@/contexts/AuthContext';
 import type { ProfileWithRelations } from '@/types/common';
 
 interface SearchResultsProps {
@@ -21,6 +23,9 @@ const SearchResultsComponent = ({
   onPageChange,
   noResultsText,
 }: SearchResultsProps) => {
+  const { favorites, toggleFavorite, isToggling } = useFavorites();
+  const { user } = useAuth();
+  
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
@@ -48,7 +53,11 @@ const SearchResultsComponent = ({
           <ProfileCard 
             key={profile.id} 
             profile={profile} 
-            priority={index < 4} 
+            priority={index < 4}
+            isFavorite={favorites.includes(profile.id)}
+            onToggleFavorite={toggleFavorite}
+            isTogglingFavorite={isToggling}
+            currentUserId={user?.id}
           />
         ))}
       </div>

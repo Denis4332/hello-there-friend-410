@@ -10,6 +10,8 @@ interface PhotoUploaderProps {
   userId?: string; // Optional: vom Parent übergeben für Session-Fallback
   listingType?: 'basic' | 'premium' | 'top';
   onUploadComplete?: () => void;
+  onSetPrimary?: (photoId: string) => void; // Callback für DB-Update bei existierenden Fotos
+  currentPrimaryId?: string; // ID des aktuellen Hauptfotos aus DB
 }
 
 interface MediaPreview {
@@ -32,7 +34,7 @@ const MAX_VIDEO_SIZE_MB = 50;
 const ALLOWED_PHOTO_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
 const ALLOWED_VIDEO_FORMATS = ['video/mp4', 'video/webm'];
 
-export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUploadComplete }: PhotoUploaderProps) => {
+export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUploadComplete, onSetPrimary, currentPrimaryId }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
@@ -421,19 +423,27 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
                 {/* Star icon for primary selection */}
                 <button
                   type="button"
-                  onClick={() => setPrimary(index)}
+                  onClick={() => {
+                    // Für bereits hochgeladene Fotos: DB aktualisieren
+                    if (preview.uploaded && preview.id && onSetPrimary) {
+                      onSetPrimary(preview.id);
+                    } else {
+                      // Für neue, noch nicht hochgeladene Fotos: lokaler State
+                      setPrimary(index);
+                    }
+                  }}
                   className={cn(
                     "absolute top-2 left-2 p-1.5 rounded-full transition-all",
-                    index === primaryIndex
+                    (preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex)
                       ? "bg-primary text-primary-foreground"
                       : "bg-black/50 text-white/70 hover:text-yellow-400"
                   )}
-                  title={index === primaryIndex ? "Hauptfoto" : "Als Hauptfoto setzen"}
+                  title={(preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex) ? "Hauptfoto" : "Als Hauptfoto setzen"}
                 >
                   <Star 
                     className={cn(
                       "w-4 h-4",
-                      index === primaryIndex && "fill-current"
+                      (preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex) && "fill-current"
                     )} 
                   />
                 </button>
@@ -448,7 +458,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
                 </button>
 
                 {/* Primary badge */}
-                {index === primaryIndex && (
+                {(preview.uploaded ? preview.id === currentPrimaryId : index === primaryIndex) && (
                   <div className="absolute bottom-2 left-2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
                     Hauptfoto
                   </div>

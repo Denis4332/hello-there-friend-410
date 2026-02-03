@@ -418,7 +418,9 @@ const ProfileEdit = () => {
                       onUploadComplete={() => {
                         loadData();
                         setUploadSuccess(true);
-                      }} 
+                      }}
+                      onSetPrimary={handleSetPrimary}
+                      currentPrimaryId={photos.find(p => p.is_primary)?.id}
                     />
                     
                     {uploadSuccess && (
@@ -577,19 +579,10 @@ const ProfileEdit = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button 
-                    type="button"
+                    type="submit"
+                    form="profile-edit-form"
                     disabled={isSubmitting}
                     className="sm:flex-1"
-                    onClick={() => {
-                      // Find the form by ID first, then fallback to querySelector
-                      let form = document.getElementById('profile-edit-form') as HTMLFormElement;
-                      if (!form) {
-                        form = document.querySelector('form') as HTMLFormElement;
-                      }
-                      if (form) {
-                        form.requestSubmit();
-                      }
-                    }}
                   >
                     {isSubmitting ? 'Wird gespeichert...' : 'Profil aktualisieren'}
                   </Button>
