@@ -1,266 +1,223 @@
 
-# Erweiterter Plan: Änderungen anwenden + Payment-Status-Bug beheben
+# Finaler Plan: Änderungsanfragen-System komplett fixen
 
-## Zusammenfassung der Probleme
+## Zusammenfassung der Anforderungen
 
-### Problem 1: Payment-Status-Inkonsistenz
-**Symptom:** Profil ist aktiv (status = 'active'), aber zeigt "nicht bezahlt" (payment_status = 'pending')
-
-**Ursache:** In `AdminProfile.tsx` setzt `updateProfileMutation` bei Aktivierung:
-- `status: 'active'` 
-- `listing_type`, `premium_until`, etc.
-- **ABER NICHT** `payment_status: 'paid'`
-
-Wenn Admin ein Profil manuell aktiviert, wird `payment_status` nicht auf `'paid'` gesetzt. Das Profil erscheint dann im Dashboard als "nicht bezahlt".
-
-### Problem 2: Änderungsanfragen werden nicht angewandt
-Der "Genehmigen"-Button setzt nur `status: 'approved'`, wendet aber die Änderungen nicht auf die Profil-Tabellen an.
+1. **Genehmigen muss zuverlässig funktionieren** - alle ausgewählten Änderungen (Kategorien, Fotos, Text) werden tatsächlich auf das Profil übernommen
+2. **Profile ohne Kategorie können nicht erstellt werden** - das ist bereits via Trigger abgesichert
+3. **Einfache Differenzierung:**
+   - **Nicht aktiv (draft/pending/rejected):** Direkte Änderungen möglich
+   - **Aktiv:** Änderungen NUR über das Änderungsanfrage-Formular
+4. **payment_status bleibt bestehen** - wird nur nicht für die Bearbeitungs-Differenzierung genutzt
 
 ---
 
-## Technische Lösung
+## Fix 1: Foto-IDs korrekt speichern (KRITISCH)
 
-### 1. AdminProfile.tsx: Payment-Status bei Aktivierung setzen
+**Datei:** `src/pages/ProfileChangeRequest.tsx` (Zeile 537-561)
 
-In der `updateProfileMutation` muss bei `status === 'active'` auch `payment_status` gesetzt werden:
+**Problem:** Aktuell werden Foto-Referenzen als menschenlesbare Strings gespeichert ("Foto 1", "Foto 2"), aber `changeRequestUtils.ts` erwartet echte UUIDs.
 
+**Änderungen:**
+
+| Feld | Aktuell (falsch) | Neu (richtig) |
+|------|------------------|---------------|
+| `delete_photos` | `"Foto 1, Foto 2"` | `"uuid1,uuid2"` (echte UUIDs) |
+| `primary_photo` | `"Foto 3"` | `"photo-uuid"` (echte UUID) |
+| `reorder_photos` | `"1 → 3 → 2"` | `"uuid1,uuid3,uuid2"` (UUIDs in neuer Reihenfolge) |
+
+**Code-Änderung (Zeile 537-561):**
 ```typescript
-// Bei Aktivierung: payment_status auf 'paid' setzen (falls nicht bereits 'free')
-if (data.status === 'active') {
-  // Hole aktuellen payment_status
-  const { data: currentProfile } = await supabase
-    .from('profiles')
-    .select('payment_status')
-    .eq('id', data.profileId)
-    .single();
-    
-  // Wenn nicht bereits 'free', auf 'paid' setzen
-  if (currentProfile?.payment_status !== 'free') {
-    updates.payment_status = 'paid';
+// DELETE PHOTOS - echte UUIDs speichern
+if (photosToDelete.length > 0) {
+  photoChanges.push({ 
+    field: 'delete_photos', 
+    old_value: `${photosToDelete.length} Fotos`, 
+    new_value: photosToDelete.join(',')  // ← Echte UUIDs statt "Foto 1, Foto 2"
+  });
+}
+
+// REORDER PHOTOS - UUIDs in neuer Reihenfolge speichern
+if (orderChanged) {
+  const oldOrderUUIDs = existingPhotos.map(p => p.id).join(',');
+  photoChanges.push({ 
+    field: 'reorder_photos', 
+    old_value: oldOrderUUIDs, 
+    new_value: newPhotoOrder.join(',')  // ← UUIDs statt "1 → 3 → 2"
+  });
+}
+
+// PRIMARY PHOTO - echte UUID speichern
+if (newPrimaryPhotoId) {
+  const currentPrimary = existingPhotos.find(p => p.is_primary);
+  if (currentPrimary?.id !== newPrimaryPhotoId) {
+    photoChanges.push({ 
+      field: 'primary_photo', 
+      old_value: currentPrimary?.id || '', 
+      new_value: newPrimaryPhotoId  // ← UUID statt "Foto 3"
+    });
   }
 }
 ```
 
-**Logik:**
-- `active` + `payment_status = 'pending'` ergibt keinen Sinn
-- Bei manueller Aktivierung durch Admin impliziert das bezahlt/freigegeben
-- Ausnahme: `payment_status = 'free'` bleibt bestehen (Gratis-Profil)
+---
 
-### 2. AdminChangeRequests.tsx: Änderungen tatsächlich anwenden
+## Fix 2: UUID-Löschlogik robust machen (WICHTIG)
 
-Neue Funktion `applyChangesToProfile()` die bei Genehmigung aufgerufen wird:
+**Datei:** `src/lib/changeRequestUtils.ts` (Zeile 187-197)
 
+**Problem:** Die aktuelle `.not('category_id', 'in', ...)` Syntax kann bei UUIDs Probleme verursachen.
+
+**Aktuelle Logik (problematisch):**
 ```typescript
-const applyChangesToProfile = async (request: ChangeRequest) => {
-  const changeGroups = parseDescription(request.description);
-  if (!changeGroups) return;
+.not('category_id', 'in', `(${resolvedCategoryIds.join(',')})`)
+```
 
-  const profileUpdates: Record<string, any> = {};
-  const contactUpdates: Record<string, any> = {};
-  let categoryIds: string[] | null = null;
+**Neue robuste Logik:**
+```typescript
+// Hole zuerst alle existierenden Kategorien
+const { data: existing } = await supabase
+  .from('profile_categories')
+  .select('category_id')
+  .eq('profile_id', request.profile_id);
 
-  for (const group of changeGroups) {
-    for (const change of group.changes) {
-      switch (change.field) {
-        // Profil-Felder
-        case 'display_name':
-        case 'about_me':
-        case 'city':
-        case 'canton':
-        case 'postal_code':
-          profileUpdates[change.field] = change.new_value;
-          break;
-        case 'coordinates':
-          const [lat, lng] = change.new_value.split(',');
-          profileUpdates.lat = parseFloat(lat);
-          profileUpdates.lng = parseFloat(lng);
-          break;
-        // Kontakt-Felder  
-        case 'phone':
-        case 'whatsapp':
-        case 'email':
-        case 'website':
-        case 'telegram':
-        case 'instagram':
-          contactUpdates[change.field] = change.new_value || null;
-          break;
-        // Kategorien
-        case 'categories':
-          categoryIds = change.new_value.split(',').filter(Boolean);
-          break;
-      }
-    }
-  }
+// Lösche nur die, die nicht mehr in der neuen Liste sind
+const toDelete = existing
+  ?.filter(e => !resolvedCategoryIds.includes(e.category_id))
+  .map(e => e.category_id) || [];
 
-  // 1. Profile-Tabelle aktualisieren
-  if (Object.keys(profileUpdates).length > 0) {
-    profileUpdates.updated_at = new Date().toISOString();
+for (const catId of toDelete) {
+  await supabase
+    .from('profile_categories')
+    .delete()
+    .eq('profile_id', request.profile_id)
+    .eq('category_id', catId);
+}
+```
+
+---
+
+## Fix 3: Foto-Reihenfolge verarbeiten (FEHLT KOMPLETT)
+
+**Datei:** `src/lib/changeRequestUtils.ts` → `processPhotoChanges()`
+
+**Problem:** Das Feld `reorder_photos` wird aktuell gar nicht verarbeitet - es gibt keinen Case dafür.
+
+**Hinzufügen in `processPhotoChanges()` (ca. Zeile 264):**
+```typescript
+// Reorder photos - update sort_order based on new UUID order
+if (change.field === 'reorder_photos' && change.new_value) {
+  const newOrder = change.new_value.split(',').filter(Boolean);
+  for (let i = 0; i < newOrder.length; i++) {
     await supabase
-      .from('profiles')
-      .update(profileUpdates)
-      .eq('id', request.profile_id);
-  }
-
-  // 2. Kontakt-Tabelle aktualisieren
-  if (Object.keys(contactUpdates).length > 0) {
-    await supabase
-      .from('profile_contacts')
-      .update({ ...contactUpdates, updated_at: new Date().toISOString() })
+      .from('photos')
+      .update({ sort_order: i })
+      .eq('id', newOrder[i])
       .eq('profile_id', request.profile_id);
   }
-
-  // 3. Kategorien aktualisieren
-  if (categoryIds !== null) {
-    await supabase
-      .from('profile_categories')
-      .delete()
-      .eq('profile_id', request.profile_id);
-      
-    if (categoryIds.length > 0) {
-      await supabase
-        .from('profile_categories')
-        .insert(categoryIds.map(id => ({
-          profile_id: request.profile_id,
-          category_id: id
-        })));
-    }
-  }
-
-  // 4. Foto-Änderungen verarbeiten
-  await processPhotoChanges(request);
-};
+}
 ```
 
-### 3. Foto-Änderungen verarbeiten
+**Hinweis:** Falls `photos.sort_order` nicht existiert, muss eine Migration erstellt werden, um dieses Feld hinzuzufügen.
 
-```typescript
-const processPhotoChanges = async (request: ChangeRequest) => {
-  const changeGroups = parseDescription(request.description);
-  const photoGroup = changeGroups?.find(g => g.type === 'photos');
-  if (!photoGroup) return;
+---
 
-  for (const change of photoGroup.changes) {
-    // Fotos löschen
-    if (change.field === 'delete_photos' && change.new_value) {
-      const idsToDelete = change.new_value.split(',');
-      for (const photoId of idsToDelete) {
-        const { data: photo } = await supabase
-          .from('photos')
-          .select('storage_path')
-          .eq('id', photoId)
-          .single();
-          
-        if (photo) {
-          await supabase.storage.from('profile-photos').remove([photo.storage_path]);
-          await supabase.from('photos').delete().eq('id', photoId);
-        }
-      }
-    }
-    
-    // Primäres Foto ändern
-    if (change.field === 'primary_photo' && change.new_value) {
-      await supabase
-        .from('photos')
-        .update({ is_primary: false })
-        .eq('profile_id', request.profile_id);
-      await supabase
-        .from('photos')
-        .update({ is_primary: true })
-        .eq('id', change.new_value);
-    }
-    
-    // Neue Fotos von change-request-media nach profile-photos kopieren
-    if (change.field === 'new_photos') {
-      const media = mediaUrls[request.id];
-      if (media?.length) {
-        for (const m of media) {
-          // Datei von change-request-media laden
-          const { data: fileData } = await supabase.storage
-            .from('change-request-media')
-            .download(m.storage_path);
-            
-          if (fileData) {
-            // In profile-photos hochladen
-            const newPath = `${request.profile_id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-            await supabase.storage
-              .from('profile-photos')
-              .upload(newPath, fileData);
-              
-            // DB-Eintrag erstellen
-            await supabase.from('photos').insert({
-              profile_id: request.profile_id,
-              storage_path: newPath,
-              is_primary: false,
-              media_type: 'image'
-            });
-          }
-        }
-      }
-    }
-  }
-};
-```
+## Fix 4: Datenbank-Migration - Trigger korrigieren (WICHTIG)
 
-### 4. Mutation erweitern
+**Neue Migration:** `supabase/migrations/XXXXXX_fix_category_update_trigger.sql`
 
-```typescript
-const updateStatusMutation = useMutation({
-  mutationFn: async ({ requestId, status, adminNote }) => {
-    const request = requests?.find(r => r.id === requestId);
-    
-    // Bei Genehmigung: Änderungen auf das Profil anwenden!
-    if (status === 'approved' && request) {
-      await applyChangesToProfile(request);
-    }
+**Problem:** Der Trigger `ensure_profile_has_category_update` prüft bei **jedem** Update eines aktiven Profils, ob Kategorien vorhanden sind - nicht nur beim Aktivieren.
 
-    // Status aktualisieren
-    const { error } = await supabase
-      .from('profile_change_requests')
-      .update({ status, admin_note: adminNote || null, updated_at: new Date().toISOString() })
-      .eq('id', requestId);
-
-    if (error) throw error;
-  },
-  onSuccess: () => {
-    // Cache für Live-Profil invalidieren
-    queryClient.invalidateQueries({ queryKey: ['admin-change-requests'] });
-    queryClient.invalidateQueries({ queryKey: ['profiles'] });
-    queryClient.invalidateQueries({ queryKey: ['profile-contacts'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-  }
-});
-```
-
-### 5. Bestehendes Profil korrigieren
-
-Für das bereits inkonsistente Profil (sermon9cw7@psovv.com):
-
+**Aktuelle Trigger-Bedingung:**
 ```sql
--- Korrigiere payment_status für aktives Profil
-UPDATE profiles 
-SET payment_status = 'paid'
-WHERE id = '06a895a5-9241-44f1-bbd2-efccdeee414d'
-  AND status = 'active';
+WHEN (NEW.status = 'active')  -- Feuert bei JEDEM Update!
+```
+
+**Neue Trigger-Bedingung:**
+```sql
+WHEN (NEW.status = 'active' AND OLD.status IS DISTINCT FROM 'active')
+-- Feuert NUR beim Wechsel AUF active
+```
+
+**Vollständige Migration:**
+```sql
+-- Fix: Trigger soll nur beim AKTIVIEREN prüfen, nicht bei jedem Update
+DROP TRIGGER IF EXISTS ensure_profile_has_category_update ON profiles;
+
+CREATE TRIGGER ensure_profile_has_category_update
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  WHEN (NEW.status = 'active' AND OLD.status IS DISTINCT FROM 'active')
+  EXECUTE FUNCTION check_profile_has_category();
 ```
 
 ---
 
-## Zusammenfassung der Änderungen
+## Fix 5: Einmalige Datenreparatur für inkonsistentes Profil
 
-| Datei | Änderung |
-|-------|----------|
-| **AdminProfile.tsx** | Bei `status = 'active'` auch `payment_status = 'paid'` setzen |
-| **AdminChangeRequests.tsx** | `applyChangesToProfile()` Funktion hinzufügen |
-| **AdminChangeRequests.tsx** | `processPhotoChanges()` für Foto-Handling |
-| **AdminChangeRequests.tsx** | Mutation erweitern: Änderungen bei Genehmigung anwenden |
-| **AdminChangeRequests.tsx** | Cache-Invalidierung für Live-Profil |
-| **Datenbank** | Korrektur für bestehendes inkonsistentes Profil |
+**In derselben Migration:**
+
+**Problem:** Das Profil `06a895a5-9241-44f1-bbd2-efccdeee414d` ist `status = 'active'` aber hat **0 Kategorien**.
+
+**SQL:**
+```sql
+-- Repariere das inkonsistente Profil (aktiv aber ohne Kategorien)
+INSERT INTO profile_categories (profile_id, category_id)
+SELECT 
+  '06a895a5-9241-44f1-bbd2-efccdeee414d', 
+  id 
+FROM categories 
+WHERE name = 'Damen'
+ON CONFLICT DO NOTHING;
+```
 
 ---
 
-## Sicherheit & Datenintegrität
+## Fix 6: Admin-Warnung bei Aktivierung ohne Kategorien (NICE-TO-HAVE)
 
-- Nur bei `status === 'approved'` werden Änderungen angewandt
-- `payment_status = 'free'` wird bei Admin-Aktivierung nicht überschrieben
-- Foto-Kopierung erfolgt mit korrektem Storage-Bucket-Wechsel
-- Cache wird nach Änderungen invalidiert für sofortige UI-Aktualisierung
+**Datei:** `src/pages/admin/AdminProfile.tsx`
+
+**Wo:** Im Status-Dialog, wenn Admin auf "Aktivieren" (status = 'active') klicken will
+
+**Hinzufügen:**
+```typescript
+{/* Warnung wenn Profil keine Kategorien hat */}
+{dialogStatus === 'active' && selectedProfile?.profile_categories?.length === 0 && (
+  <div className="bg-destructive/10 border border-destructive/50 rounded p-3 text-sm mb-4">
+    ⚠️ <strong>Achtung:</strong> Dieses Profil hat keine Kategorien zugewiesen. 
+    Es kann nicht aktiviert werden, bis mindestens eine Kategorie gesetzt ist.
+  </div>
+)}
+```
+
+---
+
+## Zusammenfassung: Dateien die geändert werden
+
+| Datei | Änderung | Priorität |
+|-------|----------|-----------|
+| `src/pages/ProfileChangeRequest.tsx` | Foto-IDs als echte UUIDs speichern | KRITISCH |
+| `src/lib/changeRequestUtils.ts` | UUID-Löschlogik robust + reorder_photos verarbeiten | KRITISCH |
+| `supabase/migrations/...sql` | Trigger nur bei Statuswechsel + Datenreparatur | WICHTIG |
+| `src/pages/admin/AdminProfile.tsx` | Warnung bei Aktivierung ohne Kategorien | NICE-TO-HAVE |
+
+---
+
+## Was NICHT geändert wird
+
+- **`payment_status` bleibt bestehen** - wird weiterhin für Zahlungs-Tracking verwendet
+- **Bearbeitungs-Differenzierung basiert nur auf `status`** - wie gewünscht
+- **UserDashboard.tsx** - keine Änderung nötig, da die bestehende Logik bereits korrekt nach `status === 'active'` differenziert (Zeile 368-394, 446-454)
+- **ProfileEdit.tsx** - keine Änderung nötig, prüft bereits `status === 'active'`
+
+---
+
+## Erwartetes Ergebnis nach diesem Fix
+
+1. **Genehmigen funktioniert zuverlässig** für alle Änderungstypen (Text, Kategorien, Fotos)
+2. **Foto-Löschungen, -Reihenfolge und Hauptfoto** werden korrekt übernommen
+3. **Kategorien** werden korrekt übernommen (auch wenn als Namen gespeichert)
+4. **Normale Text-/Adress-Updates** an aktiven Profilen werden nicht mehr durch den Trigger blockiert
+5. **Nicht aktive Profile:** Direkte Bearbeitung weiterhin möglich
+6. **Aktive Profile:** Nur über Änderungsanfrage bearbeitbar
+7. **Admin sieht klare Warnung** wenn er ein Profil ohne Kategorien aktivieren will
