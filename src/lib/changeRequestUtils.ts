@@ -142,52 +142,58 @@ export const applyChangesToProfile = async (
       }
     }
 
-    // 3. Update categories
-    if (categoryIds !== null) {
-      // Delete old categories
-      await supabase
-        .from('profile_categories')
-        .delete()
-        .eq('profile_id', request.profile_id);
+    // 3. Update categories - handle trigger that requires at least one category
+    if (categoryIds !== null && categoryIds.length > 0) {
+      // Check if values are UUIDs or names
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
       
-      // Insert new categories (resolve names to UUIDs if needed)
-      if (categoryIds.length > 0) {
-        // Check if values are UUIDs or names
-        const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      let resolvedCategoryIds: string[] = [];
+      
+      const uuids = categoryIds.filter(isUUID);
+      const names = categoryIds.filter(id => !isUUID(id));
+      
+      // Add UUIDs directly
+      resolvedCategoryIds = [...uuids];
+      
+      // Resolve names to UUIDs
+      if (names.length > 0) {
+        const { data: categories } = await supabase
+          .from('categories')
+          .select('id, name')
+          .in('name', names);
         
-        let resolvedCategoryIds: string[] = [];
+        if (categories) {
+          resolvedCategoryIds = [
+            ...resolvedCategoryIds,
+            ...categories.map(c => c.id)
+          ];
+        }
+      }
+      
+      if (resolvedCategoryIds.length > 0) {
+        // Strategy: Insert new ones first (ignoring duplicates), then delete old ones
+        // This avoids the trigger blocking because profile always has at least one category
         
-        const uuids = categoryIds.filter(isUUID);
-        const names = categoryIds.filter(id => !isUUID(id));
-        
-        // Add UUIDs directly
-        resolvedCategoryIds = [...uuids];
-        
-        // Resolve names to UUIDs
-        if (names.length > 0) {
-          const { data: categories } = await supabase
-            .from('categories')
-            .select('id, name')
-            .in('name', names);
-          
-          if (categories) {
-            resolvedCategoryIds = [
-              ...resolvedCategoryIds,
-              ...categories.map(c => c.id)
-            ];
-          }
+        // 1. First insert new categories (upsert approach - ignore if exists)
+        for (const catId of resolvedCategoryIds) {
+          await supabase
+            .from('profile_categories')
+            .upsert(
+              { profile_id: request.profile_id, category_id: catId },
+              { onConflict: 'profile_id,category_id', ignoreDuplicates: true }
+            );
         }
         
-        // Insert resolved category IDs
-        if (resolvedCategoryIds.length > 0) {
-          const { error } = await supabase
-            .from('profile_categories')
-            .insert(resolvedCategoryIds.map(id => ({
-              profile_id: request.profile_id,
-              category_id: id
-            })));
-          
-          if (error) throw error;
+        // 2. Then delete categories that are NOT in the new list
+        const { error: deleteError } = await supabase
+          .from('profile_categories')
+          .delete()
+          .eq('profile_id', request.profile_id)
+          .not('category_id', 'in', `(${resolvedCategoryIds.join(',')})`);
+        
+        if (deleteError) {
+          console.error('Error deleting old categories:', deleteError);
+          // Non-fatal - categories were added
         }
       }
     }
