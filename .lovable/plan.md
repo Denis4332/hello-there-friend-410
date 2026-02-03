@@ -1,68 +1,54 @@
 
-# ProfileEdit Fix: Echtes Speichern + Dashboard Navigation verbessern
+# "Profil aktualisieren" Button nach unten verschieben
 
-## Problem 1: Falscher Text & fehlender Save-Trigger
-- Text sagt "Alle Änderungen werden automatisch gespeichert" → **FALSCH**
-- "Zurück zum Dashboard" navigiert weg OHNE Änderungen zu speichern
-- Profil bleibt `active` statt `pending` weil handleFormSubmit nie aufgerufen wird
+## Problem
+Der "Profil aktualisieren" Button ist aktuell innerhalb der ProfileForm-Komponente (oben). Der User möchte ihn unten beim Hinweis-Bereich haben.
 
-## Problem 2: Admin Dashboard "Zu prüfen" nicht klickbar
-- Einzelne Kategorien (Profile/Verifikationen/Meldungen) nicht direkt anklickbar
+## Lösung
 
----
+### 1. ProfileForm.tsx anpassen
+- Den internen Submit-Button entfernen
+- Stattdessen eine `ref` oder `id` für das Formular hinzufügen, damit es extern submitted werden kann
+- Neue optionale Props: `showSubmitButton` (default: true) und `formId`
 
-## Lösung Teil 1: ProfileEdit.tsx komplett überarbeiten
-
-### Footer-Bereich ersetzen (Zeile 564-571)
-
-**Vorher:**
 ```tsx
-<div className="mt-8 p-4 bg-muted/50 rounded-lg flex items-center justify-between">
-  <p className="text-sm text-muted-foreground">
-    Alle Änderungen werden automatisch gespeichert.
-  </p>
-  <Button onClick={() => navigate('/mein-profil')}>
-    ← Zurück zum Dashboard
+// ProfileForm.tsx - Änderungen
+interface ProfileFormProps {
+  // ... bestehende Props
+  formId?: string;           // NEU: ID für externes Submit
+  showSubmitButton?: boolean; // NEU: Button intern anzeigen?
+}
+
+// Im Form-Tag:
+<form id={formId} onSubmit={...}>
+
+// Submit-Button am Ende:
+{showSubmitButton !== false && (
+  <Button type="submit" className="w-full" disabled={isSubmitting}>
+    {isSubmitting ? 'Wird gespeichert...' : submitButtonText}
   </Button>
-</div>
+)}
 ```
 
-**Nachher:**
+### 2. ProfileEdit.tsx anpassen
+- `formId="profile-edit-form"` an ProfileForm übergeben
+- `showSubmitButton={false}` setzen
+- Button unten im Footer-Bereich hinzufügen mit `form="profile-edit-form"`
+
 ```tsx
-<div className="mt-8 p-4 bg-muted/50 rounded-lg">
-  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-    <div className="text-sm text-muted-foreground">
-      <p className="font-medium text-foreground">Wichtig:</p>
-      <p>Klicke auf "Profil aktualisieren" oben, um deine Änderungen zu speichern.</p>
-      {isActiveProfile && (
-        <p className="text-orange-600 mt-1">
-          Nach dem Speichern wird dein Profil erneut geprüft.
-        </p>
-      )}
-    </div>
-    <Button 
-      variant="outline" 
-      onClick={() => navigate('/mein-profil')}
-    >
-      ← Zurück (ohne Speichern)
-    </Button>
-  </div>
-</div>
-```
+// ProfileEdit.tsx - ProfileForm Aufruf
+<ProfileForm
+  formId="profile-edit-form"
+  showSubmitButton={false}
+  onSubmit={handleFormSubmit}
+  // ... restliche Props
+/>
 
-### Zusätzlich: "Speichern und zurück" Button in ProfileForm
-
-Um es noch klarer zu machen, fügen wir im Footer-Bereich einen zusätzlichen Speicher-Button hinzu der:
-1. Das Formular programmatisch submitted
-2. Nach erfolgreichem Speichern automatisch zum Dashboard navigiert
-
-**Neue Variante mit beiden Optionen:**
-```tsx
+// Footer-Bereich mit beiden Buttons
 <div className="mt-8 p-4 bg-muted/50 rounded-lg">
   <div className="flex flex-col gap-4">
     <div className="text-sm text-muted-foreground">
       <p className="font-medium text-foreground">Hinweis:</p>
-      <p>Profildaten werden gespeichert wenn du oben auf "Profil aktualisieren" klickst.</p>
       <p>Foto-Uploads werden sofort gespeichert.</p>
       {isActiveProfile && (
         <p className="text-orange-600 mt-1">
@@ -72,9 +58,16 @@ Um es noch klarer zu machen, fügen wir im Footer-Bereich einen zusätzlichen Sp
     </div>
     <div className="flex flex-col sm:flex-row gap-2">
       <Button 
+        type="submit"
+        form="profile-edit-form"
+        disabled={isSubmitting}
+        className="sm:flex-1"
+      >
+        {isSubmitting ? 'Wird gespeichert...' : 'Profil aktualisieren'}
+      </Button>
+      <Button 
         variant="outline" 
         onClick={() => navigate('/mein-profil')}
-        className="sm:order-1"
       >
         ← Zurück ohne Speichern
       </Button>
@@ -83,69 +76,14 @@ Um es noch klarer zu machen, fügen wir im Footer-Bereich einen zusätzlichen Sp
 </div>
 ```
 
----
-
-## Lösung Teil 2: Admin Dashboard "Zu prüfen" klickbar machen
-
-### AdminDashboard.tsx - "Zu prüfen" Kachel (Zeile 84-116)
-
-**Vorher:** Ganze Kachel ist ein Link
-```tsx
-<Link to="/admin/profile?status=pending" className="group">
-  <div className="bg-card border rounded-xl p-6 min-h-[140px]...">
-    ...
-    <div>{stats?.toReview.profiles || 0} Profile</div>
-    <div>{stats?.toReview.verifications || 0} Verifikationen</div>
-    <div>{stats?.toReview.reports || 0} Meldungen</div>
-  </div>
-</Link>
-```
-
-**Nachher:** Einzelne klickbare Zeilen
-```tsx
-<div className="bg-card border rounded-xl p-6 min-h-[140px] hover:shadow-xl transition-all duration-300 hover:border-orange-500/50">
-  <div className="flex items-center justify-between mb-4">
-    <div className="p-3 rounded-lg bg-orange-500/10">
-      <AlertCircle className="h-6 w-6 text-orange-500" />
-    </div>
-    <div className="text-3xl font-bold text-orange-500">{stats?.toReview.total || 0}</div>
-  </div>
-  <div className="text-sm text-muted-foreground font-medium mb-2">Zu prüfen</div>
-  <div className="text-xs space-y-1">
-    <Link 
-      to="/admin/profile?status=pending" 
-      className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
-    >
-      → {stats?.toReview.profiles || 0} Profile
-    </Link>
-    <Link 
-      to="/admin/profile?tab=verifications" 
-      className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
-    >
-      → {stats?.toReview.verifications || 0} Verifikationen
-    </Link>
-    <Link 
-      to="/admin/reports" 
-      className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
-    >
-      → {stats?.toReview.reports || 0} Meldungen
-    </Link>
-  </div>
-</div>
-```
-
----
-
-## Zusammenfassung
+## Technische Details
 
 | Datei | Änderung |
 |-------|----------|
-| `ProfileEdit.tsx` | Falschen "Auto-Save" Text entfernen, klare Hinweise stattdessen |
-| `ProfileEdit.tsx` | "Zurück ohne Speichern" Button umbenennen |
-| `AdminDashboard.tsx` | "Zu prüfen" Kachel mit 3 klickbaren Links |
+| `ProfileForm.tsx` | Neue Props `formId` und `showSubmitButton` hinzufügen |
+| `ProfileEdit.tsx` | Button unten platzieren, Hinweistext anpassen |
 
 ## Resultat
-
-1. **User weiss jetzt**: Formular muss explizit gespeichert werden
-2. **User kann wählen**: Speichern (oben) oder Abbrechen (unten)
-3. **Admin Dashboard**: Direkter Zugriff auf Profile, Verifikationen, Meldungen
+- "Profil aktualisieren" Button ist jetzt unten neben "Zurück ohne Speichern"
+- User sieht beide Optionen direkt nebeneinander
+- Klarer Call-to-Action am Ende der Seite
