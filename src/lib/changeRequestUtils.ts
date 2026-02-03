@@ -92,9 +92,10 @@ export const applyChangesToProfile = async (
       case 'instagram':
         contactUpdates[change.field] = change.new_value || null;
         break;
-      // Categories
+      // Categories - could be UUIDs or names, need to handle both
       case 'categories':
-        categoryIds = change.new_value ? change.new_value.split(',').filter(Boolean) : [];
+        // Store raw value, will be resolved to UUIDs later
+        categoryIds = change.new_value ? change.new_value.split(',').map(s => s.trim()).filter(Boolean) : [];
         break;
     }
   }
@@ -149,16 +150,45 @@ export const applyChangesToProfile = async (
         .delete()
         .eq('profile_id', request.profile_id);
       
-      // Insert new categories
+      // Insert new categories (resolve names to UUIDs if needed)
       if (categoryIds.length > 0) {
-        const { error } = await supabase
-          .from('profile_categories')
-          .insert(categoryIds.map(id => ({
-            profile_id: request.profile_id,
-            category_id: id
-          })));
+        // Check if values are UUIDs or names
+        const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
         
-        if (error) throw error;
+        let resolvedCategoryIds: string[] = [];
+        
+        const uuids = categoryIds.filter(isUUID);
+        const names = categoryIds.filter(id => !isUUID(id));
+        
+        // Add UUIDs directly
+        resolvedCategoryIds = [...uuids];
+        
+        // Resolve names to UUIDs
+        if (names.length > 0) {
+          const { data: categories } = await supabase
+            .from('categories')
+            .select('id, name')
+            .in('name', names);
+          
+          if (categories) {
+            resolvedCategoryIds = [
+              ...resolvedCategoryIds,
+              ...categories.map(c => c.id)
+            ];
+          }
+        }
+        
+        // Insert resolved category IDs
+        if (resolvedCategoryIds.length > 0) {
+          const { error } = await supabase
+            .from('profile_categories')
+            .insert(resolvedCategoryIds.map(id => ({
+              profile_id: request.profile_id,
+              category_id: id
+            })));
+          
+          if (error) throw error;
+        }
       }
     }
 
