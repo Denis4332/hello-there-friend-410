@@ -1,46 +1,111 @@
-# Änderungsanfragen-System - IMPLEMENTIERT ✅
 
-Alle 6 Fixes wurden erfolgreich implementiert.
+# Plan: Preise-Seite korrigieren
 
-## Zusammenfassung
+## Problem
+Die Preise-Seite zeigt falsche Informationen über die Paket-Unterschiede:
 
-### Fix 1: Foto-IDs korrekt speichern ✅
-**Datei:** `src/pages/ProfileChangeRequest.tsx`
-- `delete_photos`: Speichert jetzt echte UUIDs statt "Foto 1, Foto 2"
-- `reorder_photos`: Speichert UUIDs in neuer Reihenfolge statt "1 → 3 → 2"
-- `primary_photo`: Speichert echte UUID statt "Foto 3"
+| Behauptung (falsch) | Realität |
+|---------------------|----------|
+| "Nur TOP ADs auf Homepage" | **ALLE** Profile (TOP, Premium, Basic) sind auf Homepage |
+| Homepage zeigt "TOP AD (max. 4)" | Homepage zeigt alle Profile mit Pagination |
+| "Auf Homepage" nur für TOP | Alle Pakete erscheinen auf Homepage |
+| "Schweizweite Sichtbarkeit" nur TOP | Alle sind schweizweit sichtbar - Unterschied ist Sortierung |
 
-### Fix 2: UUID-Löschlogik robust machen ✅
-**Datei:** `src/lib/changeRequestUtils.ts`
-- Ersetzt problematische `.not('in', ...)` Syntax
-- Holt existierende Kategorien und löscht einzeln
+## Änderungen
 
-### Fix 3: Foto-Reihenfolge verarbeiten ✅
-**Datei:** `src/lib/changeRequestUtils.ts`
-- Neuer Case für `reorder_photos` in `processPhotoChanges()`
-- Aktualisiert `sort_order` basierend auf UUID-Reihenfolge
+### 1. VisibilityExplanation-Komponente korrigieren (Zeile 60-168)
 
-### Fix 4: Datenbank-Trigger korrigiert ✅
-**Migration ausgeführt**
-- Trigger feuert nur noch beim Wechsel AUF `active`, nicht bei jedem Update
-- `WHEN (NEW.status = 'active' AND OLD.status IS DISTINCT FROM 'active')`
+**Visual Diagram ändern (Zeile 134-166):**
 
-### Fix 5: Datenreparatur ✅
-**Migration ausgeführt**
-- Inkonsistentes Profil `06a895a5...` hat jetzt Kategorie "Damen"
-- `sort_order` Spalte zu `photos` Tabelle hinzugefügt
+Aktuell:
+```
+Homepage: "TOP AD Inserate (max. 4)" - "Schweizweit für alle Besucher sichtbar"
+```
 
-### Fix 6: Admin-Warnung ✅
-**Datei:** `src/pages/admin/AdminProfile.tsx`
-- Warnung bei Aktivierung ohne Kategorien
-- "Freigeben" Option deaktiviert wenn Kategorien fehlen
+Neu:
+```
+Homepage: Alle Pakete sichtbar
+- TOP AD: Immer ganz oben
+- Premium: Nach TOP ADs
+- Basic: Standard-Platzierung
+```
 
-## Erwartetes Verhalten
+**Tier-Beschreibungen anpassen:**
 
-1. **Genehmigen funktioniert zuverlässig** für alle Änderungstypen
-2. **Foto-Löschungen, -Reihenfolge und Hauptfoto** werden korrekt übernommen
-3. **Kategorien** werden korrekt übernommen
-4. **Normale Updates** an aktiven Profilen werden nicht mehr blockiert
-5. **Nicht aktive Profile:** Direkte Bearbeitung möglich
-6. **Aktive Profile:** Nur über Änderungsanfrage bearbeitbar
-7. **Admin sieht Warnung** wenn Profil ohne Kategorien aktiviert werden soll
+| Paket | Aktuell | Neu (korrekt) |
+|-------|---------|---------------|
+| TOP AD | "Schweizweit auf Homepage sichtbar" | "Auf Homepage **an erster Stelle**, beste Platzierung in Suche" |
+| Premium | "Im Kanton/Radius sichtbar" | "Auf Homepage nach TOP ADs, bevorzugte Platzierung in Suche" |
+| Basic | "Im Kanton/Radius sichtbar" | "Auf Homepage sichtbar, Standard-Platzierung in Suche" |
+
+### 2. Package-Features korrigieren (Zeile 306-347)
+
+**Basic Features ändern:**
+```
+- 'Erscheint auf Homepage'           ← NEU
+- 'Erscheint in Suchergebnissen'
+- 'Standard-Platzierung'
+- 'Profil-Seite'
+- 'Foto-Upload'
+```
+
+**Premium Features ändern:**
+```
+- 'Alles von Basic +'
+- 'Bessere Platzierung auf Homepage & Suche'   ← GEÄNDERT
+- 'Goldener VIP Badge'
+- 'Erscheint vor Basic-Inseraten'
+```
+
+**TOP AD Features ändern:**
+```
+- 'Alles von Premium +'
+- '⭐ Immer ganz oben auf Homepage'            ← GEÄNDERT
+- 'Beste Platzierung in allen Suchergebnissen'
+- 'TOP AD Banner'
+- 'Maximale Sichtbarkeit'
+```
+
+### 3. Feature-Vergleich-Tabelle korrigieren (Zeile 456-467)
+
+**Zeile "Auf Homepage" ändern:**
+```
+Aktuell:   Basic: –  | Premium: –  | TOP: ✓
+Neu:       Basic: ✓  | Premium: ✓  | TOP: ✓
+```
+
+**Zeile "Schweizweite Sichtbarkeit" ändern oder entfernen:**
+- Option A: Alle auf ✓ setzen (weil alle auf Homepage sichtbar sind)
+- Option B: Zeile umbenennen zu "Beste Platzierung" (nur TOP ✓)
+
+**Empfehlung:** Zeile umbenennen zu "Top-Platzierung garantiert" → nur TOP ✓
+
+### 4. Zusammenfassung der geänderten Zeilen
+
+| Zeile | Datei | Änderung |
+|-------|-------|----------|
+| 72-96 | Preise.tsx | Tier-Beschreibungstexte anpassen |
+| 134-166 | Preise.tsx | Visual Diagram korrigieren |
+| 306-312 | Preise.tsx | Basic Features aktualisieren |
+| 323-329 | Preise.tsx | Premium Features aktualisieren |
+| 339-346 | Preise.tsx | TOP AD Features aktualisieren |
+| 456-467 | Preise.tsx | Feature-Vergleich-Tabelle korrigieren |
+
+---
+
+## Technische Details
+
+Alle Änderungen betreffen **nur hardcodierte Texte** in `src/pages/Preise.tsx`. Die CMS-Einstellungen (getSetting) werden weiterhin respektiert - falls im CMS korrekte Werte hinterlegt sind, werden diese angezeigt.
+
+**Wichtig:** Die Default-Werte (Fallbacks) werden korrigiert, sodass ohne CMS-Einstellungen trotzdem korrekte Informationen angezeigt werden.
+
+---
+
+## Erwartetes Ergebnis
+
+Nach der Korrektur:
+- ✅ Alle Pakete zeigen "Auf Homepage" als Feature
+- ✅ Der Unterschied (Platzierung) ist klar kommuniziert
+- ✅ Keine irreführenden Aussagen mehr
+- ✅ Tabelle zeigt korrekt an, dass alle auf Homepage sind
+- ✅ TOP AD Vorteil = "Immer ganz oben" statt "Exklusiver Homepage-Zugang"
