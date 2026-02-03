@@ -18,7 +18,11 @@ const profileSchema = z.object({
   is_adult: z.boolean().refine((val) => val === true, {
     message: 'Du musst bestätigen, dass du volljährig bist',
   }),
-  gender: z.string().optional(),
+  // Preprocess to handle null/empty from DB -> undefined for optional
+  gender: z.preprocess(
+    (val) => (val === null || val === '' ? undefined : val),
+    z.string().optional()
+  ),
   city: z.string().min(1, 'Stadt ist erforderlich'),
   canton: z.string().min(1, 'Kanton ist erforderlich'),
   postal_code: z.string().optional(),

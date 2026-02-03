@@ -356,7 +356,7 @@ const ProfileEdit = () => {
   const defaultValues: ProfileFormData = {
     display_name: profile.display_name,
     is_adult: true,
-    gender: profile.gender,
+    gender: profile.gender ?? undefined, // Handle null from DB gracefully
     city: profile.city,
     canton: profile.canton,
     postal_code: profile.postal_code || '',
