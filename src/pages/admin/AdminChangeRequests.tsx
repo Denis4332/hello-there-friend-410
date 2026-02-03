@@ -153,11 +153,15 @@ const AdminChangeRequests = () => {
     }
   };
 
-  // Load media for photo requests when they appear
+  // Load media for photo and combined requests when they appear
   useEffect(() => {
     if (requests) {
       requests
-        .filter(r => r.request_type === 'photos')
+        .filter(r => 
+          r.request_type === 'photos' || 
+          r.request_type === 'combined' ||
+          (r.description && r.description.includes('"new_photos"'))
+        )
         .forEach(r => loadMediaForRequest(r.id));
     }
   }, [requests]);
@@ -404,8 +408,10 @@ const AdminChangeRequests = () => {
                       })()}
                     </div>
 
-                    {/* Media images for photo requests */}
-                    {request.request_type === 'photos' && (
+                    {/* Media images for photo and combined requests */}
+                    {(request.request_type === 'photos' || 
+                      request.request_type === 'combined' ||
+                      mediaUrls[request.id]?.length > 0) && (
                       <div>
                         <p className="text-sm font-medium mb-2 flex items-center gap-2">
                           <ImageIcon className="h-4 w-4" />
