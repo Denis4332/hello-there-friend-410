@@ -457,6 +457,7 @@ export type Database = {
           is_primary: boolean | null
           media_type: string | null
           profile_id: string
+          sort_order: number | null
           storage_path: string
         }
         Insert: {
@@ -465,6 +466,7 @@ export type Database = {
           is_primary?: boolean | null
           media_type?: string | null
           profile_id: string
+          sort_order?: number | null
           storage_path: string
         }
         Update: {
@@ -473,6 +475,7 @@ export type Database = {
           is_primary?: boolean | null
           media_type?: string | null
           profile_id?: string
+          sort_order?: number | null
           storage_path?: string
         }
         Relationships: [

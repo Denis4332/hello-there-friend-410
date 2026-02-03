@@ -142,7 +142,7 @@ export const applyChangesToProfile = async (
       }
     }
 
-    // 3. Update categories - handle trigger that requires at least one category
+    // 3. Update categories - FIX: Robust UUID deletion logic
     if (categoryIds !== null && categoryIds.length > 0) {
       // Check if values are UUIDs or names
       const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
@@ -184,16 +184,27 @@ export const applyChangesToProfile = async (
             );
         }
         
-        // 2. Then delete categories that are NOT in the new list
-        const { error: deleteError } = await supabase
+        // 2. FIX: Robust deletion - fetch existing and delete individually
+        // The .not('in', ...) syntax can fail with UUIDs
+        const { data: existingCategories } = await supabase
           .from('profile_categories')
-          .delete()
-          .eq('profile_id', request.profile_id)
-          .not('category_id', 'in', `(${resolvedCategoryIds.join(',')})`);
+          .select('category_id')
+          .eq('profile_id', request.profile_id);
         
-        if (deleteError) {
-          console.error('Error deleting old categories:', deleteError);
-          // Non-fatal - categories were added
+        const toDelete = existingCategories
+          ?.filter(e => !resolvedCategoryIds.includes(e.category_id))
+          .map(e => e.category_id) || [];
+        
+        for (const catId of toDelete) {
+          const { error: deleteError } = await supabase
+            .from('profile_categories')
+            .delete()
+            .eq('profile_id', request.profile_id)
+            .eq('category_id', catId);
+          
+          if (deleteError) {
+            console.error('Error deleting category:', catId, deleteError);
+          }
         }
       }
     }
@@ -261,6 +272,18 @@ const processPhotoChanges = async (
         .from('photos')
         .update({ is_primary: true })
         .eq('id', change.new_value);
+    }
+    
+    // FIX 3: Reorder photos - update sort_order based on new UUID order
+    if (change.field === 'reorder_photos' && change.new_value) {
+      const newOrder = change.new_value.split(',').filter(Boolean);
+      for (let i = 0; i < newOrder.length; i++) {
+        await supabase
+          .from('photos')
+          .update({ sort_order: i })
+          .eq('id', newOrder[i])
+          .eq('profile_id', request.profile_id);
+      }
     }
     
     // Copy new photos from change-request-media to profile-photos

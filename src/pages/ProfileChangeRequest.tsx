@@ -497,14 +497,17 @@ const ProfileChangeRequest = () => {
       allChanges.push({ type: 'location', changes: locationChanges });
     }
 
-    // Category changes
+    // Category changes - store UUIDs for processing, names for display
     const categoriesChanged = JSON.stringify([...selectedCategories].sort()) !== JSON.stringify([...currentCategories].sort());
     if (categoriesChanged) {
-      const oldCatNames = currentCategories.map(id => categories.find(c => c.id === id)?.name || id).join(', ');
-      const newCatNames = selectedCategories.map(id => categories.find(c => c.id === id)?.name || id).join(', ');
+      // Store category UUIDs (not names) so changeRequestUtils can process them
       allChanges.push({ 
         type: 'categories', 
-        changes: [{ field: 'categories', old_value: oldCatNames, new_value: newCatNames }] 
+        changes: [{ 
+          field: 'categories', 
+          old_value: currentCategories.join(','),  // UUIDs for reference
+          new_value: selectedCategories.join(',')   // UUIDs for processing
+        }] 
       });
     }
 
@@ -532,31 +535,40 @@ const ProfileChangeRequest = () => {
       allChanges.push({ type: 'contact', changes: contactChanges });
     }
 
-    // Photo changes
+    // Photo changes - FIX: Store actual UUIDs, not human-readable strings
     const photoChanges: { field: string; old_value: string; new_value: string }[] = [];
+    
+    // DELETE PHOTOS - store actual UUIDs
     if (photosToDelete.length > 0) {
-      const deleteNames = photosToDelete.map(id => {
-        const idx = existingPhotos.findIndex(p => p.id === id);
-        return `Foto ${idx + 1}`;
-      }).join(', ');
-      photoChanges.push({ field: 'delete_photos', old_value: `${photosToDelete.length} Fotos`, new_value: deleteNames });
+      photoChanges.push({ 
+        field: 'delete_photos', 
+        old_value: `${photosToDelete.length} Fotos`,  // Human-readable for display
+        new_value: photosToDelete.join(',')            // Actual UUIDs for processing
+      });
     }
+    
+    // REORDER PHOTOS - store UUIDs in new order
     if (orderChanged) {
-      const oldOrder = existingPhotos.map((_, i) => i + 1).join(' → ');
-      const newOrderStr = newPhotoOrder.map(id => {
-        const idx = existingPhotos.findIndex(p => p.id === id);
-        return idx + 1;
-      }).join(' → ');
-      photoChanges.push({ field: 'reorder_photos', old_value: oldOrder, new_value: newOrderStr });
+      const oldOrderUUIDs = existingPhotos.map(p => p.id).join(',');
+      photoChanges.push({ 
+        field: 'reorder_photos', 
+        old_value: oldOrderUUIDs,           // Old order UUIDs
+        new_value: newPhotoOrder.join(',')  // New order UUIDs
+      });
     }
+    
+    // PRIMARY PHOTO - store actual UUID
     if (newPrimaryPhotoId) {
       const currentPrimary = existingPhotos.find(p => p.is_primary);
       if (currentPrimary?.id !== newPrimaryPhotoId) {
-        const oldIdx = existingPhotos.findIndex(p => p.is_primary) + 1;
-        const newIdx = existingPhotos.findIndex(p => p.id === newPrimaryPhotoId) + 1;
-        photoChanges.push({ field: 'primary_photo', old_value: `Foto ${oldIdx}`, new_value: `Foto ${newIdx}` });
+        photoChanges.push({ 
+          field: 'primary_photo', 
+          old_value: currentPrimary?.id || '',  // Old primary UUID
+          new_value: newPrimaryPhotoId          // New primary UUID
+        });
       }
     }
+    
     if (selectedFiles.length > 0) {
       photoChanges.push({ field: 'new_photos', old_value: '', new_value: `${selectedFiles.length} neue Bilder` });
     }
