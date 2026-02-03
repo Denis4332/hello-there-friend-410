@@ -12,6 +12,13 @@ const SiteSettingsContext = createContext<SiteSettingsContextType | undefined>(u
 export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
   const { settings, getSetting, isLoading } = useBatchSiteSettings();
 
+  // Prevent FOUC: Show minimal loading state until critical settings are loaded
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background" />
+    );
+  }
+
   return (
     <SiteSettingsContext.Provider value={{ settings, getSetting, isLoading }}>
       {children}
