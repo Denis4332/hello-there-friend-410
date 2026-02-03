@@ -29,6 +29,7 @@ interface ProfileCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (profileId: string) => void;
   isTogglingFavorite?: boolean;
+  currentUserId?: string; // To hide favorite button on own profile
 }
 
 const ProfileCardComponent = ({ 
@@ -37,8 +38,10 @@ const ProfileCardComponent = ({
   isFavorite: isFavoriteProp,
   onToggleFavorite,
   isTogglingFavorite,
+  currentUserId,
 }: ProfileCardProps) => {
   const distance = profile.distance_km;
+  const isOwnProfile = currentUserId && (profile as any).user_id === currentUserId;
   const primaryPhoto = profile.photos?.find((p) => p.is_primary) || profile.photos?.[0];
   
   // OPTIMIZED: Smaller size + WebP for faster loading (200x267 instead of 300x400)
@@ -153,20 +156,22 @@ const ProfileCardComponent = ({
           </div>
         )}
 
-        {/* Favorite Heart - Bottom Right */}
-        <button
-          onClick={handleFavoriteClick}
-          disabled={isToggling}
-          className="absolute bottom-4 right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95"
-          aria-label={isProfileFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
-        >
-          <Heart 
-            className={cn(
-              "h-5 w-5 transition-colors",
-              isProfileFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
-            )}
-          />
-        </button>
+        {/* Favorite Heart - Bottom Right (hidden on own profile) */}
+        {!isOwnProfile && (
+          <button
+            onClick={handleFavoriteClick}
+            disabled={isToggling}
+            className="absolute bottom-4 right-2 z-10 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg transition-all hover:scale-110 active:scale-95"
+            aria-label={isProfileFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+          >
+            <Heart 
+              className={cn(
+                "h-5 w-5 transition-colors",
+                isProfileFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
+              )}
+            />
+          </button>
+        )}
 
         {/* Badges - Top Left */}
         <div className={cn(

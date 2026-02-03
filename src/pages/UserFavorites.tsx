@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
+import { useFavorites } from '@/hooks/useFavorites';
 import { Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ const UserFavorites = () => {
   const { user } = useAuth();
   const { getSetting } = useSiteSettingsContext();
   const seoTitle = getSetting('seo_favorites_title', 'Favoriten');
+  const { favorites, toggleFavorite, isToggling } = useFavorites();
   
   const { data: favoriteProfiles = [], isLoading } = useQuery({
     queryKey: ['favorite-profiles', user?.id],
@@ -87,7 +89,14 @@ const UserFavorites = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {favoriteProfiles.map((profile: any) => (
-              <ProfileCard key={profile.id} profile={profile} />
+              <ProfileCard 
+                key={profile.id} 
+                profile={profile}
+                isFavorite={favorites.includes(profile.id)}
+                onToggleFavorite={toggleFavorite}
+                isTogglingFavorite={isToggling}
+                currentUserId={user?.id}
+              />
             ))}
           </div>
         )}
