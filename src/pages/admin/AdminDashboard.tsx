@@ -72,22 +72,35 @@ const AdminDashboard = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {/* Zu prüfen */}
-              <Link to="/admin/profile?status=pending" className="group">
-                <div className="bg-card border rounded-xl p-6 min-h-[140px] hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-orange-500/50">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 rounded-lg bg-orange-500/10">
-                      <AlertCircle className="h-6 w-6 text-orange-500" />
-                    </div>
-                    <div className="text-3xl font-bold text-orange-500">{stats?.toReview.total || 0}</div>
+              <div className="bg-card border rounded-xl p-6 min-h-[140px] hover:shadow-xl transition-all duration-300 hover:border-orange-500/50">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-lg bg-orange-500/10">
+                    <AlertCircle className="h-6 w-6 text-orange-500" />
                   </div>
-                  <div className="text-sm text-muted-foreground font-medium mb-2">Zu prüfen</div>
-                  <div className="text-xs text-muted-foreground space-y-0.5">
-                    <div>{stats?.toReview.profiles || 0} Profile</div>
-                    <div>{stats?.toReview.verifications || 0} Verifikationen</div>
-                    <div>{stats?.toReview.reports || 0} Meldungen</div>
-                  </div>
+                  <div className="text-3xl font-bold text-orange-500">{stats?.toReview.total || 0}</div>
                 </div>
-              </Link>
+                <div className="text-sm text-muted-foreground font-medium mb-2">Zu prüfen</div>
+                <div className="text-xs space-y-1">
+                  <Link 
+                    to="/admin/profile?status=pending" 
+                    className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
+                  >
+                    → {stats?.toReview.profiles || 0} Profile
+                  </Link>
+                  <Link 
+                    to="/admin/profile?tab=verifications" 
+                    className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
+                  >
+                    → {stats?.toReview.verifications || 0} Verifikationen
+                  </Link>
+                  <Link 
+                    to="/admin/reports" 
+                    className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
+                  >
+                    → {stats?.toReview.reports || 0} Meldungen
+                  </Link>
+                </div>
+              </div>
 
               {/* Live */}
               <Link to="/admin/profile?status=active" className="group">

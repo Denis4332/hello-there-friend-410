@@ -561,13 +561,27 @@ const ProfileEdit = () => {
               </Card>
             </div>
 
-            <div className="mt-8 p-4 bg-muted/50 rounded-lg flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Alle Änderungen werden automatisch gespeichert.
-              </p>
-              <Button onClick={() => navigate('/mein-profil')}>
-                ← Zurück zum Dashboard
-              </Button>
+            <div className="mt-8 p-4 bg-muted/50 rounded-lg">
+              <div className="flex flex-col gap-4">
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground">Hinweis:</p>
+                  <p>Profildaten werden gespeichert wenn du oben auf "Profil aktualisieren" klickst.</p>
+                  <p>Foto-Uploads werden sofort gespeichert.</p>
+                  {isActiveProfile && (
+                    <p className="text-orange-600 mt-1">
+                      ⚠️ Nach dem Speichern muss dein Profil erneut geprüft werden.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/mein-profil')}
+                  >
+                    ← Zurück ohne Speichern
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
