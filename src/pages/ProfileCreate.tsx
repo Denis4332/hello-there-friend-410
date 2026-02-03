@@ -65,6 +65,16 @@ const ProfileCreate = () => {
         .maybeSingle();
       
       if (existingProfile) {
+        // SICHERHEIT: Aktive Profile können nicht über ProfileCreate bearbeitet werden
+        if (existingProfile.status === 'active') {
+          toast({
+            title: 'Profil bereits aktiv',
+            description: 'Änderungen nur über "Änderung anfragen" möglich. Für Upgrades nutze den Upgrade-Button im Dashboard.',
+            variant: 'destructive',
+          });
+          navigate('/mein-profil');
+          return;
+        }
         setProfileId(existingProfile.id);
         
         // WICHTIG: listing_type wiederherstellen für Video-Limits!
