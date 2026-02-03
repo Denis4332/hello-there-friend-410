@@ -143,7 +143,7 @@ const ZahlungErfolg = () => {
                   <span className="font-medium">Zahlung bestätigt</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Ihre Zahlung wurde erfolgreich verarbeitet. Ihr Profil wird nun freigeschaltet.
+                  Ihre Zahlung wurde erfolgreich verarbeitet. Ihr Profil wird nun von unserem Team geprüft und freigeschaltet.
                 </p>
               </div>
             )}

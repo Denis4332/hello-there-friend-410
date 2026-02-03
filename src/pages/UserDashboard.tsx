@@ -442,8 +442,8 @@ const UserDashboard = () => {
                     </div>
                   )}
 
-                  {/* Wenn Zahlung ausstehend: "Paket ändern" zeigen */}
-                  {profile.payment_status === 'pending' && (
+                  {/* Wenn Zahlung ausstehend UND NICHT aktiv: "Paket ändern" zeigen */}
+                  {profile.payment_status === 'pending' && profile.status !== 'active' && (
                     <Button 
                       onClick={() => navigate('/profil/erstellen?step=listing-type')} 
                       variant="outline"
@@ -453,8 +453,8 @@ const UserDashboard = () => {
                     </Button>
                   )}
 
-                  {/* Wenn bezahlt und nicht TOP: Upgrade anbieten */}
-                  {profile.payment_status === 'paid' && profile.listing_type !== 'top' && (
+                  {/* Wenn AKTIV + BEZAHLT: Upgrade nur wenn nicht TOP */}
+                  {profile.status === 'active' && profile.payment_status === 'paid' && profile.listing_type !== 'top' && (
                     <Button 
                       onClick={() => navigate('/user/upgrade')} 
                       className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
@@ -464,14 +464,32 @@ const UserDashboard = () => {
                     </Button>
                   )}
 
-                  {/* Wenn bezahlt und TOP: Verlängern anbieten */}
-                  {profile.payment_status === 'paid' && profile.listing_type === 'top' && (
+                  {/* Wenn AKTIV + BEZAHLT + TOP: Verlängern anbieten */}
+                  {profile.status === 'active' && profile.payment_status === 'paid' && profile.listing_type === 'top' && (
                     <Button 
                       onClick={() => navigate('/user/upgrade')} 
                       variant="outline"
                       className="w-full"
                     >
                       {extendButton || 'Inserat verlängern'}
+                    </Button>
+                  )}
+
+                  {/* Wenn AKTIV: Info über Downgrade-Beschränkung */}
+                  {profile.status === 'active' && profile.payment_status === 'paid' && profile.listing_type !== 'basic' && (
+                    <p className="text-xs text-muted-foreground text-center mt-2">
+                      Downgrade erst nach Ablauf am{' '}
+                      {new Date(profile.premium_until || profile.top_ad_until || '').toLocaleDateString('de-CH')} möglich
+                    </p>
+                  )}
+
+                  {/* Wenn INAKTIV (abgelaufen): Reaktivieren anbieten */}
+                  {profile.status === 'inactive' && (
+                    <Button 
+                      onClick={() => navigate('/user/upgrade')} 
+                      className="w-full"
+                    >
+                      Inserat reaktivieren
                     </Button>
                   )}
                 </div>

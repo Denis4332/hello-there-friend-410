@@ -5,12 +5,19 @@ import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Crown, Star, Zap, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Crown, Star, Zap, ArrowLeft, Info, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { PaymentMethodModal } from '@/components/PaymentMethodModal';
+
+// Paket-Hierarchie für Upgrade-Check
+const PACKAGE_RANK: Record<string, number> = { basic: 1, premium: 2, top: 3 };
+
+const isUpgrade = (from: string, to: string): boolean => {
+  return (PACKAGE_RANK[to] || 0) > (PACKAGE_RANK[from] || 0);
+};
 
 const ProfileUpgrade = () => {
   const navigate = useNavigate();
@@ -77,6 +84,19 @@ const ProfileUpgrade = () => {
     if (!profile || !selectedListingType) return;
     
     try {
+      // Bei aktivem Profil: Status auf pending setzen für Admin-Review nach Upgrade
+      if (profile.status === 'active') {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            listing_type: selectedListingType,
+            status: 'pending', // WICHTIG: Zurück auf pending für Admin-Review
+          })
+          .eq('id', profile.id);
+        
+        if (updateError) throw updateError;
+      }
+
       const amountCents = getAmountForListingType(selectedListingType) * 100;
       
       const { data, error } = await supabase.functions.invoke('payport-checkout', {
@@ -90,7 +110,6 @@ const ProfileUpgrade = () => {
       
       if (error) throw error;
       
-      // Debug-Logging nur mit ?debug=1
       const debug = new URLSearchParams(window.location.search).get('debug') === '1';
       if (debug) {
         console.log('PayPort Debug:', data.debug);
@@ -106,122 +125,10 @@ const ProfileUpgrade = () => {
     }
   };
 
-  const handleReactivate = async (listingType: string) => {
-    if (!profile) return;
-    
-    try {
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30);
-      
-      const updates: any = {
-        status: 'active',
-        listing_type: listingType
-      };
-      
-      if (listingType === 'top') {
-        updates.top_ad_until = expiryDate.toISOString();
-      } else {
-        updates.premium_until = expiryDate.toISOString();
-      }
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', profile.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: 'Reaktivierung erfolgreich!',
-        description: `Dein ${listingType.toUpperCase()} Profil ist wieder aktiv für 30 Tage.`,
-      });
-      
-      await loadProfile();
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleExtend = async () => {
     if (!profile) return;
-    
-    try {
-      const currentExpiry = profile.listing_type === 'top' 
-        ? new Date(profile.top_ad_until)
-        : new Date(profile.premium_until);
-      
-      currentExpiry.setDate(currentExpiry.getDate() + 30);
-      
-      const updates: any = {};
-      if (profile.listing_type === 'top') {
-        updates.top_ad_until = currentExpiry.toISOString();
-      } else {
-        updates.premium_until = currentExpiry.toISOString();
-      }
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', profile.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: 'Verlängerung erfolgreich!',
-        description: 'Dein Profil wurde um 30 Tage verlängert.',
-      });
-      
-      await loadProfile();
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDowngrade = async (newType: 'basic' | 'premium') => {
-    if (!profile) return;
-    
-    try {
-      const updates: any = {
-        listing_type: newType
-      };
-      
-      // Behalte aktuelles Ablaufdatum
-      if (newType === 'premium') {
-        updates.top_ad_until = null;
-        // Premium behält premium_until
-      } else {
-        // Basic behält premium_until, entfernt top_ad_until
-        updates.top_ad_until = null;
-      }
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', profile.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: 'Downgrade erfolgreich!',
-        description: `Dein Profil wurde zu ${newType.toUpperCase()} geändert.`,
-      });
-      
-      await loadProfile();
-    } catch (error: any) {
-      toast({
-        title: 'Fehler',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+    setSelectedListingType(profile.listing_type);
+    setShowPaymentModal(true);
   };
 
   const getCurrentBadge = () => {
@@ -234,7 +141,8 @@ const ProfileUpgrade = () => {
     return badges[type as keyof typeof badges] || badges.basic;
   };
 
-  const packages = [
+  // Alle Pakete
+  const allPackages = [
     {
       id: 'basic',
       title: basicTitle || 'Standard Inserat',
@@ -247,7 +155,6 @@ const ProfileUpgrade = () => {
         'Bis zu 5 Fotos',
         'Kontaktdaten anzeigen',
       ],
-      disabled: profile?.listing_type === 'basic' || profile?.listing_type === 'premium' || profile?.listing_type === 'top',
     },
     {
       id: 'premium',
@@ -263,7 +170,6 @@ const ProfileUpgrade = () => {
         'Bis zu 10 Fotos + 1 Video',
         'Bessere Platzierung',
       ],
-      disabled: profile?.listing_type === 'premium' || profile?.listing_type === 'top',
     },
     {
       id: 'top',
@@ -278,7 +184,6 @@ const ProfileUpgrade = () => {
         'Schweizweit auf Startseite',
         'Bis zu 15 Fotos + 2 Videos',
       ],
-      disabled: profile?.listing_type === 'top',
     },
   ];
 
@@ -294,6 +199,18 @@ const ProfileUpgrade = () => {
   }
 
   const currentBadge = getCurrentBadge();
+  const isActiveProfile = profile?.status === 'active' && profile?.payment_status === 'paid';
+  const isInactiveProfile = profile?.status === 'inactive';
+  const currentListingType = profile?.listing_type || 'basic';
+
+  // Bei aktivem Profil: Nur Upgrades anzeigen (höhere Pakete)
+  // Bei inaktivem/pending Profil: Alle Pakete anzeigen
+  const availablePackages = isActiveProfile
+    ? allPackages.filter(pkg => isUpgrade(currentListingType, pkg.id))
+    : allPackages;
+
+  // Schon TOP und aktiv → Kein Upgrade möglich
+  const noUpgradeAvailable = isActiveProfile && availablePackages.length === 0;
 
   return (
     <>
@@ -316,7 +233,9 @@ const ProfileUpgrade = () => {
 
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Inserat upgraden</h1>
+            <h1 className="text-4xl font-bold mb-4">
+              {isInactiveProfile ? 'Inserat reaktivieren' : 'Inserat upgraden'}
+            </h1>
             <p className="text-xl text-muted-foreground mb-4">
               Dein aktuelles Paket: <Badge variant={currentBadge.variant}>{currentBadge.label}</Badge>
             </p>
@@ -337,7 +256,7 @@ const ProfileUpgrade = () => {
                     {getCurrentBadge().label}
                   </Badge>
                   <Badge variant={profile?.status === 'active' ? 'default' : 'destructive'}>
-                    {profile?.status === 'active' ? '✅ Aktiv' : '❌ Inaktiv'}
+                    {profile?.status === 'active' ? '✅ Aktiv' : profile?.status === 'inactive' ? '❌ Abgelaufen' : '⏳ ' + profile?.status}
                   </Badge>
                 </div>
               </div>
@@ -357,104 +276,123 @@ const ProfileUpgrade = () => {
                   </div>
                 )}
                 
-                {profile?.status === 'inactive' && (
-                  <Button 
-                    onClick={() => handleReactivate(profile.listing_type)} 
-                    className="w-full"
-                    variant="default"
-                  >
-                    Reaktivieren ({profile.listing_type.toUpperCase()})
+                {/* Aktives Profil: Verlängern-Button */}
+                {isActiveProfile && (
+                  <Button onClick={handleExtend} className="w-full">
+                    Verlängern (+30 Tage)
                   </Button>
-                )}
-                
-                {profile?.status === 'active' && (
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={handleExtend} className="flex-1">
-                      Verlängern (+30 Tage)
-                    </Button>
-                    
-                    {profile.listing_type === 'top' && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleDowngrade('premium')}
-                        className="flex-1"
-                      >
-                        Downgrade zu Premium
-                      </Button>
-                    )}
-                    
-                    {profile.listing_type === 'premium' && (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleDowngrade('basic')}
-                        className="flex-1"
-                      >
-                        Downgrade zu Basic
-                      </Button>
-                    )}
-                  </div>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Upgrade Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {packages.map((pkg) => {
-              const Icon = pkg.icon;
-              return (
-                <Card 
-                  key={pkg.id}
-                  className={`relative ${pkg.recommended ? 'border-amber-500 shadow-lg' : ''} ${pkg.disabled ? 'opacity-60' : ''}`}
-                >
-                  {pkg.recommended && (
-                    <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                      <span className="bg-gradient-to-r from-amber-400 to-pink-600 text-white px-4 py-1 rounded-full text-sm font-bold">
-                        Beliebt
-                      </span>
-                    </div>
-                  )}
-                  <CardHeader>
-                    <div className={`h-12 w-12 rounded-full ${pkg.iconBg} flex items-center justify-center mb-4`}>
-                      <Icon className={`h-6 w-6 ${pkg.iconColor}`} />
-                    </div>
-                    <CardTitle className="text-xl">{pkg.title}</CardTitle>
-                    <CardDescription className="text-2xl font-bold text-foreground">
-                      {pkg.price}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3 mb-6">
-                      {pkg.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button 
-                      className="w-full" 
-                      disabled={pkg.disabled}
-                      onClick={() => handleUpgrade(pkg.id as 'basic' | 'premium' | 'top')}
-                    >
-                      {pkg.disabled ? 'Aktuelles Paket' : 'Jetzt upgraden'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          {/* Info für TOP-User: Kein Upgrade möglich */}
+          {noUpgradeAvailable && (
+            <Card className="mb-8 bg-muted">
+              <CardContent className="p-6 text-center">
+                <Info className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="font-semibold text-lg mb-2">Du hast bereits das höchste Paket (TOP AD)</h3>
+                <p className="text-muted-foreground mb-4">
+                  Ein Upgrade ist nicht möglich. Du kannst dein Paket verlängern oder nach Ablauf ein anderes Paket wählen.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Downgrade erst nach Ablauf am{' '}
+                  {new Date(profile?.premium_until || profile?.top_ad_until || '').toLocaleDateString('de-CH')} möglich.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Info */}
+          {/* Info für aktive Profile: Downgrade-Beschränkung */}
+          {isActiveProfile && !noUpgradeAvailable && (
+            <Card className="mb-8 border-amber-500/50 bg-amber-500/5">
+              <CardContent className="p-4 flex items-start gap-3">
+                <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-amber-700 dark:text-amber-400">Upgrade jederzeit möglich</p>
+                  <p className="text-muted-foreground">
+                    Downgrade (zu einem günstigeren Paket) ist erst nach Ablauf am{' '}
+                    {new Date(profile?.premium_until || profile?.top_ad_until || '').toLocaleDateString('de-CH')} möglich.
+                    Nach dem Upgrade wird dein Profil erneut geprüft.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Upgrade/Reaktivierungs-Karten */}
+          {availablePackages.length > 0 && (
+            <div className={`grid gap-6 mb-12 ${availablePackages.length === 1 ? 'max-w-md mx-auto' : availablePackages.length === 2 ? 'md:grid-cols-2 max-w-2xl mx-auto' : 'md:grid-cols-3'}`}>
+              {availablePackages.map((pkg) => {
+                const Icon = pkg.icon;
+                const isCurrent = pkg.id === currentListingType;
+                return (
+                  <Card 
+                    key={pkg.id}
+                    className={`relative ${pkg.recommended ? 'border-amber-500 shadow-lg' : ''} ${isCurrent ? 'opacity-60' : ''}`}
+                  >
+                    {pkg.recommended && !isCurrent && (
+                      <div className="absolute -top-4 left-0 right-0 flex justify-center">
+                        <span className="bg-gradient-to-r from-amber-400 to-pink-600 text-white px-4 py-1 rounded-full text-sm font-bold">
+                          Empfohlen
+                        </span>
+                      </div>
+                    )}
+                    <CardHeader>
+                      <div className={`h-12 w-12 rounded-full ${pkg.iconBg} flex items-center justify-center mb-4`}>
+                        <Icon className={`h-6 w-6 ${pkg.iconColor}`} />
+                      </div>
+                      <CardTitle className="text-xl">{pkg.title}</CardTitle>
+                      <CardDescription className="text-2xl font-bold text-foreground">
+                        {pkg.price}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-3 mb-6">
+                        {pkg.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button 
+                        className="w-full" 
+                        disabled={isCurrent}
+                        onClick={() => handleUpgrade(pkg.id as 'basic' | 'premium' | 'top')}
+                      >
+                        {isCurrent 
+                          ? 'Aktuelles Paket' 
+                          : isActiveProfile 
+                            ? 'Jetzt upgraden' 
+                            : isInactiveProfile 
+                              ? 'Mit diesem Paket reaktivieren'
+                              : 'Auswählen'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Support-Info */}
           <Card className="bg-muted">
             <CardContent className="p-6">
               <h3 className="font-semibold mb-2">💡 Wichtige Informationen</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Du kannst jederzeit upgraden oder downgraden</li>
-                <li>• Bei Downgrade wird dein Inserat deaktiviert</li>
-                <li>• Upgrades werden sofort aktiviert</li>
-                <li>• Monatliche Kündigungsfrist</li>
+                <li>• Upgrades werden nach Admin-Prüfung aktiviert</li>
+                <li>• Downgrades sind erst nach Ablauf des aktuellen Pakets möglich</li>
+                <li>• Bei Fragen kontaktiere unseren Support</li>
               </ul>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => navigate('/kontakt')}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Support kontaktieren
+              </Button>
             </CardContent>
           </Card>
         </div>
