@@ -18,6 +18,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { applyChangesToProfile, parseDescription } from '@/lib/changeRequestUtils';
 
 interface ChangeRequest {
   id: string;
@@ -55,24 +56,7 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
   combined: 'Mehrere Bereiche',
 };
 
-// Parse combined changes from description
-interface ChangeGroup {
-  type: string;
-  changes: { field: string; old_value: string; new_value: string }[];
-}
-
-const parseDescription = (description: string): ChangeGroup[] | null => {
-  try {
-    const parsed = JSON.parse(description);
-    // Check if it's the new combined format (array of change groups)
-    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type && parsed[0].changes) {
-      return parsed as ChangeGroup[];
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
+// Note: parseDescription is now imported from changeRequestUtils
 
 const FIELD_LABELS: Record<string, string> = {
   display_name: 'Name',
@@ -189,6 +173,27 @@ const AdminChangeRequests = () => {
       status: 'approved' | 'rejected'; 
       adminNote: string;
     }) => {
+      // Find the request data
+      const request = requests?.find(r => r.id === requestId);
+      
+      // Bei Genehmigung: Änderungen auf das Profil anwenden!
+      if (status === 'approved' && request) {
+        const result = await applyChangesToProfile(
+          {
+            id: request.id,
+            profile_id: request.profile_id,
+            description: request.description,
+            request_type: request.request_type
+          },
+          mediaUrls
+        );
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Fehler beim Anwenden der Änderungen');
+        }
+      }
+
+      // Update request status
       const { error } = await supabase
         .from('profile_change_requests')
         .update({ 
@@ -201,12 +206,20 @@ const AdminChangeRequests = () => {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
+      // Invalidate all related queries for immediate UI refresh
       queryClient.invalidateQueries({ queryKey: ['admin-change-requests'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      
       toast({
-        title: variables.status === 'approved' ? 'Genehmigt' : 'Abgelehnt',
-        description: 'Die Anfrage wurde aktualisiert.',
+        title: variables.status === 'approved' ? '✅ Genehmigt & Angewandt' : '❌ Abgelehnt',
+        description: variables.status === 'approved' 
+          ? 'Die Änderungen wurden auf das Profil übertragen.'
+          : 'Die Anfrage wurde abgelehnt.',
       });
+      
       // Clear the admin note for this request
       setAdminNotes(prev => {
         const updated = { ...prev };

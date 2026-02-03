@@ -202,6 +202,20 @@ const AdminProfile = () => {
         }
       }
       
+      // FIX: Bei Aktivierung payment_status auf 'paid' setzen (außer bei 'free')
+      if (data.status === 'active') {
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('payment_status')
+          .eq('id', data.profileId)
+          .single();
+        
+        // Wenn nicht bereits 'free', auf 'paid' setzen
+        if (currentProfile?.payment_status !== 'free') {
+          updates.payment_status = 'paid';
+        }
+      }
+      
       // Update profile
       const { error: profileError } = await supabase
         .from('profiles')
