@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy, useEffect } from "react";
@@ -83,7 +82,6 @@ const App = () => {
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
         <ErrorBoundary>
           <BrowserRouter>
             <ScrollToTop />

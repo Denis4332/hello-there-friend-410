@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -330,6 +330,9 @@ const ProfileCreate = () => {
     }
   };
 
+  // Ref für Timeout-Cleanup
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+
   const handlePhotosComplete = () => {
     if (uploadedPhotoCount === 0) {
       toast({
@@ -340,11 +343,26 @@ const ProfileCreate = () => {
       return;
     }
     setCurrentStep('verification');
-    setTimeout(() => {
+    
+    // Cleanup vorherigen Timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    scrollTimeoutRef.current = setTimeout(() => {
       const verificationTab = document.querySelector('[value="verification"]');
       verificationTab?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
   };
+
+  // Cleanup bei Unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Load photo count when entering photos step
   const loadPhotoCount = async () => {
