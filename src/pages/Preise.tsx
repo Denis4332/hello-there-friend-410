@@ -72,26 +72,26 @@ const VisibilityExplanation = () => {
   const tiers = [
     {
       title: topTitle || 'TOP AD',
-      text: topText || 'Schweizweit auf der Homepage sichtbar + in allen Suchergebnissen immer an erster Stelle',
+      text: topText || 'Auf Homepage an erster Stelle, beste Platzierung in allen Suchergebnissen',
       icon: Globe,
       iconBg: 'bg-gradient-to-r from-red-600 to-pink-600',
-      badge: 'Schweizweit',
+      badge: 'Top-Platzierung',
       badgeColor: 'bg-red-600',
     },
     {
       title: premiumTitle || 'Premium',
-      text: premiumText || 'Im gewählten Kanton oder GPS-Radius sichtbar, wird vor Basic-Inseraten angezeigt',
+      text: premiumText || 'Auf Homepage nach TOP ADs, bevorzugte Platzierung in Suchergebnissen',
       icon: MapPin,
       iconBg: 'bg-gradient-to-r from-amber-400 to-pink-500',
-      badge: 'Kanton/Radius',
+      badge: 'Bevorzugt',
       badgeColor: 'bg-amber-500',
     },
     {
       title: basicTitle || 'Basic',
-      text: basicText || 'Im gewählten Kanton oder GPS-Radius sichtbar, Standard-Platzierung',
+      text: basicText || 'Auf Homepage sichtbar, Standard-Platzierung in Suchergebnissen',
       icon: MapPin,
       iconBg: 'bg-blue-500',
-      badge: 'Kanton/Radius',
+      badge: 'Standard',
       badgeColor: 'bg-blue-500',
     },
   ];
@@ -139,10 +139,15 @@ const VisibilityExplanation = () => {
             </h4>
             <div className="space-y-2">
               <div className="flex items-center gap-2 p-2 bg-red-100 dark:bg-red-900/30 rounded text-sm">
-                <Zap className="h-4 w-4 text-red-600" />
-                <span>TOP AD Inserate (max. 4)</span>
+                <span className="font-medium">1.</span> TOP AD – immer ganz oben
               </div>
-              <p className="text-xs text-muted-foreground pl-2">Schweizweit für alle Besucher sichtbar</p>
+              <div className="flex items-center gap-2 p-2 bg-amber-100 dark:bg-amber-900/30 rounded text-sm">
+                <span className="font-medium">2.</span> Premium – bevorzugt
+              </div>
+              <div className="flex items-center gap-2 p-2 bg-blue-100 dark:bg-blue-900/30 rounded text-sm">
+                <span className="font-medium">3.</span> Basic – Standard
+              </div>
+              <p className="text-xs text-muted-foreground pl-2">Alle Pakete sind auf der Homepage sichtbar</p>
             </div>
           </div>
           <div>
@@ -304,8 +309,8 @@ const Preise = () => {
       iconColor: 'text-blue-600 dark:text-blue-400',
       border: 'border-blue-500/50',
       features: [
+        'Erscheint auf Homepage',
         'Erscheint in Suchergebnissen',
-        'Sichtbar im gewählten Kanton/Radius',
         'Standard-Platzierung',
         'Profil-Seite',
         'Foto-Upload',
@@ -322,7 +327,7 @@ const Preise = () => {
       recommended: true,
       features: [
         'Alles von Basic +',
-        'Bessere Platzierung im gewählten Bereich',
+        'Bessere Platzierung auf Homepage & Suche',
         'Goldener VIP Badge',
         'Erscheint vor Basic-Inseraten',
         'Mehr Aufmerksamkeit',
@@ -338,10 +343,9 @@ const Preise = () => {
       border: 'border-red-500',
       features: [
         'Alles von Premium +',
-        '⭐ Schweizweite Sichtbarkeit auf Homepage',
+        '⭐ Immer ganz oben auf Homepage',
         'Beste Platzierung in allen Suchergebnissen',
         'TOP AD Banner',
-        'Immer an erster Position',
         'Maximale Sichtbarkeit',
       ],
     },
@@ -455,12 +459,12 @@ const Preise = () => {
                   </tr>
                   <tr className="border-b">
                     <td className="p-4">Auf Homepage</td>
-                    <td className="text-center p-4">–</td>
-                    <td className="text-center p-4">–</td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
+                    <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
                     <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
                   </tr>
                   <tr className="border-b">
-                    <td className="p-4">Schweizweite Sichtbarkeit</td>
+                    <td className="p-4">Top-Platzierung garantiert</td>
                     <td className="text-center p-4">–</td>
                     <td className="text-center p-4">–</td>
                     <td className="text-center p-4"><CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" /></td>
