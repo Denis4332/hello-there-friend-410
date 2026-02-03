@@ -24,7 +24,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
   Loader2, ArrowLeft, Send, CheckCircle, Clock, XCircle, Upload, X, 
-  Image as ImageIcon, MapPin, FileText, Tag, Phone, ChevronsUpDown, Check 
+  Image as ImageIcon, MapPin, FileText, Tag, Phone, ChevronsUpDown, Check,
+  Trash2, Undo, Star, ChevronLeft, ChevronRight, ArrowRight
 } from 'lucide-react';
 import { compressImage } from '@/utils/imageCompression';
 import { cn } from '@/lib/utils';
@@ -65,6 +66,13 @@ interface ContactData {
   instagram: string | null;
 }
 
+interface ExistingPhoto {
+  id: string;
+  storage_path: string;
+  url: string;
+  is_primary: boolean;
+}
+
 const ProfileChangeRequest = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -82,6 +90,13 @@ const ProfileChangeRequest = () => {
   const [currentCategories, setCurrentCategories] = useState<string[]>([]);
   const [currentContacts, setCurrentContacts] = useState<ContactData | null>(null);
   const [existingRequests, setExistingRequests] = useState<ChangeRequest[]>([]);
+  
+  // Existing photos management
+  const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>([]);
+  const [photosToDelete, setPhotosToDelete] = useState<string[]>([]);
+  const [newPhotoOrder, setNewPhotoOrder] = useState<string[]>([]);
+  const [orderChanged, setOrderChanged] = useState(false);
+  const [newPrimaryPhotoId, setNewPrimaryPhotoId] = useState<string | null>(null);
   
   // Form state - Tab selection
   const [activeTab, setActiveTab] = useState('text');
@@ -206,6 +221,26 @@ const ProfileChangeRequest = () => {
         setContactInstagram(contactsData.instagram || '');
       }
 
+      // Load existing photos
+      const { data: photosData } = await supabase
+        .from('photos')
+        .select('id, storage_path, is_primary')
+        .eq('profile_id', profileData.id)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      if (photosData && photosData.length > 0) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const mappedPhotos: ExistingPhoto[] = photosData.map(p => ({
+          id: p.id,
+          storage_path: p.storage_path,
+          url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${p.storage_path}`,
+          is_primary: p.is_primary || false,
+        }));
+        setExistingPhotos(mappedPhotos);
+        setNewPhotoOrder(mappedPhotos.map(p => p.id));
+      }
+
       // Load existing requests
       const { data: requestsData, error: requestsError } = await supabase
         .from('profile_change_requests')
@@ -307,6 +342,51 @@ const ProfileChangeRequest = () => {
         setSelectedCategories(selectedCategories.filter(id => id !== categoryId));
       } else if (selectedServiceIds.length < 2) {
         setSelectedCategories([...selectedCategories, categoryId]);
+      }
+    }
+  };
+
+  // Photo management handlers
+  const togglePhotoForDeletion = (photoId: string) => {
+    setPhotosToDelete(prev => 
+      prev.includes(photoId) 
+        ? prev.filter(id => id !== photoId)
+        : [...prev, photoId]
+    );
+    // If the photo being deleted was set as new primary, remove that selection
+    if (newPrimaryPhotoId === photoId) {
+      setNewPrimaryPhotoId(null);
+    }
+  };
+
+  const movePhotoLeft = (photoId: string) => {
+    const index = newPhotoOrder.indexOf(photoId);
+    if (index > 0) {
+      const order = [...newPhotoOrder];
+      [order[index - 1], order[index]] = [order[index], order[index - 1]];
+      setNewPhotoOrder(order);
+      setOrderChanged(true);
+    }
+  };
+
+  const movePhotoRight = (photoId: string) => {
+    const index = newPhotoOrder.indexOf(photoId);
+    if (index < newPhotoOrder.length - 1) {
+      const order = [...newPhotoOrder];
+      [order[index], order[index + 1]] = [order[index + 1], order[index]];
+      setNewPhotoOrder(order);
+      setOrderChanged(true);
+    }
+  };
+
+  const setNewPrimary = (photoId: string) => {
+    if (!photosToDelete.includes(photoId)) {
+      const currentPrimary = existingPhotos.find(p => p.is_primary);
+      // Only set if it's different from current primary
+      if (currentPrimary?.id !== photoId) {
+        setNewPrimaryPhotoId(photoId);
+      } else {
+        setNewPrimaryPhotoId(null);
       }
     }
   };
@@ -428,12 +508,55 @@ const ProfileChangeRequest = () => {
         break;
 
       case 'photos':
-        if (selectedFiles.length > 0 || photoNote) {
+        // Löschungen
+        if (photosToDelete.length > 0) {
+          const deleteNames = photosToDelete.map(id => {
+            const idx = existingPhotos.findIndex(p => p.id === id);
+            return `Foto ${idx + 1}`;
+          }).join(', ');
           changes.push({ 
-            field: 'photos', 
-            old_value: '', 
-            new_value: `${selectedFiles.length} neue Bilder. ${photoNote}`.trim() 
+            field: 'delete_photos', 
+            old_value: `${photosToDelete.length} Fotos`, 
+            new_value: deleteNames 
           });
+        }
+        
+        // Neue Reihenfolge
+        if (orderChanged) {
+          const oldOrder = existingPhotos.map((_, i) => i + 1).join(' → ');
+          const newOrderStr = newPhotoOrder.map(id => {
+            const idx = existingPhotos.findIndex(p => p.id === id);
+            return idx + 1;
+          }).join(' → ');
+          changes.push({ 
+            field: 'reorder_photos', 
+            old_value: oldOrder,
+            new_value: newOrderStr 
+          });
+        }
+        
+        // Neues Hauptfoto
+        if (newPrimaryPhotoId) {
+          const currentPrimary = existingPhotos.find(p => p.is_primary);
+          if (currentPrimary?.id !== newPrimaryPhotoId) {
+            const oldIdx = existingPhotos.findIndex(p => p.is_primary) + 1;
+            const newIdx = existingPhotos.findIndex(p => p.id === newPrimaryPhotoId) + 1;
+            changes.push({ 
+              field: 'primary_photo', 
+              old_value: `Foto ${oldIdx}`,
+              new_value: `Foto ${newIdx}` 
+            });
+          }
+        }
+        
+        // Neue Uploads
+        if (selectedFiles.length > 0) {
+          changes.push({ field: 'new_photos', old_value: '', new_value: `${selectedFiles.length} neue Bilder` });
+        }
+        
+        // Anmerkung
+        if (photoNote.trim()) {
+          changes.push({ field: 'photo_note', old_value: '', new_value: photoNote });
         }
         break;
     }
@@ -458,11 +581,21 @@ const ProfileChangeRequest = () => {
                contactTelegram !== (currentContacts?.telegram || '') ||
                contactInstagram !== (currentContacts?.instagram || '');
       case 'photos':
-        return selectedFiles.length > 0 || photoNote.trim() !== '';
+        const currentPrimary = existingPhotos.find(p => p.is_primary);
+        const primaryChanged = newPrimaryPhotoId !== null && newPrimaryPhotoId !== currentPrimary?.id;
+        return selectedFiles.length > 0 || 
+               photoNote.trim() !== '' || 
+               photosToDelete.length > 0 || 
+               orderChanged ||
+               primaryChanged;
       default:
         return false;
     }
   };
+
+  // Category change helpers
+  const addedCategories = selectedCategories.filter(id => !currentCategories.includes(id));
+  const removedCategories = currentCategories.filter(id => !selectedCategories.includes(id));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -545,6 +678,11 @@ const ProfileChangeRequest = () => {
         filePreviews.forEach(url => URL.revokeObjectURL(url));
         setFilePreviews([]);
         setPhotoNote('');
+        setPhotosToDelete([]);
+        setOrderChanged(false);
+        setNewPrimaryPhotoId(null);
+        // Reset order to original
+        setNewPhotoOrder(existingPhotos.map(p => p.id));
       }
       
       loadData();
@@ -605,6 +743,24 @@ const ProfileChangeRequest = () => {
       other: 'Sonstiges',
     };
     return labels[type] || type;
+  };
+
+  // Helper component for value comparison
+  const ValueComparison = ({ label, oldValue, newValue, changed }: { 
+    label: string; 
+    oldValue: string; 
+    newValue: string; 
+    changed: boolean;
+  }) => {
+    if (!changed) return null;
+    return (
+      <div className="mt-1 text-xs flex items-center gap-1.5 text-muted-foreground">
+        <span className="font-medium">{label}:</span>
+        <span className="line-through text-destructive/70">{oldValue || '(leer)'}</span>
+        <ArrowRight className="h-3 w-3" />
+        <span className="text-primary font-medium">{newValue || '(leer)'}</span>
+      </div>
+    );
   };
 
   if (loading) {
@@ -681,12 +837,16 @@ const ProfileChangeRequest = () => {
                           value={newName}
                           onChange={(e) => setNewName(e.target.value)}
                           placeholder="Dein Anzeigename"
+                          className={cn(
+                            newName !== profile?.display_name && "border-primary"
+                          )}
                         />
-                        {newName !== profile?.display_name && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Aktuell: {profile?.display_name}
-                          </p>
-                        )}
+                        <ValueComparison 
+                          label="Änderung"
+                          oldValue={profile?.display_name || ''}
+                          newValue={newName}
+                          changed={newName !== profile?.display_name}
+                        />
                       </div>
                       <div>
                         <Label htmlFor="newAboutMe">Beschreibung</Label>
@@ -696,7 +856,16 @@ const ProfileChangeRequest = () => {
                           onChange={(e) => setNewAboutMe(e.target.value)}
                           placeholder="Über mich..."
                           rows={6}
+                          className={cn(
+                            newAboutMe !== (profile?.about_me || '') && "border-primary"
+                          )}
                         />
+                        {newAboutMe !== (profile?.about_me || '') && (
+                          <p className="mt-1 text-xs text-primary flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            Text wurde geändert
+                          </p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="textNote">Zusätzliche Anmerkungen (optional)</Label>
@@ -741,7 +910,9 @@ const ProfileChangeRequest = () => {
                             }
                           }}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className={cn(
+                            selectedCanton !== profile?.canton && "border-primary"
+                          )}>
                             <SelectValue placeholder="Wähle deinen Kanton" />
                           </SelectTrigger>
                           <SelectContent>
@@ -752,11 +923,12 @@ const ProfileChangeRequest = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        {selectedCanton !== profile?.canton && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Aktuell: {profile?.canton}
-                          </p>
-                        )}
+                        <ValueComparison 
+                          label="Änderung"
+                          oldValue={profile?.canton || ''}
+                          newValue={selectedCanton}
+                          changed={selectedCanton !== profile?.canton}
+                        />
                       </div>
 
                       <div>
@@ -767,7 +939,10 @@ const ProfileChangeRequest = () => {
                               variant="outline"
                               role="combobox"
                               aria-expanded={cityOpen}
-                              className="w-full justify-between font-normal"
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                selectedCity !== profile?.city && "border-primary"
+                              )}
                               disabled={!selectedCanton || citiesLoading}
                             >
                               {citiesLoading ? (
@@ -808,11 +983,12 @@ const ProfileChangeRequest = () => {
                             </Command>
                           </PopoverContent>
                         </Popover>
-                        {selectedCity !== profile?.city && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Aktuell: {profile?.city}
-                          </p>
-                        )}
+                        <ValueComparison 
+                          label="Änderung"
+                          oldValue={profile?.city || ''}
+                          newValue={selectedCity}
+                          changed={selectedCity !== profile?.city}
+                        />
                       </div>
 
                       <div>
@@ -835,25 +1011,33 @@ const ProfileChangeRequest = () => {
                         <div className="mb-4">
                           <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Geschlecht</p>
                           <div className="grid grid-cols-2 gap-2">
-                            {genderCategories.map(cat => (
-                              <div key={cat.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`cat-${cat.id}`}
-                                  checked={selectedCategories.includes(cat.id)}
-                                  onCheckedChange={() => toggleCategory(cat.id)}
-                                  disabled={!!selectedGenderId && selectedGenderId !== cat.id}
-                                />
-                                <label 
-                                  htmlFor={`cat-${cat.id}`} 
-                                  className={cn(
-                                    "text-sm cursor-pointer",
-                                    selectedGenderId && selectedGenderId !== cat.id && 'text-muted-foreground'
-                                  )}
-                                >
-                                  {cat.name}
-                                </label>
-                              </div>
-                            ))}
+                            {genderCategories.map(cat => {
+                              const isCurrentlySelected = currentCategories.includes(cat.id);
+                              return (
+                                <div key={cat.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`cat-${cat.id}`}
+                                    checked={selectedCategories.includes(cat.id)}
+                                    onCheckedChange={() => toggleCategory(cat.id)}
+                                    disabled={!!selectedGenderId && selectedGenderId !== cat.id}
+                                  />
+                                  <label 
+                                    htmlFor={`cat-${cat.id}`} 
+                                    className={cn(
+                                      "text-sm cursor-pointer flex items-center gap-1.5",
+                                      selectedGenderId && selectedGenderId !== cat.id && 'text-muted-foreground'
+                                    )}
+                                  >
+                                    {cat.name}
+                                    {isCurrentlySelected && (
+                                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                        Aktuell
+                                      </Badge>
+                                    )}
+                                  </label>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -861,29 +1045,58 @@ const ProfileChangeRequest = () => {
 
                         {/* Services */}
                         <div>
-                          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Service / Angebot</p>
+                          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                            Service / Angebot ({selectedServiceIds.length}/2)
+                          </p>
                           <div className="grid grid-cols-2 gap-2">
-                            {serviceCategories.map(cat => (
-                              <div key={cat.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`cat-${cat.id}`}
-                                  checked={selectedCategories.includes(cat.id)}
-                                  onCheckedChange={() => toggleCategory(cat.id)}
-                                  disabled={selectedServiceIds.length >= 2 && !selectedServiceIds.includes(cat.id)}
-                                />
-                                <label 
-                                  htmlFor={`cat-${cat.id}`} 
-                                  className={cn(
-                                    "text-sm cursor-pointer",
-                                    selectedServiceIds.length >= 2 && !selectedServiceIds.includes(cat.id) && 'text-muted-foreground'
-                                  )}
-                                >
-                                  {cat.name}
-                                </label>
-                              </div>
-                            ))}
+                            {serviceCategories.map(cat => {
+                              const isCurrentlySelected = currentCategories.includes(cat.id);
+                              return (
+                                <div key={cat.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`cat-${cat.id}`}
+                                    checked={selectedCategories.includes(cat.id)}
+                                    onCheckedChange={() => toggleCategory(cat.id)}
+                                    disabled={selectedServiceIds.length >= 2 && !selectedServiceIds.includes(cat.id)}
+                                  />
+                                  <label 
+                                    htmlFor={`cat-${cat.id}`} 
+                                    className={cn(
+                                      "text-sm cursor-pointer flex items-center gap-1.5",
+                                      selectedServiceIds.length >= 2 && !selectedServiceIds.includes(cat.id) && 'text-muted-foreground'
+                                    )}
+                                  >
+                                    {cat.name}
+                                    {isCurrentlySelected && (
+                                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                        Aktuell
+                                      </Badge>
+                                    )}
+                                  </label>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
+
+                        {/* Category changes summary */}
+                        {(addedCategories.length > 0 || removedCategories.length > 0) && (
+                          <div className="mt-4 p-3 bg-muted rounded-lg text-sm space-y-1">
+                            <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Änderungen</p>
+                            {addedCategories.length > 0 && (
+                              <p className="text-primary flex items-center gap-1">
+                                <span className="font-bold">+</span>
+                                {addedCategories.map(id => categories.find(c => c.id === id)?.name).join(', ')}
+                              </p>
+                            )}
+                            {removedCategories.length > 0 && (
+                              <p className="text-destructive flex items-center gap-1">
+                                <span className="font-bold">−</span>
+                                {removedCategories.map(id => categories.find(c => c.id === id)?.name).join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </TabsContent>
 
@@ -897,6 +1110,15 @@ const ProfileChangeRequest = () => {
                             value={contactPhone}
                             onChange={(e) => setContactPhone(e.target.value)}
                             placeholder="+41..."
+                            className={cn(
+                              contactPhone !== (currentContacts?.phone || '') && "border-primary"
+                            )}
+                          />
+                          <ValueComparison 
+                            label="Aktuell"
+                            oldValue={currentContacts?.phone || ''}
+                            newValue={contactPhone}
+                            changed={contactPhone !== (currentContacts?.phone || '')}
                           />
                         </div>
                         <div>
@@ -906,6 +1128,15 @@ const ProfileChangeRequest = () => {
                             value={contactWhatsapp}
                             onChange={(e) => setContactWhatsapp(e.target.value)}
                             placeholder="+41..."
+                            className={cn(
+                              contactWhatsapp !== (currentContacts?.whatsapp || '') && "border-primary"
+                            )}
+                          />
+                          <ValueComparison 
+                            label="Aktuell"
+                            oldValue={currentContacts?.whatsapp || ''}
+                            newValue={contactWhatsapp}
+                            changed={contactWhatsapp !== (currentContacts?.whatsapp || '')}
                           />
                         </div>
                         <div>
@@ -916,6 +1147,15 @@ const ProfileChangeRequest = () => {
                             value={contactEmail}
                             onChange={(e) => setContactEmail(e.target.value)}
                             placeholder="email@example.com"
+                            className={cn(
+                              contactEmail !== (currentContacts?.email || '') && "border-primary"
+                            )}
+                          />
+                          <ValueComparison 
+                            label="Aktuell"
+                            oldValue={currentContacts?.email || ''}
+                            newValue={contactEmail}
+                            changed={contactEmail !== (currentContacts?.email || '')}
                           />
                         </div>
                         <div>
@@ -925,6 +1165,15 @@ const ProfileChangeRequest = () => {
                             value={contactWebsite}
                             onChange={(e) => setContactWebsite(e.target.value)}
                             placeholder="https://..."
+                            className={cn(
+                              contactWebsite !== (currentContacts?.website || '') && "border-primary"
+                            )}
+                          />
+                          <ValueComparison 
+                            label="Aktuell"
+                            oldValue={currentContacts?.website || ''}
+                            newValue={contactWebsite}
+                            changed={contactWebsite !== (currentContacts?.website || '')}
                           />
                         </div>
                         <div>
@@ -934,6 +1183,15 @@ const ProfileChangeRequest = () => {
                             value={contactTelegram}
                             onChange={(e) => setContactTelegram(e.target.value)}
                             placeholder="@username"
+                            className={cn(
+                              contactTelegram !== (currentContacts?.telegram || '') && "border-primary"
+                            )}
+                          />
+                          <ValueComparison 
+                            label="Aktuell"
+                            oldValue={currentContacts?.telegram || ''}
+                            newValue={contactTelegram}
+                            changed={contactTelegram !== (currentContacts?.telegram || '')}
                           />
                         </div>
                         <div>
@@ -943,78 +1201,239 @@ const ProfileChangeRequest = () => {
                             value={contactInstagram}
                             onChange={(e) => setContactInstagram(e.target.value)}
                             placeholder="@username"
+                            className={cn(
+                              contactInstagram !== (currentContacts?.instagram || '') && "border-primary"
+                            )}
+                          />
+                          <ValueComparison 
+                            label="Aktuell"
+                            oldValue={currentContacts?.instagram || ''}
+                            newValue={contactInstagram}
+                            changed={contactInstagram !== (currentContacts?.instagram || '')}
                           />
                         </div>
                       </div>
                     </TabsContent>
 
                     {/* PHOTOS TAB */}
-                    <TabsContent value="photos" className="space-y-4">
-                      <div 
-                        className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          multiple
-                          onChange={handleFileSelect}
-                          className="hidden"
-                        />
-                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Klicke hier um Bilder auszuwählen
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Max. {MAX_FILES} Bilder, je max. 5MB (JPEG, PNG, WebP)
-                        </p>
+                    <TabsContent value="photos" className="space-y-6">
+                      {/* Existing Photos */}
+                      {existingPhotos.length > 0 && (
+                        <div className="space-y-3">
+                          <h4 className="font-medium flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            Deine aktuellen Fotos ({existingPhotos.length})
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            Markiere Fotos zum Löschen, ändere die Reihenfolge oder wähle ein neues Hauptfoto.
+                          </p>
+                          
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {newPhotoOrder.map((photoId, index) => {
+                              const photo = existingPhotos.find(p => p.id === photoId);
+                              if (!photo) return null;
+                              
+                              const isMarkedForDeletion = photosToDelete.includes(photo.id);
+                              const currentPrimary = existingPhotos.find(p => p.is_primary);
+                              const isPrimary = (photo.is_primary && !newPrimaryPhotoId) || newPrimaryPhotoId === photo.id;
+                              const originalIndex = existingPhotos.findIndex(p => p.id === photo.id);
+                              
+                              return (
+                                <div 
+                                  key={photo.id} 
+                                  className={cn(
+                                    "relative group rounded-lg overflow-hidden border-2 transition-all",
+                                    isMarkedForDeletion ? "border-destructive opacity-60" : "border-border",
+                                    isPrimary && !isMarkedForDeletion && "border-primary ring-2 ring-primary/20"
+                                  )}
+                                >
+                                  <img
+                                    src={photo.url}
+                                    alt={`Foto ${originalIndex + 1}`}
+                                    className="w-full aspect-square object-cover"
+                                    loading="lazy"
+                                  />
+                                  
+                                  {/* Position Badge */}
+                                  <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded font-medium">
+                                    {index + 1}
+                                  </div>
+                                  
+                                  {/* Primary Badge */}
+                                  {isPrimary && !isMarkedForDeletion && (
+                                    <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded flex items-center gap-1">
+                                      <Star className="h-3 w-3 fill-current" />
+                                      Haupt
+                                    </div>
+                                  )}
+                                  
+                                  {/* Deletion Overlay */}
+                                  {isMarkedForDeletion && (
+                                    <div className="absolute inset-0 bg-destructive/30 flex items-center justify-center">
+                                      <Trash2 className="h-8 w-8 text-destructive" />
+                                    </div>
+                                  )}
+                                  
+                                  {/* Action Buttons */}
+                                  <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {/* Delete Toggle */}
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant={isMarkedForDeletion ? "default" : "secondary"}
+                                      className="h-7 w-7"
+                                      onClick={() => togglePhotoForDeletion(photo.id)}
+                                      title={isMarkedForDeletion ? "Nicht löschen" : "Zum Löschen markieren"}
+                                    >
+                                      {isMarkedForDeletion ? <Undo className="h-3 w-3" /> : <Trash2 className="h-3 w-3" />}
+                                    </Button>
+                                    
+                                    {/* Set as Primary */}
+                                    {!isMarkedForDeletion && !isPrimary && (
+                                      <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="secondary"
+                                        className="h-7 w-7"
+                                        onClick={() => setNewPrimary(photo.id)}
+                                        title="Als Hauptfoto setzen"
+                                      >
+                                        <Star className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Reorder Buttons */}
+                                  <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="secondary"
+                                      className="h-6 w-6"
+                                      onClick={() => movePhotoLeft(photo.id)}
+                                      disabled={index === 0}
+                                      title="Nach vorne"
+                                    >
+                                      <ChevronLeft className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="secondary"
+                                      className="h-6 w-6"
+                                      onClick={() => movePhotoRight(photo.id)}
+                                      disabled={index === newPhotoOrder.length - 1}
+                                      title="Nach hinten"
+                                    >
+                                      <ChevronRight className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          
+                          {/* Photo Changes Summary */}
+                          {(photosToDelete.length > 0 || orderChanged || newPrimaryPhotoId) && (
+                            <div className="bg-muted rounded-lg p-3 space-y-1 text-sm">
+                              <p className="font-medium text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                                Geplante Änderungen
+                              </p>
+                              {photosToDelete.length > 0 && (
+                                <p className="text-destructive flex items-center gap-2">
+                                  <Trash2 className="h-4 w-4" />
+                                  {photosToDelete.length} Foto(s) zum Löschen markiert
+                                </p>
+                              )}
+                              {orderChanged && (
+                                <p className="text-primary flex items-center gap-2">
+                                  <ChevronLeft className="h-4 w-4" />
+                                  <ChevronRight className="h-4 w-4 -ml-3" />
+                                  Neue Reihenfolge wird angefragt
+                                </p>
+                              )}
+                              {newPrimaryPhotoId && (
+                                <p className="text-primary flex items-center gap-2">
+                                  <Star className="h-4 w-4" />
+                                  Neues Hauptfoto ausgewählt (Foto {existingPhotos.findIndex(p => p.id === newPrimaryPhotoId) + 1})
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {existingPhotos.length > 0 && <Separator />}
+
+                      {/* New Photos Upload */}
+                      <div className="space-y-3">
+                        <h4 className="font-medium">Neue Fotos hinzufügen</h4>
+                        <div 
+                          className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            multiple
+                            onChange={handleFileSelect}
+                            className="hidden"
+                          />
+                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">
+                            Klicke hier um Bilder auszuwählen
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Max. {MAX_FILES} Bilder, je max. 5MB (JPEG, PNG, WebP)
+                          </p>
+                        </div>
+
+                        {selectedFiles.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">
+                              {selectedFiles.length} neue(s) Bild{selectedFiles.length > 1 ? 'er' : ''} ausgewählt:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {filePreviews.map((preview, index) => (
+                                <div key={index} className="relative group">
+                                  <img
+                                    src={preview}
+                                    alt={`Vorschau ${index + 1}`}
+                                    className="h-20 w-20 object-cover rounded-lg border"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFile(index)}
+                                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {isUploading && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span>Lade Bilder hoch...</span>
+                              <span>{uploadProgress.current} / {uploadProgress.total}</span>
+                            </div>
+                            <Progress value={(uploadProgress.current / uploadProgress.total) * 100} />
+                          </div>
+                        )}
                       </div>
 
-                      {selectedFiles.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">
-                            {selectedFiles.length} Bild{selectedFiles.length > 1 ? 'er' : ''} ausgewählt:
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {filePreviews.map((preview, index) => (
-                              <div key={index} className="relative group">
-                                <img
-                                  src={preview}
-                                  alt={`Vorschau ${index + 1}`}
-                                  className="h-20 w-20 object-cover rounded-lg border"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => removeFile(index)}
-                                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {isUploading && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Lade Bilder hoch...</span>
-                            <span>{uploadProgress.current} / {uploadProgress.total}</span>
-                          </div>
-                          <Progress value={(uploadProgress.current / uploadProgress.total) * 100} />
-                        </div>
-                      )}
-
                       <div>
-                        <Label htmlFor="photoNote">Beschreibung der Änderungen</Label>
+                        <Label htmlFor="photoNote">Zusätzliche Anmerkungen (optional)</Label>
                         <Textarea
                           id="photoNote"
                           value={photoNote}
                           onChange={(e) => setPhotoNote(e.target.value)}
-                          placeholder="z.B. 'Bitte Bild 3 löschen und diese neuen Bilder hinzufügen'"
-                          rows={3}
+                          placeholder="z.B. 'Bitte diese neuen Bilder als erste anzeigen'"
+                          rows={2}
                         />
                       </div>
                     </TabsContent>
