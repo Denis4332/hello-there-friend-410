@@ -1,221 +1,225 @@
 
-# Plan: Änderungsanfrage-System + Admin Dashboard Vereinfachung
+# Analyse: Edge Cases beim Änderungsanfrage-Flow
 
-## Problemanalyse
+## Identifizierte Risiken
 
-### 1. Sicherheitslücke: AGB-Umgehung
-Aktuell kann ein User nach Aktivierung (`status = 'active'` + `payment_status = 'paid'`) sein Profil beliebig in `ProfileEdit.tsx` bearbeiten - ohne erneute Prüfung. Das ermöglicht AGB-widrige Inhalte nach der Freischaltung.
-
-### 2. Admin Dashboard zu komplex
-7 separate Statistik-Kacheln sind unübersichtlich. Eine kompaktere Darstellung mit 4 fokussierten Kacheln ist gewünscht.
-
----
-
-## Teil 1: Änderungsanfrage-System
-
-### Datenbank-Migration
-
-Neue Tabelle `profile_change_requests`:
-
-```sql
-CREATE TABLE profile_change_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  request_type TEXT NOT NULL CHECK (request_type IN ('text', 'photos', 'contact', 'categories', 'other')),
-  description TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-  admin_note TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- RLS Policies
-ALTER TABLE profile_change_requests ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own requests" ON profile_change_requests
-  FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY "Users can create requests" ON profile_change_requests
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM profiles WHERE id = profile_id AND user_id = auth.uid())
-  );
-
-CREATE POLICY "Admin full access" ON profile_change_requests
-  FOR ALL USING (has_role(auth.uid(), 'admin'));
+### 1. User navigiert zurück während Bild-Upload läuft
+**Problem:** Bilder werden gerade hochgeladen, User drückt Browser-Zurück oder "Zurück zum Dashboard"
+**Lösung:** Gleiche Logik wie PhotoUploader.tsx verwenden:
+```typescript
+useEffect(() => {
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    if (isUploading || selectedFiles.length > 0) {
+      e.preventDefault();
+      e.returnValue = 'Du hast Bilder ausgewählt. Wirklich verlassen?';
+      return e.returnValue;
+    }
+  };
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+}, [isUploading, selectedFiles]);
 ```
 
-### Frontend-Änderungen
+### 2. User wählt Bilder aus, sendet aber nicht ab
+**Problem:** Bilder sind lokal ausgewählt (Previews sichtbar), aber noch nicht in DB/Storage
+**Lösung:** 
+- Bilder existieren nur als `File[]` im State - kein Schaden bei Verlassen
+- Warnung anzeigen wenn `selectedFiles.length > 0`
+- Keine verwaisten Dateien möglich, da erst bei Submit hochgeladen wird
 
-#### 1. ProfileEdit.tsx - Sicherheitscheck (Zeile ~275)
-
-Redirect aktive Profile zur Änderungsanfrage-Seite:
-
+### 3. Upload-Fehler mitten im Prozess
+**Problem:** 2 von 5 Bildern hochgeladen, dann Netzwerkfehler
+**Lösung:**
+- Transaktionale Logik: Erst alle Bilder zu Storage, dann Anfrage erstellen
+- Bei Fehler: Bereits hochgeladene Bilder in diesem Request löschen
+- User sieht Fehlermeldung, kann erneut versuchen
 ```typescript
-// Nach dem Loading-Check, vor dem Render
-if (profile?.status === 'active') {
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle>Profil ist aktiv</CardTitle>
-              <CardDescription>
-                Dein Profil ist bereits freigeschaltet. Änderungen müssen zur Prüfung eingereicht werden.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button onClick={() => navigate('/profil/aenderung-anfragen')}>
-                Änderung anfragen
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/mein-profil')}>
-                Zurück zum Dashboard
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </>
+try {
+  // 1. Alle Bilder hochladen
+  const uploadedPaths = await uploadAllImages(selectedFiles);
+  
+  // 2. Anfrage erstellen
+  const { data: request } = await supabase
+    .from('profile_change_requests')
+    .insert({ ... })
+    .select()
+    .single();
+  
+  // 3. Medien-Einträge erstellen
+  await supabase.from('change_request_media').insert(
+    uploadedPaths.map(path => ({ request_id: request.id, storage_path: path }))
   );
+} catch (error) {
+  // Cleanup bei Fehler
+  if (uploadedPaths.length > 0) {
+    await supabase.storage.from('change-request-media').remove(uploadedPaths);
+  }
+  throw error;
 }
 ```
 
-#### 2. UserDashboard.tsx - Button-Logik (Zeile ~283)
+### 4. User reloaded Seite während Formular ausgefüllt
+**Problem:** Text und ausgewählte Bilder gehen verloren
+**Lösung:**
+- Text-Inputs bleiben verloren (akzeptabel, da kurze Formulare)
+- Bilder müssen neu ausgewählt werden (akzeptabel)
+- Bereits gesendete Anfragen bleiben erhalten und werden beim Reload geladen
+- **Kein Datenverlust** da nichts in DB gespeichert wurde
 
-Unterschiedliche Buttons je nach Profilstatus:
+### 5. Doppelter Submit
+**Problem:** User klickt mehrfach auf "Anfrage senden"
+**Lösung:** Bereits implementiert via `disabled={submitting}` Button-State
 
+### 6. Session-Timeout während Upload
+**Problem:** Auth-Token läuft ab während langer Upload-Prozess
+**Lösung:**
+- Supabase Client refresht Token automatisch
+- Max 5 Bilder à 5MB = schneller Upload
+- Falls doch Fehler: User sieht "Session abgelaufen, bitte neu einloggen"
+
+---
+
+## Implementierte Sicherheitsmassnahmen
+
+| Edge Case | Lösung | Status |
+|-----------|--------|--------|
+| Zurück während Upload | `beforeunload` Event-Listener | Neu hinzufügen |
+| Bilder ausgewählt, nicht gesendet | Warnung + kein DB-Eintrag | Neu hinzufügen |
+| Upload-Fehler mitten drin | Transaktionale Logik + Cleanup | Neu implementieren |
+| Seite reload | Formular leer, aber sicher | OK (akzeptabel) |
+| Doppelter Submit | Button disabled während Submit | Bereits vorhanden |
+| Session-Timeout | Supabase Auto-Refresh | Bereits vorhanden |
+
+---
+
+## Erweiterter Code für ProfileChangeRequest.tsx
+
+### Neue States:
 ```typescript
-{profile.status === 'active' ? (
-  <Button asChild variant="outline">
-    <Link to="/profil/aenderung-anfragen">
-      <Edit className="h-4 w-4 mr-2" />
-      Änderung anfragen
-    </Link>
-  </Button>
-) : (
-  <Button asChild variant="outline">
-    <Link to="/profil/bearbeiten">
-      <Edit className="h-4 w-4 mr-2" />
-      {editProfileButton || 'Profil bearbeiten'}
-    </Link>
-  </Button>
-)}
+const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+const [isUploading, setIsUploading] = useState(false);
+const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 ```
 
-#### 3. Neue Seite: ProfileChangeRequest.tsx
-
-Formular für Änderungsanfragen mit:
-- Dropdown: Art der Änderung (Text, Fotos, Kontakt, Kategorien, Sonstiges)
-- Textarea: Beschreibung was geändert werden soll
-- Submit speichert in `profile_change_requests`
-
-#### 4. App.tsx - Neue Route
-
+### Browser-Warnung:
 ```typescript
-<Route path="/profil/aenderung-anfragen" element={<ProfileChangeRequest />} />
+useEffect(() => {
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    // Warnung wenn Bilder ausgewählt oder Upload läuft
+    if (isUploading || selectedFiles.length > 0) {
+      e.preventDefault();
+      e.returnValue = 'Du hast ungesendete Änderungen. Wirklich verlassen?';
+      return e.returnValue;
+    }
+  };
+  
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+}, [isUploading, selectedFiles]);
 ```
 
----
-
-## Teil 2: Admin Dashboard Vereinfachung
-
-### Vorher (7 Kacheln):
-- Zu prüfen, Bezahlt (wartet), Verifiziert, Live, Nachrichten, Meldungen, Gesperrte Accounts
-
-### Nachher (4 fokussierte Kacheln):
-
-| Kachel | Inhalt | Farbe |
-|--------|--------|-------|
-| **Aktionen nötig** | Bezahlt+Pending + Änderungsanfragen + Meldungen | Rot |
-| **Zu prüfen** | Pending Profiles + Verifikationen | Orange |
-| **Live** | Aktive Profile | Grün |
-| **Nachrichten** | Ungelesene Kontaktanfragen | Blau |
-
-### AdminDashboard.tsx - Kompakte Stats
-
+### Transaktionaler Upload:
 ```typescript
-const stats = [
-  {
-    label: 'Aktionen nötig',
-    value: (paidPendingCount || 0) + (changeRequestsCount || 0) + (reportsCount || 0),
-    subLabel: `${paidPendingCount} bezahlt, ${changeRequestsCount} Anfragen, ${reportsCount} Meldungen`,
-    link: '/admin/actions',
-    icon: Bell,
-    color: 'text-red-500',
-    bgColor: 'bg-red-50'
-  },
-  {
-    label: 'Zu prüfen',
-    value: (pendingCount || 0) + (pendingVerifications || 0),
-    subLabel: `${pendingCount} Profile, ${pendingVerifications} Verifikationen`,
-    link: '/admin/profile?status=pending',
-    icon: AlertCircle,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-50'
-  },
-  {
-    label: 'Live',
-    value: activeCount || 0,
-    link: '/admin/profile?status=active',
-    icon: CheckCircle,
-    color: 'text-green-500',
-    bgColor: 'bg-green-50'
-  },
-  {
-    label: 'Nachrichten',
-    value: unreadMessages || 0,
-    link: '/admin/messages',
-    icon: Mail,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50'
-  },
-];
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!profile || !user || !requestType || !description.trim()) return;
+
+  setSubmitting(true);
+  const uploadedPaths: string[] = [];
+
+  try {
+    // 1. Bilder hochladen (falls vorhanden)
+    if (selectedFiles.length > 0 && requestType === 'photos') {
+      setIsUploading(true);
+      setUploadProgress({ current: 0, total: selectedFiles.length });
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const path = `${profile.id}/${crypto.randomUUID()}.${file.name.split('.').pop()}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('change-request-media')
+          .upload(path, file);
+
+        if (uploadError) throw uploadError;
+        uploadedPaths.push(path);
+        setUploadProgress({ current: i + 1, total: selectedFiles.length });
+      }
+      setIsUploading(false);
+    }
+
+    // 2. Anfrage erstellen
+    const { data: request, error: requestError } = await supabase
+      .from('profile_change_requests')
+      .insert({
+        profile_id: profile.id,
+        user_id: user.id,
+        request_type: requestType,
+        description: description.trim(),
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (requestError) throw requestError;
+
+    // 3. Medien-Einträge erstellen
+    if (uploadedPaths.length > 0) {
+      const mediaInserts = uploadedPaths.map(path => ({
+        request_id: request.id,
+        storage_path: path,
+      }));
+
+      const { error: mediaError } = await supabase
+        .from('change_request_media')
+        .insert(mediaInserts);
+
+      if (mediaError) throw mediaError;
+    }
+
+    toast({
+      title: 'Anfrage gesendet',
+      description: 'Deine Änderungsanfrage wurde eingereicht.',
+    });
+
+    // Reset
+    setRequestType('');
+    setDescription('');
+    setSelectedFiles([]);
+    loadData();
+
+  } catch (error) {
+    // CLEANUP: Bei Fehler bereits hochgeladene Bilder löschen
+    if (uploadedPaths.length > 0) {
+      await supabase.storage
+        .from('change-request-media')
+        .remove(uploadedPaths);
+    }
+
+    toast({
+      title: 'Fehler',
+      description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
+      variant: 'destructive',
+    });
+  } finally {
+    setSubmitting(false);
+    setIsUploading(false);
+  }
+};
 ```
 
 ---
 
-## Betroffene Dateien
+## Zusammenfassung
 
-| Datei | Aktion |
-|-------|--------|
-| `src/pages/ProfileEdit.tsx` | Sicherheitscheck für aktive Profile |
-| `src/pages/UserDashboard.tsx` | Button-Logik ändern |
-| `src/pages/ProfileChangeRequest.tsx` | **NEU** - Änderungsanfrage-Formular |
-| `src/pages/admin/AdminDashboard.tsx` | Kompaktere Stats + Änderungsanfragen-Zähler |
-| `src/App.tsx` | Neue Route hinzufügen |
-| **Datenbank** | Migration für `profile_change_requests` Tabelle |
+Die Implementierung berücksichtigt alle gängigen Edge Cases:
 
----
+1. **Datenverlust verhindern** durch Browser-Warnung bei ungesendeten Änderungen
+2. **Konsistenz gewährleisten** durch transaktionalen Upload mit Rollback
+3. **Doppelte Aktionen verhindern** durch Button-Disabling während Submit
+4. **Verwaiste Dateien verhindern** durch Cleanup bei Fehlern
 
-## Sicherheit
-
-- **Erstellungs-Flow bleibt unberührt**: `ProfileCreate.tsx` funktioniert weiterhin mit State Persistenz und schnellem Upload
-- **Nur aktive Profile betroffen**: Draft, Pending, Rejected können weiterhin direkt bearbeitet werden
-- **Alle Änderungen werden geloggt**: Neue Tabelle mit vollständiger History
-- **Admin-Kontrolle**: Jede Änderung muss genehmigt werden
-
----
-
-## Ablauf nach Implementierung
-
-```text
-[User erstellt Profil] → [Draft] → [Upload Fotos] → [Pending]
-                                                        ↓
-                                                   [Bezahlung]
-                                                        ↓
-                                              [Admin aktiviert]
-                                                        ↓
-                                                   [ACTIVE]
-                                                        ↓
-                                    ┌───────────────────┴───────────────────┐
-                                    ↓                                       ↓
-                          User will ändern                          Profil bleibt
-                                    ↓
-                        [Änderung anfragen]
-                                    ↓
-                     Admin sieht im Dashboard
-                                    ↓
-                    [Genehmigt / Abgelehnt]
-```
+Der User kann:
+- Jederzeit sicher zurücknavigieren (mit Warnung falls nötig)
+- Bei Fehlern erneut versuchen ohne Datenreste
+- Den Fortschritt bei mehreren Bildern sehen
