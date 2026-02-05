@@ -1,75 +1,38 @@
 
 
-## Problem gefunden: Doppelte Primary-Flags in Datenbank
+## Plan: E-Mail-Verifizierung komplett entfernen
 
-Ich habe die Datenbank geprüft und das Problem ist klar:
+### Aktueller Zustand
+- `auth-signup` Edge Function erstellt User mit `email_confirm: true` (User ist sofort verifiziert)
+- ABER: Es wird trotzdem ein Magic Link per E-Mail gesendet
+- User muss auf den Link klicken um sich einzuloggen
+- Das verhindert die Nutzung von ungültigen E-Mail-Adressen
 
-**Dein Profil (06a895a5-...) hat 2 Fotos, die BEIDE als `is_primary=true` markiert sind!**
+### Was geändert wird
 
-Das ist ein Daten-Problem, kein reines Code-Problem. Der Code-Fix (Guard gegen `undefined === undefined`) ist bereits da, aber er schützt nur gegen fehlende IDs - nicht gegen echte doppelte Primaries in der DB.
+#### 1. Edge Function `auth-signup` anpassen
+- User wird weiterhin mit `email_confirm: true` erstellt
+- **KEIN** Magic Link wird mehr generiert
+- **KEINE** E-Mail wird mehr gesendet
+- User kann sich direkt nach Registrierung mit E-Mail + Passwort einloggen
 
----
+#### 2. Frontend `Auth.tsx` anpassen
+- Nach erfolgreicher Registrierung: User wird direkt eingeloggt
+- Keine "Prüfe deine E-Mail" Nachricht mehr
+- Direkter Redirect zu `/profil/erstellen`
 
-## Lösung in 3 Schritten
+### Technische Details
 
-### 1) Sofort-Fix: Doppelte Primaries in DB bereinigen
-Wir führen eine DB-Migration durch, die alle doppelten `is_primary=true` auf `false` setzt (ausser das neueste Foto pro Profil).
+**auth-signup/index.ts:**
+- `generateLink()` Aufruf entfernen
+- `resend.emails.send()` entfernen
+- Nach User-Erstellung: Direkt Session für User generieren und zurückgeben
 
-### 2) Dauerhafter Schutz: Unique Partial Index
-Wir erstellen einen Unique-Index in der DB, der **nur ein** `is_primary=true` pro `profile_id` erlaubt. Dann kann es nie wieder doppelte Primaries geben.
+**Auth.tsx:**
+- `registrationSuccess` State entfernen oder umbauen
+- Nach erfolgreicher Registrierung: Auto-Login mit den eingegebenen Credentials
+- Redirect zu `/profil/erstellen`
 
-### 3) handleSetPrimary verbessern
-Wir stellen sicher, dass `handleSetPrimary` in einer Transaktion arbeitet und Race-Conditions verhindert.
-
----
-
-## Technische Details
-
-### DB Migration (2 Schritte)
-
-**Schritt 1: Bereinigung existierender Duplikate**
-```sql
--- Setze alle is_primary auf false AUSSER dem neuesten pro Profil
-UPDATE photos p1
-SET is_primary = false
-WHERE is_primary = true
-  AND id != (
-    SELECT id FROM photos p2
-    WHERE p2.profile_id = p1.profile_id
-      AND p2.is_primary = true
-    ORDER BY created_at DESC
-    LIMIT 1
-  );
-```
-
-**Schritt 2: Unique Partial Index**
-```sql
--- Verhindere künftig doppelte Primaries
-CREATE UNIQUE INDEX IF NOT EXISTS idx_photos_single_primary 
-ON photos (profile_id) 
-WHERE is_primary = true AND media_type = 'image';
-```
-
-### Code-Änderung: handleSetPrimary robuster machen
-In `ProfileEdit.tsx` wird die Reihenfolge angepasst:
-- Erst alle auf `false` setzen (mit explizitem Filter `is_primary = true`)
-- Dann das gewählte auf `true` setzen
-- Dann `loadData()` aufrufen
-
----
-
-## Dateien
-
-| Datei | Änderung |
-|-------|----------|
-| DB Migration | Bereinigung + Unique Index |
-| `src/pages/ProfileEdit.tsx` | `handleSetPrimary` robuster |
-
----
-
-## Was danach garantiert funktioniert
-
-1. **Genau 1 goldener Stern** pro Profil (nie mehr 2)
-2. **"Profil aktualisieren"** funktioniert (gender-Fix ist bereits aktiv)
-3. **Hauptfoto wechseln** ist zuverlässig (DB-Index verhindert Race-Conditions)
+### Hinweis
+⚠️ Ohne E-Mail-Verifizierung kann jeder beliebige (auch ungültige) E-Mail-Adressen verwenden. Das ist gewollt für Testzwecke, aber für Produktion normalerweise nicht empfohlen.
 
