@@ -1,13 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 // Password validation (same rules as frontend)
 function validatePassword(password: string): string | null {
@@ -32,7 +29,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, redirect_url } = await req.json();
+    const { email, password } = await req.json();
 
     console.log("[auth-signup] Starting signup for:", email);
 
@@ -69,12 +66,13 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Create user with admin API - email_confirm: true means user is already confirmed (no system mail)
-    console.log("[auth-signup] Creating user with admin API...");
+    // Create user with admin API - email_confirm: true means user is already confirmed
+    // NO email will be sent - user can login immediately with credentials
+    console.log("[auth-signup] Creating user with admin API (no email verification)...");
     const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // User is immediately confirmed - no system confirmation email
+      email_confirm: true, // User is immediately confirmed - no verification needed
     });
 
     if (createError) {
@@ -103,104 +101,10 @@ serve(async (req) => {
     }
 
     console.log("[auth-signup] User created successfully:", userData.user.id);
-
-    // Use canonical domain for redirect - ensures correct domain in all environments
-    // Default to escoria.ch as the production domain
-    const canonicalBase = "https://escoria.ch";
-    const targetUrl = `${canonicalBase}/auth/callback?next=/profil/erstellen`;
-    console.log("[auth-signup] Generating magic link with redirect to:", targetUrl);
-
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email: email,
-      options: {
-        redirectTo: targetUrl,
-      },
-    });
-
-    if (linkError || !linkData?.properties?.action_link) {
-      console.error("[auth-signup] Generate link error:", linkError?.message);
-      return new Response(
-        JSON.stringify({ error: "Bestätigungslink konnte nicht erstellt werden" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const confirmationUrl = linkData.properties.action_link;
-    console.log("[auth-signup] Magic link generated successfully");
-
-    // Send email via Resend - ESCORIA Red Style
-    console.log("[auth-signup] Sending confirmation email via Resend...");
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: "ESCORIA <noreply@escoria.ch>",
-      to: [email],
-      subject: "Willkommen bei ESCORIA - Bestätige deine E-Mail",
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #e5e5e5; max-width: 600px; margin: 0 auto; padding: 0; background-color: #0a0a0a;">
-          <!-- Header -->
-          <div style="background: linear-gradient(135deg, #141414 0%, #1a1a1a 100%); padding: 40px 20px; text-align: center; border-bottom: 3px solid #B91C1C;">
-            <h1 style="color: #B91C1C; margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 2px;">ESCORIA</h1>
-            <p style="color: #888; margin: 8px 0 0 0; font-size: 14px;">Schweizer Dating-Plattform</p>
-          </div>
-          
-          <!-- Content -->
-          <div style="background-color: #141414; padding: 40px 30px;">
-            <h2 style="color: #ffffff; margin: 0 0 20px 0; font-size: 24px;">Willkommen bei ESCORIA!</h2>
-            
-            <p style="color: #b0b0b0; font-size: 16px; margin-bottom: 30px;">
-              Vielen Dank für deine Registrierung. Klicke auf den Button unten, um dich einzuloggen und dein Profil zu erstellen:
-            </p>
-            
-            <div style="text-align: center; margin: 35px 0;">
-              <a href="${confirmationUrl}" 
-                 style="display: inline-block; background-color: #B91C1C; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(185, 28, 28, 0.4);">
-                Profil erstellen
-              </a>
-            </div>
-            
-            <p style="color: #666; font-size: 13px; margin-top: 30px;">
-              Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:<br>
-              <a href="${confirmationUrl}" style="color: #B91C1C; word-break: break-all; text-decoration: none;">${confirmationUrl}</a>
-            </p>
-          </div>
-          
-          <!-- Footer -->
-          <div style="background-color: #0a0a0a; padding: 25px 30px; text-align: center; border-top: 1px solid #222;">
-            <p style="color: #555; font-size: 12px; margin: 0;">
-              Falls du dich nicht bei ESCORIA registriert hast, kannst du diese E-Mail ignorieren.
-            </p>
-            <p style="color: #444; font-size: 11px; margin: 10px 0 0 0;">
-              © ${new Date().getFullYear()} ESCORIA - Alle Rechte vorbehalten
-            </p>
-          </div>
-        </body>
-        </html>
-      `,
-    });
-
-    if (emailError) {
-      console.error("[auth-signup] Resend email error:", emailError);
-      // User was created but email failed - we should still return success
-      // but log the issue
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          warning: "Konto erstellt, aber E-Mail konnte nicht gesendet werden" 
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("[auth-signup] Email sent successfully:", emailData?.id);
+    console.log("[auth-signup] No email sent - user can login immediately with credentials");
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, user_id: userData.user.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

@@ -16,7 +16,7 @@ import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
 import { useToast } from '@/hooks/use-toast';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
-import { Mail, CheckCircle } from 'lucide-react';
+
 
 const authSchema = z.object({
   email: z.string().email('Ungültige E-Mail-Adresse'),
@@ -42,8 +42,6 @@ const Auth = () => {
   const [agbAccepted, setAgbAccepted] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const seoTitle = getSetting('seo_auth_title');
   const seoDescription = getSetting('seo_auth_description');
@@ -216,83 +214,32 @@ const Auth = () => {
         // Continue anyway - user is already registered
       }
       
-      // AGB acceptance was recorded, show success
-      // The magic link email now redirects to /auth/callback?next=/profil/erstellen
-      setRegisteredEmail(email);
-      setRegistrationSuccess(true);
+      // Auto-login after successful registration (no email verification needed)
+      console.log('[Auth] Signup successful, auto-logging in...');
+      const { error: loginError } = await signIn(email, password);
+      
+      if (loginError) {
+        console.error('[Auth] Auto-login failed:', loginError);
+        toast({
+          title: 'Registrierung erfolgreich',
+          description: 'Bitte melde dich jetzt mit deinen Zugangsdaten an.',
+        });
+        setActiveTab('login');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Redirect to profile creation
+      toast({
+        title: 'Willkommen!',
+        description: 'Dein Konto wurde erstellt. Erstelle jetzt dein Profil.',
+      });
+      navigate('/profil/erstellen', { replace: true });
+      return;
     }
     
     setIsSubmitting(false);
   };
-
-  // Show success message after registration
-  if (registrationSuccess) {
-    return (
-      <>
-        <SEO 
-          title={seoTitle || 'Anmelden'}
-          description={seoDescription || 'Anmelden oder registrieren bei der Plattform'}
-        />
-        <Header />
-        <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
-          <div className="w-full max-w-md">
-            <div className="bg-card border rounded-lg p-8 text-center">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                <Mail className="w-8 h-8 text-primary" />
-              </div>
-              
-              <h1 className="text-2xl font-bold mb-4">
-                Fast geschafft!
-              </h1>
-              
-              <div className="bg-muted/50 rounded-lg p-4 mb-6">
-                <CheckCircle className="w-5 h-5 text-green-500 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Wir haben dir eine E-Mail an
-                </p>
-                <p className="font-semibold text-foreground">
-                  {registeredEmail}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  gesendet.
-                </p>
-              </div>
-              
-              <p className="text-muted-foreground mb-6">
-                Klicke auf den Link in der E-Mail, um dich einzuloggen und dein Profil zu erstellen.
-              </p>
-              
-              <div className="space-y-3">
-                <Button 
-                  onClick={() => {
-                    setRegistrationSuccess(false);
-                    setActiveTab('login');
-                    setPassword('');
-                  }}
-                  className="w-full"
-                >
-                  Zur Anmeldung
-                </Button>
-                
-                <p className="text-xs text-muted-foreground">
-                  Keine E-Mail erhalten? Prüfe deinen Spam-Ordner oder{' '}
-                  <button 
-                    onClick={() => {
-                      setRegistrationSuccess(false);
-                      setActiveTab('signup');
-                    }}
-                    className="text-primary underline hover:no-underline"
-                  >
-                    versuche es erneut
-                  </button>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
