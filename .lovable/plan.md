@@ -1,28 +1,30 @@
 
-
-# Fix: Profil-Löschung schlägt fehl wegen Storage-Trigger
+# Fix: Zweiter Storage-Trigger auf profiles-Tabelle entfernen
 
 ## Problem
-Beim Löschen eines Profils wird ein Datenbank-Trigger (`on_photo_delete`) ausgelöst, der versucht, Dateien direkt aus der internen `storage.objects`-Tabelle zu löschen. Das wird von der Datenbank blockiert mit der Meldung: "Direct deletion from storage tables is not allowed."
+Es gibt einen weiteren Trigger `trigger_delete_profile_photos` auf der **profiles**-Tabelle (nicht photos!), der beim Löschen eines Profils die Funktion `delete_profile_photos()` aufruft. Diese Funktion versucht direkt aus `storage.objects` zu löschen:
 
-Die Edge Function `admin-delete-user` löscht die Fotos bereits korrekt über die Storage API (Schritt 10), bevor sie die `photos`-Datensätze entfernt. Der Trigger ist daher überflüssig und verursacht den Fehler.
+```text
+DELETE FROM storage.objects WHERE bucket_id = 'profile-photos' AND name IN (...)
+```
+
+Das wird von der Datenbank blockiert: "Direct deletion from storage tables is not allowed."
+
+Der vorherige Fix hat nur den Trigger auf der `photos`-Tabelle entfernt -- dieser zweite Trigger auf `profiles` war die eigentliche Ursache.
 
 ## Lösung
 
-### Schritt 1: Trigger und Funktion entfernen
-Eine Datenbank-Migration erstellen, die:
-1. Den Trigger `on_photo_delete` von der `photos`-Tabelle entfernt
-2. Die Funktion `delete_storage_object()` löscht
-
-Das ist sicher, weil beide Lösch-Funktionen (Admin und Self-Delete) die Fotos bereits über die Storage API entfernen, bevor die Datenbank-Einträge gelöscht werden.
-
-### Technische Details
+### Datenbank-Migration
+Trigger und Funktion entfernen:
 
 ```text
-Migration SQL:
-  DROP TRIGGER IF EXISTS on_photo_delete ON public.photos;
-  DROP FUNCTION IF EXISTS delete_storage_object();
+DROP TRIGGER IF EXISTS trigger_delete_profile_photos ON public.profiles;
+DROP FUNCTION IF EXISTS delete_profile_photos();
 ```
 
-Keine Code-Änderungen an der Edge Function nötig -- die aktuelle Logik ist korrekt.
+Das ist sicher, weil die Edge Function `admin-delete-user` bereits:
+1. Fotos über die Storage API löscht (Schritt 10)
+2. Photo-Datensätze aus der DB entfernt (Schritt 11)
+3. Erst danach das Profil löscht (Schritt 12)
 
+Keine Code-Änderungen nötig.
