@@ -163,9 +163,21 @@ const ProfileEdit = () => {
     setIsSubmitting(true);
     
     try {
-      // If profile was active, set to pending for re-review
-      const newStatus = isActiveProfile ? 'pending' : profile.status;
-      console.log('[ProfileEdit] Will update status to:', newStatus);
+      // SECURITY: Fetch fresh profile ID from DB to avoid stale React state
+      const { data: freshProfile, error: freshError } = await supabase
+        .from('profiles')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (freshError || !freshProfile) {
+        throw new Error('Profil konnte nicht geladen werden');
+      }
+
+      const profileId = freshProfile.id;
+      const wasActive = freshProfile.status === 'active';
+      const newStatus = wasActive ? 'pending' : freshProfile.status;
+      console.log('[ProfileEdit] Fresh profile ID:', profileId, 'status:', newStatus);
       
       // SECURITY: Update profile data (no contact info)
       const { error: profileError } = await supabase
@@ -181,7 +193,7 @@ const ProfileEdit = () => {
           languages: data.languages,
           status: newStatus,
         })
-        .eq('id', profile.id);
+        .eq('id', profileId);
 
       if (profileError) {
         console.error('[ProfileEdit] Profile update error:', profileError);
@@ -192,7 +204,7 @@ const ProfileEdit = () => {
       const { error: contactError } = await supabase
         .from('profile_contacts')
         .upsert({
-          profile_id: profile.id,
+          profile_id: profileId,
           email: data.email,
           phone: data.phone,
           whatsapp: data.whatsapp,
@@ -209,10 +221,10 @@ const ProfileEdit = () => {
       await supabase
         .from('profile_categories')
         .delete()
-        .eq('profile_id', profile.id);
+        .eq('profile_id', profileId);
 
       const categoryInserts = data.category_ids.map((catId) => ({
-        profile_id: profile.id,
+        profile_id: profileId,
         category_id: catId,
       }));
 
@@ -228,7 +240,7 @@ const ProfileEdit = () => {
       console.log('[ProfileEdit] Update successful!');
       toast({
         title: 'Profil aktualisiert',
-        description: isActiveProfile 
+        description: wasActive 
           ? 'Deine Änderungen wurden gespeichert. Dein Profil wird erneut geprüft.'
           : 'Deine Änderungen wurden gespeichert',
       });
