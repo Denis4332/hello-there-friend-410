@@ -1,31 +1,58 @@
 
 
-# Fix: Slug komplett unveränderlich machen
+# Verifizierungsfoto direkt im Profil-Review anzeigen
 
 ## Problem
-Der Slug (Profil-URL) ändert sich immer noch, wenn Name oder Stadt bearbeitet werden. Der User will aber, dass die URL nach der Erstellung **nie mehr** geändert wird -- es ist ja dasselbe Profil.
+1. Verifizierungsfotos werden auf einem separaten Tab angezeigt. Der Admin muss zwischen "Profile prufen" und "Verifizierungen" hin- und herwechseln.
+2. Das Dashboard zeigt "0 Profile, 1 Verifikation" -- das ist korrekt (das Profil existiert und ist aktiv, hat aber eine offene Verifikation). Sobald die Verifikation im Profil-Dialog sichtbar ist, wird das intuitiver.
 
-Zusätzlich hat der Update-Trigger noch `age` in seiner WHEN-Bedingung, was unnötig ist.
+## Loesung
 
-## Lösung
+### Schritt 1: Verifikationsdaten im Profil-Query mitladen
+In `AdminProfile.tsx` wird die Profil-Abfrage erweitert, um auch die zugehoerige `verification_submissions` (status = 'pending') mitzuladen. Dazu wird nach dem Laden der Kontaktdaten zusaetzlich die Verifikation abgefragt.
 
-### Datenbank-Migration
+### Schritt 2: Verifikationsfoto im Profil-Detail-Dialog anzeigen
+Im "Pruefen"-Dialog eines Profils wird direkt unter den Profilfotos ein neuer Bereich "Verifizierung" eingefuegt:
+- Zeigt das Verifizierungsfoto (signierte URL, da privater Bucket)
+- Zeigt "Genehmigen" und "Ablehnen" Buttons direkt im Kontext
+- Nur sichtbar, wenn eine ausstehende Verifikation existiert
+- Badge "Verifizierung ausstehend" in der Profilliste bei Profilen mit offener Verifikation
 
-1. **Den Update-Trigger komplett entfernen** -- der Slug soll nach dem INSERT nie mehr geändert werden
-2. Der Insert-Trigger (`set_profile_slug_insert`) bleibt bestehen und funktioniert wie bisher
+### Schritt 3: Separaten Verifikations-Tab entfernen
+- Den Tab "Verifizierungen" aus der `TabsList` entfernen
+- Die `VerificationsTab`-Komponente wird nicht mehr gerendert
+- Alles passiert jetzt im Profil-Dialog
 
+### Schritt 4: Dashboard-Zaehler anpassen
+Im `AdminDashboard.tsx` den Link "Verifikationen" unter "Zu pruefen" so aendern, dass er direkt zur Profilliste navigiert (statt zu einem separaten Tab).
+
+---
+
+### Technische Details
+
+**AdminProfile.tsx -- Profil-Query erweitern:**
 ```text
-Migration SQL:
-  DROP TRIGGER IF EXISTS set_profile_slug_update ON public.profiles;
+// Nach dem Laden der Kontaktdaten:
+const { data: verificationData } = await supabase
+  .from('verification_submissions')
+  .select('*')
+  .eq('profile_id', profile.id)
+  .eq('status', 'pending')
+  .maybeSingle();
+
+return { ...profile, contact: contactData, pendingVerification: verificationData };
 ```
 
-Das ist alles. Die Funktion `generate_profile_slug()` kann bleiben (wird noch vom Insert-Trigger gebraucht), aber der Update-Trigger wird entfernt.
+**AdminProfile.tsx -- Signierte URL fuer Verifikationsfoto:**
+Im Dialog wird fuer Profile mit `pendingVerification` eine signierte URL aus dem `verification-photos` Bucket generiert und das Foto angezeigt.
 
-### Was sich ändert
-- Profil-URL wird einmalig bei der Erstellung generiert und bleibt dann für immer gleich
-- Egal ob Name, Stadt, Alter oder sonst was geändert wird: die URL bleibt stabil
-- Keine gebrochenen Links, kein SEO-Verlust
+**AdminProfile.tsx -- Verifikations-Aktionen im Dialog:**
+Genehmigen/Ablehnen-Buttons werden direkt im Profil-Dialog implementiert, mit der gleichen Logik wie in `useVerifications.ts` (Status auf approved/rejected setzen, profile.verified_at aktualisieren).
 
-### Keine Code-Änderungen nötig
-Die Frontend-Logik in ProfileEdit.tsx muss nicht angepasst werden.
+**Profilliste -- Visueller Hinweis:**
+Profile mit offener Verifikation erhalten ein Badge oder Icon in der Tabelle, damit der Admin sofort sieht, welche Profile eine Verifikation zu pruefen haben.
+
+**Tab-Entfernung:**
+- `TabsList` wird auf nur noch einen Tab reduziert (oder ganz entfernt)
+- Import von `VerificationsTab` wird entfernt
 
