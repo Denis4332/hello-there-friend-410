@@ -1,58 +1,44 @@
 
-
-# Verifizierungsfoto direkt im Profil-Review anzeigen
+# Hauptfoto wechseln im User-Dashboard
 
 ## Problem
-1. Verifizierungsfotos werden auf einem separaten Tab angezeigt. Der Admin muss zwischen "Profile prufen" und "Verifizierungen" hin- und herwechseln.
-2. Das Dashboard zeigt "0 Profile, 1 Verifikation" -- das ist korrekt (das Profil existiert und ist aktiv, hat aber eine offene Verifikation). Sobald die Verifikation im Profil-Dialog sichtbar ist, wird das intuitiver.
+Im User-Dashboard werden Fotos angezeigt, aber es gibt keinen Button zum Wechseln des Hauptfotos. Die Stern-Buttons wurden auch aus dem PhotoUploader entfernt. Nutzer koennen ihr Hauptfoto aktuell gar nicht aendern.
 
 ## Loesung
+Im Fotos-Bereich des UserDashboards wird auf jedem Nicht-Hauptfoto ein Button "Als Hauptfoto setzen" hinzugefuegt. Beim Klick wird:
+1. Das alte Hauptfoto auf `is_primary = false` gesetzt
+2. Das neue Foto auf `is_primary = true` gesetzt
+3. Der Profilstatus wird NICHT geaendert -- das Profil bleibt aktiv
 
-### Schritt 1: Verifikationsdaten im Profil-Query mitladen
-In `AdminProfile.tsx` wird die Profil-Abfrage erweitert, um auch die zugehoerige `verification_submissions` (status = 'pending') mitzuladen. Dazu wird nach dem Laden der Kontaktdaten zusaetzlich die Verifikation abgefragt.
+## Umsetzung
 
-### Schritt 2: Verifikationsfoto im Profil-Detail-Dialog anzeigen
-Im "Pruefen"-Dialog eines Profils wird direkt unter den Profilfotos ein neuer Bereich "Verifizierung" eingefuegt:
-- Zeigt das Verifizierungsfoto (signierte URL, da privater Bucket)
-- Zeigt "Genehmigen" und "Ablehnen" Buttons direkt im Kontext
-- Nur sichtbar, wenn eine ausstehende Verifikation existiert
-- Badge "Verifizierung ausstehend" in der Profilliste bei Profilen mit offener Verifikation
+### UserDashboard.tsx anpassen
 
-### Schritt 3: Separaten Verifikations-Tab entfernen
-- Den Tab "Verifizierungen" aus der `TabsList` entfernen
-- Die `VerificationsTab`-Komponente wird nicht mehr gerendert
-- Alles passiert jetzt im Profil-Dialog
+**Neue Funktion `handleSetPrimary`:**
+- Nimmt die photo ID entgegen
+- Setzt alle Fotos des Profils auf `is_primary = false`
+- Setzt das gewaehlte Foto auf `is_primary = true`
+- Aktualisiert den lokalen State (`setPhotos`)
+- Zeigt einen Erfolgs-Toast
 
-### Schritt 4: Dashboard-Zaehler anpassen
-Im `AdminDashboard.tsx` den Link "Verifikationen" unter "Zu pruefen" so aendern, dass er direkt zur Profilliste navigiert (statt zu einem separaten Tab).
-
----
+**UI-Aenderung im Fotos-Grid:**
+- Jedes Foto bekommt bei Hover einen Button-Overlay
+- Hauptfoto: Zeigt weiterhin das "Hauptfoto" Badge
+- Nicht-Hauptfoto: Zeigt einen klickbaren Stern-Button "Als Hauptfoto setzen"
+- Button ist disabled waehrend der Aktion laeuft
 
 ### Technische Details
 
-**AdminProfile.tsx -- Profil-Query erweitern:**
 ```text
-// Nach dem Laden der Kontaktdaten:
-const { data: verificationData } = await supabase
-  .from('verification_submissions')
-  .select('*')
-  .eq('profile_id', profile.id)
-  .eq('status', 'pending')
-  .maybeSingle();
-
-return { ...profile, contact: contactData, pendingVerification: verificationData };
+// Neue Handler-Funktion
+const handleSetPrimary = async (photoId: string) => {
+  // 1. Alle Fotos des Profils: is_primary = false
+  await supabase.from('photos').update({ is_primary: false }).eq('profile_id', profile.id);
+  // 2. Gewaehltes Foto: is_primary = true  
+  await supabase.from('photos').update({ is_primary: true }).eq('id', photoId);
+  // 3. Lokalen State aktualisieren
+  // 4. Toast anzeigen
+};
 ```
 
-**AdminProfile.tsx -- Signierte URL fuer Verifikationsfoto:**
-Im Dialog wird fuer Profile mit `pendingVerification` eine signierte URL aus dem `verification-photos` Bucket generiert und das Foto angezeigt.
-
-**AdminProfile.tsx -- Verifikations-Aktionen im Dialog:**
-Genehmigen/Ablehnen-Buttons werden direkt im Profil-Dialog implementiert, mit der gleichen Logik wie in `useVerifications.ts` (Status auf approved/rejected setzen, profile.verified_at aktualisieren).
-
-**Profilliste -- Visueller Hinweis:**
-Profile mit offener Verifikation erhalten ein Badge oder Icon in der Tabelle, damit der Admin sofort sieht, welche Profile eine Verifikation zu pruefen haben.
-
-**Tab-Entfernung:**
-- `TabsList` wird auf nur noch einen Tab reduziert (oder ganz entfernt)
-- Import von `VerificationsTab` wird entfernt
-
+**Wichtig:** Die `profiles`-Tabelle wird NICHT angefasst. Kein Status-Wechsel zu "pending". Das Hauptfoto ist ein rein kosmetisches Attribut der `photos`-Tabelle.
