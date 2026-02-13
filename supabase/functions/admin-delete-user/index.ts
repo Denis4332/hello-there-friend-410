@@ -189,14 +189,20 @@ Deno.serve(async (req) => {
     
     if (!rolesError) deletionLog.push('user_roles deleted');
 
-    // 16. Finally delete the auth user
+    // 16. Finally delete the auth user (skip if user doesn't exist in auth)
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (authDeleteError) {
-      throw new Error(`Failed to delete auth user: ${authDeleteError.message}`);
+      // If user not found in auth, that's okay - profile may have been created by admin without auth user
+      if (authDeleteError.message?.includes('not found') || authDeleteError.message?.includes('User not found')) {
+        console.log('Auth user not found, skipping auth deletion (admin-created profile)');
+        deletionLog.push('auth.users skipped (not found)');
+      } else {
+        throw new Error(`Failed to delete auth user: ${authDeleteError.message}`);
+      }
+    } else {
+      deletionLog.push('auth.users deleted');
     }
-
-    deletionLog.push('auth.users deleted');
 
     console.log('Admin user deletion complete:', deletionLog);
 
