@@ -79,14 +79,12 @@ serve(async (req) => {
       c: currency,
       cc: countryCode,
       id: id,
+      lc: 'DE',
+      ps: ps,
       pt: pt,
       r: returnUrl,
       ts: ts
     };
-
-    if (ps && ps.trim() !== '') {
-      params.ps = ps;
-    }
 
     const sortedKeys = Object.keys(params).sort();
     const prehash = sortedKeys.map(k => `${k}=${params[k]}`).join(';') + ';' + secret;
