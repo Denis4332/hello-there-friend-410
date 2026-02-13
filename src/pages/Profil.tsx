@@ -174,8 +174,10 @@ const Profil = () => {
                                 src={item.url}
                                 className="w-full h-full object-cover"
                                 controls
-                                preload="metadata"
+                                muted
+                                preload="auto"
                                 playsInline
+                                poster=""
                               >
                                 Dein Browser unterstützt keine Videos.
                               </video>
@@ -369,7 +371,9 @@ const Profil = () => {
                 src={mediaItems[lightboxIndex]?.originalUrl}
                 className="max-w-full max-h-full object-contain"
                 controls
+                muted
                 autoPlay
+                preload="auto"
                 playsInline
               >
                 Dein Browser unterstützt keine Videos.
