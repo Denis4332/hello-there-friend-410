@@ -148,7 +148,8 @@ const AdminProfile = () => {
               .from('verification_submissions')
               .select('*')
               .eq('profile_id', profile.id)
-              .eq('status', 'pending')
+              .order('submitted_at', { ascending: false })
+              .limit(1)
               .maybeSingle()
           ]);
           
@@ -1138,11 +1139,23 @@ const AdminProfile = () => {
                                 
                                 {/* Verification Section - inline */}
                                 {selectedProfile.pendingVerification && (
-                                  <div className="border-2 border-orange-500/50 rounded-lg p-3 bg-orange-50 dark:bg-orange-950/20">
+                                  <div className={`border-2 rounded-lg p-3 ${
+                                    selectedProfile.pendingVerification.status === 'pending' 
+                                      ? 'border-orange-500/50 bg-orange-50 dark:bg-orange-950/20'
+                                      : selectedProfile.pendingVerification.status === 'approved'
+                                        ? 'border-green-500/50 bg-green-50 dark:bg-green-950/20'
+                                        : 'border-red-500/50 bg-red-50 dark:bg-red-950/20'
+                                  }`}>
                                     <div className="flex items-center justify-between mb-2">
                                       <label className="text-sm font-medium flex items-center gap-2">
-                                        <Shield className="h-4 w-4 text-orange-500" />
-                                        Verifizierung ausstehend
+                                        <Shield className={`h-4 w-4 ${
+                                          selectedProfile.pendingVerification.status === 'pending' ? 'text-orange-500'
+                                            : selectedProfile.pendingVerification.status === 'approved' ? 'text-green-500'
+                                            : 'text-red-500'
+                                        }`} />
+                                        {selectedProfile.pendingVerification.status === 'pending' && 'Verifizierung ausstehend'}
+                                        {selectedProfile.pendingVerification.status === 'approved' && 'Verifiziert ✓'}
+                                        {selectedProfile.pendingVerification.status === 'rejected' && 'Verifizierung abgelehnt'}
                                       </label>
                                     </div>
                                     
@@ -1158,32 +1171,34 @@ const AdminProfile = () => {
                                       <p className="text-sm text-muted-foreground mb-3">Foto konnte nicht geladen werden</p>
                                     )}
                                     
-                                    <div className="flex gap-2">
-                                      <Button 
-                                        size="sm"
-                                        className="bg-green-600 hover:bg-green-700"
-                                        disabled={approveVerificationMutation.isPending}
-                                        onClick={() => approveVerificationMutation.mutate({
-                                          submissionId: selectedProfile.pendingVerification.id,
-                                          profileId: selectedProfile.id
-                                        })}
-                                      >
-                                        <CheckCircle className="h-4 w-4 mr-1" />
-                                        {approveVerificationMutation.isPending ? 'Genehmige...' : 'Genehmigen'}
-                                      </Button>
-                                      <Button 
-                                        size="sm"
-                                        variant="destructive"
-                                        disabled={rejectVerificationMutation.isPending}
-                                        onClick={() => rejectVerificationMutation.mutate({
-                                          submissionId: selectedProfile.pendingVerification.id,
-                                          note: dialogNote || undefined
-                                        })}
-                                      >
-                                        <XCircle className="h-4 w-4 mr-1" />
-                                        {rejectVerificationMutation.isPending ? 'Ablehne...' : 'Ablehnen'}
-                                      </Button>
-                                    </div>
+                                    {selectedProfile.pendingVerification.status === 'pending' && (
+                                      <div className="flex gap-2">
+                                        <Button 
+                                          size="sm"
+                                          className="bg-green-600 hover:bg-green-700"
+                                          disabled={approveVerificationMutation.isPending}
+                                          onClick={() => approveVerificationMutation.mutate({
+                                            submissionId: selectedProfile.pendingVerification.id,
+                                            profileId: selectedProfile.id
+                                          })}
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          {approveVerificationMutation.isPending ? 'Genehmige...' : 'Genehmigen'}
+                                        </Button>
+                                        <Button 
+                                          size="sm"
+                                          variant="destructive"
+                                          disabled={rejectVerificationMutation.isPending}
+                                          onClick={() => rejectVerificationMutation.mutate({
+                                            submissionId: selectedProfile.pendingVerification.id,
+                                            note: dialogNote || undefined
+                                          })}
+                                        >
+                                          <XCircle className="h-4 w-4 mr-1" />
+                                          {rejectVerificationMutation.isPending ? 'Ablehne...' : 'Ablehnen'}
+                                        </Button>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                                 
