@@ -82,16 +82,10 @@ const AdminDashboard = () => {
                 <div className="text-sm text-muted-foreground font-medium mb-2">Zu prüfen</div>
                 <div className="text-xs space-y-1">
                   <Link 
-                    to="/admin/profile?status=pending" 
-                    className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
-                  >
-                    → {stats?.toReview.profiles || 0} Profile
-                  </Link>
-                  <Link 
                     to="/admin/profile" 
                     className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
                   >
-                    → {stats?.toReview.verifications || 0} Verifikationen
+                    → {(stats?.toReview.profiles || 0) + (stats?.toReview.verifications || 0)} Profile / Verifikationen
                   </Link>
                   <Link 
                     to="/admin/reports" 
@@ -99,6 +93,7 @@ const AdminDashboard = () => {
                   >
                     → {stats?.toReview.reports || 0} Meldungen
                   </Link>
+                  <div>&nbsp;</div>
                 </div>
               </div>
 
