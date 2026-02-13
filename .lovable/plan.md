@@ -1,60 +1,46 @@
 
-## Problem-Analyse: PayPort Checkout-Seite ist leer
 
-### Diagnose
-Die Edge Function `payport-checkout` funktioniert korrekt laut Logs:
-- Redirect-URL wird generiert
-- Profil wird mit `payment_reference` verknüpft
-- ABER: PayPort zeigt leere Seite
+## PayPort Edge Functions Fix
 
-### Mögliche Ursachen
+### Analyse der aktuellen Probleme
 
-1. **Test-Umgebung Problem (wahrscheinlichste Ursache)**
-   - `PAYPORT_CC = "TE"` (Testmodus aktiv)
-   - PayPort Test-Server kann instabil sein oder leere Seiten zeigen
+**payport-checkout/index.ts - 2 Probleme gefunden:**
 
-2. **Payment Source Kombination**
-   - SMS + `ps: "VERIFICATION"` funktioniert möglicherweise nicht im Testmodus
-   - PHONE + `ps: "TARIFF-CHANGE"` könnte ebenfalls problematisch sein
+1. **Fehlender `lc` Parameter**: Der Hash-String und die URL enthalten kein `lc` (Language Code). Laut Anforderung muss `lc` alphabetisch zwischen `id` und `ps` stehen: `a, ak, c, cc, id, lc, ps, pt, r, ts`
+2. **`ps` wird bedingt hinzugefuegt**: Aktuell wird `ps` nur hinzugefuegt wenn nicht leer. Fuer beide Methoden (SMS/PHONE) ist `ps` aber immer gesetzt, also muss es immer im Hash sein
 
-3. **Hash-Problem**
-   - Unwahrscheinlich, da die Logik bereits funktionierte
+**payport-return/index.ts - Korrekt:**
+- Nutzt bereits `apiBaseUrl + '/getTransactionStatus'` und `'/releaseTransaction'`
+- Setzt `payment_status: 'paid'` bei Erfolg
+- Keine Aenderungen noetig
 
-### Lösungs-Optionen
+### Aenderungen
 
-**Option A: Live-Modus aktivieren (falls bereit)**
-- `PAYPORT_CC` von `"TE"` auf `"CH"` ändern
-- `PAYPORT_CHECKOUT_URL` auf Live-URL ändern: `https://pip3.payport.ch/prepare/checkout`
-- `PAYPORT_API_BASE_URL` auf Live-URL ändern: `https://pip3api.payport.ch/api`
+**Datei: `supabase/functions/payport-checkout/index.ts`**
 
-**Option B: Debug-Logging hinzufügen**
-- Die generierte Redirect-URL in der Konsole loggen
-- URL manuell testen um zu sehen was PayPort zurückgibt
+1. `lc = 'DE'` als festen Wert hinzufuegen (oder optional als Secret)
+2. `lc` in das `params` Objekt aufnehmen - wird dann automatisch alphabetisch sortiert
+3. `ps` immer ins params Objekt aufnehmen (nicht bedingt) - da bei beiden Methoden ein Wert gesetzt ist
+4. Sicherstellen dass `r` (returnUrl) im Hash NICHT encoded wird, aber in der URL schon - aktuell korrekt da `params.r = returnUrl` original bleibt und `URLSearchParams` die Kodierung uebernimmt
 
-**Option C: Payment Source anpassen**
-- `ps` Parameter für SMS auf einen anderen Wert setzen (z.B. `VOUCHER`)
-- Oder `ps` komplett weglassen wenn nicht zwingend nötig
-
-### Empfohlener nächster Schritt
-
-1. Teste den Checkout mit `?debug=1` Parameter
-2. Kopiere die generierte PayPort-URL aus der Konsole
-3. Öffne sie manuell um zu sehen ob PayPort einen Fehler zeigt
-
-Falls Live-Modus gewünscht: Secrets aktualisieren und Edge Function neu deployen.
+**Keine Aenderungen an:**
+- `supabase/functions/payport-return/index.ts` (funktioniert bereits korrekt)
+- `supabase/config.toml`
+- Keine anderen Dateien
 
 ### Technische Details
 
-**Aktuelle Secret-Konfiguration:**
+Aktuelle Hash-Reihenfolge (falsch):
 ```text
-PAYPORT_CC = "TE" (Testmodus)
-PAYPORT_CHECKOUT_URL = https://test-pip3.payport.ch/prepare/checkout
-PAYPORT_API_BASE_URL = https://test-pip3api.payport.ch/api
+a, ak, c, cc, id, ps, pt, r, ts
 ```
 
-**Für Live-Modus benötigt:**
+Neue Hash-Reihenfolge (korrekt):
 ```text
-PAYPORT_CC = "CH"
-PAYPORT_CHECKOUT_URL = https://pip3.payport.ch/prepare/checkout
-PAYPORT_API_BASE_URL = https://pip3api.payport.ch/api
+a, ak, c, cc, id, lc, ps, pt, r, ts
 ```
+
+Der einzige Unterschied ist das Hinzufuegen von `lc=DE` an der alphabetisch korrekten Position.
+
+Beide Edge Functions werden nach der Aenderung neu deployed.
+
