@@ -88,7 +88,7 @@ const AdminDashboard = () => {
                     → {stats?.toReview.profiles || 0} Profile
                   </Link>
                   <Link 
-                    to="/admin/profile?tab=verifications" 
+                    to="/admin/profile" 
                     className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
                   >
                     → {stats?.toReview.verifications || 0} Verifikationen
