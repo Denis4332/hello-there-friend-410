@@ -73,7 +73,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!verificationError) deletionLog.push('verification_submissions deleted');
+      if (verificationError) console.error('verification_submissions error:', verificationError);
+      else deletionLog.push('verification_submissions deleted');
 
       // 2b. Delete AGB acceptances
       const { error: agbError } = await supabaseAdmin
@@ -81,7 +82,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!agbError) deletionLog.push('agb_acceptances deleted');
+      if (agbError) console.error('agb_acceptances error:', agbError);
+      else deletionLog.push('agb_acceptances deleted');
 
       // 3. Delete profile views
       const { error: viewsError } = await supabaseAdmin
@@ -89,7 +91,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!viewsError) deletionLog.push('profile_views deleted');
+      if (viewsError) console.error('profile_views error:', viewsError);
+      else deletionLog.push('profile_views deleted');
 
       // 4. Delete profile contacts
       const { error: contactsError } = await supabaseAdmin
@@ -97,7 +100,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!contactsError) deletionLog.push('profile_contacts deleted');
+      if (contactsError) console.error('profile_contacts error:', contactsError);
+      else deletionLog.push('profile_contacts deleted');
 
       // 5. Delete profile categories
       const { error: categoriesError } = await supabaseAdmin
@@ -105,7 +109,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!categoriesError) deletionLog.push('profile_categories deleted');
+      if (categoriesError) console.error('profile_categories error:', categoriesError);
+      else deletionLog.push('profile_categories deleted');
 
       // 6. Delete moderation notes
       const { error: notesError } = await supabaseAdmin
@@ -113,7 +118,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!notesError) deletionLog.push('profile_moderation_notes deleted');
+      if (notesError) console.error('profile_moderation_notes error:', notesError);
+      else deletionLog.push('profile_moderation_notes deleted');
 
       // 7. Delete reports
       const { error: reportsError } = await supabaseAdmin
@@ -121,7 +127,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!reportsError) deletionLog.push('reports deleted');
+      if (reportsError) console.error('reports error:', reportsError);
+      else deletionLog.push('reports deleted');
 
       // 8. Delete favorites
       const { error: favoritesError } = await supabaseAdmin
@@ -129,7 +136,29 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!favoritesError) deletionLog.push('user_favorites deleted');
+      if (favoritesError) console.error('user_favorites error:', favoritesError);
+      else deletionLog.push('user_favorites deleted');
+
+      // 8b. Delete change request media (via profile_change_requests)
+      const { data: changeRequests } = await supabaseAdmin
+        .from('profile_change_requests')
+        .select('id')
+        .in('profile_id', profileIds);
+      
+      if (changeRequests && changeRequests.length > 0) {
+        const requestIds = changeRequests.map(cr => cr.id);
+        await supabaseAdmin.from('change_request_media').delete().in('request_id', requestIds);
+        deletionLog.push('change_request_media deleted');
+      }
+
+      // 8c. Delete profile change requests
+      const { error: changeReqError } = await supabaseAdmin
+        .from('profile_change_requests')
+        .delete()
+        .in('profile_id', profileIds);
+      
+      if (changeReqError) console.error('profile_change_requests error:', changeReqError);
+      else deletionLog.push('profile_change_requests deleted');
 
       // 9. Get photo storage paths before deleting
       const { data: photos } = await supabaseAdmin
@@ -145,7 +174,8 @@ Deno.serve(async (req) => {
           .from('profile-photos')
           .remove(storagePaths);
         
-        if (!storageError) deletionLog.push(`${storagePaths.length} photos deleted from storage`);
+        if (storageError) console.error('storage error:', storageError);
+        else deletionLog.push(`${storagePaths.length} photos deleted from storage`);
       }
 
       // 11. Delete photos records
@@ -154,7 +184,8 @@ Deno.serve(async (req) => {
         .delete()
         .in('profile_id', profileIds);
       
-      if (!photosError) deletionLog.push('photos records deleted');
+      if (photosError) console.error('photos error:', photosError);
+      else deletionLog.push('photos records deleted');
 
       // 12. Delete profiles
       const { error: profilesError } = await supabaseAdmin
@@ -162,7 +193,11 @@ Deno.serve(async (req) => {
         .delete()
         .eq('user_id', userId);
       
-      if (!profilesError) deletionLog.push('profiles deleted');
+      if (profilesError) {
+        console.error('profiles error:', profilesError);
+        throw new Error(`Failed to delete profiles: ${profilesError.message}`);
+      }
+      deletionLog.push('profiles deleted');
     }
 
     // 13. Delete reports created by this user
