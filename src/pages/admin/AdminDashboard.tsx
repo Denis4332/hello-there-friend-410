@@ -82,7 +82,7 @@ const AdminDashboard = () => {
                 <div className="text-sm text-muted-foreground font-medium mb-2">Zu prüfen</div>
                 <div className="text-xs space-y-1">
                   <Link 
-                    to="/admin/profile" 
+                    to="/admin/profile?status=needs_review" 
                     className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
                   >
                     → {(stats?.toReview.profiles || 0) + (stats?.toReview.verifications || 0)} Profile / Verifikationen
