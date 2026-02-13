@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS set_profile_slug_update ON public.profiles;
