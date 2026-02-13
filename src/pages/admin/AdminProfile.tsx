@@ -4,11 +4,9 @@ import { AdminHeader } from '@/components/layout/AdminHeader';
 import { AdminProfileCreateDialog } from '@/components/admin/AdminProfileCreateDialog';
 import { BulkImageCompressor } from '@/components/admin/BulkImageCompressor';
 import { RotationDebugTool } from '@/components/admin/RotationDebugTool';
-import VerificationsTab from '@/components/admin/VerificationsTab';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -27,7 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSetting } from '@/hooks/useSiteSettings';
 import { useAgbAcceptances } from '@/hooks/useAgbAcceptances';
-import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2, Camera, Shield, Users } from 'lucide-react';
+import { Trash2, X, Pencil, FileCheck, ImagePlus, Loader2, Camera, Shield, CheckCircle, XCircle } from 'lucide-react';
 import type { Profile } from '@/types/dating';
 import { compressImage } from '@/utils/imageCompression';
 import { sortProfilesByListingType } from '@/lib/profileUtils';
@@ -50,7 +48,8 @@ const AdminProfile = () => {
   const { data: premiumPrice } = useSiteSetting('pricing_premium_price');
   const { data: topPrice } = useSiteSetting('pricing_top_price');
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profiles');
+  const [verificationPhotoUrl, setVerificationPhotoUrl] = useState<string | null>(null);
+  const [verificationPhotoLoading, setVerificationPhotoLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
   const [verifiedFilter, setVerifiedFilter] = useState(searchParams.get('verified') || '');
   const [paymentFilter, setPaymentFilter] = useState(searchParams.get('payment') || '');
@@ -138,13 +137,21 @@ const AdminProfile = () => {
       // SECURITY: Load contact data for each profile (admins can see all)
       const profilesWithContacts = await Promise.all(
         (data || []).map(async (profile) => {
-          const { data: contactData } = await supabase
-            .from('profile_contacts')
-            .select('*')
-            .eq('profile_id', profile.id)
-            .maybeSingle();
+          const [{ data: contactData }, { data: verificationData }] = await Promise.all([
+            supabase
+              .from('profile_contacts')
+              .select('*')
+              .eq('profile_id', profile.id)
+              .maybeSingle(),
+            supabase
+              .from('verification_submissions')
+              .select('*')
+              .eq('profile_id', profile.id)
+              .eq('status', 'pending')
+              .maybeSingle()
+          ]);
           
-          return { ...profile, contact: contactData };
+          return { ...profile, contact: contactData, pendingVerification: verificationData };
         })
       );
       
@@ -655,6 +662,20 @@ const AdminProfile = () => {
     
     // Reset photo upload state
     setNewPhotoPreviews([]);
+    setVerificationPhotoUrl(null);
+    
+    // Load verification photo signed URL if pending verification exists
+    if (profile.pendingVerification?.storage_path) {
+      setVerificationPhotoLoading(true);
+      supabase.storage
+        .from('verification-photos')
+        .createSignedUrl(profile.pendingVerification.storage_path, 3600)
+        .then(({ data }) => {
+          setVerificationPhotoUrl(data?.signedUrl || null);
+          setVerificationPhotoLoading(false);
+        })
+        .catch(() => setVerificationPhotoLoading(false));
+    }
     
     // Set edit fields
     setEditDisplayName(profile.display_name || '');
@@ -680,6 +701,67 @@ const AdminProfile = () => {
     
     setDialogExpiryDate(expiryDate ? new Date(expiryDate).toISOString().split('T')[0] : '');
   };
+
+  // Verification approve/reject mutations
+  const approveVerificationMutation = useMutation({
+    mutationFn: async ({ submissionId, profileId }: { submissionId: string; profileId: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error: submissionError } = await supabase
+        .from('verification_submissions')
+        .update({
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id
+        })
+        .eq('id', submissionId);
+      
+      if (submissionError) throw submissionError;
+      
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ verified_at: new Date().toISOString() })
+        .eq('id', profileId);
+      
+      if (profileError) throw profileError;
+    },
+    onSuccess: () => {
+      toast({ title: '✅ Verifizierung genehmigt', description: 'Das Profil wurde erfolgreich verifiziert.' });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      setSelectedProfile(null);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
+    }
+  });
+
+  const rejectVerificationMutation = useMutation({
+    mutationFn: async ({ submissionId, note }: { submissionId: string; note?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('verification_submissions')
+        .update({
+          status: 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id,
+          admin_note: note
+        })
+        .eq('id', submissionId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Verifizierung abgelehnt' });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      setSelectedProfile(null);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
+    }
+  });
 
   const handleSaveProfile = () => {
     if (!selectedProfile) return;
@@ -722,24 +804,9 @@ const AdminProfile = () => {
             <AdminProfileCreateDialog />
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="profiles" className="gap-2">
-                <Users className="h-4 w-4" />
-                Profile prüfen
-              </TabsTrigger>
-              <TabsTrigger value="verifications" className="gap-2">
-                <Shield className="h-4 w-4" />
-                Verifizierungen
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="profiles" className="space-y-4">
+          <div className="space-y-4">
               <BulkImageCompressor />
-
-              {/* Rotation Debug Tool */}
               <RotationDebugTool profiles={profiles || []} />
-
               <div className="bg-card border rounded-lg p-4 mb-4">
                 <div className="flex gap-4 flex-wrap">
                   <div>
@@ -856,11 +923,19 @@ const AdminProfile = () => {
                         </Badge>
                       </td>
                       <td className="p-3">
-                        {profile.verified_at ? (
-                          <Badge className="bg-success text-success-foreground">Ja</Badge>
-                        ) : (
-                          <Badge variant="secondary">Nein</Badge>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {profile.verified_at ? (
+                            <Badge className="bg-success text-success-foreground">Ja</Badge>
+                          ) : (
+                            <Badge variant="secondary">Nein</Badge>
+                          )}
+                          {profile.pendingVerification && (
+                            <Badge variant="outline" className="border-orange-500 text-orange-500 text-xs">
+                              <Shield className="h-3 w-3 mr-1" />
+                              Prüfen
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3 text-sm">
                         {new Date(profile.created_at).toLocaleDateString('de-CH')}
@@ -1052,7 +1127,57 @@ const AdminProfile = () => {
                                   )}
                                 </div>
                                 
-                                {/* Profile Text Section - Editable */}
+                                {/* Verification Section - inline */}
+                                {selectedProfile.pendingVerification && (
+                                  <div className="border-2 border-orange-500/50 rounded-lg p-3 bg-orange-50 dark:bg-orange-950/20">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <label className="text-sm font-medium flex items-center gap-2">
+                                        <Shield className="h-4 w-4 text-orange-500" />
+                                        Verifizierung ausstehend
+                                      </label>
+                                    </div>
+                                    
+                                    {verificationPhotoLoading ? (
+                                      <div className="w-32 h-32 bg-muted rounded animate-pulse" />
+                                    ) : verificationPhotoUrl ? (
+                                      <img 
+                                        src={verificationPhotoUrl} 
+                                        alt="Verifizierungsfoto" 
+                                        className="rounded max-w-[200px] max-h-[200px] object-cover mb-3 border"
+                                      />
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground mb-3">Foto konnte nicht geladen werden</p>
+                                    )}
+                                    
+                                    <div className="flex gap-2">
+                                      <Button 
+                                        size="sm"
+                                        className="bg-green-600 hover:bg-green-700"
+                                        disabled={approveVerificationMutation.isPending}
+                                        onClick={() => approveVerificationMutation.mutate({
+                                          submissionId: selectedProfile.pendingVerification.id,
+                                          profileId: selectedProfile.id
+                                        })}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        {approveVerificationMutation.isPending ? 'Genehmige...' : 'Genehmigen'}
+                                      </Button>
+                                      <Button 
+                                        size="sm"
+                                        variant="destructive"
+                                        disabled={rejectVerificationMutation.isPending}
+                                        onClick={() => rejectVerificationMutation.mutate({
+                                          submissionId: selectedProfile.pendingVerification.id,
+                                          note: dialogNote || undefined
+                                        })}
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        {rejectVerificationMutation.isPending ? 'Ablehne...' : 'Ablehnen'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <div className="border rounded-lg p-3">
                                   <div className="flex items-center justify-between mb-2">
                                     <label className="text-sm font-medium">Profildaten</label>
@@ -1533,19 +1658,14 @@ const AdminProfile = () => {
               </div>
             )}
           </div>
-            </TabsContent>
-
-            <TabsContent value="verifications">
-              <VerificationsTab />
-            </TabsContent>
-          </Tabs>
+          </div>
         </div>
       </main>
     </div>
   );
 };
 
-// AGB-Akzeptanz Anzeige Komponente
+
 const AgbAcceptanceSection = ({ profileId }: { profileId: string }) => {
   const { data: acceptances, isLoading } = useAgbAcceptances(profileId);
 
