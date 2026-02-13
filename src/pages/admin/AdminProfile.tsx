@@ -50,7 +50,7 @@ const AdminProfile = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [verificationPhotoUrl, setVerificationPhotoUrl] = useState<string | null>(null);
   const [verificationPhotoLoading, setVerificationPhotoLoading] = useState(false);
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'needs_review');
   const [verifiedFilter, setVerifiedFilter] = useState(searchParams.get('verified') || '');
   const [paymentFilter, setPaymentFilter] = useState(searchParams.get('payment') || '');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
@@ -116,7 +116,8 @@ const AdminProfile = () => {
         query = query.or(`user_id.is.null,user_id.not.in.(${adminUserIds.join(',')})`);
       }
       
-      if (statusFilter) {
+      // For needs_review, we load all non-rejected profiles and post-filter
+      if (statusFilter && statusFilter !== 'needs_review') {
         query = query.eq('status', statusFilter);
       }
       
@@ -154,6 +155,13 @@ const AdminProfile = () => {
           return { ...profile, contact: contactData, pendingVerification: verificationData };
         })
       );
+      
+      // Post-filter for needs_review: pending profiles OR profiles with pending verification
+      if (statusFilter === 'needs_review') {
+        return profilesWithContacts.filter(
+          (p) => p.status === 'pending' || p.pendingVerification
+        );
+      }
       
       return profilesWithContacts;
     }
@@ -816,8 +824,9 @@ const AdminProfile = () => {
                       onChange={(e) => setStatusFilter(e.target.value)}
                       className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                     >
+                      <option value="needs_review">🔍 Zu prüfen</option>
                       <option value="">Alle</option>
-                      <option value="pending">Zu prüfen</option>
+                      <option value="pending">Pending</option>
                       <option value="active">Aktiv</option>
                       <option value="rejected">Abgelehnt</option>
                     </select>
