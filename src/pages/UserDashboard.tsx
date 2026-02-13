@@ -25,6 +25,7 @@ const UserDashboard = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [settingPrimary, setSettingPrimary] = useState<string | null>(null);
 
   const getAmountForListingType = (type: string): number => {
     const prices: Record<string, number> = {
@@ -235,6 +236,31 @@ const UserDashboard = () => {
   const getPublicUrl = (storagePath: string) => {
     const { data } = supabase.storage.from('profile-photos').getPublicUrl(storagePath);
     return data.publicUrl;
+  };
+
+  const handleSetPrimary = async (photoId: string) => {
+    if (!profile) return;
+    setSettingPrimary(photoId);
+    try {
+      const { error: resetError } = await supabase
+        .from('photos')
+        .update({ is_primary: false })
+        .eq('profile_id', profile.id);
+      if (resetError) throw resetError;
+
+      const { error: setError } = await supabase
+        .from('photos')
+        .update({ is_primary: true })
+        .eq('id', photoId);
+      if (setError) throw setError;
+
+      setPhotos(prev => prev.map(p => ({ ...p, is_primary: p.id === photoId })));
+      toast({ title: 'Hauptfoto geändert', description: 'Das neue Hauptfoto wurde gesetzt.' });
+    } catch (error: any) {
+      toast({ title: 'Fehler', description: error.message, variant: 'destructive' });
+    } finally {
+      setSettingPrimary(null);
+    }
   };
 
   if (loading) {
@@ -544,7 +570,7 @@ const UserDashboard = () => {
                   {photos.length > 0 ? (
                     <div className="grid grid-cols-2 gap-4">
                       {photos.map((photo) => (
-                        <div key={photo.id} className="relative aspect-square rounded-md overflow-hidden border">
+                        <div key={photo.id} className="relative aspect-square rounded-md overflow-hidden border group">
                           <img
                             src={getPublicUrl(photo.storage_path)}
                             alt="Profil Foto"
@@ -552,12 +578,28 @@ const UserDashboard = () => {
                             loading="lazy"
                             decoding="async"
                           />
-                          {photo.is_primary && (
+                          {photo.is_primary ? (
                             <div className="absolute top-2 right-2">
                               <Badge variant="default" className="flex items-center gap-1">
                                 <Star className="h-3 w-3" />
                                 Hauptfoto
                               </Badge>
+                            </div>
+                          ) : (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleSetPrimary(photo.id)}
+                                disabled={settingPrimary === photo.id}
+                              >
+                                {settingPrimary === photo.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                ) : (
+                                  <Star className="h-3 w-3 mr-1" />
+                                )}
+                                Als Hauptfoto
+                              </Button>
                             </div>
                           )}
                         </div>
