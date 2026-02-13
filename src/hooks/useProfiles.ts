@@ -9,7 +9,7 @@ const PROFILE_SELECT_QUERY = `
   id, slug, display_name, age, gender, city, canton, postal_code,
   lat, lng, about_me, languages, is_adult, verified_at, status, 
   listing_type, premium_until, top_ad_until, created_at, updated_at,
-  photos(storage_path, is_primary),
+  photos(storage_path, is_primary, media_type),
   profile_categories(
     categories(id, name, slug)
   )
