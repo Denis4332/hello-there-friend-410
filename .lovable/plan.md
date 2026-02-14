@@ -1,44 +1,75 @@
 
-# Hauptfoto wechseln im User-Dashboard
 
-## Problem
-Im User-Dashboard werden Fotos angezeigt, aber es gibt keinen Button zum Wechseln des Hauptfotos. Die Stern-Buttons wurden auch aus dem PhotoUploader entfernt. Nutzer koennen ihr Hauptfoto aktuell gar nicht aendern.
+# Paketwechsel-Logik vereinfachen
 
-## Loesung
-Im Fotos-Bereich des UserDashboards wird auf jedem Nicht-Hauptfoto ein Button "Als Hauptfoto setzen" hinzugefuegt. Beim Klick wird:
-1. Das alte Hauptfoto auf `is_primary = false` gesetzt
-2. Das neue Foto auf `is_primary = true` gesetzt
-3. Der Profilstatus wird NICHT geaendert -- das Profil bleibt aktiv
+## Regeln
 
-## Umsetzung
+1. **Unbezahlt (payment_status = 'pending')**: Paketwechsel frei moeglich (up + down), aber Medien-Limits werden geprueft (Exploit-Schutz existiert bereits in ProfileCreate.tsx via `validateMediaForNewPackage`)
+2. **Aktiv + Bezahlt**: NUR Verlaengerung (gleiches Paket, +30 Tage). Kein Upgrade, kein Downgrade
+3. **Inaktiv/Abgelaufen**: Freie Paketwahl (alle 3 Pakete), voller Preis. Medien-Limits werden geprueft
+4. **Profil-ID bleibt IMMER gleich** -- kein Neuerstellen noetig
 
-### UserDashboard.tsx anpassen
+## Aenderungen
 
-**Neue Funktion `handleSetPrimary`:**
-- Nimmt die photo ID entgegen
-- Setzt alle Fotos des Profils auf `is_primary = false`
-- Setzt das gewaehlte Foto auf `is_primary = true`
-- Aktualisiert den lokalen State (`setPhotos`)
-- Zeigt einen Erfolgs-Toast
+### 1. UserDashboard.tsx
 
-**UI-Aenderung im Fotos-Grid:**
-- Jedes Foto bekommt bei Hover einen Button-Overlay
-- Hauptfoto: Zeigt weiterhin das "Hauptfoto" Badge
-- Nicht-Hauptfoto: Zeigt einen klickbaren Stern-Button "Als Hauptfoto setzen"
-- Button ist disabled waehrend der Aktion laeuft
+**Entfernen (Zeilen 475-484):**
+- Der "Paket upgraden" Button fuer aktive+bezahlte Profile wird komplett entfernt
 
-### Technische Details
+**Aendern (Zeilen 486-495):**
+- "Inserat verlaengern" Button wird fuer ALLE aktiven+bezahlten Profile angezeigt (nicht nur TOP)
+
+**Aendern (Zeilen 497-503):**
+- Downgrade-Text ersetzen durch: "Nach Ablauf am XX.XX.XXXX kannst du ein anderes Paket waehlen"
+- Gilt fuer alle aktiven bezahlten Profile (nicht nur premium/top)
+
+**Beibehalten:**
+- "Paket aendern" Button bei unbezahlten Profilen (Zeile 465-473) -- navigiert zu `/profil/erstellen?step=listing-type` wo Medien-Validierung greift
+- "Reaktivieren" Button bei inaktiven Profilen (Zeile 506-513)
+
+### 2. ProfileUpgrade.tsx
+
+**Aktive Profile:**
+- `PACKAGE_RANK` und `isUpgrade` Logik entfernen (Zeilen 15-20)
+- Keine Paketauswahl-Karten anzeigen
+- Nur den Verlaengerungsbereich mit "Verlaengern +30 Tage" Button anzeigen
+- Titel: "Inserat verlaengern"
+
+**Inaktive Profile:**
+- Alle 3 Pakete anzeigen (freie Wahl)
+- `availablePackages` wird immer `allPackages` sein (kein Filter mehr)
+- Titel: "Paket waehlen"
+- Medien-Validierung hinzufuegen in `handleUpgrade`: Vor dem Oeffnen des Payment-Modals die aktuelle Medien-Anzahl gegen die Limits des gewaehlten Pakets pruefen (gleiche Logik wie `validateMediaForNewPackage` in ProfileCreate.tsx)
+
+### 3. Exploit-Schutz (Medien-Limits)
+
+Bereits vorhanden fuer unbezahlte Profile in `ProfileCreate.tsx`:
+- `validateMediaForNewPackage` prueft Foto- und Video-Anzahl gegen Paket-Limits
+- Blockiert den Wechsel wenn zu viele Medien vorhanden sind
+
+Neu hinzufuegen in `ProfileUpgrade.tsx` fuer inaktive Profile:
+- Gleiche Validierung vor Paketzahlung
+- Nutzer muss erst ueberzaehlige Medien loeschen bevor er ein kleineres Paket waehlen kann
 
 ```text
-// Neue Handler-Funktion
-const handleSetPrimary = async (photoId: string) => {
-  // 1. Alle Fotos des Profils: is_primary = false
-  await supabase.from('photos').update({ is_primary: false }).eq('profile_id', profile.id);
-  // 2. Gewaehltes Foto: is_primary = true  
-  await supabase.from('photos').update({ is_primary: true }).eq('id', photoId);
-  // 3. Lokalen State aktualisieren
-  // 4. Toast anzeigen
-};
+Medien-Limits:
+  Basic:   5 Fotos, 0 Videos
+  Premium: 10 Fotos, 1 Video
+  TOP:     15 Fotos, 2 Videos
 ```
 
-**Wichtig:** Die `profiles`-Tabelle wird NICHT angefasst. Kein Status-Wechsel zu "pending". Das Hauptfoto ist ein rein kosmetisches Attribut der `photos`-Tabelle.
+## Zusammenfassung der Flows
+
+```text
+Unbezahltes Profil (Dashboard):
+  [Paket aendern] -> /profil/erstellen?step=listing-type
+  Medien-Validierung greift automatisch
+
+Aktives + Bezahltes Profil (Dashboard):
+  [Inserat verlaengern] -> /user/upgrade (nur Verlaengerung)
+  "Nach Ablauf am XX.XX.XXXX kannst du ein anderes Paket waehlen"
+
+Inaktives Profil (Dashboard):
+  [Inserat reaktivieren] -> /user/upgrade (alle 3 Pakete)
+  Medien-Validierung vor Zahlung
+```
