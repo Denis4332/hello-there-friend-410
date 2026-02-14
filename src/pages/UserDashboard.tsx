@@ -472,19 +472,8 @@ const UserDashboard = () => {
                     </Button>
                   )}
 
-                  {/* Wenn AKTIV + BEZAHLT: Upgrade nur wenn nicht TOP */}
-                  {profile.status === 'active' && profile.payment_status === 'paid' && profile.listing_type !== 'top' && (
-                    <Button 
-                      onClick={() => navigate('/user/upgrade')} 
-                      className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
-                    >
-                      <Crown className="h-4 w-4 mr-2" />
-                      {upgradeButton || 'Paket upgraden'}
-                    </Button>
-                  )}
-
-                  {/* Wenn AKTIV + BEZAHLT + TOP: Verlängern anbieten */}
-                  {profile.status === 'active' && profile.payment_status === 'paid' && profile.listing_type === 'top' && (
+                  {/* Wenn AKTIV + BEZAHLT: Nur Verlängern anbieten (kein Upgrade/Downgrade) */}
+                  {profile.status === 'active' && profile.payment_status === 'paid' && (
                     <Button 
                       onClick={() => navigate('/user/upgrade')} 
                       variant="outline"
@@ -494,11 +483,12 @@ const UserDashboard = () => {
                     </Button>
                   )}
 
-                  {/* Wenn AKTIV: Info über Downgrade-Beschränkung */}
-                  {profile.status === 'active' && profile.payment_status === 'paid' && profile.listing_type !== 'basic' && (
+                  {/* Wenn AKTIV + BEZAHLT: Info über Paketwechsel nach Ablauf */}
+                  {profile.status === 'active' && profile.payment_status === 'paid' && (
                     <p className="text-xs text-muted-foreground text-center mt-2">
-                      Downgrade erst nach Ablauf am{' '}
-                      {new Date(profile.premium_until || profile.top_ad_until || '').toLocaleDateString('de-CH')} möglich
+                      Nach Ablauf am{' '}
+                      {new Date(profile.premium_until || profile.top_ad_until || '').toLocaleDateString('de-CH')}{' '}
+                      kannst du ein anderes Paket wählen
                     </p>
                   )}
 
