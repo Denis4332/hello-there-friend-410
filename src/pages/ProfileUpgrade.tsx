@@ -5,18 +5,18 @@ import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Crown, Star, Zap, ArrowLeft, Info, MessageCircle } from 'lucide-react';
+import { CheckCircle2, Crown, Star, Zap, ArrowLeft, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { PaymentMethodModal } from '@/components/PaymentMethodModal';
 
-// Paket-Hierarchie für Upgrade-Check
-const PACKAGE_RANK: Record<string, number> = { basic: 1, premium: 2, top: 3 };
-
-const isUpgrade = (from: string, to: string): boolean => {
-  return (PACKAGE_RANK[to] || 0) > (PACKAGE_RANK[from] || 0);
+// Medien-Limits pro Paket (Exploit-Schutz)
+const MEDIA_LIMITS: Record<string, { photos: number; videos: number }> = {
+  basic: { photos: 5, videos: 0 },
+  premium: { photos: 10, videos: 1 },
+  top: { photos: 15, videos: 2 },
 };
 
 const ProfileUpgrade = () => {
@@ -66,16 +66,49 @@ const ProfileUpgrade = () => {
   };
 
   const getAmountForListingType = (type: string): number => {
-    const prices: Record<string, number> = {
-      basic: 49,
-      premium: 99,
-      top: 199
-    };
+    const prices: Record<string, number> = { basic: 49, premium: 99, top: 199 };
     return prices[type] || 49;
   };
 
-  const handleUpgrade = (listingType: 'basic' | 'premium' | 'top') => {
+  // Medien-Validierung für inaktive Profile (Exploit-Schutz)
+  const validateMediaForPackage = async (listingType: string): Promise<boolean> => {
+    if (!profile) return false;
+    const limits = MEDIA_LIMITS[listingType];
+    if (!limits) return false;
+
+    const { data: photos, error } = await supabase
+      .from('photos')
+      .select('id, media_type')
+      .eq('profile_id', profile.id);
+
+    if (error) {
+      toast({ title: 'Fehler', description: 'Medien konnten nicht geprüft werden.', variant: 'destructive' });
+      return false;
+    }
+
+    const photoCount = (photos || []).filter(p => p.media_type !== 'video').length;
+    const videoCount = (photos || []).filter(p => p.media_type === 'video').length;
+
+    if (photoCount > limits.photos || videoCount > limits.videos) {
+      toast({
+        title: 'Zu viele Medien',
+        description: `Das ${listingType === 'basic' ? 'Standard' : listingType === 'premium' ? 'Premium' : 'TOP'}-Paket erlaubt max. ${limits.photos} Fotos und ${limits.videos} Videos. Du hast ${photoCount} Fotos und ${videoCount} Videos. Bitte lösche zuerst überzählige Medien.`,
+        variant: 'destructive',
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleUpgrade = async (listingType: 'basic' | 'premium' | 'top') => {
     if (!profile) return;
+
+    // Medien-Validierung für inaktive Profile
+    if (profile.status === 'inactive') {
+      const valid = await validateMediaForPackage(listingType);
+      if (!valid) return;
+    }
+
     setSelectedListingType(listingType);
     setShowPaymentModal(true);
   };
@@ -84,16 +117,12 @@ const ProfileUpgrade = () => {
     if (!profile || !selectedListingType) return;
     
     try {
-      // Bei aktivem Profil: Status auf pending setzen für Admin-Review nach Upgrade
-      if (profile.status === 'active') {
+      // Listing-Type aktualisieren (bei inaktiven Profilen kann sich das Paket ändern)
+      if (profile.listing_type !== selectedListingType) {
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ 
-            listing_type: selectedListingType,
-            status: 'pending', // WICHTIG: Zurück auf pending für Admin-Review
-          })
+          .update({ listing_type: selectedListingType })
           .eq('id', profile.id);
-        
         if (updateError) throw updateError;
       }
 
@@ -141,7 +170,6 @@ const ProfileUpgrade = () => {
     return badges[type as keyof typeof badges] || badges.basic;
   };
 
-  // Alle Pakete
   const allPackages = [
     {
       id: 'basic',
@@ -201,27 +229,16 @@ const ProfileUpgrade = () => {
   const currentBadge = getCurrentBadge();
   const isActiveProfile = profile?.status === 'active' && profile?.payment_status === 'paid';
   const isInactiveProfile = profile?.status === 'inactive';
-  const currentListingType = profile?.listing_type || 'basic';
-
-  // Bei aktivem Profil: Nur Upgrades anzeigen (höhere Pakete)
-  // Bei inaktivem/pending Profil: Alle Pakete anzeigen
-  const availablePackages = isActiveProfile
-    ? allPackages.filter(pkg => isUpgrade(currentListingType, pkg.id))
-    : allPackages;
-
-  // Schon TOP und aktiv → Kein Upgrade möglich
-  const noUpgradeAvailable = isActiveProfile && availablePackages.length === 0;
 
   return (
     <>
       <SEO 
-        title="Inserat upgraden"
-        description="Upgrade dein Inserat für mehr Sichtbarkeit und bessere Platzierung."
+        title={isActiveProfile ? 'Inserat verlängern' : 'Paket wählen'}
+        description={isActiveProfile ? 'Verlängere dein Inserat um weitere 30 Tage.' : 'Wähle ein Paket für dein Inserat.'}
       />
       <Header />
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-5xl mx-auto">
-          {/* Back Button */}
           <Button 
             variant="ghost" 
             onClick={() => navigate('/mein-profil')}
@@ -231,107 +248,64 @@ const ProfileUpgrade = () => {
             Zurück zum Dashboard
           </Button>
 
-          {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold mb-4">
-              {isInactiveProfile ? 'Inserat reaktivieren' : 'Inserat upgraden'}
+              {isActiveProfile ? 'Inserat verlängern' : isInactiveProfile ? 'Paket wählen' : 'Inserat upgraden'}
             </h1>
             <p className="text-xl text-muted-foreground mb-4">
               Dein aktuelles Paket: <Badge variant={currentBadge.variant}>{currentBadge.label}</Badge>
             </p>
           </div>
 
-          {/* Current Package Status */}
-          <Card className="border-primary mb-8">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Aktuelles Paket</CardTitle>
-                  <CardDescription>
-                    Du nutzt aktuell das {getCurrentBadge().label}-Paket
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={getCurrentBadge().variant}>
-                    {getCurrentBadge().label}
-                  </Badge>
-                  <Badge variant={profile?.status === 'active' ? 'default' : 'destructive'}>
-                    {profile?.status === 'active' ? '✅ Aktiv' : profile?.status === 'inactive' ? '❌ Abgelaufen' : '⏳ ' + profile?.status}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {(profile?.premium_until || profile?.top_ad_until) && (
-                  <div className="text-sm">
-                    <span className="font-semibold">Gültig bis: </span>
-                    {new Date(
-                      profile.listing_type === 'top' ? profile.top_ad_until : profile.premium_until
-                    ).toLocaleDateString('de-CH', { 
-                      day: '2-digit', 
-                      month: '2-digit', 
-                      year: 'numeric' 
-                    })}
+          {/* Aktuelles Paket + Verlängerung (für aktive Profile) */}
+          {isActiveProfile && (
+            <Card className="border-primary mb-8">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Aktuelles Paket</CardTitle>
+                    <CardDescription>
+                      Du nutzt aktuell das {currentBadge.label}-Paket
+                    </CardDescription>
                   </div>
-                )}
-                
-                {/* Aktives Profil: Verlängern-Button */}
-                {isActiveProfile && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant={currentBadge.variant}>{currentBadge.label}</Badge>
+                    <Badge variant="default">✅ Aktiv</Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(profile?.premium_until || profile?.top_ad_until) && (
+                    <div className="text-sm">
+                      <span className="font-semibold">Gültig bis: </span>
+                      {new Date(
+                        profile.listing_type === 'top' ? profile.top_ad_until : profile.premium_until
+                      ).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </div>
+                  )}
                   <Button onClick={handleExtend} className="w-full">
                     Verlängern (+30 Tage)
                   </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Info für TOP-User: Kein Upgrade möglich */}
-          {noUpgradeAvailable && (
-            <Card className="mb-8 bg-muted">
-              <CardContent className="p-6 text-center">
-                <Info className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="font-semibold text-lg mb-2">Du hast bereits das höchste Paket (TOP AD)</h3>
-                <p className="text-muted-foreground mb-4">
-                  Ein Upgrade ist nicht möglich. Du kannst dein Paket verlängern oder nach Ablauf ein anderes Paket wählen.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Downgrade erst nach Ablauf am{' '}
-                  {new Date(profile?.premium_until || profile?.top_ad_until || '').toLocaleDateString('de-CH')} möglich.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Info für aktive Profile: Downgrade-Beschränkung */}
-          {isActiveProfile && !noUpgradeAvailable && (
-            <Card className="mb-8 border-amber-500/50 bg-amber-500/5">
-              <CardContent className="p-4 flex items-start gap-3">
-                <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-amber-700 dark:text-amber-400">Upgrade jederzeit möglich</p>
-                  <p className="text-muted-foreground">
-                    Downgrade (zu einem günstigeren Paket) ist erst nach Ablauf am{' '}
-                    {new Date(profile?.premium_until || profile?.top_ad_until || '').toLocaleDateString('de-CH')} möglich.
-                    Nach dem Upgrade wird dein Profil erneut geprüft.
+                  <p className="text-xs text-muted-foreground text-center">
+                    Nach Ablauf kannst du ein anderes Paket wählen
                   </p>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Upgrade/Reaktivierungs-Karten */}
-          {availablePackages.length > 0 && (
-            <div className={`grid gap-6 mb-12 ${availablePackages.length === 1 ? 'max-w-md mx-auto' : availablePackages.length === 2 ? 'md:grid-cols-2 max-w-2xl mx-auto' : 'md:grid-cols-3'}`}>
-              {availablePackages.map((pkg) => {
+          {/* Paketauswahl für inaktive Profile */}
+          {!isActiveProfile && (
+            <div className="grid gap-6 mb-12 md:grid-cols-3">
+              {allPackages.map((pkg) => {
                 const Icon = pkg.icon;
-                const isCurrent = pkg.id === currentListingType;
                 return (
                   <Card 
                     key={pkg.id}
-                    className={`relative ${pkg.recommended ? 'border-amber-500 shadow-lg' : ''} ${isCurrent ? 'opacity-60' : ''}`}
+                    className={`relative ${pkg.recommended ? 'border-amber-500 shadow-lg' : ''}`}
                   >
-                    {pkg.recommended && !isCurrent && (
+                    {pkg.recommended && (
                       <div className="absolute -top-4 left-0 right-0 flex justify-center">
                         <span className="bg-gradient-to-r from-amber-400 to-pink-600 text-white px-4 py-1 rounded-full text-sm font-bold">
                           Empfohlen
@@ -358,16 +332,9 @@ const ProfileUpgrade = () => {
                       </ul>
                       <Button 
                         className="w-full" 
-                        disabled={isCurrent}
                         onClick={() => handleUpgrade(pkg.id as 'basic' | 'premium' | 'top')}
                       >
-                        {isCurrent 
-                          ? 'Aktuelles Paket' 
-                          : isActiveProfile 
-                            ? 'Jetzt upgraden' 
-                            : isInactiveProfile 
-                              ? 'Mit diesem Paket reaktivieren'
-                              : 'Auswählen'}
+                        {isInactiveProfile ? 'Mit diesem Paket reaktivieren' : 'Auswählen'}
                       </Button>
                     </CardContent>
                   </Card>
@@ -381,8 +348,17 @@ const ProfileUpgrade = () => {
             <CardContent className="p-6">
               <h3 className="font-semibold mb-2">💡 Wichtige Informationen</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>• Upgrades werden nach Admin-Prüfung aktiviert</li>
-                <li>• Downgrades sind erst nach Ablauf des aktuellen Pakets möglich</li>
+                {isActiveProfile ? (
+                  <>
+                    <li>• Verlängerung fügt 30 Tage zu deinem aktuellen Paket hinzu</li>
+                    <li>• Paketwechsel ist erst nach Ablauf möglich</li>
+                  </>
+                ) : (
+                  <>
+                    <li>• Nach der Zahlung wird dein Profil vom Admin geprüft und aktiviert</li>
+                    <li>• Du kannst frei zwischen allen Paketen wählen</li>
+                  </>
+                )}
                 <li>• Bei Fragen kontaktiere unseren Support</li>
               </ul>
               <Button 
