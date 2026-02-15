@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import VideoPlayer from '@/components/VideoPlayer';
 import { useProfileBySlug } from '@/hooks/useProfiles';
 import { useProfileContacts } from '@/hooks/useProfileContacts';
 import { useCreateReport } from '@/hooks/useReports';
@@ -170,19 +171,10 @@ const Profil = () => {
                         <CarouselItem key={index}>
                           <div className="relative aspect-[3/4] bg-black">
                             {item.isVideo ? (
-                              <video
+                              <VideoPlayer
+                                src={item.url}
                                 className="w-full h-full object-contain bg-black"
-                                controls
-                                muted
-                                autoPlay
-                                loop
-                                preload="metadata"
-                                playsInline
-                                onError={(e) => console.warn('Video load error:', e)}
-                              >
-                                <source src={item.url} type="video/mp4" />
-                                Dein Browser unterstützt keine Videos.
-                              </video>
+                              />
                             ) : (
                               <img
                                 src={item.url}
@@ -369,19 +361,10 @@ const Profil = () => {
             
             {/* Current Media - use original URL for full quality in lightbox */}
             {mediaItems[lightboxIndex]?.isVideo ? (
-              <video
+              <VideoPlayer
+                src={mediaItems[lightboxIndex]?.originalUrl}
                 className="max-w-full max-h-full object-contain"
-                controls
-                muted
-                autoPlay
-                loop
-                preload="metadata"
-                playsInline
-                onError={(e) => console.warn('Video load error:', e)}
-              >
-                <source src={mediaItems[lightboxIndex]?.originalUrl} type="video/mp4" />
-                Dein Browser unterstützt keine Videos.
-              </video>
+              />
             ) : (
               <img
                 src={mediaItems[lightboxIndex]?.originalUrl}
