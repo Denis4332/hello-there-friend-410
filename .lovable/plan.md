@@ -1,56 +1,47 @@
 
-# Testdaten loeschen + Ablauf-Regeln absichern
 
-## Was wird gemacht
+# Abgelaufene Profile automatisch ausblenden
 
-### 1. Testprofile loeschen (Datenbereinigung)
+## Uebersicht
 
-Alle 38 Profile mit `payment_status = 'free'` und ohne Ablaufdatum werden geloescht:
-- 30x "BasicTest 1-30" (Basic, kein `premium_until`)
-- 4x "Test 1/3/5/7" (Top, haben `top_ad_until` aber kein `premium_until` -- diese haben ein Ablaufdatum und sind ok, werden NICHT geloescht)
-- Weitere BasicTest-Profile ohne Ablaufdatum
+Eine SQL-Migration aktualisiert 4 Datenbank-Objekte und eine kleine Aenderung im UserDashboard sorgt dafuer, dass der User informiert wird.
 
-**Konkret geloescht**: Alle Profile wo `display_name LIKE 'BasicTest%'` OR `display_name LIKE 'Test %'` mit `payment_status = 'free'`.
+**Ergebnis**: Profil laeuft ab = sofort weg von der Seite. User sieht "abgelaufen" im Dashboard.
 
-Da die "Test 1/3/5/7" Top-Profile ein `top_ad_until` haben und korrekt funktionieren, werden NUR die BasicTest-Profile ohne jegliches Ablaufdatum geloescht (ca. 34 Stueck).
+## Was geaendert wird
 
-### 2. Datenbank-Sicherung: Trigger gegen Profile ohne Ablaufdatum
+### 1. Datenbank-Migration (1 SQL-Datei, 4 Objekte)
 
-Ein Datenbank-Trigger wird erstellt, der verhindert, dass ein Profil auf `status = 'active'` gesetzt werden kann OHNE ein gueltiges Ablaufdatum (`premium_until` oder `top_ad_until`). Das stellt sicher, dass **nie wieder** ein aktives Profil ohne Ablauf existieren kann.
+Die Ablauf-Bedingung wird ueberall hinzugefuegt wo `status = 'active'` steht:
 
-Ausnahme: Profile mit `payment_status = 'free'` UND einem gesetzten Ablaufdatum sind erlaubt (Admin-Gratis-Aktivierung setzt ja jetzt korrekt ein Datum).
-
-### 3. Bestaetigung bestehender Code-Logik
-
-Alle Aktivierungspfade setzen bereits korrekt ein Ablaufdatum:
-- Admin normale Aktivierung (Zeile 199-210): Setzt 30 Tage automatisch
-- Admin Gratis-Aktivierung (Zeile 416-427): Setzt Ablauf basierend auf `durationDays`
-- Zahlungsflow: `premium_until` wird bei Profilerstellung/Admin-Aktivierung gesetzt, nicht bei Zahlung
-
-Es muss kein Code geaendert werden -- nur Daten bereinigen und Trigger hinzufuegen.
-
-## Technische Details
-
-### SQL: Testprofile loeschen
 ```text
-DELETE FROM profiles 
-WHERE payment_status = 'free' 
-  AND premium_until IS NULL 
-  AND top_ad_until IS NULL 
-  AND status = 'active'
+AND (
+  (listing_type = 'top' AND top_ad_until >= now())
+  OR (listing_type != 'top' AND premium_until >= now())
+)
 ```
 
-### SQL: Sicherheits-Trigger
-```text
-CREATE FUNCTION validate_active_profile_expiry()
-  BEFORE UPDATE ON profiles
-  FOR EACH ROW
-  WHEN NEW.status = 'active' 
-    AND NEW.premium_until IS NULL 
-    AND NEW.top_ad_until IS NULL
-  -> RAISE EXCEPTION 'Active profiles must have an expiry date'
-```
+**A) `public_profiles` View** -- Einzelprofil-Anzeige via Slug
+
+**B) `get_paginated_profiles` Funktion** -- Homepage, Suche, Stadt, Kategorie (COUNT + SELECT)
+
+**C) `search_profiles_by_radius_v2` Funktion** -- GPS-Suche V2 (filtered CTE)
+
+**D) `search_profiles_by_radius` Funktion** -- GPS-Fallback (beide Versionen: mit und ohne Pagination)
+
+### 2. UserDashboard.tsx -- Expiry-Check (ca. 15 Zeilen)
+
+Nach dem Laden des Profils (Zeile 152) wird geprueft ob es abgelaufen ist:
+- Falls ja: Status in DB auf `inactive` setzen
+- Toast "Dein Inserat ist abgelaufen" anzeigen
+- Lokalen State aktualisieren
 
 ### Betroffene Dateien
-- Keine Code-Aenderungen noetig
-- 1 Datenbank-Migration (Trigger + Cleanup)
+- 1 neue SQL-Migration
+- `src/pages/UserDashboard.tsx` (Expiry-Check in `loadProfile`)
+
+### Risiko
+- Null: Der Trigger stellt bereits sicher, dass alle aktiven Profile ein Ablaufdatum haben
+- Die bestehende Sortierlogik (Tier-Order) bleibt komplett erhalten
+- Funktionssignaturen aendern sich nicht
+
