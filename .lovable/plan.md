@@ -1,59 +1,65 @@
 
-# Expiry-Filter komplett durchsetzen
 
-## Status jetzt
-- public_profiles View: Hat Expiry-Filter (OK)
-- get_paginated_profiles: KEIN Expiry-Filter (BUG - Homepage, Suche, Stadt, Kategorie betroffen)
-- search_profiles_by_radius_v2: KEIN Expiry-Filter (BUG - GPS-Suche betroffen)  
-- search_profiles_by_radius: KEIN Expiry-Filter (BUG - GPS-Fallback betroffen)
-- useTopCities / useAllCities: Zaehlen abgelaufene Profile mit (BUG)
-- generate-sitemap: Listet abgelaufene Profile (BUG)
+# Fix: Doppelte Funktionen entfernen
+
+## Was ist passiert
+
+Die letzte Migration hat neue Versionen der Such-Funktionen erstellt (mit `bigint` Typ und Expiry-Filter), aber die alten Versionen (mit `integer` Typ) wurden nicht entfernt. Jetzt existieren jeweils zwei fast identische Funktionen parallel. Die Datenbank kann beim Aufruf nicht entscheiden welche gemeint ist und gibt einen Fehler zurueck. Deshalb ist die Homepage leer.
+
+**Alle Profile, Fotos und Daten sind sicher** -- es ist nur ein Routing-Problem.
+
+## Aktueller Zustand (Duplikate)
+
+```text
+get_paginated_profiles:
+  1. ALT: p_rotation_seed integer  ← muss weg
+  2. NEU: p_rotation_seed bigint   ← bleibt (hat Expiry-Filter)
+
+search_profiles_by_radius (paginiert):
+  1. ALT: p_rotation_seed integer  ← muss weg
+  2. NEU: p_rotation_seed bigint   ← bleibt (hat Expiry-Filter)
+
+search_profiles_by_radius_v2:
+  1. ALT: p_rotation_seed integer  ← muss weg
+  2. NEU: p_rotation_seed bigint   ← bleibt (hat Expiry-Filter)
+```
 
 ## Was gemacht wird
 
-### 1. Neue DB-Migration (ersetzt alle 3 Funktionen)
+### 1. SQL-Migration: Alte Duplikate entfernen
 
-Die bestehende Migrations-Datei hat den korrekten Code, wurde aber nicht ausgefuehrt. Eine neue Migration wird erstellt die alle 3 Funktionen mit dem Expiry-Filter aktualisiert:
+Genau 3 DROP-Befehle fuer die alten integer-Versionen:
 
 ```text
-AND (
-  (p.listing_type = 'top' AND p.top_ad_until >= now())
-  OR (p.listing_type <> 'top' AND p.premium_until >= now())
-)
+DROP FUNCTION IF EXISTS get_paginated_profiles(integer, integer, integer, text, text, uuid, text);
+DROP FUNCTION IF EXISTS search_profiles_by_radius(numeric, numeric, numeric, uuid, text, integer, integer, integer);
+DROP FUNCTION IF EXISTS search_profiles_by_radius_v2(numeric, numeric, numeric, uuid, text, integer, integer, integer);
 ```
 
-Betrifft:
-- get_paginated_profiles (COUNT + SELECT)
-- search_profiles_by_radius_v2 (filtered CTE)
-- search_profiles_by_radius (beide Overloads: mit und ohne Pagination)
+Plus ein Schema-Cache-Reload:
 
-### 2. useTopCities und useAllCities (src/hooks/useProfiles.ts)
-
-Aktuell:
 ```text
-.from('profiles').select('city, canton').eq('status', 'active')
+NOTIFY pgrst, 'reload schema';
 ```
 
-Neu:
-```text
-.from('public_profiles').select('city, canton')
-```
+### 2. Keine weiteren Aenderungen
 
-Die View filtert bereits nach active + nicht abgelaufen.
+- Keine Tabellen werden veraendert
+- Keine Profile werden geloescht
+- Profil-IDs bleiben identisch
+- Fotos, Kategorien, User-Accounts: alles unberuehrt
+- Frontend-Code: keine Aenderungen noetig
+- Die alten Radius-Funktionen ohne Pagination bleiben ebenfalls erhalten (kein Duplikat-Problem dort)
 
-### 3. generate-sitemap Edge Function
+## Betroffene Dateien
 
-2 Queries umstellen von `profiles` auf `public_profiles`:
-- Profil-Slugs fuer Sitemap-URLs
-- Staedte fuer Sitemap-URLs
+- 1 neue SQL-Migration (nur DROP + NOTIFY)
 
-### Betroffene Dateien
-- 1 neue SQL-Migration (3 Funktionen neu erstellen)
-- src/hooks/useProfiles.ts (2 Hooks: useTopCities, useAllCities)
-- supabase/functions/generate-sitemap/index.ts (2 Queries)
+## Ergebnis
 
-### Risiko
-Minimal -- die Migration-Datei mit dem korrekten Code existiert bereits und wurde verifiziert. Die Hook-Aenderungen nutzen einfach die bereits funktionierende View.
+Alle 9 aktiven Profile erscheinen sofort wieder auf der Homepage, mit dem Expiry-Filter aktiv.
 
-### Wichtig
-Diesmal bitte den Migrations-Button in der UI bestaetigen wenn er erscheint, damit die Aenderungen auch wirklich auf die Datenbank angewendet werden.
+## Wichtig
+
+Bitte den Migrations-Button in der UI bestaetigen wenn er erscheint.
+
