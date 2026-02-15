@@ -1,75 +1,138 @@
 
+# Fix: Videos werden angezeigt aber spielen nicht ab
 
-# Fix: Video-Kompatibilitaet fuer Safari/iOS
+## Problem
 
-## Problem-Analyse
+Die Videos sind sichtbar und nicht mehr blockiert, aber `currentTime` bleibt bei 0 -- sie starten nie. Das liegt daran, dass `autoPlay` bei Carousel-Slides nicht zuverlaessig funktioniert: Das Video wird im DOM gerendert, aber der Browser startet es nicht automatisch (besonders wenn es nicht der aktive Slide ist oder wenn autoplay-Policies greifen).
 
-Ich habe das Video im Test-Browser geoeffnet (Profil "Test", Slide 10) und es funktioniert dort. Der Code ist korrekt (`autoPlay`, `muted`, `playsInline`, `loop`, kein `poster=""`). Aber Safari/iOS hat zusaetzliche Anforderungen, die der aktuelle Code nicht erfuellt.
+## Loesung: VideoPlayer-Komponente mit Autoplay-Fallback
 
-## Ursachen fuer Safari-Probleme
+Eine neue `VideoPlayer`-Komponente wird erstellt, die:
 
-1. **`<video src={url}>` statt `<source>` Element**: Safari bevorzugt das `<source>` Tag mit explizitem MIME-Type
-2. **Kein Fallback bei Autoplay-Blockierung**: iOS kann Autoplay auch bei `muted` blockieren - es fehlt eine Fallback-UI
-3. **`object-cover` auf Video**: Kann auf Safari zu Rendering-Problemen fuehren
+1. Per `useRef` auf das Video-Element zugreift
+2. Nach dem Mounten `video.play()` programmatisch aufruft
+3. Falls `play()` fehlschlaegt (Browser blockiert), einen Play-Button als Overlay anzeigt
+4. Bei Klick auf den Play-Button das Video manuell startet
 
 ## Aenderungen
 
-### 1. `src/pages/Profil.tsx` - Carousel Video (Zeile 173-184)
+### 1. Neue Datei: `src/components/VideoPlayer.tsx`
 
-Statt `<video src={url}>` wird `<source>` mit MIME-Type verwendet plus ein Fallback-Play-Button:
+Erstellt eine wiederverwendbare Komponente:
+
+```typescript
+import { useRef, useState, useEffect } from 'react';
+import { Play } from 'lucide-react';
+
+interface VideoPlayerProps {
+  src: string;
+  className?: string;
+  controls?: boolean;
+  loop?: boolean;
+}
+
+const VideoPlayer = ({ src, className, controls = true, loop = true }: VideoPlayerProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showPlayButton, setShowPlayButton] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const attemptAutoplay = async () => {
+      try {
+        await video.play();
+        setShowPlayButton(false);
+      } catch {
+        setShowPlayButton(true);
+      }
+    };
+
+    attemptAutoplay();
+  }, [src]);
+
+  const handlePlay = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      await video.play();
+      setShowPlayButton(false);
+    } catch (e) {
+      console.error('Video play failed:', e);
+    }
+  };
+
+  return (
+    <div className="relative w-full h-full">
+      <video
+        ref={videoRef}
+        className={className}
+        controls={controls}
+        muted
+        autoPlay
+        loop={loop}
+        preload="metadata"
+        playsInline
+        onClick={handlePlay}
+        onError={(e) => console.warn('Video load error:', e)}
+      >
+        <source src={src} type="video/mp4" />
+        Dein Browser unterstuetzt keine Videos.
+      </video>
+      {showPlayButton && (
+        <button
+          onClick={handlePlay}
+          className="absolute inset-0 flex items-center justify-center bg-black/30"
+          aria-label="Video abspielen"
+        >
+          <Play className="h-16 w-16 text-white" />
+        </button>
+      )}
+    </div>
+  );
+};
+```
+
+### 2. `src/pages/Profil.tsx` - Carousel Video (Zeile 172-185)
+
+Ersetze das direkte `<video>` Element durch `<VideoPlayer>`:
 
 ```text
 // VORHER:
-<video src={item.url} className="w-full h-full object-cover"
-  controls muted autoPlay loop preload="auto" playsInline>
+<video className="w-full h-full object-contain bg-black" controls muted autoPlay loop ...>
+  <source src={item.url} type="video/mp4" />
+</video>
 
 // NACHHER:
-<video className="w-full h-full object-contain bg-black"
-  controls muted autoPlay loop preload="metadata" playsInline
-  onError={(e) => console.warn('Video load error:', e)}>
-  <source src={item.url} type="video/mp4" />
-  Dein Browser unterstuetzt keine Videos.
-</video>
+<VideoPlayer
+  src={item.url}
+  className="w-full h-full object-contain bg-black"
+/>
 ```
 
-Wesentliche Aenderungen:
-- `<source>` Element mit `type="video/mp4"` statt `src` Attribut (Safari-Kompatibilitaet)
-- `preload="metadata"` statt `preload="auto"` (schnellerer Start, Safari-freundlich)
-- `object-contain` statt `object-cover` (verhindert schwarze Bereiche bei Video-Cropping)
-- Error-Handler fuer Debugging
-
-### 2. `src/pages/Profil.tsx` - Lightbox Video (ca. Zeile 370-380)
+### 3. `src/pages/Profil.tsx` - Lightbox Video (ca. Zeile 370-385)
 
 Gleiche Aenderung fuer das Lightbox-Video:
 
 ```text
-// VORHER:
-<video src={mediaItems[lightboxIndex]?.originalUrl} ...>
-
 // NACHHER:
-<video ... >
-  <source src={mediaItems[lightboxIndex]?.originalUrl} type="video/mp4" />
-</video>
+<VideoPlayer
+  src={mediaItems[lightboxIndex]?.originalUrl}
+  className="max-w-full max-h-full object-contain"
+/>
 ```
 
-### 3. `src/components/ProfileCard.tsx` - Card Video (Zeile 92-100)
+## Warum das funktioniert
 
-Gleiche `<source>` Aenderung fuer die Karten-Vorschau:
-
-```text
-// VORHER:
-<video src={videoUrl} poster={posterUrl} ...>
-
-// NACHHER:
-<video poster={posterUrl} ...>
-  <source src={videoUrl} type="video/mp4" />
-</video>
-```
+- `autoPlay` allein reicht nicht, weil Browser (besonders Mobile) autoplay oft still ignorieren
+- `video.play()` gibt ein Promise zurueck -- wenn es rejected wird, wissen wir dass ein User-Klick noetig ist
+- Der Play-Button-Overlay gibt dem User die Moeglichkeit, das Video manuell zu starten
+- Nach dem ersten Klick verschwindet der Overlay und das Video laeuft normal mit Controls
 
 ## Zusammenfassung
 
-3 Stellen werden angepasst, alle mit dem gleichen Muster:
-- `src` Attribut durch `<source>` Element mit MIME-Type ersetzen
-- `preload="metadata"` fuer schnelleren Start
-- `object-contain` im Carousel/Lightbox fuer korrektes Video-Rendering
-
+| Datei | Aenderung |
+|-------|-----------|
+| `src/components/VideoPlayer.tsx` | Neue Komponente (Play-Fallback) |
+| `src/pages/Profil.tsx` Carousel | `<video>` durch `<VideoPlayer>` ersetzen |
+| `src/pages/Profil.tsx` Lightbox | `<video>` durch `<VideoPlayer>` ersetzen |
