@@ -90,14 +90,15 @@ const ProfileCardComponent = ({
           <>
             {primaryIsVideo && videoUrl ? (
               <video
-                src={videoUrl}
                 poster={posterUrl}
                 className="absolute inset-0 w-full h-full object-cover"
                 muted
                 loop
                 playsInline
                 preload="none"
-              />
+              >
+                <source src={videoUrl!} type="video/mp4" />
+              </video>
             ) : (
               <img
                 src={photoUrl!}
