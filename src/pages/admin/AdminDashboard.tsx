@@ -13,25 +13,33 @@ import {
   ShieldAlert,
   Download,
   Layers,
-  Flag
+  Flag,
+  Clock
 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
+      const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const now = new Date().toISOString();
+
       const [
         pendingProfilesRes,
         activeRes,
         reportsRes,
         messagesRes,
-        verificationsRes
+        verificationsRes,
+        expiringPremiumRes,
+        expiringTopAdRes
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
         supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('status', 'unread'),
-        supabase.from('verification_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+        supabase.from('verification_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active').gt('premium_until', now).lt('premium_until', sevenDaysFromNow),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active').gt('top_ad_until', now).lt('top_ad_until', sevenDaysFromNow)
       ]);
       
       const pendingCount = pendingProfilesRes.count || 0;
@@ -39,6 +47,7 @@ const AdminDashboard = () => {
       const reportsCount = reportsRes.count || 0;
       const unreadMessages = messagesRes.count || 0;
       const pendingVerifications = verificationsRes.count || 0;
+      const expiringCount = (expiringPremiumRes.count || 0) + (expiringTopAdRes.count || 0);
 
       return {
         toReview: {
@@ -48,7 +57,8 @@ const AdminDashboard = () => {
           reports: reportsCount
         },
         live: activeCount,
-        messages: unreadMessages
+        messages: unreadMessages,
+        expiringSoon: expiringCount
       };
     }
   });
@@ -61,8 +71,8 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
           
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {[1, 2, 3].map((i) => (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-card border rounded-xl p-6 min-h-[140px]">
                   <div className="h-4 bg-muted rounded w-24 mb-2 animate-pulse" />
                   <div className="h-8 bg-muted rounded w-12 animate-pulse" />
@@ -70,7 +80,7 @@ const AdminDashboard = () => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {/* Zu prüfen */}
               <div className="bg-card border rounded-xl p-6 min-h-[140px] hover:shadow-xl transition-all duration-300 hover:border-orange-500/50">
                 <div className="flex items-center justify-between mb-4">
@@ -127,6 +137,24 @@ const AdminDashboard = () => {
                   <div className="text-sm text-muted-foreground font-medium mb-2">Nachrichten</div>
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     <div>Ungelesene Nachrichten</div>
+                    <div>&nbsp;</div>
+                    <div>&nbsp;</div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Bald ablaufend */}
+              <Link to="/admin/profile?status=active" className="group">
+                <div className="bg-card border rounded-xl p-6 min-h-[140px] hover:shadow-xl transition-all duration-300 hover:scale-105 hover:border-amber-500/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-3 rounded-lg bg-amber-500/10">
+                      <Clock className="h-6 w-6 text-amber-500" />
+                    </div>
+                    <div className="text-3xl font-bold text-amber-500">{stats?.expiringSoon || 0}</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium mb-2">Bald ablaufend</div>
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    <div>Ablauf innert 7 Tagen</div>
                     <div>&nbsp;</div>
                     <div>&nbsp;</div>
                   </div>
