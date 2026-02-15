@@ -51,6 +51,25 @@ export const VerificationUploader = ({ profileId, onComplete, onSkip }: Verifica
       reader.onload = (e) => setPreview(e.target?.result as string);
       reader.readAsDataURL(file);
 
+      // Alte pending-Submissions löschen (nur 1 aktive pro Profil)
+      const { data: oldSubmissions } = await supabase
+        .from('verification_submissions')
+        .select('id, storage_path')
+        .eq('profile_id', profileId)
+        .eq('status', 'pending');
+
+      if (oldSubmissions && oldSubmissions.length > 0) {
+        // Storage-Dateien löschen
+        const oldPaths = oldSubmissions.map(s => s.storage_path);
+        await supabase.storage.from('verification-photos').remove(oldPaths);
+        // DB-Einträge löschen
+        const oldIds = oldSubmissions.map(s => s.id);
+        await supabase
+          .from('verification_submissions')
+          .delete()
+          .in('id', oldIds);
+      }
+
       // Upload zu Storage
       const filePath = `${profileId}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage

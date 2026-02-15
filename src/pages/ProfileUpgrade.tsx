@@ -378,6 +378,11 @@ const ProfileUpgrade = () => {
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSelectMethod={handlePaymentMethodSelect}
+        listingType={selectedListingType || undefined}
+        amount={selectedListingType ? parseFloat((
+          selectedListingType === 'basic' ? basicPrice :
+          selectedListingType === 'premium' ? premiumPrice : topPrice
+        ).replace(/[^\d.]/g, '')) || undefined : undefined}
       />
     </>
   );
