@@ -1,65 +1,56 @@
 
-# Admin-Dashboard: Ablaufdaten + kleine Fixes
+# Testdaten loeschen + Ablauf-Regeln absichern
 
-## Status aller bisherigen Fixes
+## Was wird gemacht
 
-Alle 6 Fixes aus dem vorherigen Plan sind korrekt umgesetzt:
-- [x] Admin-Filter: `inactive` und `draft` hinzugefuegt
-- [x] UserDashboard: Inaktiv-Banner hinzugefuegt
-- [x] UserDashboard: Gratis-Profile korrekt behandelt (`paid || free`)
-- [x] RotationDebugTool: Intervall auf 10 Min korrigiert
-- [x] Admin Gratis-Aktivierung: Basic bekommt jetzt auch `premium_until`
-- [x] Datenbereinigung: 30 Basic-Profile auf `payment_status = 'free'` gesetzt
+### 1. Testprofile loeschen (Datenbereinigung)
 
-**Noch offen:** Kommentar in RotationDebugTool Zeile 21 sagt noch "30 minutes" statt "10 minutes" -- kleiner Textfehler
+Alle 38 Profile mit `payment_status = 'free'` und ohne Ablaufdatum werden geloescht:
+- 30x "BasicTest 1-30" (Basic, kein `premium_until`)
+- 4x "Test 1/3/5/7" (Top, haben `top_ad_until` aber kein `premium_until` -- diese haben ein Ablaufdatum und sind ok, werden NICHT geloescht)
+- Weitere BasicTest-Profile ohne Ablaufdatum
 
-## Neue Aenderungen
+**Konkret geloescht**: Alle Profile wo `display_name LIKE 'BasicTest%'` OR `display_name LIKE 'Test %'` mit `payment_status = 'free'`.
 
-### 1. Admin-Profiltabelle: Ablaufdatum-Spalte hinzufuegen
+Da die "Test 1/3/5/7" Top-Profile ein `top_ad_until` haben und korrekt funktionieren, werden NUR die BasicTest-Profile ohne jegliches Ablaufdatum geloescht (ca. 34 Stueck).
 
-In `AdminProfile.tsx` wird eine neue Spalte **"Ablauf"** zwischen "Erstellt" und "Aktionen" eingefuegt:
-- Zeigt `premium_until` oder `top_ad_until` formatiert als Datum (z.B. "04.03.2026")
-- Wenn kein Ablaufdatum: Strich "-"
-- Farbkodierung:
-  - **Rot**: Laeuft in weniger als 3 Tagen ab
-  - **Orange**: Laeuft in weniger als 7 Tagen ab  
-  - **Gruen**: Mehr als 7 Tage verbleibend
-  - **Grau**: Kein Ablaufdatum oder bereits abgelaufen
+### 2. Datenbank-Sicherung: Trigger gegen Profile ohne Ablaufdatum
 
-### 2. Admin-Dashboard: "Bald ablaufend" Kachel
+Ein Datenbank-Trigger wird erstellt, der verhindert, dass ein Profil auf `status = 'active'` gesetzt werden kann OHNE ein gueltiges Ablaufdatum (`premium_until` oder `top_ad_until`). Das stellt sicher, dass **nie wieder** ein aktives Profil ohne Ablauf existieren kann.
 
-Eine **4. Kachel** im Dashboard hinzufuegen (gelb/amber):
-- Titel: "Bald ablaufend"
-- Zaehlt Profile mit `status = 'active'` UND Ablaufdatum innerhalb der naechsten 7 Tage
-- Klick fuehrt zu `/admin/profile?status=active` (gefiltert)
-- Zeigt Anzahl betroffener Profile
+Ausnahme: Profile mit `payment_status = 'free'` UND einem gesetzten Ablaufdatum sind erlaubt (Admin-Gratis-Aktivierung setzt ja jetzt korrekt ein Datum).
 
-### 3. RotationDebugTool: Kommentar-Fix
+### 3. Bestaetigung bestehender Code-Logik
 
-Zeile 21: `// Current rotation key (changes every 30 minutes)` aendern zu `// Current rotation key (changes every 10 minutes)`
+Alle Aktivierungspfade setzen bereits korrekt ein Ablaufdatum:
+- Admin normale Aktivierung (Zeile 199-210): Setzt 30 Tage automatisch
+- Admin Gratis-Aktivierung (Zeile 416-427): Setzt Ablauf basierend auf `durationDays`
+- Zahlungsflow: `premium_until` wird bei Profilerstellung/Admin-Aktivierung gesetzt, nicht bei Zahlung
+
+Es muss kein Code geaendert werden -- nur Daten bereinigen und Trigger hinzufuegen.
 
 ## Technische Details
 
-### Betroffene Dateien:
-- `src/pages/admin/AdminProfile.tsx` -- Neue "Ablauf"-Spalte in Profiltabelle (Zeilen 880-955)
-- `src/pages/admin/AdminDashboard.tsx` -- Neue Kachel "Bald ablaufend" + Query-Erweiterung
-- `src/components/admin/RotationDebugTool.tsx` -- Kommentar-Fix Zeile 21
-
-### Dashboard-Query Erweiterung:
-Neue Abfrage fuer bald ablaufende Profile:
+### SQL: Testprofile loeschen
 ```text
-profiles WHERE status = 'active' 
-  AND (premium_until < now() + 7 days OR top_ad_until < now() + 7 days)
+DELETE FROM profiles 
+WHERE payment_status = 'free' 
+  AND premium_until IS NULL 
+  AND top_ad_until IS NULL 
+  AND status = 'active'
 ```
 
-### Ablauf-Spalte Logik:
+### SQL: Sicherheits-Trigger
 ```text
-expiryDate = profile.premium_until || profile.top_ad_until
-daysLeft = (expiryDate - now) / (1000*60*60*24)
-
-Farbe:
-  daysLeft < 0  -> grau (abgelaufen)
-  daysLeft < 3  -> rot
-  daysLeft < 7  -> orange
-  sonst         -> gruen
+CREATE FUNCTION validate_active_profile_expiry()
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  WHEN NEW.status = 'active' 
+    AND NEW.premium_until IS NULL 
+    AND NEW.top_ad_until IS NULL
+  -> RAISE EXCEPTION 'Active profiles must have an expiry date'
 ```
+
+### Betroffene Dateien
+- Keine Code-Aenderungen noetig
+- 1 Datenbank-Migration (Trigger + Cleanup)
