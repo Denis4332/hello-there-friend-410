@@ -1,53 +1,45 @@
 
 
-# Expiry-Filter in alle Such-Funktionen einbauen
+# 2 Bugfixes: Verifizierungs-Duplikate + PaymentModal Props
 
-## Was fehlt
+## Fix 1: Verifizierungs-Duplikate verhindern
 
-3 Datenbank-Funktionen filtern noch nicht nach abgelaufenen Abonnements. Abgelaufene Profile erscheinen weiterhin auf Homepage, Suche, Stadt-/Kategorie-Seiten und GPS-Suche.
+**Problem:** Wenn ein User ein neues Verifizierungsfoto hochlaedt (z.B. nach Profil-Bearbeitung), wird ein neuer Eintrag in `verification_submissions` erstellt ohne den alten zu loeschen. Im Admin-Dashboard erscheinen dann mehrere Eintraege fuer dasselbe Profil.
 
-## Was gemacht wird
+**Loesung:** In `VerificationUploader.tsx` vor dem INSERT:
+1. Alle bestehenden `pending`-Submissions fuer dieses Profil aus der DB laden
+2. Deren Storage-Dateien aus dem `verification-photos` Bucket loeschen
+3. Die DB-Eintraege loeschen
+4. Erst dann den neuen INSERT + Upload durchfuehren
 
-Eine einzige SQL-Migration die alle 3 Funktionen mit `CREATE OR REPLACE` aktualisiert. Der Expiry-Filter wird an jede `WHERE p.status = 'active'` Klausel angefuegt:
+So existiert immer nur 1 aktive Verifizierungs-Submission pro Profil.
+
+**Datei:** `src/components/profile/VerificationUploader.tsx` (Zeilen 48-69 erweitern)
+
+## Fix 2: PaymentMethodModal in ProfileUpgrade mit Paket-Info
+
+**Problem:** In `ProfileUpgrade.tsx` wird das `PaymentMethodModal` ohne `listingType` und `amount` Props aufgerufen. Der User sieht im Zahlungs-Dialog nicht welches Paket er bezahlt.
+
+**Loesung:** Die fehlenden Props ergaenzen:
 
 ```text
-AND (
-  (p.listing_type = 'top' AND p.top_ad_until >= now())
-  OR (p.listing_type <> 'top' AND p.premium_until >= now())
-)
+<PaymentMethodModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  onSelectMethod={handlePaymentMethodSelect}
+  listingType={selectedListingType || undefined}
+  amount={selectedListingType ? getAmountForListingType(selectedListingType) : undefined}
+/>
 ```
 
-### Funktion A: `get_paginated_profiles`
-
-- 2 Stellen: COUNT-Query (Zeile fuer v_total) und SELECT-Subquery
-- Betrifft: Homepage, Suche, Stadt-Seiten, Kategorie-Seiten
-
-### Funktion B: `search_profiles_by_radius` (8 Parameter, paginiert)
-
-- 2 Stellen: COUNT-Query (Zeile fuer v_total) und SELECT-Subquery
-- Betrifft: GPS-Suche V1 Fallback
-
-### Funktion C: `search_profiles_by_radius_v2`
-
-- 1 Stelle: `filtered` CTE WHERE-Klausel
-- Betrifft: GPS-Suche Hauptfunktion
-
-### Was sich NICHT aendert
-
-- Keine Tabellen werden veraendert
-- Keine Profile werden geloescht
-- Frontend-Code bleibt identisch
-- Sortierlogik (Tier-Order, Rotation) bleibt identisch
-- Die 5-Parameter-Version von `search_profiles_by_radius` hat den Filter bereits
+**Datei:** `src/pages/ProfileUpgrade.tsx` (Zeilen 377-381)
 
 ## Betroffene Dateien
 
-- 1 neue SQL-Migration (3x CREATE OR REPLACE FUNCTION + NOTIFY)
+- `src/components/profile/VerificationUploader.tsx` - Alte Submissions loeschen vor neuem Upload
+- `src/pages/ProfileUpgrade.tsx` - Props an PaymentMethodModal uebergeben
 
-## Ergebnis
+## Risiko
 
-Abgelaufene Profile werden automatisch aus allen Suchergebnissen ausgeblendet. Aktuell sind alle 9 Profile gueltig, daher aendert sich visuell nichts -- aber der Schutz ist aktiv sobald ein Abo auslaeuft.
+Minimal. Keine DB-Migration noetig. Keine Aenderung an bestehender Business-Logik.
 
-## Wichtig
-
-Bitte den Migrations-Button in der UI bestaetigen wenn er erscheint.
