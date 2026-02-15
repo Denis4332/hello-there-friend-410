@@ -66,13 +66,12 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Create user with admin API - email_confirm: true means user is already confirmed
-    // NO email will be sent - user can login immediately with credentials
-    console.log("[auth-signup] Creating user with admin API (no email verification)...");
+    // Create user with admin API - email_confirm: false means user must verify email
+    console.log("[auth-signup] Creating user with admin API (email verification required)...");
     const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // User is immediately confirmed - no verification needed
+      email_confirm: false, // User must verify email before login
     });
 
     if (createError) {
@@ -101,10 +100,38 @@ serve(async (req) => {
     }
 
     console.log("[auth-signup] User created successfully:", userData.user.id);
-    console.log("[auth-signup] No email sent - user can login immediately with credentials");
+
+    // Send confirmation email via send-auth-email function
+    console.log("[auth-signup] Sending confirmation email...");
+    try {
+      const emailResponse = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-auth-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            type: "signup_confirmation",
+            email,
+          }),
+        }
+      );
+
+      if (!emailResponse.ok) {
+        const emailError = await emailResponse.text();
+        console.error("[auth-signup] Failed to send confirmation email:", emailError);
+        // User is created but email failed - still return success
+      } else {
+        console.log("[auth-signup] Confirmation email sent successfully");
+      }
+    } catch (emailErr) {
+      console.error("[auth-signup] Error sending confirmation email:", emailErr);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, user_id: userData.user.id }),
+      JSON.stringify({ success: true, requires_confirmation: true, user_id: userData.user.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

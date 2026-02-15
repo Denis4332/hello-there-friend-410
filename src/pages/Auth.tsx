@@ -214,27 +214,14 @@ const Auth = () => {
         // Continue anyway - user is already registered
       }
       
-      // Auto-login after successful registration (no email verification needed)
-      console.log('[Auth] Signup successful, auto-logging in...');
-      const { error: loginError } = await signIn(email, password);
-      
-      if (loginError) {
-        console.error('[Auth] Auto-login failed:', loginError);
-        toast({
-          title: 'Registrierung erfolgreich',
-          description: 'Bitte melde dich jetzt mit deinen Zugangsdaten an.',
-        });
-        setActiveTab('login');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Redirect to profile creation
+      // Email verification required - show message and switch to login tab
+      console.log('[Auth] Signup successful, email verification required');
       toast({
-        title: 'Willkommen!',
-        description: 'Dein Konto wurde erstellt. Erstelle jetzt dein Profil.',
+        title: 'Registrierung erfolgreich!',
+        description: 'Bitte prüfe deinen Posteingang und bestätige deine E-Mail-Adresse.',
       });
-      navigate('/profil/erstellen', { replace: true });
+      setActiveTab('login');
+      setIsSubmitting(false);
       return;
     }
     
