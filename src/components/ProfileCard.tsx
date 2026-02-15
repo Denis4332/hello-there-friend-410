@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrefetch } from '@/hooks/usePrefetch';
-import { Crown, CheckCircle2, Tag, MapPin, Play } from 'lucide-react';
+import { Crown, CheckCircle2, Tag, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Profile, Photo } from '@/types/dating';
@@ -38,23 +38,6 @@ const ProfileCardComponent = ({
     ? `${supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl}?width=200&height=267&resize=cover&quality=60&format=webp`
     : null;
   
-  const primaryIsVideo = (primaryPhoto as any)?.media_type === 'video';
-  const hasVideo = profile.photos?.some((p) => (p as any).media_type === 'video');
-  
-  // For videos, get original URL
-  const videoUrl = primaryIsVideo && primaryPhoto
-    ? supabase.storage.from('profile-photos').getPublicUrl(primaryPhoto.storage_path).data.publicUrl
-    : null;
-  
-  // Get thumbnail for video poster (first non-video image or placeholder)
-  const posterPhoto = primaryIsVideo 
-    ? profile.photos?.find((p) => (p as any).media_type !== 'video') 
-    : null;
-  // OPTIMIZED: Smaller poster + WebP
-  const posterUrl = posterPhoto
-    ? `${supabase.storage.from('profile-photos').getPublicUrl(posterPhoto.storage_path).data.publicUrl}?width=200&height=267&resize=cover&quality=60&format=webp`
-    : undefined;
-  
   const isTop = profile.listing_type === 'top';
   const isPremium = profile.listing_type === 'premium' || profile.listing_type === 'top';
   const isOnline = profile.availability_status === 'online';
@@ -86,38 +69,16 @@ const ProfileCardComponent = ({
       )}
       
       <div className="relative w-full h-[425px] flex-shrink-0 bg-muted overflow-hidden">
-        {photoUrl || videoUrl ? (
-          <>
-            {primaryIsVideo && videoUrl ? (
-              <video
-                poster={posterUrl}
-                className="absolute inset-0 w-full h-full object-cover"
-                muted
-                loop
-                playsInline
-                preload="none"
-              >
-                <source src={videoUrl!} type="video/mp4" />
-              </video>
-            ) : (
-              <img
-                src={photoUrl!}
-                alt={profile.display_name}
-                loading={priority ? "eager" : "lazy"}
-                decoding="async"
-                width={200}
-                height={267}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            )}
-            {/* Video indicator */}
-            {hasVideo && (
-              <div className="absolute bottom-4 left-2 z-10 bg-black/70 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
-                <Play className="h-3 w-3" />
-                Video
-              </div>
-            )}
-          </>
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={profile.display_name}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            width={200}
+            height={267}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
           <div className="absolute inset-0 w-full h-full bg-muted flex items-center justify-center">
             <span className="text-6xl font-bold text-muted-foreground">

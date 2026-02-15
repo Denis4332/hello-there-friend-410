@@ -1,4 +1,4 @@
-import { Crown, Star, CheckCircle2, Camera, Video, ArrowLeft } from 'lucide-react';
+import { Crown, Star, CheckCircle2, Camera, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
@@ -129,7 +129,7 @@ export const ListingTypeSelector = ({
               </li>
               <li className="flex items-start gap-2 bg-amber-100/50 dark:bg-amber-900/30 -mx-2 px-2 py-1 rounded">
                 <Camera className="h-4 w-4 mt-0.5 text-amber-600 flex-shrink-0" />
-                <span className="font-medium text-amber-700 dark:text-amber-400">📷 10 Fotos + 🎬 1 Video</span>
+                <span className="font-medium text-amber-700 dark:text-amber-400">📷 Bis zu 10 Fotos</span>
               </li>
             </ul>
           </div>
@@ -180,8 +180,8 @@ export const ListingTypeSelector = ({
                 <span className="font-medium">Schweizweit auf Startseite</span>
               </li>
               <li className="flex items-start gap-2 bg-red-100/50 dark:bg-red-900/30 -mx-2 px-2 py-1 rounded">
-                <Video className="h-4 w-4 mt-0.5 text-red-600 flex-shrink-0" />
-                <span className="font-medium text-red-700 dark:text-red-400">📷 15 Fotos + 🎬 2 Videos</span>
+                <Camera className="h-4 w-4 mt-0.5 text-red-600 flex-shrink-0" />
+                <span className="font-medium text-red-700 dark:text-red-400">📷 Bis zu 15 Fotos</span>
               </li>
             </ul>
           </div>
