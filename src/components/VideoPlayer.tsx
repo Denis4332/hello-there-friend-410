@@ -10,48 +10,40 @@ interface VideoPlayerProps {
 
 const VideoPlayer = ({ src, className, controls = true, loop = true }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [showPlayButton, setShowPlayButton] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  // Start with play button visible - hide only once actually playing
+  const [showPlayButton, setShowPlayButton] = useState(true);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Reset state when src changes
-    setShowPlayButton(false);
-    setIsPlaying(false);
-
-    const handleCanPlay = async () => {
-      try {
-        await video.play();
-        setIsPlaying(true);
-        setShowPlayButton(false);
-      } catch {
-        // Autoplay blocked - show our play button
-        setShowPlayButton(true);
-      }
-    };
+    setShowPlayButton(true);
 
     const handlePlaying = () => {
-      setIsPlaying(true);
       setShowPlayButton(false);
     };
 
     const handlePause = () => {
-      setIsPlaying(false);
+      // Don't show overlay on pause - user can use native controls
     };
 
-    video.addEventListener('canplay', handleCanPlay, { once: true });
     video.addEventListener('playing', handlePlaying);
     video.addEventListener('pause', handlePause);
 
-    // If video is already ready (cached)
-    if (video.readyState >= 3) {
-      handleCanPlay();
-    }
+    // Attempt autoplay after a short delay (iOS needs this)
+    const timer = setTimeout(async () => {
+      try {
+        video.muted = true;
+        await video.play();
+        setShowPlayButton(false);
+      } catch {
+        // Autoplay blocked - play button stays visible
+        setShowPlayButton(true);
+      }
+    }, 300);
 
     return () => {
-      video.removeEventListener('canplay', handleCanPlay);
+      clearTimeout(timer);
       video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('pause', handlePause);
     };
@@ -61,9 +53,9 @@ const VideoPlayer = ({ src, className, controls = true, loop = true }: VideoPlay
     const video = videoRef.current;
     if (!video) return;
     try {
+      video.muted = true;
       await video.play();
       setShowPlayButton(false);
-      setIsPlaying(true);
     } catch (e) {
       console.error('Video play failed:', e);
     }
@@ -74,18 +66,17 @@ const VideoPlayer = ({ src, className, controls = true, loop = true }: VideoPlay
       <video
         ref={videoRef}
         className={className}
-        // Only show native controls once video is playing (prevents double play button)
-        controls={controls && isPlaying}
+        controls={controls}
         muted
         loop={loop}
         preload="auto"
         playsInline
         onError={(e) => {
-          console.warn('Video error:', (e.target as HTMLVideoElement)?.error?.message);
+          const video = e.target as HTMLVideoElement;
+          console.warn('Video error:', video?.error?.message, 'src:', src);
         }}
       >
         <source src={src} type="video/mp4" />
-        <source src={src} type="video/quicktime" />
         Dein Browser unterstützt keine Videos.
       </video>
       {showPlayButton && (
