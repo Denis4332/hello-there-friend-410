@@ -1,138 +1,73 @@
 
-# Fix: Videos werden angezeigt aber spielen nicht ab
 
-## Problem
+# Videos komplett entfernen
 
-Die Videos sind sichtbar und nicht mehr blockiert, aber `currentTime` bleibt bei 0 -- sie starten nie. Das liegt daran, dass `autoPlay` bei Carousel-Slides nicht zuverlaessig funktioniert: Das Video wird im DOM gerendert, aber der Browser startet es nicht automatisch (besonders wenn es nicht der aktive Slide ist oder wenn autoplay-Policies greifen).
+## Uebersicht
 
-## Loesung: VideoPlayer-Komponente mit Autoplay-Fallback
+Video-Funktionalitaet wird aus der gesamten Anwendung entfernt -- Anzeige, Upload, Erstellungsprozess und Paketbeschreibungen. Nur Fotos bleiben uebrig.
 
-Eine neue `VideoPlayer`-Komponente wird erstellt, die:
+## Betroffene Dateien
 
-1. Per `useRef` auf das Video-Element zugreift
-2. Nach dem Mounten `video.play()` programmatisch aufruft
-3. Falls `play()` fehlschlaegt (Browser blockiert), einen Play-Button als Overlay anzeigt
-4. Bei Klick auf den Play-Button das Video manuell startet
+### 1. `src/components/VideoPlayer.tsx` -- LOESCHEN
 
-## Aenderungen
+Die gesamte Komponente wird nicht mehr benoetigt.
 
-### 1. Neue Datei: `src/components/VideoPlayer.tsx`
+### 2. `src/pages/Profil.tsx` -- Video-Logik entfernen
 
-Erstellt eine wiederverwendbare Komponente:
+- `VideoPlayer`-Import entfernen
+- `mediaItems`-Mapping vereinfachen: Kein `isVideo`-Check mehr, nur noch Foto-URLs
+- Carousel: Nur noch `<img>` rendern (kein `isVideo`-Branch)
+- Lightbox: Nur noch `<img>` rendern (kein `isVideo`-Branch)
 
-```typescript
-import { useRef, useState, useEffect } from 'react';
-import { Play } from 'lucide-react';
+### 3. `src/components/ProfileCard.tsx` -- Video-Anzeige entfernen
 
-interface VideoPlayerProps {
-  src: string;
-  className?: string;
-  controls?: boolean;
-  loop?: boolean;
-}
+- `Play`-Icon Import entfernen
+- `primaryIsVideo`, `hasVideo`, `videoUrl`, `posterPhoto` Variablen entfernen
+- Video-`<video>`-Tag im Render entfernen, nur `<img>` behalten
+- "Video"-Badge-Indicator unten links entfernen
 
-const VideoPlayer = ({ src, className, controls = true, loop = true }: VideoPlayerProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [showPlayButton, setShowPlayButton] = useState(false);
+### 4. `src/components/profile/PhotoUploader.tsx` -- Video-Upload entfernen
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+- `Video`, `Play` aus Imports entfernen
+- `MEDIA_LIMITS` auf nur `photos` reduzieren (kein `videos` mehr)
+- `MAX_VIDEO_SIZE_MB` und `ALLOWED_VIDEO_FORMATS` Konstanten entfernen
+- `videoCount` Variable entfernen
+- `handleFileSelect` vereinfachen (kein `video`-Typ mehr)
+- `videoPreviews` Variable entfernen
+- Gesamten "Video Upload Section" Block (Zeile 529-607) entfernen
 
-    const attemptAutoplay = async () => {
-      try {
-        await video.play();
-        setShowPlayButton(false);
-      } catch {
-        setShowPlayButton(true);
-      }
-    };
+### 5. `src/components/profile/ListingTypeSelector.tsx` -- Video-Texte entfernen
 
-    attemptAutoplay();
-  }, [src]);
+- `Video`-Icon Import entfernen
+- Premium: "10 Fotos + 1 Video" aendern zu "10 Fotos"
+- TOP AD: "15 Fotos + 2 Videos" aendern zu "15 Fotos", `Video`-Icon durch `Camera` ersetzen
 
-  const handlePlay = async () => {
-    const video = videoRef.current;
-    if (!video) return;
-    try {
-      await video.play();
-      setShowPlayButton(false);
-    } catch (e) {
-      console.error('Video play failed:', e);
-    }
-  };
+### 6. `src/pages/ProfileEdit.tsx` -- Video-Limits entfernen
 
-  return (
-    <div className="relative w-full h-full">
-      <video
-        ref={videoRef}
-        className={className}
-        controls={controls}
-        muted
-        autoPlay
-        loop={loop}
-        preload="metadata"
-        playsInline
-        onClick={handlePlay}
-        onError={(e) => console.warn('Video load error:', e)}
-      >
-        <source src={src} type="video/mp4" />
-        Dein Browser unterstuetzt keine Videos.
-      </video>
-      {showPlayButton && (
-        <button
-          onClick={handlePlay}
-          className="absolute inset-0 flex items-center justify-center bg-black/30"
-          aria-label="Video abspielen"
-        >
-          <Play className="h-16 w-16 text-white" />
-        </button>
-      )}
-    </div>
-  );
-};
-```
+- `MEDIA_LIMITS` auf nur `photos` reduzieren
+- Video-bezogene Filter/Checks entfernen
 
-### 2. `src/pages/Profil.tsx` - Carousel Video (Zeile 172-185)
+### 7. `supabase/functions/validate-image/index.ts` -- Video-Validierung entfernen
 
-Ersetze das direkte `<video>` Element durch `<VideoPlayer>`:
+- MP4 und WebM MIME-Type Erkennung entfernen
+- Fehlermeldung auf nur Bildformate anpassen
+- Video-spezifische Groessenlimits entfernen
 
-```text
-// VORHER:
-<video className="w-full h-full object-contain bg-black" controls muted autoPlay loop ...>
-  <source src={item.url} type="video/mp4" />
-</video>
+## Was NICHT geaendert wird
 
-// NACHHER:
-<VideoPlayer
-  src={item.url}
-  className="w-full h-full object-contain bg-black"
-/>
-```
-
-### 3. `src/pages/Profil.tsx` - Lightbox Video (ca. Zeile 370-385)
-
-Gleiche Aenderung fuer das Lightbox-Video:
-
-```text
-// NACHHER:
-<VideoPlayer
-  src={mediaItems[lightboxIndex]?.originalUrl}
-  className="max-w-full max-h-full object-contain"
-/>
-```
-
-## Warum das funktioniert
-
-- `autoPlay` allein reicht nicht, weil Browser (besonders Mobile) autoplay oft still ignorieren
-- `video.play()` gibt ein Promise zurueck -- wenn es rejected wird, wissen wir dass ein User-Klick noetig ist
-- Der Play-Button-Overlay gibt dem User die Moeglichkeit, das Video manuell zu starten
-- Nach dem ersten Klick verschwindet der Overlay und das Video laeuft normal mit Controls
+- Die `media_type`-Spalte in der Datenbank bleibt bestehen (keine Migration noetig)
+- Bereits hochgeladene Videos bleiben im Storage (kein Datenverlust)
+- Die Typen in `dating.ts` / `common.ts` bleiben unveraendert
 
 ## Zusammenfassung
 
 | Datei | Aenderung |
 |-------|-----------|
-| `src/components/VideoPlayer.tsx` | Neue Komponente (Play-Fallback) |
-| `src/pages/Profil.tsx` Carousel | `<video>` durch `<VideoPlayer>` ersetzen |
-| `src/pages/Profil.tsx` Lightbox | `<video>` durch `<VideoPlayer>` ersetzen |
+| `VideoPlayer.tsx` | Loeschen |
+| `Profil.tsx` | Video-Rendering entfernen |
+| `ProfileCard.tsx` | Video-Anzeige + Badge entfernen |
+| `PhotoUploader.tsx` | Video-Upload-Sektion entfernen |
+| `ListingTypeSelector.tsx` | Video-Texte aus Paketen entfernen |
+| `ProfileEdit.tsx` | Video-Limits entfernen |
+| `validate-image/index.ts` | Video-Validierung entfernen |
+
