@@ -1,75 +1,65 @@
 
+# Analyse: Offene Probleme und Verbesserungen
 
-# Paketwechsel-Logik vereinfachen
+## Gefundene Probleme
 
-## Regeln
+### 1. KRITISCH: 30 aktive Basic-Profile ohne Zahlung
+In der Datenbank befinden sich **30 aktive Profile** mit `listing_type = 'basic'` und `payment_status = 'pending'` -- also aktiv geschaltet, aber nie bezahlt und ohne Ablaufdatum (`premium_until = NULL`). Diese Profile haben keinen Ablaufmechanismus und bleiben ewig aktiv. Das muss bereinigt werden -- entweder auf `free` setzen (falls gewollt) oder deaktivieren.
 
-1. **Unbezahlt (payment_status = 'pending')**: Paketwechsel frei moeglich (up + down), aber Medien-Limits werden geprueft (Exploit-Schutz existiert bereits in ProfileCreate.tsx via `validateMediaForNewPackage`)
-2. **Aktiv + Bezahlt**: NUR Verlaengerung (gleiches Paket, +30 Tage). Kein Upgrade, kein Downgrade
-3. **Inaktiv/Abgelaufen**: Freie Paketwahl (alle 3 Pakete), voller Preis. Medien-Limits werden geprueft
-4. **Profil-ID bleibt IMMER gleich** -- kein Neuerstellen noetig
+### 2. Admin-Filter: "Inaktiv" fehlt
+Im Admin-Profil-Filter (`AdminProfile.tsx`, Zeile 828-832) fehlt die Option `inactive`. Der Admin kann abgelaufene/inaktive Profile nur ueber "Alle" finden. Ein eigener Filter `<option value="inactive">Inaktiv</option>` wird benoetigt.
 
-## Aenderungen
+### 3. Admin-Filter: "Draft" fehlt
+Es gibt auch keinen Filter fuer Draft-Profile. Falls ein Nutzer ein Profil begonnen aber nicht abgeschlossen hat, kann der Admin es nicht gezielt finden.
 
-### 1. UserDashboard.tsx
+### 4. Ablauf-Logik: Basic-Profile haben kein Ablaufdatum
+Im `check-subscription-expiry` Edge Function (Zeile 52-61) werden Basic-Profile anhand von `premium_until` geprueft. Aber bei der Admin-Aktivierung (Zeile 204) wird fuer Basic-Profile `premium_until` gesetzt. Das ist inkonsistent:
+- Beim Gratis-Aktivieren (Zeile 427-429): Basic bekommt **kein** `premium_until`
+- Beim normalen Aktivieren (Zeile 204-206): Basic bekommt `premium_until`
 
-**Entfernen (Zeilen 475-484):**
-- Der "Paket upgraden" Button fuer aktive+bezahlte Profile wird komplett entfernt
+Das bedeutet: Gratis-Basic-Profile laufen nie ab, bezahlte Basic-Profile schon. Das sollte konsistent sein.
 
-**Aendern (Zeilen 486-495):**
-- "Inserat verlaengern" Button wird fuer ALLE aktiven+bezahlten Profile angezeigt (nicht nur TOP)
+### 5. UserDashboard: Kein Handling fuer `inactive` Status
+Das UserDashboard zeigt fuer inaktive Profile keinen speziellen Hinweis an (z.B. "Dein Inserat ist abgelaufen"). Es gibt zwar den "Reaktivieren"-Button im Paket-Bereich, aber kein visuelles Status-Banner wie bei `pending`, `rejected` oder `active`.
 
-**Aendern (Zeilen 497-503):**
-- Downgrade-Text ersetzen durch: "Nach Ablauf am XX.XX.XXXX kannst du ein anderes Paket waehlen"
-- Gilt fuer alle aktiven bezahlten Profile (nicht nur premium/top)
+### 6. UserDashboard: `payment_status = 'free'` wird nicht erkannt
+Profile mit `payment_status = 'free'` zeigen den "Jetzt bezahlen"-Hinweis nicht an (korrekt), aber die Verlaengerungs-Logik (Zeile 476) prueft nur `payment_status === 'paid'`. Gratis-Profile, die aktiv sind, sehen weder den Verlaengerungs-Button noch den Ablauf-Hinweis.
 
-**Beibehalten:**
-- "Paket aendern" Button bei unbezahlten Profilen (Zeile 465-473) -- navigiert zu `/profil/erstellen?step=listing-type` wo Medien-Validierung greift
-- "Reaktivieren" Button bei inaktiven Profilen (Zeile 506-513)
+### 7. RotationDebugTool: Falsche Intervall-Angabe
+Das `RotationDebugTool` (Zeile 27) berechnet den Key mit `30 * 60 * 1000` (30 Min), aber der tatsaechliche `useRotationKey` Hook (Zeile 8) nutzt `10 * 60 * 1000` (10 Min). Die Anzeige im Debug-Tool stimmt nicht mit der echten Rotation ueberein.
 
-### 2. ProfileUpgrade.tsx
+### 8. Profil-Ansicht: Kein `is_premium`-Feld in der DB-Abfrage
+In `Profil.tsx` (Zeile 230) wird `profile.is_premium` geprueft fuer das VIP-Badge. Dieses Feld kommt aus der `public_profiles` View -- es muss sichergestellt sein, dass es dort korrekt berechnet wird (z.B. `listing_type IN ('premium', 'top')`).
 
-**Aktive Profile:**
-- `PACKAGE_RANK` und `isUpgrade` Logik entfernen (Zeilen 15-20)
-- Keine Paketauswahl-Karten anzeigen
-- Nur den Verlaengerungsbereich mit "Verlaengern +30 Tage" Button anzeigen
-- Titel: "Inserat verlaengern"
+## Vorgeschlagene Aenderungen
 
-**Inaktive Profile:**
-- Alle 3 Pakete anzeigen (freie Wahl)
-- `availablePackages` wird immer `allPackages` sein (kein Filter mehr)
-- Titel: "Paket waehlen"
-- Medien-Validierung hinzufuegen in `handleUpgrade`: Vor dem Oeffnen des Payment-Modals die aktuelle Medien-Anzahl gegen die Limits des gewaehlten Pakets pruefen (gleiche Logik wie `validateMediaForNewPackage` in ProfileCreate.tsx)
+### Schritt 1: Admin-Filter erweitern
+In `AdminProfile.tsx` die fehlenden Status-Optionen hinzufuegen:
+- `inactive` (Inaktiv/Abgelaufen)
+- `draft` (Entwurf)
 
-### 3. Exploit-Schutz (Medien-Limits)
+### Schritt 2: UserDashboard -- Inaktiv-Banner
+Einen Status-Banner fuer `inactive` Profile hinzufuegen:
+"Dein Inserat ist abgelaufen. Reaktiviere es, um wieder sichtbar zu sein."
 
-Bereits vorhanden fuer unbezahlte Profile in `ProfileCreate.tsx`:
-- `validateMediaForNewPackage` prueft Foto- und Video-Anzahl gegen Paket-Limits
-- Blockiert den Wechsel wenn zu viele Medien vorhanden sind
+### Schritt 3: UserDashboard -- Gratis-Profile korrekt behandeln
+Die Bedingung fuer den Verlaengerungs-Button erweitern:
+`profile.status === 'active' && (profile.payment_status === 'paid' || profile.payment_status === 'free')`
 
-Neu hinzufuegen in `ProfileUpgrade.tsx` fuer inaktive Profile:
-- Gleiche Validierung vor Paketzahlung
-- Nutzer muss erst ueberzaehlige Medien loeschen bevor er ein kleineres Paket waehlen kann
+### Schritt 4: RotationDebugTool korrigieren
+Den Rotation-Key-Berechnung von `30 * 60 * 1000` auf `10 * 60 * 1000` aendern, damit es mit dem echten Hook uebereinstimmt.
 
-```text
-Medien-Limits:
-  Basic:   5 Fotos, 0 Videos
-  Premium: 10 Fotos, 1 Video
-  TOP:     15 Fotos, 2 Videos
-```
+### Schritt 5: Basic-Ablauf konsistent machen
+In der `activateFreeMutation` (AdminProfile.tsx, Zeile 427): Auch fuer Basic mit Duration ein `premium_until` setzen, damit der Ablauf-Check greift.
 
-## Zusammenfassung der Flows
+### Schritt 6: Datenbereinigung
+SQL-Query bereitstellen, um die 30 "aktiven Basic mit pending Payment" Profile zu bereinigen -- entweder `payment_status = 'free'` setzen oder `status = 'inactive'`.
 
-```text
-Unbezahltes Profil (Dashboard):
-  [Paket aendern] -> /profil/erstellen?step=listing-type
-  Medien-Validierung greift automatisch
+## Technische Details
 
-Aktives + Bezahltes Profil (Dashboard):
-  [Inserat verlaengern] -> /user/upgrade (nur Verlaengerung)
-  "Nach Ablauf am XX.XX.XXXX kannst du ein anderes Paket waehlen"
-
-Inaktives Profil (Dashboard):
-  [Inserat reaktivieren] -> /user/upgrade (alle 3 Pakete)
-  Medien-Validierung vor Zahlung
-```
+Betroffene Dateien:
+- `src/pages/admin/AdminProfile.tsx` -- Filter + Gratis-Logik
+- `src/pages/UserDashboard.tsx` -- Inaktiv-Banner + Gratis-Handling
+- `src/components/admin/RotationDebugTool.tsx` -- Intervall-Fix
+- `supabase/functions/check-subscription-expiry/index.ts` -- Bereits korrekt, aber Daten muessen konsistent sein
+- Datenbank: Bereinigung der 30 Testprofile
