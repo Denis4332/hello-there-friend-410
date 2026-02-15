@@ -1,39 +1,75 @@
 
 
-# Fix: Veralteter Kommentar in RotationDebugTool
+# Fix: Video-Kompatibilitaet fuer Safari/iOS
 
-## Was ist der Stand?
+## Problem-Analyse
 
-Alle Rotation-Werte und Video-Fixes sind korrekt implementiert. Es gibt nur noch **einen veralteten Kommentar** der korrigiert werden sollte.
+Ich habe das Video im Test-Browser geoeffnet (Profil "Test", Slide 10) und es funktioniert dort. Der Code ist korrekt (`autoPlay`, `muted`, `playsInline`, `loop`, kein `poster=""`). Aber Safari/iOS hat zusaetzliche Anforderungen, die der aktuelle Code nicht erfuellt.
 
-## Aenderung
+## Ursachen fuer Safari-Probleme
 
-### `src/components/admin/RotationDebugTool.tsx` (Zeile 21)
+1. **`<video src={url}>` statt `<source>` Element**: Safari bevorzugt das `<source>` Tag mit explizitem MIME-Type
+2. **Kein Fallback bei Autoplay-Blockierung**: iOS kann Autoplay auch bei `muted` blockieren - es fehlt eine Fallback-UI
+3. **`object-cover` auf Video**: Kann auf Safari zu Rendering-Problemen fuehren
 
-Kommentar anpassen:
+## Aenderungen
+
+### 1. `src/pages/Profil.tsx` - Carousel Video (Zeile 173-184)
+
+Statt `<video src={url}>` wird `<source>` mit MIME-Type verwendet plus ein Fallback-Play-Button:
 
 ```text
 // VORHER:
-// Current rotation key (changes every 10 minutes)
+<video src={item.url} className="w-full h-full object-cover"
+  controls muted autoPlay loop preload="auto" playsInline>
 
 // NACHHER:
-// Current rotation key (changes every 30 minutes)
+<video className="w-full h-full object-contain bg-black"
+  controls muted autoPlay loop preload="metadata" playsInline
+  onError={(e) => console.warn('Video load error:', e)}>
+  <source src={item.url} type="video/mp4" />
+  Dein Browser unterstuetzt keine Videos.
+</video>
 ```
 
-## Zusammenfassung aller Stellen
+Wesentliche Aenderungen:
+- `<source>` Element mit `type="video/mp4"` statt `src` Attribut (Safari-Kompatibilitaet)
+- `preload="metadata"` statt `preload="auto"` (schnellerer Start, Safari-freundlich)
+- `object-contain` statt `object-cover` (verhindert schwarze Bereiche bei Video-Cropping)
+- Error-Handler fuer Debugging
 
-| Datei | Rotation | Status |
-|-------|----------|--------|
-| `useRotationKey.ts` | 30 Min | OK |
-| `profileUtils.ts` | 30 Min | OK |
-| `RotationDebugTool.tsx` | 30 Min (Code OK, Kommentar falsch) | Fix noetig |
-| `AdminTierDashboard.tsx` | 30 Min | OK |
+### 2. `src/pages/Profil.tsx` - Lightbox Video (ca. Zeile 370-380)
 
-| Datei | Video-Fix | Status |
-|-------|-----------|--------|
-| `Profil.tsx` Carousel | kein poster, autoPlay+loop | OK |
-| `Profil.tsx` Lightbox | autoPlay+loop | OK |
-| `ProfileCard.tsx` | poster mit echtem Bild-URL | OK (kein Fix noetig) |
+Gleiche Aenderung fuer das Lightbox-Video:
 
-Nur 1 Zeile wird geaendert -- rein kosmetisch, kein Funktionsunterschied.
+```text
+// VORHER:
+<video src={mediaItems[lightboxIndex]?.originalUrl} ...>
+
+// NACHHER:
+<video ... >
+  <source src={mediaItems[lightboxIndex]?.originalUrl} type="video/mp4" />
+</video>
+```
+
+### 3. `src/components/ProfileCard.tsx` - Card Video (Zeile 92-100)
+
+Gleiche `<source>` Aenderung fuer die Karten-Vorschau:
+
+```text
+// VORHER:
+<video src={videoUrl} poster={posterUrl} ...>
+
+// NACHHER:
+<video poster={posterUrl} ...>
+  <source src={videoUrl} type="video/mp4" />
+</video>
+```
+
+## Zusammenfassung
+
+3 Stellen werden angepasst, alle mit dem gleichen Muster:
+- `src` Attribut durch `<source>` Element mit MIME-Type ersetzen
+- `preload="metadata"` fuer schnelleren Start
+- `object-contain` im Carousel/Lightbox fuer korrektes Video-Rendering
 
