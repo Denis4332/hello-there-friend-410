@@ -20,13 +20,13 @@ export const RotationDebugTool = ({ profiles }: RotationDebugToolProps) => {
 
   // Current rotation key (changes every 10 minutes)
   const currentRotationKey = useMemo(() => {
-    return Math.floor(Date.now() / (10 * 60 * 1000));
+    return Math.floor(Date.now() / (30 * 60 * 1000));
   }, []);
 
   // Calculate next rotation time
   const nextRotationTime = useMemo(() => {
-    const currentKey = Math.floor(Date.now() / (10 * 60 * 1000));
-    const nextKeyTimestamp = (currentKey + 1) * (10 * 60 * 1000);
+    const currentKey = Math.floor(Date.now() / (30 * 60 * 1000));
+    const nextKeyTimestamp = (currentKey + 1) * (30 * 60 * 1000);
     const nextDate = new Date(nextKeyTimestamp);
     return nextDate.toLocaleTimeString('de-CH', { 
       hour: '2-digit', 
@@ -58,7 +58,7 @@ export const RotationDebugTool = ({ profiles }: RotationDebugToolProps) => {
             Rotation-Debug-Tool
           </h3>
           <p className="text-sm text-muted-foreground">
-            Zeigt die aktuelle Profil-Reihenfolge pro Tier (ändert sich alle 10 Min)
+            Zeigt die aktuelle Profil-Reihenfolge pro Tier (ändert sich alle 30 Min)
           </p>
         </div>
         <Button 

@@ -175,9 +175,10 @@ const Profil = () => {
                                 className="w-full h-full object-cover"
                                 controls
                                 muted
+                                autoPlay
+                                loop
                                 preload="auto"
                                 playsInline
-                                poster=""
                               >
                                 Dein Browser unterstützt keine Videos.
                               </video>
@@ -373,6 +374,7 @@ const Profil = () => {
                 controls
                 muted
                 autoPlay
+                loop
                 preload="auto"
                 playsInline
               >
