@@ -171,15 +171,16 @@ const Profil = () => {
                           <div className="relative aspect-[3/4] bg-black">
                             {item.isVideo ? (
                               <video
-                                src={item.url}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain bg-black"
                                 controls
                                 muted
                                 autoPlay
                                 loop
-                                preload="auto"
+                                preload="metadata"
                                 playsInline
+                                onError={(e) => console.warn('Video load error:', e)}
                               >
+                                <source src={item.url} type="video/mp4" />
                                 Dein Browser unterstützt keine Videos.
                               </video>
                             ) : (
@@ -369,15 +370,16 @@ const Profil = () => {
             {/* Current Media - use original URL for full quality in lightbox */}
             {mediaItems[lightboxIndex]?.isVideo ? (
               <video
-                src={mediaItems[lightboxIndex]?.originalUrl}
                 className="max-w-full max-h-full object-contain"
                 controls
                 muted
                 autoPlay
                 loop
-                preload="auto"
+                preload="metadata"
                 playsInline
+                onError={(e) => console.warn('Video load error:', e)}
               >
+                <source src={mediaItems[lightboxIndex]?.originalUrl} type="video/mp4" />
                 Dein Browser unterstützt keine Videos.
               </video>
             ) : (
