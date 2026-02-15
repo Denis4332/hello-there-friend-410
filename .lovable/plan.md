@@ -1,47 +1,59 @@
 
+# Expiry-Filter komplett durchsetzen
 
-# Abgelaufene Profile automatisch ausblenden
+## Status jetzt
+- public_profiles View: Hat Expiry-Filter (OK)
+- get_paginated_profiles: KEIN Expiry-Filter (BUG - Homepage, Suche, Stadt, Kategorie betroffen)
+- search_profiles_by_radius_v2: KEIN Expiry-Filter (BUG - GPS-Suche betroffen)  
+- search_profiles_by_radius: KEIN Expiry-Filter (BUG - GPS-Fallback betroffen)
+- useTopCities / useAllCities: Zaehlen abgelaufene Profile mit (BUG)
+- generate-sitemap: Listet abgelaufene Profile (BUG)
 
-## Uebersicht
+## Was gemacht wird
 
-Eine SQL-Migration aktualisiert 4 Datenbank-Objekte und eine kleine Aenderung im UserDashboard sorgt dafuer, dass der User informiert wird.
+### 1. Neue DB-Migration (ersetzt alle 3 Funktionen)
 
-**Ergebnis**: Profil laeuft ab = sofort weg von der Seite. User sieht "abgelaufen" im Dashboard.
-
-## Was geaendert wird
-
-### 1. Datenbank-Migration (1 SQL-Datei, 4 Objekte)
-
-Die Ablauf-Bedingung wird ueberall hinzugefuegt wo `status = 'active'` steht:
+Die bestehende Migrations-Datei hat den korrekten Code, wurde aber nicht ausgefuehrt. Eine neue Migration wird erstellt die alle 3 Funktionen mit dem Expiry-Filter aktualisiert:
 
 ```text
 AND (
-  (listing_type = 'top' AND top_ad_until >= now())
-  OR (listing_type != 'top' AND premium_until >= now())
+  (p.listing_type = 'top' AND p.top_ad_until >= now())
+  OR (p.listing_type <> 'top' AND p.premium_until >= now())
 )
 ```
 
-**A) `public_profiles` View** -- Einzelprofil-Anzeige via Slug
+Betrifft:
+- get_paginated_profiles (COUNT + SELECT)
+- search_profiles_by_radius_v2 (filtered CTE)
+- search_profiles_by_radius (beide Overloads: mit und ohne Pagination)
 
-**B) `get_paginated_profiles` Funktion** -- Homepage, Suche, Stadt, Kategorie (COUNT + SELECT)
+### 2. useTopCities und useAllCities (src/hooks/useProfiles.ts)
 
-**C) `search_profiles_by_radius_v2` Funktion** -- GPS-Suche V2 (filtered CTE)
+Aktuell:
+```text
+.from('profiles').select('city, canton').eq('status', 'active')
+```
 
-**D) `search_profiles_by_radius` Funktion** -- GPS-Fallback (beide Versionen: mit und ohne Pagination)
+Neu:
+```text
+.from('public_profiles').select('city, canton')
+```
 
-### 2. UserDashboard.tsx -- Expiry-Check (ca. 15 Zeilen)
+Die View filtert bereits nach active + nicht abgelaufen.
 
-Nach dem Laden des Profils (Zeile 152) wird geprueft ob es abgelaufen ist:
-- Falls ja: Status in DB auf `inactive` setzen
-- Toast "Dein Inserat ist abgelaufen" anzeigen
-- Lokalen State aktualisieren
+### 3. generate-sitemap Edge Function
+
+2 Queries umstellen von `profiles` auf `public_profiles`:
+- Profil-Slugs fuer Sitemap-URLs
+- Staedte fuer Sitemap-URLs
 
 ### Betroffene Dateien
-- 1 neue SQL-Migration
-- `src/pages/UserDashboard.tsx` (Expiry-Check in `loadProfile`)
+- 1 neue SQL-Migration (3 Funktionen neu erstellen)
+- src/hooks/useProfiles.ts (2 Hooks: useTopCities, useAllCities)
+- supabase/functions/generate-sitemap/index.ts (2 Queries)
 
 ### Risiko
-- Null: Der Trigger stellt bereits sicher, dass alle aktiven Profile ein Ablaufdatum haben
-- Die bestehende Sortierlogik (Tier-Order) bleibt komplett erhalten
-- Funktionssignaturen aendern sich nicht
+Minimal -- die Migration-Datei mit dem korrekten Code existiert bereits und wurde verifiziert. Die Hook-Aenderungen nutzen einfach die bereits funktionierende View.
 
+### Wichtig
+Diesmal bitte den Migrations-Button in der UI bestaetigen wenn er erscheint, damit die Aenderungen auch wirklich auf die Datenbank angewendet werden.
