@@ -1,87 +1,53 @@
 
 
-# Fix: E-Mail-Verifizierung + Registrierungs-Lock
+# Fix: Rotation-Konflikt + Video auf Safari
 
-## Was wird gefixt
+## Issue 1: Rotation-Konflikt (10 Min vs 30 Min)
 
-**Problem 1:** User werden bei Registrierung sofort bestaetigt und koennen mit Fake-E-Mails Profil erstellen.
+Es gibt eine Inkonsistenz zwischen drei Stellen:
 
-**Problem 2:** RESEND_API_KEY Secret-Name ist jetzt korrekt konfiguriert -- E-Mails sollten funktionieren.
+| Datei | Aktuell | Soll |
+|-------|---------|------|
+| `useRotationKey.ts` (Zeile 8) | 10 Minuten | 30 Minuten |
+| `profileUtils.ts` (Zeile 15) | 30 Minuten | 30 Minuten (OK) |
+| `RotationDebugTool.tsx` (Zeile 27, 38) | 10 Minuten | 30 Minuten |
 
-## Aenderungen
+Der Hook sagt 10 Min, der Algorithmus-Fallback sagt 30 Min. Das fuehrt dazu, dass der Hook alle 10 Min einen neuen Key liefert, aber wenn kein Key uebergeben wird, rechnet `profileUtils` mit 30 Min -- Konflikt.
 
-### 1. `supabase/functions/auth-signup/index.ts`
-- `email_confirm` von `true` auf `false` aendern
-- Nach User-Erstellung: `send-auth-email` aufrufen um Bestaetigungs-Mail zu senden
-- Antwort aendern auf `{ success: true, requires_confirmation: true }`
+### Fix
 
-### 2. `src/pages/Auth.tsx` (Zeilen 205-239)
-- Auto-Login nach Signup entfernen (`signIn(email, password)` + `navigate`)
-- Stattdessen: Toast "Pruefe deinen Posteingang und bestaetige deine E-Mail-Adresse"
-- Tab auf "login" zuruecksetzen
-- Kein Redirect mehr nach Signup
+Alle drei Dateien auf **30 Minuten** vereinheitlichen:
 
-## Ablauf nach dem Fix
+- `useRotationKey.ts` Zeile 8: `10 * 60 * 1000` aendern zu `30 * 60 * 1000`
+- `RotationDebugTool.tsx` Zeile 27 + 38: `10 * 60 * 1000` aendern zu `30 * 60 * 1000`
+- Kommentar in RotationDebugTool Zeile 69 anpassen: "alle 30 Min"
 
-```text
-User registriert sich
-    |
-    v
-Edge Function erstellt User (email_confirm: false)
-    |
-    v
-Bestaetigungs-Mail wird via Resend gesendet
-    |
-    v
-Frontend zeigt: "Pruefe deinen Posteingang"
-    |
-    v
-User klickt Link in Mail --> E-Mail bestaetigt
-    |
-    v
-User kann sich einloggen --> Zugang zu /profil/erstellen
-```
+## Issue 2: Videos schwarz auf Safari
 
-## Sicherheit
+**Ursache:** `poster=""` (leerer String) auf Zeile 180 in `Profil.tsx` verhindert, dass iOS Safari den ersten Video-Frame als Vorschau rendert.
 
-- Ohne E-Mail-Bestaetigung kein Login moeglich
-- Login-Fehler "Email not confirmed" ist bereits in Auth.tsx (Zeile 116) abgefangen
-- `/profil/erstellen` bleibt durch `UserProtectedRoute` geschuetzt
-- Bestehende User sind nicht betroffen (bereits bestaetigt)
+### Fix in `src/pages/Profil.tsx`
 
-## Technische Details
+**Carousel-Video (Zeile 173-183):**
+- `poster=""` entfernen
+- `autoPlay` und `loop` hinzufuegen
+- Kombination `muted` + `playsInline` + `autoPlay` erzwingt iOS-Kompatibilitaet
 
-### auth-signup Aenderung
 ```text
 // VORHER:
-email_confirm: true
+<video src={item.url} controls muted preload="auto" playsInline poster="">
 
 // NACHHER:
-email_confirm: false
-
-// NEU: Nach Erstellung Mail senden
-await fetch(`${SUPABASE_URL}/functions/v1/send-auth-email`, {
-  method: "POST",
-  headers: { "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
-  body: JSON.stringify({ type: "signup_confirmation", email })
-});
+<video src={item.url} controls muted autoPlay loop preload="auto" playsInline>
 ```
 
-### Auth.tsx Aenderung (Zeilen 205-239)
-```text
-// ENTFERNEN:
-signIn(email, password) + navigate('/profil/erstellen')
+**Lightbox-Video (Zeile 370-380):** Bereits korrekt (hat `autoPlay`, kein `poster=""`). Nur `loop` hinzufuegen fuer konsistente UX.
 
-// NEU:
-toast({ title: 'Registrierung erfolgreich!',
-  description: 'Bitte pruefe deinen Posteingang und bestaetige deine E-Mail-Adresse.'
-});
-setActiveTab('login');
-setIsSubmitting(false);
-```
+## Zusammenfassung
 
-## Was sich NICHT aendert
-- Login-Flow bleibt gleich
-- Passwort-Reset bleibt gleich
-- Rotation, SEO, Admin, Subscription -- alles unveraendert
+4 Dateien werden angepasst:
+1. `src/hooks/useRotationKey.ts` -- 10 auf 30 Min
+2. `src/lib/profileUtils.ts` -- keine Aenderung (bereits 30 Min)
+3. `src/components/admin/RotationDebugTool.tsx` -- 10 auf 30 Min
+4. `src/pages/Profil.tsx` -- Video-Fix fuer iOS Safari
 
