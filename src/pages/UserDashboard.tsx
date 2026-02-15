@@ -150,6 +150,25 @@ const UserDashboard = () => {
       if (profileError) throw profileError;
 
       if (profileData) {
+        // Expiry-Check: abgelaufene Profile auf inactive setzen
+        const isExpired = profileData.status === 'active' && (
+          (profileData.listing_type === 'top' && profileData.top_ad_until && new Date(profileData.top_ad_until) < new Date()) ||
+          (profileData.listing_type !== 'top' && profileData.premium_until && new Date(profileData.premium_until) < new Date())
+        );
+
+        if (isExpired) {
+          await supabase
+            .from('profiles')
+            .update({ status: 'inactive' })
+            .eq('id', profileData.id);
+          profileData.status = 'inactive';
+          toast({
+            title: 'Inserat abgelaufen',
+            description: 'Dein Inserat ist abgelaufen. Verlängere es, um wieder sichtbar zu sein.',
+            variant: 'destructive',
+          });
+        }
+
         setProfile(profileData);
 
         const { data: photosData, error: photosError } = await supabase
