@@ -1,45 +1,87 @@
 
 
-# 2 Bugfixes: Verifizierungs-Duplikate + PaymentModal Props
+# Fix: E-Mail-Verifizierung + Registrierungs-Lock
 
-## Fix 1: Verifizierungs-Duplikate verhindern
+## Was wird gefixt
 
-**Problem:** Wenn ein User ein neues Verifizierungsfoto hochlaedt (z.B. nach Profil-Bearbeitung), wird ein neuer Eintrag in `verification_submissions` erstellt ohne den alten zu loeschen. Im Admin-Dashboard erscheinen dann mehrere Eintraege fuer dasselbe Profil.
+**Problem 1:** User werden bei Registrierung sofort bestaetigt und koennen mit Fake-E-Mails Profil erstellen.
 
-**Loesung:** In `VerificationUploader.tsx` vor dem INSERT:
-1. Alle bestehenden `pending`-Submissions fuer dieses Profil aus der DB laden
-2. Deren Storage-Dateien aus dem `verification-photos` Bucket loeschen
-3. Die DB-Eintraege loeschen
-4. Erst dann den neuen INSERT + Upload durchfuehren
+**Problem 2:** RESEND_API_KEY Secret-Name ist jetzt korrekt konfiguriert -- E-Mails sollten funktionieren.
 
-So existiert immer nur 1 aktive Verifizierungs-Submission pro Profil.
+## Aenderungen
 
-**Datei:** `src/components/profile/VerificationUploader.tsx` (Zeilen 48-69 erweitern)
+### 1. `supabase/functions/auth-signup/index.ts`
+- `email_confirm` von `true` auf `false` aendern
+- Nach User-Erstellung: `send-auth-email` aufrufen um Bestaetigungs-Mail zu senden
+- Antwort aendern auf `{ success: true, requires_confirmation: true }`
 
-## Fix 2: PaymentMethodModal in ProfileUpgrade mit Paket-Info
+### 2. `src/pages/Auth.tsx` (Zeilen 205-239)
+- Auto-Login nach Signup entfernen (`signIn(email, password)` + `navigate`)
+- Stattdessen: Toast "Pruefe deinen Posteingang und bestaetige deine E-Mail-Adresse"
+- Tab auf "login" zuruecksetzen
+- Kein Redirect mehr nach Signup
 
-**Problem:** In `ProfileUpgrade.tsx` wird das `PaymentMethodModal` ohne `listingType` und `amount` Props aufgerufen. Der User sieht im Zahlungs-Dialog nicht welches Paket er bezahlt.
-
-**Loesung:** Die fehlenden Props ergaenzen:
+## Ablauf nach dem Fix
 
 ```text
-<PaymentMethodModal
-  isOpen={showPaymentModal}
-  onClose={() => setShowPaymentModal(false)}
-  onSelectMethod={handlePaymentMethodSelect}
-  listingType={selectedListingType || undefined}
-  amount={selectedListingType ? getAmountForListingType(selectedListingType) : undefined}
-/>
+User registriert sich
+    |
+    v
+Edge Function erstellt User (email_confirm: false)
+    |
+    v
+Bestaetigungs-Mail wird via Resend gesendet
+    |
+    v
+Frontend zeigt: "Pruefe deinen Posteingang"
+    |
+    v
+User klickt Link in Mail --> E-Mail bestaetigt
+    |
+    v
+User kann sich einloggen --> Zugang zu /profil/erstellen
 ```
 
-**Datei:** `src/pages/ProfileUpgrade.tsx` (Zeilen 377-381)
+## Sicherheit
 
-## Betroffene Dateien
+- Ohne E-Mail-Bestaetigung kein Login moeglich
+- Login-Fehler "Email not confirmed" ist bereits in Auth.tsx (Zeile 116) abgefangen
+- `/profil/erstellen` bleibt durch `UserProtectedRoute` geschuetzt
+- Bestehende User sind nicht betroffen (bereits bestaetigt)
 
-- `src/components/profile/VerificationUploader.tsx` - Alte Submissions loeschen vor neuem Upload
-- `src/pages/ProfileUpgrade.tsx` - Props an PaymentMethodModal uebergeben
+## Technische Details
 
-## Risiko
+### auth-signup Aenderung
+```text
+// VORHER:
+email_confirm: true
 
-Minimal. Keine DB-Migration noetig. Keine Aenderung an bestehender Business-Logik.
+// NACHHER:
+email_confirm: false
+
+// NEU: Nach Erstellung Mail senden
+await fetch(`${SUPABASE_URL}/functions/v1/send-auth-email`, {
+  method: "POST",
+  headers: { "Authorization": `Bearer ${SERVICE_ROLE_KEY}` },
+  body: JSON.stringify({ type: "signup_confirmation", email })
+});
+```
+
+### Auth.tsx Aenderung (Zeilen 205-239)
+```text
+// ENTFERNEN:
+signIn(email, password) + navigate('/profil/erstellen')
+
+// NEU:
+toast({ title: 'Registrierung erfolgreich!',
+  description: 'Bitte pruefe deinen Posteingang und bestaetige deine E-Mail-Adresse.'
+});
+setActiveTab('login');
+setIsSubmitting(false);
+```
+
+## Was sich NICHT aendert
+- Login-Flow bleibt gleich
+- Passwort-Reset bleibt gleich
+- Rotation, SEO, Admin, Subscription -- alles unveraendert
 
