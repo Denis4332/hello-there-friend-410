@@ -82,9 +82,8 @@ Deno.serve(async (req) => {
 
     // Fetch all active profiles with slugs
     const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
+      .from('public_profiles')
       .select('slug, updated_at')
-      .eq('status', 'active')
       .order('updated_at', { ascending: false });
 
     if (profilesError) {
@@ -106,9 +105,8 @@ Deno.serve(async (req) => {
 
     // Fetch all distinct cities with active profiles
     const { data: cities, error: citiesError } = await supabase
-      .from('profiles')
-      .select('city')
-      .eq('status', 'active');
+      .from('public_profiles')
+      .select('city');
 
     if (citiesError) {
       console.error('Error fetching cities:', citiesError);

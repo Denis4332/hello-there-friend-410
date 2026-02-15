@@ -352,9 +352,8 @@ export const useTopCities = (limit: number = 4) => {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('city, canton')
-        .eq('status', 'active');
+        .from('public_profiles')
+        .select('city, canton');
       
       if (error) throw error;
       if (!data) return [];
@@ -390,9 +389,8 @@ export const useAllCities = () => {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('city, canton')
-        .eq('status', 'active');
+        .from('public_profiles')
+        .select('city, canton');
       
       if (error) throw error;
       if (!data) return [];
