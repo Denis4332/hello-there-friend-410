@@ -1,65 +1,65 @@
 
-# Analyse: Offene Probleme und Verbesserungen
+# Admin-Dashboard: Ablaufdaten + kleine Fixes
 
-## Gefundene Probleme
+## Status aller bisherigen Fixes
 
-### 1. KRITISCH: 30 aktive Basic-Profile ohne Zahlung
-In der Datenbank befinden sich **30 aktive Profile** mit `listing_type = 'basic'` und `payment_status = 'pending'` -- also aktiv geschaltet, aber nie bezahlt und ohne Ablaufdatum (`premium_until = NULL`). Diese Profile haben keinen Ablaufmechanismus und bleiben ewig aktiv. Das muss bereinigt werden -- entweder auf `free` setzen (falls gewollt) oder deaktivieren.
+Alle 6 Fixes aus dem vorherigen Plan sind korrekt umgesetzt:
+- [x] Admin-Filter: `inactive` und `draft` hinzugefuegt
+- [x] UserDashboard: Inaktiv-Banner hinzugefuegt
+- [x] UserDashboard: Gratis-Profile korrekt behandelt (`paid || free`)
+- [x] RotationDebugTool: Intervall auf 10 Min korrigiert
+- [x] Admin Gratis-Aktivierung: Basic bekommt jetzt auch `premium_until`
+- [x] Datenbereinigung: 30 Basic-Profile auf `payment_status = 'free'` gesetzt
 
-### 2. Admin-Filter: "Inaktiv" fehlt
-Im Admin-Profil-Filter (`AdminProfile.tsx`, Zeile 828-832) fehlt die Option `inactive`. Der Admin kann abgelaufene/inaktive Profile nur ueber "Alle" finden. Ein eigener Filter `<option value="inactive">Inaktiv</option>` wird benoetigt.
+**Noch offen:** Kommentar in RotationDebugTool Zeile 21 sagt noch "30 minutes" statt "10 minutes" -- kleiner Textfehler
 
-### 3. Admin-Filter: "Draft" fehlt
-Es gibt auch keinen Filter fuer Draft-Profile. Falls ein Nutzer ein Profil begonnen aber nicht abgeschlossen hat, kann der Admin es nicht gezielt finden.
+## Neue Aenderungen
 
-### 4. Ablauf-Logik: Basic-Profile haben kein Ablaufdatum
-Im `check-subscription-expiry` Edge Function (Zeile 52-61) werden Basic-Profile anhand von `premium_until` geprueft. Aber bei der Admin-Aktivierung (Zeile 204) wird fuer Basic-Profile `premium_until` gesetzt. Das ist inkonsistent:
-- Beim Gratis-Aktivieren (Zeile 427-429): Basic bekommt **kein** `premium_until`
-- Beim normalen Aktivieren (Zeile 204-206): Basic bekommt `premium_until`
+### 1. Admin-Profiltabelle: Ablaufdatum-Spalte hinzufuegen
 
-Das bedeutet: Gratis-Basic-Profile laufen nie ab, bezahlte Basic-Profile schon. Das sollte konsistent sein.
+In `AdminProfile.tsx` wird eine neue Spalte **"Ablauf"** zwischen "Erstellt" und "Aktionen" eingefuegt:
+- Zeigt `premium_until` oder `top_ad_until` formatiert als Datum (z.B. "04.03.2026")
+- Wenn kein Ablaufdatum: Strich "-"
+- Farbkodierung:
+  - **Rot**: Laeuft in weniger als 3 Tagen ab
+  - **Orange**: Laeuft in weniger als 7 Tagen ab  
+  - **Gruen**: Mehr als 7 Tage verbleibend
+  - **Grau**: Kein Ablaufdatum oder bereits abgelaufen
 
-### 5. UserDashboard: Kein Handling fuer `inactive` Status
-Das UserDashboard zeigt fuer inaktive Profile keinen speziellen Hinweis an (z.B. "Dein Inserat ist abgelaufen"). Es gibt zwar den "Reaktivieren"-Button im Paket-Bereich, aber kein visuelles Status-Banner wie bei `pending`, `rejected` oder `active`.
+### 2. Admin-Dashboard: "Bald ablaufend" Kachel
 
-### 6. UserDashboard: `payment_status = 'free'` wird nicht erkannt
-Profile mit `payment_status = 'free'` zeigen den "Jetzt bezahlen"-Hinweis nicht an (korrekt), aber die Verlaengerungs-Logik (Zeile 476) prueft nur `payment_status === 'paid'`. Gratis-Profile, die aktiv sind, sehen weder den Verlaengerungs-Button noch den Ablauf-Hinweis.
+Eine **4. Kachel** im Dashboard hinzufuegen (gelb/amber):
+- Titel: "Bald ablaufend"
+- Zaehlt Profile mit `status = 'active'` UND Ablaufdatum innerhalb der naechsten 7 Tage
+- Klick fuehrt zu `/admin/profile?status=active` (gefiltert)
+- Zeigt Anzahl betroffener Profile
 
-### 7. RotationDebugTool: Falsche Intervall-Angabe
-Das `RotationDebugTool` (Zeile 27) berechnet den Key mit `30 * 60 * 1000` (30 Min), aber der tatsaechliche `useRotationKey` Hook (Zeile 8) nutzt `10 * 60 * 1000` (10 Min). Die Anzeige im Debug-Tool stimmt nicht mit der echten Rotation ueberein.
+### 3. RotationDebugTool: Kommentar-Fix
 
-### 8. Profil-Ansicht: Kein `is_premium`-Feld in der DB-Abfrage
-In `Profil.tsx` (Zeile 230) wird `profile.is_premium` geprueft fuer das VIP-Badge. Dieses Feld kommt aus der `public_profiles` View -- es muss sichergestellt sein, dass es dort korrekt berechnet wird (z.B. `listing_type IN ('premium', 'top')`).
-
-## Vorgeschlagene Aenderungen
-
-### Schritt 1: Admin-Filter erweitern
-In `AdminProfile.tsx` die fehlenden Status-Optionen hinzufuegen:
-- `inactive` (Inaktiv/Abgelaufen)
-- `draft` (Entwurf)
-
-### Schritt 2: UserDashboard -- Inaktiv-Banner
-Einen Status-Banner fuer `inactive` Profile hinzufuegen:
-"Dein Inserat ist abgelaufen. Reaktiviere es, um wieder sichtbar zu sein."
-
-### Schritt 3: UserDashboard -- Gratis-Profile korrekt behandeln
-Die Bedingung fuer den Verlaengerungs-Button erweitern:
-`profile.status === 'active' && (profile.payment_status === 'paid' || profile.payment_status === 'free')`
-
-### Schritt 4: RotationDebugTool korrigieren
-Den Rotation-Key-Berechnung von `30 * 60 * 1000` auf `10 * 60 * 1000` aendern, damit es mit dem echten Hook uebereinstimmt.
-
-### Schritt 5: Basic-Ablauf konsistent machen
-In der `activateFreeMutation` (AdminProfile.tsx, Zeile 427): Auch fuer Basic mit Duration ein `premium_until` setzen, damit der Ablauf-Check greift.
-
-### Schritt 6: Datenbereinigung
-SQL-Query bereitstellen, um die 30 "aktiven Basic mit pending Payment" Profile zu bereinigen -- entweder `payment_status = 'free'` setzen oder `status = 'inactive'`.
+Zeile 21: `// Current rotation key (changes every 30 minutes)` aendern zu `// Current rotation key (changes every 10 minutes)`
 
 ## Technische Details
 
-Betroffene Dateien:
-- `src/pages/admin/AdminProfile.tsx` -- Filter + Gratis-Logik
-- `src/pages/UserDashboard.tsx` -- Inaktiv-Banner + Gratis-Handling
-- `src/components/admin/RotationDebugTool.tsx` -- Intervall-Fix
-- `supabase/functions/check-subscription-expiry/index.ts` -- Bereits korrekt, aber Daten muessen konsistent sein
-- Datenbank: Bereinigung der 30 Testprofile
+### Betroffene Dateien:
+- `src/pages/admin/AdminProfile.tsx` -- Neue "Ablauf"-Spalte in Profiltabelle (Zeilen 880-955)
+- `src/pages/admin/AdminDashboard.tsx` -- Neue Kachel "Bald ablaufend" + Query-Erweiterung
+- `src/components/admin/RotationDebugTool.tsx` -- Kommentar-Fix Zeile 21
+
+### Dashboard-Query Erweiterung:
+Neue Abfrage fuer bald ablaufende Profile:
+```text
+profiles WHERE status = 'active' 
+  AND (premium_until < now() + 7 days OR top_ad_until < now() + 7 days)
+```
+
+### Ablauf-Spalte Logik:
+```text
+expiryDate = profile.premium_until || profile.top_ad_until
+daysLeft = (expiryDate - now) / (1000*60*60*24)
+
+Farbe:
+  daysLeft < 0  -> grau (abgelaufen)
+  daysLeft < 3  -> rot
+  daysLeft < 7  -> orange
+  sonst         -> gruen
+```
