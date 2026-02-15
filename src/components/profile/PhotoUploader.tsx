@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Upload, X, Image as ImageIcon, Star, Video, Play, Loader2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToastMessages } from '@/hooks/useToastMessages';
@@ -24,15 +24,13 @@ interface MediaPreview {
 
 // Tiered limits based on listing type
 const MEDIA_LIMITS = {
-  basic: { photos: 5, videos: 0 },
-  premium: { photos: 10, videos: 1 },
-  top: { photos: 15, videos: 2 },
+  basic: { photos: 5 },
+  premium: { photos: 10 },
+  top: { photos: 15 },
 };
 
 const MAX_PHOTO_SIZE_MB = 10;
-const MAX_VIDEO_SIZE_MB = 50;
 const ALLOWED_PHOTO_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
-const ALLOWED_VIDEO_FORMATS = ['video/mp4', 'video/webm'];
 
 export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUploadComplete, onSetPrimary, currentPrimaryId }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
@@ -46,7 +44,6 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
   
   const limits = MEDIA_LIMITS[listingType];
   const photoCount = previews.filter(p => p.mediaType === 'image').length;
-  const videoCount = previews.filter(p => p.mediaType === 'video').length;
 
   // Check if there's already a primary in DB
   const hasDbPrimary = Boolean(currentPrimaryId);
@@ -103,43 +100,33 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [uploading]);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    const maxSize = type === 'image' ? MAX_PHOTO_SIZE_MB : MAX_VIDEO_SIZE_MB;
-    const allowedFormats = type === 'image' ? ALLOWED_PHOTO_FORMATS : ALLOWED_VIDEO_FORMATS;
-    const currentCount = type === 'image' ? photoCount : videoCount;
-    const maxCount = type === 'image' ? limits.photos : limits.videos;
-
     // Check count limit
-    if (currentCount + files.length > maxCount) {
-      showCustomError(`Maximal ${maxCount} ${type === 'image' ? 'Fotos' : 'Videos'} erlaubt (${listingType.toUpperCase()})`);
+    if (photoCount + files.length > limits.photos) {
+      showCustomError(`Maximal ${limits.photos} Fotos erlaubt (${listingType.toUpperCase()})`);
       return;
     }
 
     // Validate and compress each file
     const validFiles: File[] = [];
     for (const file of Array.from(files)) {
-      if (file.size > maxSize * 1024 * 1024) {
-        showCustomError(`${file.name} ist zu groß (max. ${maxSize}MB). ${type === 'image' ? 'Tipp: Verkleinere das Bild mit einem Online-Tool wie tinypng.com' : ''}`);
+      if (file.size > MAX_PHOTO_SIZE_MB * 1024 * 1024) {
+        showCustomError(`${file.name} ist zu groß (max. ${MAX_PHOTO_SIZE_MB}MB). Tipp: Verkleinere das Bild mit einem Online-Tool wie tinypng.com`);
         continue;
       }
-      if (!allowedFormats.includes(file.type)) {
-        showCustomError(`${file.name} ist kein erlaubtes ${type === 'image' ? 'Bildformat (JPEG, PNG, WebP)' : 'Videoformat (MP4, WebM)'}`);
+      if (!ALLOWED_PHOTO_FORMATS.includes(file.type)) {
+        showCustomError(`${file.name} ist kein erlaubtes Bildformat (JPEG, PNG, WebP)`);
         continue;
       }
       
-      // Compress images before adding to previews
-      if (type === 'image') {
-        try {
-          const compressedFile = await compressImage(file);
-          validFiles.push(compressedFile);
-        } catch (err) {
-          console.error('Compression failed, using original:', err);
-          validFiles.push(file);
-        }
-      } else {
+      try {
+        const compressedFile = await compressImage(file);
+        validFiles.push(compressedFile);
+      } catch (err) {
+        console.error('Compression failed, using original:', err);
         validFiles.push(file);
       }
     }
@@ -151,7 +138,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       url: URL.createObjectURL(file),
       file,
       uploaded: false,
-      mediaType: type,
+      mediaType: 'image',
     }));
     
     setPreviews(prev => [...prev, ...newPreviews]);
@@ -387,7 +374,6 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
 
   const hasUnuploadedFiles = previews.some(p => !p.uploaded && p.file);
   const imagePreviews = previews.filter(p => p.mediaType === 'image');
-  const videoPreviews = previews.filter(p => p.mediaType === 'video');
 
   return (
     <div className="space-y-6 relative">
@@ -448,7 +434,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
             className="hidden"
             accept="image/jpeg,image/png,image/webp"
             multiple
-            onChange={(e) => handleFileSelect(e, 'image')}
+            onChange={(e) => handleFileSelect(e)}
             disabled={uploading || photoCount >= limits.photos}
           />
         </label>
@@ -525,79 +511,6 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
           </div>
         )}
       </div>
-
-      {/* Video Upload Section - Only show if allowed */}
-      {limits.videos > 0 && (
-        <div className="space-y-4 border-t pt-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Video className="h-5 w-5" />
-              Videos ({videoCount}/{limits.videos})
-            </h3>
-          </div>
-          
-          <label
-            htmlFor="video-upload"
-            className={cn(
-              "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors border-amber-500/50",
-              videoCount >= limits.videos && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <Video className="w-8 h-8 mb-2 text-amber-500" />
-              <p className="text-sm text-muted-foreground">
-                {uploading ? 'Wird hochgeladen...' : 'Video auswählen'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Max. {limits.videos} Video{limits.videos > 1 ? 's' : ''}, je max. {MAX_VIDEO_SIZE_MB}MB (MP4, WebM)
-              </p>
-            </div>
-            <input
-              id="video-upload"
-              type="file"
-              className="hidden"
-              accept="video/mp4,video/webm"
-              onChange={(e) => handleFileSelect(e, 'video')}
-              disabled={uploading || videoCount >= limits.videos}
-            />
-          </label>
-
-          {videoPreviews.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {previews.map((preview, index) => preview.mediaType === 'video' && (
-                <div key={index} className="relative group">
-                  <div className="relative w-full h-32 bg-black rounded-lg overflow-hidden">
-                    <video
-                      src={preview.url}
-                      className="w-full h-full object-cover"
-                      muted
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                      <Play className="w-10 h-10 text-white" />
-                    </div>
-                  </div>
-
-                  {/* Remove button */}
-                  <button
-                    type="button"
-                    onClick={() => removePreview(index)}
-                    className="absolute top-2 right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-
-                  {/* Upload status indicator */}
-                  {preview.uploaded && (
-                    <div className="absolute bottom-2 right-2 px-2 py-1 bg-green-600 text-white text-xs rounded">
-                      ✓
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Upload button */}
       {hasUnuploadedFiles && (

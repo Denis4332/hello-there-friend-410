@@ -9,13 +9,13 @@ import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { VerificationUploader } from '@/components/profile/VerificationUploader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Trash2, Star, Play, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, Star, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 // Media limits per listing type
 const MEDIA_LIMITS = {
-  basic: { photos: 5, videos: 0 },
-  premium: { photos: 10, videos: 1 },
-  top: { photos: 15, videos: 2 },
+  basic: { photos: 5 },
+  premium: { photos: 10 },
+  top: { photos: 15 },
 };
 
 const ProfileEdit = () => {
@@ -385,7 +385,6 @@ const ProfileEdit = () => {
   const listingType = (profile.listing_type as 'basic' | 'premium' | 'top') || 'basic';
   const currentLimits = MEDIA_LIMITS[listingType];
   const imagePhotos = photos.filter(p => !p.media_type || p.media_type === 'image');
-  const videoPhotos = photos.filter(p => p.media_type === 'video');
 
   const defaultValues: ProfileFormData = {
     display_name: profile.display_name,
@@ -492,7 +491,7 @@ const ProfileEdit = () => {
                 <CardHeader>
                   <CardTitle>Medien-Verwaltung</CardTitle>
                   <CardDescription>
-                    Lade Fotos und Videos hoch ({listingType.toUpperCase()} Paket)
+                    Lade Fotos hoch ({listingType.toUpperCase()} Paket)
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -522,52 +521,30 @@ const ProfileEdit = () => {
                   <div>
                     <h3 className="text-sm font-medium mb-3">
                       📷 Fotos ({imagePhotos.length}/{currentLimits.photos})
-                      {currentLimits.videos > 0 && (
-                        <span className="ml-2">| 🎬 Videos ({videoPhotos.length}/{currentLimits.videos})</span>
-                      )}
                     </h3>
 
                     <div className="grid grid-cols-2 gap-4">
                       {photos.map((photo) => {
-                        const isVideo = photo.media_type === 'video';
                         const cacheKey = photo.id + (photo.is_primary ? '-primary' : '');
                         
                         return (
                           <div key={photo.id} className="relative group">
                             <div className="aspect-square rounded-md overflow-hidden border">
-                              {isVideo ? (
-                                <div className="relative w-full h-full">
-                                  <video
-                                    src={getPublicUrl(photo.storage_path, cacheKey)}
-                                    className="w-full h-full object-cover"
-                                    preload="metadata"
-                                  />
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                    <Play className="h-12 w-12 text-white fill-white/80" />
-                                  </div>
-                                </div>
-                              ) : (
-                                <img
-                                  src={getPublicUrl(photo.storage_path, cacheKey)}
-                                  alt="Profil Foto"
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                              )}
+                              <img
+                                src={getPublicUrl(photo.storage_path, cacheKey)}
+                                alt="Profil Foto"
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
                             </div>
                             {photo.is_primary && (
                               <div className="absolute top-2 right-2">
                                 <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
                               </div>
                             )}
-                            {isVideo && (
-                              <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                                🎬 Video
-                              </div>
-                            )}
                             <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {!photo.is_primary && !isVideo && (
+                              {!photo.is_primary && (
                                 <Button
                                   size="sm"
                                   variant="secondary"
@@ -585,9 +562,9 @@ const ProfileEdit = () => {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>{isVideo ? 'Video' : 'Foto'} löschen?</AlertDialogTitle>
+                                    <AlertDialogTitle>Foto löschen?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      {isVideo ? 'Dieses Video' : 'Dieses Foto'} wird dauerhaft entfernt.
+                                      Dieses Foto wird dauerhaft entfernt.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>

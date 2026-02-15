@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import VideoPlayer from '@/components/VideoPlayer';
+
 import { useProfileBySlug } from '@/hooks/useProfiles';
 import { useProfileContacts } from '@/hooks/useProfileContacts';
 import { useCreateReport } from '@/hooks/useReports';
@@ -50,22 +50,13 @@ const Profil = () => {
   const reportButton = getSetting('profile_report_button', 'Melden');
   const reportDialogTitle = getSetting('profile_report_dialog_title', 'Profil melden');
   
-  // Get all photos and videos with direct URLs (transforms require Supabase Pro plan)
+  // Get all photos with direct URLs
   const photos = profile?.photos || [];
   const mediaItems = photos.map((p) => {
-    const isVideo = (p as any).media_type === 'video';
     const baseUrl = supabase.storage.from('profile-photos').getPublicUrl(p.storage_path).data.publicUrl;
-    
-    // OPTIMIERT: Carousel 800px (schnell), Lightbox 1920px (hohe Qualität)
-    // Videos bleiben unverändert
-    const carouselUrl = isVideo ? baseUrl : `${baseUrl}?width=800&quality=70`;
-    const lightboxUrl = isVideo ? baseUrl : `${baseUrl}?width=1920&quality=80`;
-    
     return {
-      url: carouselUrl,       // ← Carousel: kleinere Bilder = schnelleres Laden
-      originalUrl: lightboxUrl, // Lightbox: hohe Qualität beim Zoomen
-      mediaType: (p as any).media_type || 'image',
-      isVideo,
+      url: `${baseUrl}?width=800&quality=70`,
+      originalUrl: `${baseUrl}?width=1920&quality=80`,
     };
   });
   const photoUrls = mediaItems.map(m => m.url);
@@ -170,22 +161,15 @@ const Profil = () => {
                       {mediaItems.map((item, index: number) => (
                         <CarouselItem key={index}>
                           <div className="relative aspect-[3/4] bg-black">
-                            {item.isVideo ? (
-                              <VideoPlayer
-                                src={item.url}
-                                className="w-full h-full object-contain bg-black"
-                              />
-                            ) : (
-                              <img
-                                src={item.url}
-                                alt={`${profile.display_name} - Foto ${index + 1}`}
-                                className="w-full h-full object-cover cursor-pointer"
-                                loading={index === 0 ? 'eager' : 'lazy'}
-                                decoding={index === 0 ? 'sync' : 'async'}
-                                fetchPriority={index === 0 ? 'high' : undefined}
-                                onClick={() => openLightbox(index)}
-                              />
-                            )}
+                            <img
+                              src={item.url}
+                              alt={`${profile.display_name} - Foto ${index + 1}`}
+                              className="w-full h-full object-cover cursor-pointer"
+                              loading={index === 0 ? 'eager' : 'lazy'}
+                              decoding={index === 0 ? 'sync' : 'async'}
+                              fetchPriority={index === 0 ? 'high' : undefined}
+                              onClick={() => openLightbox(index)}
+                            />
                           </div>
                         </CarouselItem>
                       ))}
@@ -359,21 +343,14 @@ const Profil = () => {
               <X className="h-6 w-6" />
             </button>
             
-            {/* Current Media - use original URL for full quality in lightbox */}
-            {mediaItems[lightboxIndex]?.isVideo ? (
-              <VideoPlayer
-                src={mediaItems[lightboxIndex]?.originalUrl}
-                className="max-w-full max-h-full object-contain"
-              />
-            ) : (
-              <img
-                src={mediaItems[lightboxIndex]?.originalUrl}
-                alt={`${profile.display_name} - Foto ${lightboxIndex + 1}`}
-                className="max-w-full max-h-full object-contain"
-                loading="eager"
-                decoding="async"
-              />
-            )}
+            {/* Current photo - full quality in lightbox */}
+            <img
+              src={mediaItems[lightboxIndex]?.originalUrl}
+              alt={`${profile.display_name} - Foto ${lightboxIndex + 1}`}
+              className="max-w-full max-h-full object-contain"
+              loading="eager"
+              decoding="async"
+            />
             
             {/* Navigation Buttons */}
             {mediaItems.length > 1 && (
