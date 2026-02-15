@@ -384,6 +384,16 @@ const UserDashboard = () => {
               </Card>
             )}
 
+            {profile.status === 'inactive' && (
+              <Card className="mb-6 border-orange-500/50 bg-orange-500/5">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-orange-700 dark:text-orange-400">
+                    ⏰ Dein Inserat ist abgelaufen. Reaktiviere es, um wieder sichtbar zu sein.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {profile.status === 'active' && (
               <Card className="mb-6 border-green-500/50 bg-green-500/5">
                 <CardContent className="pt-6 flex items-center justify-between flex-wrap gap-3">
@@ -472,8 +482,8 @@ const UserDashboard = () => {
                     </Button>
                   )}
 
-                  {/* Wenn AKTIV + BEZAHLT: Nur Verlängern anbieten (kein Upgrade/Downgrade) */}
-                  {profile.status === 'active' && profile.payment_status === 'paid' && (
+                  {/* Wenn AKTIV + BEZAHLT oder GRATIS: Nur Verlängern anbieten */}
+                  {profile.status === 'active' && (profile.payment_status === 'paid' || profile.payment_status === 'free') && (
                     <Button 
                       onClick={() => navigate('/user/upgrade')} 
                       variant="outline"
@@ -483,8 +493,8 @@ const UserDashboard = () => {
                     </Button>
                   )}
 
-                  {/* Wenn AKTIV + BEZAHLT: Info über Paketwechsel nach Ablauf */}
-                  {profile.status === 'active' && profile.payment_status === 'paid' && (
+                  {/* Wenn AKTIV + BEZAHLT/GRATIS: Info über Paketwechsel nach Ablauf */}
+                  {profile.status === 'active' && (profile.payment_status === 'paid' || profile.payment_status === 'free') && (profile.premium_until || profile.top_ad_until) && (
                     <p className="text-xs text-muted-foreground text-center mt-2">
                       Nach Ablauf am{' '}
                       {new Date(profile.premium_until || profile.top_ad_until || '').toLocaleDateString('de-CH')}{' '}

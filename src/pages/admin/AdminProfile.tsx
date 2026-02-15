@@ -417,12 +417,13 @@ const AdminProfile = () => {
         const expiryDate = new Date();
         expiryDate.setDate(expiryDate.getDate() + data.durationDays);
         
-        if (data.listingType === 'premium') {
-          updates.premium_until = expiryDate.toISOString();
-          updates.top_ad_until = null;
-        } else if (data.listingType === 'top') {
+        if (data.listingType === 'top') {
           updates.top_ad_until = expiryDate.toISOString();
           updates.premium_until = null;
+        } else {
+          // Both basic and premium use premium_until
+          updates.premium_until = expiryDate.toISOString();
+          updates.top_ad_until = null;
         }
       } else {
         updates.premium_until = null;
@@ -829,6 +830,8 @@ const AdminProfile = () => {
                       <option value="">Alle</option>
                       <option value="pending">Pending</option>
                       <option value="active">Aktiv</option>
+                      <option value="inactive">Inaktiv</option>
+                      <option value="draft">Entwurf</option>
                       <option value="rejected">Abgelehnt</option>
                     </select>
                   </div>
