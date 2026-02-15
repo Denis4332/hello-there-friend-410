@@ -887,6 +887,7 @@ const AdminProfile = () => {
                       <th className="text-left p-3 text-sm font-medium">Zahlung</th>
                       <th className="text-left p-3 text-sm font-medium">Verifiziert</th>
                       <th className="text-left p-3 text-sm font-medium">Erstellt</th>
+                      <th className="text-left p-3 text-sm font-medium">Ablauf</th>
                       <th className="text-left p-3 text-sm font-medium">Aktionen</th>
                     </tr>
                   </thead>
@@ -952,6 +953,22 @@ const AdminProfile = () => {
                       </td>
                       <td className="p-3 text-sm">
                         {new Date(profile.created_at).toLocaleDateString('de-CH')}
+                      </td>
+                      <td className="p-3 text-sm">
+                        {(() => {
+                          const expiryDate = profile.premium_until || profile.top_ad_until;
+                          if (!expiryDate) return <span className="text-muted-foreground">-</span>;
+                          const expiry = new Date(expiryDate);
+                          const now = new Date();
+                          const daysLeft = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                          const formatted = expiry.toLocaleDateString('de-CH');
+                          const colorClass = daysLeft < 0 ? 'text-muted-foreground' : daysLeft < 3 ? 'text-red-600 font-semibold' : daysLeft < 7 ? 'text-orange-500 font-medium' : 'text-green-600';
+                          return (
+                            <span className={colorClass} title={`${Math.ceil(daysLeft)} Tage verbleibend`}>
+                              {formatted}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="p-3">
                         <div className="flex gap-1">

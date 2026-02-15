@@ -18,7 +18,7 @@ interface RotationDebugToolProps {
 export const RotationDebugTool = ({ profiles }: RotationDebugToolProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Current rotation key (changes every 30 minutes)
+  // Current rotation key (changes every 10 minutes)
   const currentRotationKey = useMemo(() => {
     return Math.floor(Date.now() / (10 * 60 * 1000));
   }, []);
