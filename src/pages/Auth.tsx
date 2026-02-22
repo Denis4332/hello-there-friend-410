@@ -16,6 +16,7 @@ import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
 import { useToast } from '@/hooks/use-toast';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
+import { MailCheck } from 'lucide-react';
 
 
 const authSchema = z.object({
@@ -42,6 +43,8 @@ const Auth = () => {
   const [agbAccepted, setAgbAccepted] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
 
   const seoTitle = getSetting('seo_auth_title');
   const seoDescription = getSetting('seo_auth_description');
@@ -57,15 +60,11 @@ const Auth = () => {
   const loadingSignup = getSetting('auth_loading_signup');
   const allowSelfRegistration = getSetting('config_allow_self_registration');
   
-  // Check if registration is enabled (default: true)
   const isRegistrationEnabled = allowSelfRegistration !== 'false';
-  
-  // Get redirect target from query params - default to /mein-profil for logged-in users
   const nextPath = searchParams.get('next') || '/mein-profil';
 
   useEffect(() => {
     if (user) {
-      // Redirect to next path if specified, otherwise home
       navigate(nextPath, { replace: true });
     }
   }, [user, navigate, nextPath]);
@@ -106,13 +105,12 @@ const Auth = () => {
     setIsSubmitting(true);
     const { error } = await signIn(email, password);
     
-    // Record attempt
-    await recordAttempt(email, 'login', !error);
+    // Fire-and-forget: don't await recordAttempt
+    recordAttempt(email, 'login', !error);
     
     setIsSubmitting(false);
 
     if (error) {
-      // Check if it's an email not confirmed error
       if (error.message?.includes('Email not confirmed') || error.message?.includes('email_not_confirmed')) {
         toast({
           title: 'E-Mail nicht bestätigt',
@@ -124,7 +122,6 @@ const Auth = () => {
     }
 
     if (!error) {
-      // Prefetch dashboard data in background for faster /mein-profil load
       const doPrefetch = () => {
         queryClient.prefetchQuery({
           queryKey: ['profile-own'],
@@ -144,7 +141,6 @@ const Auth = () => {
       if ('requestIdleCallback' in window) {
         requestIdleCallback(doPrefetch, { timeout: 100 });
       } else {
-        // Fallback for Safari < 16.4 and other browsers
         setTimeout(doPrefetch, 0);
       }
       navigate(nextPath, { replace: true });
@@ -155,7 +151,6 @@ const Auth = () => {
     e.preventDefault();
     if (!validate()) return;
 
-    // Check AGB acceptance
     if (!agbAccepted) {
       toast({
         title: 'AGB nicht akzeptiert',
@@ -165,43 +160,49 @@ const Auth = () => {
       return;
     }
 
-    // Check if password is leaked
-    try {
-      const { data: leakCheck, error: leakError } = await supabase.functions.invoke('check-leaked-password', {
-        body: { password }
-      });
+    setIsSubmitting(true);
 
-      if (!leakError && leakCheck?.isLeaked) {
+    // Run leaked-password check and rate-limit check in parallel
+    try {
+      const [leakResult, rateLimitCheck] = await Promise.all([
+        supabase.functions.invoke('check-leaked-password', { body: { password } }).catch(err => {
+          console.error('Leaked password check failed:', err);
+          return { data: null, error: err };
+        }),
+        checkRateLimit(email, 'signup'),
+      ]);
+
+      // Check rate limit result
+      if (!rateLimitCheck.allowed) {
         toast({
-          title: 'Unsicheres Passwort',
-          description: `Dieses Passwort wurde in ${leakCheck.count.toLocaleString()} Datenlecks gefunden. Bitte wähle ein anderes Passwort.`,
+          title: 'Zu viele Versuche',
+          description: rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
           variant: 'destructive',
         });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Check leaked password result
+      if (leakResult.data && !leakResult.error && leakResult.data.isLeaked) {
+        toast({
+          title: 'Unsicheres Passwort',
+          description: `Dieses Passwort wurde in ${leakResult.data.count.toLocaleString()} Datenlecks gefunden. Bitte wähle ein anderes Passwort.`,
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
         return;
       }
     } catch (err) {
-      console.error('Leaked password check failed:', err);
-      // Continue with signup if check fails
+      console.error('Pre-signup checks failed:', err);
+      // Continue with signup if checks fail
     }
 
-    // Check rate limit
-    const rateLimitCheck = await checkRateLimit(email, 'signup');
-    if (!rateLimitCheck.allowed) {
-      toast({
-        title: 'Zu viele Versuche',
-        description: rateLimitCheck.message || 'Bitte versuchen Sie es später erneut.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
     const { error } = await signUp(email, password);
     
-    // Record attempt
-    await recordAttempt(email, 'signup', !error);
+    // Fire-and-forget: don't await recordAttempt
+    recordAttempt(email, 'signup', !error);
 
-    // Record AGB acceptance if signup successful
     if (!error) {
       try {
         await recordAgbAcceptance({
@@ -211,21 +212,25 @@ const Auth = () => {
         });
       } catch (agbError) {
         console.error('Failed to record AGB acceptance:', agbError);
-        // Continue anyway - user is already registered
       }
       
-      // Email verification required - show message and switch to login tab
-      console.log('[Auth] Signup successful, email verification required');
-      toast({
-        title: 'Registrierung erfolgreich!',
-        description: 'Bitte prüfe deinen Posteingang und bestätige deine E-Mail-Adresse.',
-      });
-      setActiveTab('login');
+      // Show confirmation screen instead of just a toast
+      setConfirmationEmail(email);
+      setShowConfirmation(true);
       setIsSubmitting(false);
       return;
     }
     
     setIsSubmitting(false);
+  };
+
+  const handleBackToLogin = () => {
+    setShowConfirmation(false);
+    setConfirmationEmail('');
+    setEmail('');
+    setPassword('');
+    setAgbAccepted(false);
+    setActiveTab('login');
   };
 
   return (
@@ -238,127 +243,151 @@ const Auth = () => {
       <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md">
           <div className="bg-card border rounded-lg p-8">
-            <h1 className="text-2xl font-bold text-center mb-6">
-              {welcomeTitle || 'Willkommen bei ESCORIA'}
-            </h1>
+            {showConfirmation ? (
+              <div className="text-center space-y-6 py-4">
+                <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                  <MailCheck className="w-8 h-8 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold">Prüfe deinen Posteingang</h2>
+                  <p className="text-muted-foreground">
+                    Wir haben eine E-Mail an{' '}
+                    <span className="font-semibold text-foreground">{confirmationEmail}</span>{' '}
+                    gesendet. Klicke auf den Link in der E-Mail, um dein Konto zu aktivieren.
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Keine E-Mail erhalten? Prüfe deinen Spam-Ordner.
+                </p>
+                <Button onClick={handleBackToLogin} className="w-full">
+                  Zum Login
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold text-center mb-6">
+                  {welcomeTitle || 'Willkommen bei ESCORIA'}
+                </h1>
 
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
-              <TabsList className={`grid w-full mb-6 ${isRegistrationEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                <TabsTrigger value="login">{loginTitle || 'Anmelden'}</TabsTrigger>
-                {isRegistrationEnabled && (
-                  <TabsTrigger value="signup">{registerTitle || 'Registrieren'}</TabsTrigger>
-                )}
-              </TabsList>
-
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <Label htmlFor="login-email">{emailLabel || 'E-Mail'}</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="deine@email.ch"
-                    />
-                    {errors.email && (
-                      <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
+                  <TabsList className={`grid w-full mb-6 ${isRegistrationEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                    <TabsTrigger value="login">{loginTitle || 'Anmelden'}</TabsTrigger>
+                    {isRegistrationEnabled && (
+                      <TabsTrigger value="signup">{registerTitle || 'Registrieren'}</TabsTrigger>
                     )}
-                  </div>
+                  </TabsList>
 
-                  <div>
-                    <Label htmlFor="login-password">{passwordLabel || 'Passwort'}</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                    />
-                    {errors.password && (
-                      <p className="text-sm text-destructive mt-1">{errors.password}</p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end">
-                    <ForgotPasswordDialog />
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (loadingLogin || 'Wird angemeldet...') : (loginButton || 'Anmelden')}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              {isRegistrationEnabled && (
-                <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div>
-                      <Label htmlFor="signup-email">{emailLabel || 'E-Mail'}</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="deine@email.ch"
-                      />
-                      {errors.email && (
-                        <p className="text-sm text-destructive mt-1">{errors.email}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="signup-password">{passwordLabel || 'Passwort'}</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                      />
-                      {errors.password && (
-                        <p className="text-sm text-destructive mt-1">{errors.password}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {passwordHint || 'Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen'}
-                      </p>
-                    </div>
-
-                    {/* AGB Checkbox */}
-                    <div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border">
-                      <Checkbox
-                        id="agb-acceptance"
-                        checked={agbAccepted}
-                        onCheckedChange={(checked) => setAgbAccepted(checked === true)}
-                        className="mt-0.5"
-                      />
-                      <div className="grid gap-1.5 leading-none">
-                        <label
-                          htmlFor="agb-acceptance"
-                          className="text-sm font-medium leading-snug cursor-pointer"
-                        >
-                          Ich akzeptiere die AGB und Datenschutzbestimmungen *
-                        </label>
-                        <p className="text-xs text-muted-foreground">
-                          Mit der Registrierung akzeptierst du unsere{' '}
-                          <Link to="/agb" className="text-primary underline hover:no-underline" target="_blank">
-                            AGB
-                          </Link>{' '}
-                          und{' '}
-                          <Link to="/datenschutz" className="text-primary underline hover:no-underline" target="_blank">
-                            Datenschutzbestimmungen
-                          </Link>.
-                        </p>
+                  <TabsContent value="login">
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div>
+                        <Label htmlFor="login-email">{emailLabel || 'E-Mail'}</Label>
+                        <Input
+                          id="login-email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="deine@email.ch"
+                        />
+                        {errors.email && (
+                          <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                        )}
                       </div>
-                    </div>
 
-                    <Button type="submit" className="w-full" disabled={isSubmitting || !agbAccepted}>
-                      {isSubmitting ? (loadingSignup || 'Wird registriert...') : (registerButton || 'Registrieren')}
-                    </Button>
-                  </form>
-                </TabsContent>
-              )}
-            </Tabs>
+                      <div>
+                        <Label htmlFor="login-password">{passwordLabel || 'Passwort'}</Label>
+                        <Input
+                          id="login-password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                        />
+                        {errors.password && (
+                          <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end">
+                        <ForgotPasswordDialog />
+                      </div>
+
+                      <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? (loadingLogin || 'Wird angemeldet...') : (loginButton || 'Anmelden')}
+                      </Button>
+                    </form>
+                  </TabsContent>
+
+                  {isRegistrationEnabled && (
+                    <TabsContent value="signup">
+                      <form onSubmit={handleSignup} className="space-y-4">
+                        <div>
+                          <Label htmlFor="signup-email">{emailLabel || 'E-Mail'}</Label>
+                          <Input
+                            id="signup-email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="deine@email.ch"
+                          />
+                          {errors.email && (
+                            <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <Label htmlFor="signup-password">{passwordLabel || 'Passwort'}</Label>
+                          <Input
+                            id="signup-password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                          />
+                          {errors.password && (
+                            <p className="text-sm text-destructive mt-1">{errors.password}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {passwordHint || 'Mindestens 8 Zeichen, ein Groß- und Kleinbuchstabe, eine Zahl und ein Sonderzeichen'}
+                          </p>
+                        </div>
+
+                        {/* AGB Checkbox */}
+                        <div className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg border">
+                          <Checkbox
+                            id="agb-acceptance"
+                            checked={agbAccepted}
+                            onCheckedChange={(checked) => setAgbAccepted(checked === true)}
+                            className="mt-0.5"
+                          />
+                          <div className="grid gap-1.5 leading-none">
+                            <label
+                              htmlFor="agb-acceptance"
+                              className="text-sm font-medium leading-snug cursor-pointer"
+                            >
+                              Ich akzeptiere die AGB und Datenschutzbestimmungen *
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                              Mit der Registrierung akzeptierst du unsere{' '}
+                              <Link to="/agb" className="text-primary underline hover:no-underline" target="_blank">
+                                AGB
+                              </Link>{' '}
+                              und{' '}
+                              <Link to="/datenschutz" className="text-primary underline hover:no-underline" target="_blank">
+                                Datenschutzbestimmungen
+                              </Link>.
+                            </p>
+                          </div>
+                        </div>
+
+                        <Button type="submit" className="w-full" disabled={isSubmitting || !agbAccepted}>
+                          {isSubmitting ? (loadingSignup || 'Wird registriert...') : (registerButton || 'Registrieren')}
+                        </Button>
+                      </form>
+                    </TabsContent>
+                  )}
+                </Tabs>
+              </>
+            )}
           </div>
         </div>
       </div>

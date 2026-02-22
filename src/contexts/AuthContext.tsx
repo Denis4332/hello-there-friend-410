@@ -160,8 +160,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
 
-      // Record the attempt result
-      await recordAttempt(email, 'signup', !error && !data?.error);
+      // Fire-and-forget: don't block the UI
+      recordAttempt(email, 'signup', !error && !data?.error);
 
       if (error) {
         console.error('[signUp] Function invoke error:', error);
@@ -186,7 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
     } catch (err: any) {
       console.error('[signUp] Unexpected error:', err);
-      await recordAttempt(email, 'signup', false);
+      recordAttempt(email, 'signup', false);
       showCustomError('Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.');
       return { error: err };
     }
@@ -213,8 +213,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
     });
 
-    // Record the attempt result
-    await recordAttempt(email, 'login', !error);
+    // Fire-and-forget: don't block the UI
+    recordAttempt(email, 'login', !error);
 
     if (error) {
       const remaining = rateLimitCheck.remaining_attempts ? rateLimitCheck.remaining_attempts - 1 : 0;
