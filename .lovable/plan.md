@@ -1,73 +1,106 @@
 
 
-# Videos komplett entfernen
+# Fix: E-Mail-Bestaetigungshinweis nach Registrierung + Cold-Start-Optimierung
 
-## Uebersicht
+## Problem 1: Bestaetigungshinweis nicht sichtbar
 
-Video-Funktionalitaet wird aus der gesamten Anwendung entfernt -- Anzeige, Upload, Erstellungsprozess und Paketbeschreibungen. Nur Fotos bleiben uebrig.
+Nach der Registrierung wird nur ein kurzer Toast (kleine Benachrichtigung unten rechts) angezeigt, der leicht uebersehen wird. Der User merkt nicht, dass eine E-Mail-Bestaetigung noetig ist.
+
+**Loesung:** Nach erfolgreicher Registrierung wird statt des Toasts ein deutlich sichtbarer Bestaetigungs-Screen direkt im Formular angezeigt -- mit Briefumschlag-Icon, klarer Anweisung und einem "Zum Login"-Button.
+
+## Problem 2: Cold Starts bei Login/Signup
+
+Beim Login werden bis zu 3 Edge Functions aufgerufen (check-rate-limit, record-attempt, check-leaked-password), die alle Cold Starts haben koennen. Das macht den Prozess sehr langsam.
+
+**Loesung:**
+- `recordAttempt` wird non-blocking im Hintergrund ausgefuehrt (kein `await`)
+- `check-leaked-password` wird parallel zum Rate-Limit-Check gestartet (nicht sequentiell)
+- Login-Flow: `recordAttempt` wird nach der Navigation ausgefuehrt, nicht davor
+
+## Aenderungen
+
+### 1. `src/pages/Auth.tsx` -- Bestaetigungs-Screen + schnellerer Flow
+
+**Bestaetigungs-Screen:**
+- Neuer State `showConfirmation` (boolean)
+- Nach erfolgreicher Registrierung: `setShowConfirmation(true)` statt nur Toast
+- Wenn `showConfirmation === true`: Grosser, sichtbarer Screen mit:
+  - Mail-Icon (Lucide `MailCheck`)
+  - "Pruefe deinen Posteingang" als Titel
+  - Erklaerungstext mit der eingegebenen E-Mail-Adresse
+  - "Zum Login"-Button der `showConfirmation` zuruecksetzt und zum Login-Tab wechselt
+
+**Login-Optimierung:**
+- `recordAttempt` ohne `await` aufrufen (fire-and-forget)
+- Navigation sofort nach erfolgreichem Login, nicht nach recordAttempt
+
+**Signup-Optimierung:**
+- `check-leaked-password` und `checkRateLimit` parallel ausfuehren mit `Promise.all`
+- `recordAttempt` ohne `await` (fire-and-forget)
+
+### 2. `src/contexts/AuthContext.tsx` -- Non-blocking recordAttempt
+
+- In `signIn`: `recordAttempt` ohne `await` ausfuehren
+- In `signUp`: `recordAttempt` ohne `await` ausfuehren
+- Die Funktionen laufen im Hintergrund, blockieren aber nicht den User-Flow
+
+## Technische Details
+
+### Bestaetigungs-Screen (in Auth.tsx)
+
+```text
++----------------------------------+
+|                                  |
+|         [Mail-Icon]              |
+|                                  |
+|   Pruefe deinen Posteingang      |
+|                                  |
+|   Wir haben eine E-Mail an       |
+|   deine@email.ch gesendet.       |
+|   Klicke auf den Link in der     |
+|   E-Mail um dein Konto zu        |
+|   aktivieren.                    |
+|                                  |
+|   [    Zum Login    ]            |
+|                                  |
++----------------------------------+
+```
+
+### Login-Flow vorher vs. nachher
+
+```text
+VORHER (langsam):
+checkRateLimit (Edge Fn, ~500ms cold)
+  -> signIn (Supabase Auth)
+    -> await recordAttempt (Edge Fn, ~500ms cold)
+      -> navigate
+
+NACHHER (schnell):
+checkRateLimit (Edge Fn)
+  -> signIn (Supabase Auth)
+    -> navigate
+    -> recordAttempt (fire-and-forget, non-blocking)
+```
+
+### Signup-Flow vorher vs. nachher
+
+```text
+VORHER (sequentiell):
+checkLeakedPassword (Edge Fn, ~500ms)
+  -> checkRateLimit (Edge Fn, ~500ms)
+    -> auth-signup (Edge Fn, ~500ms)
+      -> await recordAttempt (Edge Fn, ~500ms)
+
+NACHHER (parallel + non-blocking):
+[checkLeakedPassword + checkRateLimit] parallel (~500ms total)
+  -> auth-signup (Edge Fn)
+    -> recordAttempt (fire-and-forget)
+```
 
 ## Betroffene Dateien
 
-### 1. `src/components/VideoPlayer.tsx` -- LOESCHEN
-
-Die gesamte Komponente wird nicht mehr benoetigt.
-
-### 2. `src/pages/Profil.tsx` -- Video-Logik entfernen
-
-- `VideoPlayer`-Import entfernen
-- `mediaItems`-Mapping vereinfachen: Kein `isVideo`-Check mehr, nur noch Foto-URLs
-- Carousel: Nur noch `<img>` rendern (kein `isVideo`-Branch)
-- Lightbox: Nur noch `<img>` rendern (kein `isVideo`-Branch)
-
-### 3. `src/components/ProfileCard.tsx` -- Video-Anzeige entfernen
-
-- `Play`-Icon Import entfernen
-- `primaryIsVideo`, `hasVideo`, `videoUrl`, `posterPhoto` Variablen entfernen
-- Video-`<video>`-Tag im Render entfernen, nur `<img>` behalten
-- "Video"-Badge-Indicator unten links entfernen
-
-### 4. `src/components/profile/PhotoUploader.tsx` -- Video-Upload entfernen
-
-- `Video`, `Play` aus Imports entfernen
-- `MEDIA_LIMITS` auf nur `photos` reduzieren (kein `videos` mehr)
-- `MAX_VIDEO_SIZE_MB` und `ALLOWED_VIDEO_FORMATS` Konstanten entfernen
-- `videoCount` Variable entfernen
-- `handleFileSelect` vereinfachen (kein `video`-Typ mehr)
-- `videoPreviews` Variable entfernen
-- Gesamten "Video Upload Section" Block (Zeile 529-607) entfernen
-
-### 5. `src/components/profile/ListingTypeSelector.tsx` -- Video-Texte entfernen
-
-- `Video`-Icon Import entfernen
-- Premium: "10 Fotos + 1 Video" aendern zu "10 Fotos"
-- TOP AD: "15 Fotos + 2 Videos" aendern zu "15 Fotos", `Video`-Icon durch `Camera` ersetzen
-
-### 6. `src/pages/ProfileEdit.tsx` -- Video-Limits entfernen
-
-- `MEDIA_LIMITS` auf nur `photos` reduzieren
-- Video-bezogene Filter/Checks entfernen
-
-### 7. `supabase/functions/validate-image/index.ts` -- Video-Validierung entfernen
-
-- MP4 und WebM MIME-Type Erkennung entfernen
-- Fehlermeldung auf nur Bildformate anpassen
-- Video-spezifische Groessenlimits entfernen
-
-## Was NICHT geaendert wird
-
-- Die `media_type`-Spalte in der Datenbank bleibt bestehen (keine Migration noetig)
-- Bereits hochgeladene Videos bleiben im Storage (kein Datenverlust)
-- Die Typen in `dating.ts` / `common.ts` bleiben unveraendert
-
-## Zusammenfassung
-
 | Datei | Aenderung |
 |-------|-----------|
-| `VideoPlayer.tsx` | Loeschen |
-| `Profil.tsx` | Video-Rendering entfernen |
-| `ProfileCard.tsx` | Video-Anzeige + Badge entfernen |
-| `PhotoUploader.tsx` | Video-Upload-Sektion entfernen |
-| `ListingTypeSelector.tsx` | Video-Texte aus Paketen entfernen |
-| `ProfileEdit.tsx` | Video-Limits entfernen |
-| `validate-image/index.ts` | Video-Validierung entfernen |
+| `src/pages/Auth.tsx` | Bestaetigungs-Screen + parallel Checks + non-blocking recordAttempt |
+| `src/contexts/AuthContext.tsx` | Non-blocking recordAttempt in signUp |
 
