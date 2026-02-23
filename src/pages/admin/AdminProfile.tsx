@@ -160,7 +160,7 @@ const AdminProfile = () => {
       // Post-filter for needs_review: pending profiles OR profiles with pending verification
       if (statusFilter === 'needs_review') {
         return profilesWithContacts.filter(
-          (p) => p.status === 'pending' || p.pendingVerification
+          (p) => p.status === 'pending' || p.pendingVerification?.status === 'pending'
         );
       }
       
@@ -939,7 +939,7 @@ const AdminProfile = () => {
                           ) : (
                             <Badge variant="secondary">Nein</Badge>
                           )}
-                          {profile.pendingVerification && (
+                          {profile.pendingVerification?.status === 'pending' && (
                             <Badge variant="outline" className="border-orange-500 text-orange-500 text-xs">
                               <Shield className="h-3 w-3 mr-1" />
                               Prüfen
