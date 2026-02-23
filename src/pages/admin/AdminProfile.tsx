@@ -55,7 +55,7 @@ const AdminProfile = () => {
   const [paymentFilter, setPaymentFilter] = useState(searchParams.get('payment') || '');
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [dialogStatus, setDialogStatus] = useState('');
-  const [dialogVerified, setDialogVerified] = useState(false);
+  
   const [dialogNote, setDialogNote] = useState('');
   const [dialogListingType, setDialogListingType] = useState('');
   const [dialogExpiryDate, setDialogExpiryDate] = useState('');
@@ -172,7 +172,6 @@ const AdminProfile = () => {
     mutationFn: async (data: { 
       profileId: string; 
       status: string; 
-      verified: boolean;
       note?: string;
       listingType: string;
       expiryDate?: string;
@@ -182,7 +181,6 @@ const AdminProfile = () => {
       // Build update object
       const updates: any = {
         status: data.status,
-        verified_at: data.verified ? new Date().toISOString() : null,
         listing_type: data.listingType
       };
       
@@ -666,7 +664,6 @@ const AdminProfile = () => {
   const handleOpenDialog = (profile: any) => {
     setSelectedProfile(profile);
     setDialogStatus(profile.status);
-    setDialogVerified(!!profile.verified_at);
     setDialogNote('');
     setDialogListingType(profile.listing_type || 'basic');
     
@@ -779,7 +776,6 @@ const AdminProfile = () => {
     updateProfileMutation.mutate({
       profileId: selectedProfile.id,
       status: dialogStatus,
-      verified: dialogVerified,
       note: dialogNote,
       listingType: dialogListingType,
       expiryDate: dialogExpiryDate
