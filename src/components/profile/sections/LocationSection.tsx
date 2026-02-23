@@ -3,10 +3,6 @@ import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'rea
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { MapPin, Loader2 } from 'lucide-react';
-import { detectLocation } from '@/lib/geolocation';
-import { useToast } from '@/hooks/use-toast';
 import { ProfileFormData } from '../ProfileForm';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
@@ -60,8 +56,6 @@ function findCantonAbbreviation(name: string, cantons: Array<{ name: string; abb
 }
 
 export const LocationSection = ({ register, errors, setValue, watch, cantons }: LocationSectionProps) => {
-  const { toast } = useToast();
-  const [detectingLocation, setDetectingLocation] = useState(false);
   const addressInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const [googleLoaded, setGoogleLoaded] = useState(false);
@@ -132,43 +126,6 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
     autocompleteRef.current = autocomplete;
   }, [googleLoaded, cantons, setValue]);
 
-  const handleDetectLocation = async () => {
-    setDetectingLocation(true);
-    try {
-      const location = await detectLocation();
-
-      setValue('city', location.city);
-      setValue('postal_code', location.postalCode);
-      setValue('lat', location.lat);
-      setValue('lng', location.lng);
-
-      if (location.canton) {
-        const matchingCanton = cantons.find(
-          (c) => c.abbreviation === location.canton || c.name.toLowerCase() === location.canton.toLowerCase()
-        );
-        if (matchingCanton) {
-          setValue('canton', matchingCanton.abbreviation);
-          toast({
-            title: 'Standort erkannt',
-            description: `${location.city}, ${matchingCanton.abbreviation}`,
-          });
-        } else {
-          toast({
-            title: 'Standort erkannt',
-            description: `${location.city} (Kanton bitte manuell wählen)`,
-          });
-        }
-      }
-    } catch (error) {
-      toast({
-        title: 'Fehler',
-        description: error instanceof Error ? error.message : 'Standort konnte nicht ermittelt werden',
-        variant: 'destructive',
-      });
-    } finally {
-      setDetectingLocation(false);
-    }
-  };
 
   return (
     <>
@@ -203,29 +160,7 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="city">Stadt / Adresse</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleDetectLocation}
-            disabled={detectingLocation}
-            className="h-8"
-          >
-            {detectingLocation ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                Wird erkannt...
-              </>
-            ) : (
-              <>
-                <MapPin className="h-4 w-4 mr-1" />
-                Mein Standort
-              </>
-            )}
-          </Button>
-        </div>
+        <Label htmlFor="city">Stadt / Adresse</Label>
 
         {googleApiKey ? (
           <Input
