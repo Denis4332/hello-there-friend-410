@@ -1,31 +1,34 @@
 
-
-# Fix: Approved/Rejected Verifications Showing in "Zu prüfen" Filter
-
-## Root Cause (Confirmed via code search)
-
-Two lines in `src/pages/admin/AdminProfile.tsx` check for the mere existence of `pendingVerification` instead of checking its status:
+# Make Lat/Lng Required and Show Autocomplete Error
 
 ## Changes
 
-### File: `src/pages/admin/AdminProfile.tsx`
+### 1. `src/components/profile/ProfileForm.tsx` (Lines ~39-40)
 
-**Fix 1 - Line 163**: Filter only profiles with actually pending verifications
+Change lat/lng from optional to required with German error messages:
 
 ```diff
-- (p) => p.status === 'pending' || p.pendingVerification
-+ (p) => p.status === 'pending' || p.pendingVerification?.status === 'pending'
+- lat: z.number().optional(),
+- lng: z.number().optional(),
++ lat: z.number({ required_error: 'Bitte Adresse auswählen' }),
++ lng: z.number({ required_error: 'Bitte Adresse auswählen' }),
 ```
 
-**Fix 2 - Line 942**: Show orange badge only for pending verifications
+### 2. `src/components/profile/sections/LocationSection.tsx` (After line 180)
+
+Add error message below the address input when no autocomplete suggestion was selected:
 
 ```diff
-- {profile.pendingVerification && (
-+ {profile.pendingVerification?.status === 'pending' && (
+  {errors.city && (
+    <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
+  )}
++ {(errors.lat || errors.lng) && (
++   <p className="text-sm text-destructive mt-1">Bitte eine Adresse aus den Vorschlägen wählen</p>
++ )}
 ```
 
 ## Result
 
-- Only profiles with `status = 'pending'` OR a verification with `status = 'pending'` appear in "Zu pruefen"
-- Orange badge only shows for genuinely pending verifications
-- Profile detail dialog (line 1157) is unchanged -- it already checks status correctly
+- Users must select an address from the Google Places autocomplete suggestions (which sets lat/lng)
+- If they type a city manually without selecting a suggestion, form validation will fail and show the error message under the address field
+- Existing profiles being edited that already have lat/lng will pass validation as before
