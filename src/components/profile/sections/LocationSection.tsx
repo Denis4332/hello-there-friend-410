@@ -69,7 +69,7 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
   const selectedCanton = watch('canton') || '';
   const currentCity = watch('city') || '';
 
-  const googleApiKey = import.meta.env.VITE_GOOGLE_PLACES_KEY;
+  const googleApiKey = 'AIzaSyB2IiCDINcTgGPMnNLi8hvmEPcf_-rH3Gs';
 
   // Initialize Google Places Autocomplete
   useEffect(() => {
