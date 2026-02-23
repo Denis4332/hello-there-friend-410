@@ -1,67 +1,33 @@
 
 
-# Phase 4 Fix: dialogVerified aus AdminProfile.tsx entfernen
+# Google Places API Key direkt in LocationSection.tsx einsetzen
 
-## Problem
+## Aenderung
 
-`dialogVerified` State und die zugehoerige Logik sind noch in `AdminProfile.tsx` vorhanden. Dadurch kann der Admin ueber den "Speichern"-Button im Profil-Dialog direkt `verified_at` setzen/entfernen -- das soll aber ausschliesslich ueber den Verifikations-Tab (Approve/Reject von Submissions) laufen.
+Eine einzige Aenderung in `src/components/profile/sections/LocationSection.tsx`:
 
-## Aenderungen in `src/pages/admin/AdminProfile.tsx`
-
-### 1. State entfernen (Zeile 58)
+### Zeile 67: `import.meta.env.VITE_GOOGLE_PLACES_KEY` ersetzen
 
 ```diff
-- const [dialogVerified, setDialogVerified] = useState(false);
-+ // Removed: verification only via AdminVerifications tab
+- const googleApiKey = import.meta.env.VITE_GOOGLE_PLACES_KEY;
++ const googleApiKey = 'AIzaSyB2IiCDINcTgGPMnNLi8hvmEPcf_-rH3Gs';
 ```
 
-### 2. setDialogVerified Aufruf entfernen (Zeile 669)
+## Warum das sicher ist
 
-```diff
-  setSelectedProfile(profile);
-  setDialogStatus(profile.status);
-- setDialogVerified(!!profile.verified_at);
-  setDialogNote('');
-```
+- Google Maps JS API Keys sind oeffentlich (werden im Browser geladen)
+- Absicherung erfolgt ueber HTTP-Referrer-Restrictions in der Google Cloud Console
+- Standard-Praxis fuer alle Google Maps Integrationen
 
-### 3. Mutation-Aufruf bereinigen (Zeile 779-786)
+## Was sich aendert
 
-`verified: dialogVerified` aus dem `mutate`-Aufruf entfernen:
+- Google Places Autocomplete wird beim Tippen Vorschlaege anzeigen (Schweizer Adressen)
+- Kanton, Stadt und PLZ werden automatisch ausgefuellt
+- GPS-Koordinaten werden automatisch gesetzt
 
-```diff
-  updateProfileMutation.mutate({
-    profileId: selectedProfile.id,
-    status: dialogStatus,
--   verified: dialogVerified,
-    note: dialogNote,
-    listingType: dialogListingType,
-    expiryDate: dialogExpiryDate
-  });
-```
+## Technische Details
 
-### 4. Mutation-Interface und -Logik bereinigen (Zeilen 172-186)
-
-`verified` aus dem Interface entfernen und die `verified_at`-Zeile aus dem Update-Objekt entfernen:
-
-```diff
-  mutationFn: async (data: {
-    profileId: string;
-    status: string;
--   verified: boolean;
-    note?: string;
-    listingType: string;
-    expiryDate?: string;
-  }) => {
-    const updates: any = {
-      status: data.status,
--     verified_at: data.verified ? new Date().toISOString() : null,
-      listing_type: data.listingType
-    };
-```
-
-## Ergebnis
-
-- `verified_at` wird nicht mehr ueber den Profil-Dialog gesetzt
-- Verifikation laeuft ausschliesslich ueber den Verifikations-Bereich (Approve/Reject von Submissions), der bereits im Dialog eingebaut ist (Zeilen 1160-1230) und ueber `approveVerificationMutation` funktioniert
-- Keine UI-Aenderung noetig -- es gibt keine sichtbare Checkbox, nur die State-Variable und ihre Verwendung in der Mutation
+- Nur eine Zeile in einer Datei wird geaendert
+- Keine andere Logik wird beruehrt
+- Die gesamte Autocomplete-Logik ist bereits implementiert und funktionsfaehig
 
