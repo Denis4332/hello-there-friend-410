@@ -1,18 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { MapPin, Loader2, ChevronsUpDown, Check } from 'lucide-react';
+import { MapPin, Loader2 } from 'lucide-react';
 import { detectLocation } from '@/lib/geolocation';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileFormData } from '../ProfileForm';
-import { useCitiesByCantonSlim, CityWithCoordinates } from '@/hooks/useCitiesByCantonSlim';
-import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 interface LocationSectionProps {
   register: UseFormRegister<ProfileFormData>;
@@ -22,91 +18,146 @@ interface LocationSectionProps {
   cantons: Array<{ id: string; name: string; abbreviation: string }>;
 }
 
+// Canton name -> abbreviation mapping for Google Places
+const CANTON_MAP: Record<string, string> = {
+  'zürich': 'ZH', 'zurich': 'ZH',
+  'bern': 'BE', 'berne': 'BE',
+  'luzern': 'LU', 'lucerne': 'LU',
+  'uri': 'UR',
+  'schwyz': 'SZ',
+  'obwalden': 'OW',
+  'nidwalden': 'NW',
+  'glarus': 'GL',
+  'zug': 'ZG',
+  'freiburg': 'FR', 'fribourg': 'FR',
+  'solothurn': 'SO',
+  'basel-stadt': 'BS', 'basel': 'BS',
+  'basel-landschaft': 'BL',
+  'schaffhausen': 'SH',
+  'appenzell ausserrhoden': 'AR',
+  'appenzell innerrhoden': 'AI',
+  'st. gallen': 'SG', 'saint gallen': 'SG',
+  'graubünden': 'GR', 'grisons': 'GR',
+  'aargau': 'AG',
+  'thurgau': 'TG',
+  'tessin': 'TI', 'ticino': 'TI',
+  'waadt': 'VD', 'vaud': 'VD',
+  'wallis': 'VS', 'valais': 'VS',
+  'neuenburg': 'NE', 'neuchâtel': 'NE',
+  'genf': 'GE', 'genève': 'GE', 'geneva': 'GE',
+  'jura': 'JU',
+};
+
+function findCantonAbbreviation(name: string, cantons: Array<{ name: string; abbreviation: string }>): string | null {
+  const lower = name.toLowerCase().trim();
+  // Direct map lookup
+  if (CANTON_MAP[lower]) return CANTON_MAP[lower];
+  // Try matching against cantons array
+  const match = cantons.find(
+    (c) => c.name.toLowerCase() === lower || c.abbreviation.toLowerCase() === lower
+  );
+  return match?.abbreviation || null;
+}
+
 export const LocationSection = ({ register, errors, setValue, watch, cantons }: LocationSectionProps) => {
   const { toast } = useToast();
   const [detectingLocation, setDetectingLocation] = useState(false);
-  const [cityOpen, setCityOpen] = useState(false);
-  
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+
   const selectedCanton = watch('canton') || '';
   const currentCity = watch('city') || '';
-  const currentPostalCode = watch('postal_code') || '';
 
-  // Fetch cities for selected canton
-  const { data: cities = [], isLoading: citiesLoading } = useCitiesByCantonSlim(selectedCanton);
+  const googleApiKey = import.meta.env.VITE_GOOGLE_PLACES_KEY;
 
-  // Handle city selection from combobox
-  const handleCitySelect = (city: CityWithCoordinates) => {
-    setValue('city', city.name);
-    if (city.postal_code) {
-      setValue('postal_code', city.postal_code);
-    }
-    if (city.lat && city.lng) {
-      setValue('lat', city.lat);
-      setValue('lng', city.lng);
-    }
-    setCityOpen(false);
-  };
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    if (!googleApiKey || googleLoaded) return;
+
+    setOptions({ key: googleApiKey, v: 'weekly' });
+    importLibrary('places').then(() => {
+      setGoogleLoaded(true);
+    }).catch((err) => {
+      console.warn('Google Places could not be loaded:', err);
+    });
+  }, [googleApiKey, googleLoaded]);
+
+  // Attach autocomplete to input when Google is loaded
+  useEffect(() => {
+    if (!googleLoaded || !addressInputRef.current || autocompleteRef.current) return;
+
+    const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
+      componentRestrictions: { country: 'ch' },
+      fields: ['address_components', 'geometry', 'name'],
+      types: ['geocode', 'establishment'],
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (!place.address_components) return;
+
+      let city = '';
+      let postalCode = '';
+      let cantonName = '';
+
+      for (const comp of place.address_components) {
+        if (comp.types.includes('locality') || comp.types.includes('political')) {
+          if (!city) city = comp.long_name;
+        }
+        if (comp.types.includes('postal_code')) {
+          postalCode = comp.long_name;
+        }
+        if (comp.types.includes('administrative_area_level_1')) {
+          cantonName = comp.long_name;
+        }
+      }
+
+      if (city) setValue('city', city);
+      if (postalCode) setValue('postal_code', postalCode);
+
+      // Map canton name to abbreviation
+      if (cantonName) {
+        const abbr = findCantonAbbreviation(cantonName, cantons);
+        if (abbr) setValue('canton', abbr);
+      }
+
+      // GPS coordinates
+      if (place.geometry?.location) {
+        setValue('lat', place.geometry.location.lat());
+        setValue('lng', place.geometry.location.lng());
+      }
+    });
+
+    autocompleteRef.current = autocomplete;
+  }, [googleLoaded, cantons, setValue]);
 
   const handleDetectLocation = async () => {
     setDetectingLocation(true);
     try {
       const location = await detectLocation();
-      
-      // Find matching canton
-      const matchingCanton = cantons.find((c) =>
-        c.name.toLowerCase().includes(location.canton.toLowerCase()) ||
-        c.abbreviation.toLowerCase() === location.canton.toLowerCase() ||
-        location.canton.toLowerCase().includes(c.name.toLowerCase())
-      );
-      
-      const cantonAbbr = matchingCanton?.abbreviation || '';
-      
-      // Look up city in DB using PLZ + Canton for correct name (e.g., "Stein AG")
-      let finalCity = location.city;
-      let finalLat = location.lat;
-      let finalLng = location.lng;
-      let finalPostalCode = location.postalCode;
-      
-      if (location.postalCode) {
-        // Try PLZ + Canton first (most accurate for PLZ in multiple cantons)
-        let query = supabase
-          .from('cities')
-          .select('name, postal_code, lat, lng, canton:cantons!inner(abbreviation)')
-          .eq('postal_code', location.postalCode);
-        
-        if (cantonAbbr) {
-          query = query.eq('cantons.abbreviation', cantonAbbr);
+
+      setValue('city', location.city);
+      setValue('postal_code', location.postalCode);
+      setValue('lat', location.lat);
+      setValue('lng', location.lng);
+
+      if (location.canton) {
+        const matchingCanton = cantons.find(
+          (c) => c.abbreviation === location.canton || c.name.toLowerCase() === location.canton.toLowerCase()
+        );
+        if (matchingCanton) {
+          setValue('canton', matchingCanton.abbreviation);
+          toast({
+            title: 'Standort erkannt',
+            description: `${location.city}, ${matchingCanton.abbreviation}`,
+          });
+        } else {
+          toast({
+            title: 'Standort erkannt',
+            description: `${location.city} (Kanton bitte manuell wählen)`,
+          });
         }
-        
-        const { data: cityMatch } = await query.maybeSingle();
-        
-        if (cityMatch) {
-          finalCity = cityMatch.name; // "Stein AG" instead of "Stein"
-          finalPostalCode = cityMatch.postal_code || location.postalCode;
-          if (cityMatch.lat && cityMatch.lng) {
-            finalLat = cityMatch.lat;
-            finalLng = cityMatch.lng;
-          }
-        }
-      }
-      
-      // Set form values with DB-verified data
-      setValue('city', finalCity);
-      setValue('postal_code', finalPostalCode);
-      setValue('lat', finalLat);
-      setValue('lng', finalLng);
-      
-      if (matchingCanton) {
-        setValue('canton', matchingCanton.abbreviation);
-        toast({
-          title: 'Standort erkannt',
-          description: `${finalCity}, ${matchingCanton.abbreviation}`,
-        });
-      } else {
-        toast({
-          title: 'Standort erkannt',
-          description: `${finalCity} (Kanton bitte manuell wählen)`,
-        });
       }
     } catch (error) {
       toast({
@@ -123,10 +174,9 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
     <>
       <div>
         <Label htmlFor="canton">Kanton *</Label>
-        <Select 
+        <Select
           onValueChange={(value) => {
             setValue('canton', value);
-            // Reset city when canton changes
             if (selectedCanton !== value) {
               setValue('city', '');
               setValue('postal_code', '');
@@ -154,7 +204,7 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label htmlFor="city">Stadt *</Label>
+          <Label htmlFor="city">Stadt / Adresse</Label>
           <Button
             type="button"
             variant="outline"
@@ -176,56 +226,20 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
             )}
           </Button>
         </div>
-        
-        {/* City Combobox with Search */}
-        <Popover open={cityOpen} onOpenChange={setCityOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={cityOpen}
-              className="w-full justify-between font-normal"
-              disabled={!selectedCanton || citiesLoading}
-            >
-              {citiesLoading ? (
-                <span className="text-muted-foreground">Lade Städte...</span>
-              ) : currentCity ? (
-                <span>{currentCity}</span>
-              ) : (
-                <span className="text-muted-foreground">
-                  {selectedCanton ? "Stadt wählen..." : "Zuerst Kanton wählen"}
-                </span>
-              )}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-full min-w-[300px] p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Stadt suchen..." />
-              <CommandList>
-                <CommandEmpty>Keine Stadt gefunden</CommandEmpty>
-                <CommandGroup className="max-h-[300px] overflow-y-auto">
-                  {cities.map((city) => (
-                    <CommandItem
-                      key={city.id}
-                      value={city.name}
-                      onSelect={() => handleCitySelect(city)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          currentCity === city.name ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {city.name} {city.postal_code && `(${city.postal_code})`}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        
+
+        {googleApiKey ? (
+          <Input
+            ref={addressInputRef}
+            placeholder="Adresse eingeben..."
+            defaultValue={currentCity}
+            onChange={(e) => setValue('city', e.target.value)}
+          />
+        ) : (
+          <Input
+            {...register('city')}
+            placeholder="Stadt eingeben..."
+          />
+        )}
         {errors.city && (
           <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
         )}
@@ -233,18 +247,15 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
 
       <div>
         <Label htmlFor="postal_code">PLZ</Label>
-        <Input 
-          id="postal_code" 
-          {...register('postal_code')} 
-          placeholder="Wird automatisch gesetzt"
-          readOnly
-          className="bg-muted"
+        <Input
+          id="postal_code"
+          {...register('postal_code')}
+          placeholder="PLZ eingeben oder automatisch"
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Wird automatisch aus der Stadt übernommen
+          Wird nicht öffentlich angezeigt
         </p>
       </div>
-
     </>
   );
 };

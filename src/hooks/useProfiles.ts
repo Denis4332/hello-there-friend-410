@@ -80,25 +80,11 @@ export const useSearchProfiles = (filters: {
     refetchOnWindowFocus: false, // Don't refetch on tab switch
     enabled: filters.enabled ?? true,
     queryFn: async () => {
-      // Canton-Name Lookup falls nötig
-      let cantonName: string | null = null;
-      if (filters.location) {
-        const isCantonCode = /^[A-Z]{2,3}$/.test(filters.location);
-        if (isCantonCode) {
-          const { data: cantonData } = await supabase
-            .from('cantons')
-            .select('name')
-            .eq('abbreviation', filters.location)
-            .maybeSingle();
-          cantonName = cantonData?.name || filters.location;
-        }
-      }
-      
       const { data, error } = await supabase.rpc('get_paginated_profiles', {
         p_page: page,
         p_page_size: pageSize,
         p_rotation_seed: rotationSeed,
-        p_canton: cantonName,
+        p_canton: filters.location || null,
         p_city: null,
         p_category_id: filters.categoryId || null,
         p_keyword: filters.keyword || null,

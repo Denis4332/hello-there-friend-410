@@ -1511,15 +1511,7 @@ const AdminProfile = () => {
                                   </select>
                                 </div>
                                 
-                                <div className="flex items-center gap-2">
-                                  <input 
-                                    type="checkbox" 
-                                    id="verified" 
-                                    checked={dialogVerified}
-                                    onChange={(e) => setDialogVerified(e.target.checked)}
-                                  />
-                                  <label htmlFor="verified" className="text-sm">Verifiziert</label>
-                                </div>
+                                {/* Verifizierung wird über AdminVerifications-Tab verwaltet */}
                                 
                                 <div className="border-t pt-4 mt-4">
                                   <h3 className="font-semibold mb-3 text-sm">💎 Inserat-Paket verwalten</h3>

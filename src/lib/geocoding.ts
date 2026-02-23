@@ -1,6 +1,4 @@
-/**
- * Geocoding utilities for converting postal codes to GPS coordinates
- */
+import { supabase } from '@/integrations/supabase/client';
 
 export interface GeocodingResult {
   lat: number;
@@ -8,45 +6,41 @@ export interface GeocodingResult {
 }
 
 /**
- * Geocode a Swiss postal code to GPS coordinates using Nominatim (OpenStreetMap)
- * @param postalCode - Swiss postal code (PLZ)
- * @param city - City name
- * @returns GPS coordinates or null if not found
+ * Look up GPS coordinates from DB by city name and canton.
+ * Falls back to null if not found (no external API calls).
  */
 export async function geocodePlz(
   postalCode: string,
   city: string
 ): Promise<GeocodingResult | null> {
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?` +
-      `postalcode=${encodeURIComponent(postalCode)}&` +
-      `city=${encodeURIComponent(city)}&` +
-      `country=Switzerland&` +
-      `format=json&` +
-      `limit=1`,
-      {
-        headers: {
-          'User-Agent': 'DateApp/1.0' // Nominatim requires User-Agent
-        }
+    // Try by postal code first
+    if (postalCode) {
+      const { data } = await supabase
+        .from('cities')
+        .select('lat, lng')
+        .eq('postal_code', postalCode)
+        .maybeSingle();
+
+      if (data?.lat && data?.lng) {
+        return { lat: Number(data.lat), lng: Number(data.lng) };
       }
-    );
-
-    if (!response.ok) {
-      console.error('Geocoding API error:', response.statusText);
-      return null;
     }
 
-    const data = await response.json();
-    
-    if (data.length > 0) {
-      return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon)
-      };
+    // Fallback: search by city name
+    if (city) {
+      const { data } = await supabase
+        .from('cities')
+        .select('lat, lng')
+        .ilike('name', `%${city}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (data?.lat && data?.lng) {
+        return { lat: Number(data.lat), lng: Number(data.lng) };
+      }
     }
 
-    console.warn('No geocoding results found for:', { postalCode, city });
     return null;
   } catch (error) {
     console.error('Geocoding failed:', error);
