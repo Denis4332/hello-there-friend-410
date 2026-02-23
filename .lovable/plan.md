@@ -2,13 +2,9 @@
 
 # Fix: Approved/Rejected Verifications Showing in "Zu prüfen" Filter
 
-## Root Cause (Confirmed)
+## Root Cause (Confirmed via code search)
 
-Three locations in `src/pages/admin/AdminProfile.tsx` treat any verification submission as "needs review", regardless of whether it was already approved or rejected:
-
-1. **Line 156** - `pendingVerification` is set to the latest verification entry regardless of status (approved, rejected, or pending)
-2. **Line 163** - The `needs_review` filter checks `p.pendingVerification` (truthy = exists) instead of checking `p.pendingVerification?.status === 'pending'`
-3. **Lines 942-944** - The orange "Pruefen" badge checks `profile.pendingVerification` existence, not `status === 'pending'`
+Two lines in `src/pages/admin/AdminProfile.tsx` check for the mere existence of `pendingVerification` instead of checking its status:
 
 ## Changes
 
@@ -28,12 +24,8 @@ Three locations in `src/pages/admin/AdminProfile.tsx` treat any verification sub
 + {profile.pendingVerification?.status === 'pending' && (
 ```
 
-No changes needed to line 156 -- the verification data is still useful for displaying status (approved/rejected) inside the profile dialog. The dialog section (lines 1157+) already correctly checks `selectedProfile.pendingVerification.status` for styling and labels.
-
 ## Result
 
-- Only profiles with `status = 'pending'` OR a verification submission with `status = 'pending'` will appear in "Zu pruefen"
-- The orange badge will only show for genuinely pending verifications
-- Already approved or rejected verifications will no longer clutter the review queue
-- The profile detail dialog continues to show verification history with correct color coding
-
+- Only profiles with `status = 'pending'` OR a verification with `status = 'pending'` appear in "Zu pruefen"
+- Orange badge only shows for genuinely pending verifications
+- Profile detail dialog (line 1157) is unchanged -- it already checks status correctly
