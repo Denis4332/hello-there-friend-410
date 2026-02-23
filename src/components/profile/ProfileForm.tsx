@@ -23,7 +23,7 @@ const profileSchema = z.object({
     (val) => (val === null || val === '' ? undefined : val),
     z.string().optional()
   ),
-  city: z.string().min(1, 'Stadt ist erforderlich'),
+  city: z.string().optional().default(''),
   canton: z.string().min(1, 'Kanton ist erforderlich'),
   postal_code: z.string().optional(),
   about_me: z.string()

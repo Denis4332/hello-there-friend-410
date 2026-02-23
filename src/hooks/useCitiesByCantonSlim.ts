@@ -37,17 +37,3 @@ export const useCitiesByCantonSlim = (cantonAbbreviation: string | undefined) =>
   });
 };
 
-export const useCantons = () => {
-  return useQuery({
-    queryKey: ['cantons'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cantons')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
-};

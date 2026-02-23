@@ -6,7 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
-import { useCantons } from '@/hooks/useCitiesByCantonSlim';
+import { useCantons } from '@/hooks/useCantons';
 import { detectLocation } from '@/lib/geolocation';
 import { toast } from 'sonner';
 import { SearchFilters } from '@/components/search/SearchFilters';

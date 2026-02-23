@@ -5,7 +5,7 @@ import { useHomepageProfiles } from "@/hooks/useProfiles";
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useDesignSettings } from '@/hooks/useDesignSettings';
-import { useCantons } from '@/hooks/useCitiesByCantonSlim';
+import { useCantons } from '@/hooks/useCantons';
 import { SEO } from '@/components/SEO';
 import { HeroSection } from '@/components/home/HeroSection';
 import { ProfileCardSkeleton } from '@/components/ProfileCardSkeleton';
