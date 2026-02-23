@@ -182,7 +182,7 @@ const ProfileEdit = () => {
       // SECURITY: Update profile data (no contact info)
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+      .update({
           display_name: data.display_name,
           is_adult: data.is_adult,
           gender: data.gender,
@@ -191,6 +191,8 @@ const ProfileEdit = () => {
           postal_code: data.postal_code,
           about_me: data.about_me,
           languages: data.languages,
+          lat: data.lat || null,
+          lng: data.lng || null,
           status: newStatus,
         })
         .eq('id', profileId);
@@ -324,9 +326,6 @@ const ProfileEdit = () => {
         throw setError;
       }
 
-      // Set to pending if was active
-      await ensurePendingIfActive();
-
       toast({
         title: 'Hauptfoto aktualisiert',
         description: isActiveProfile 
@@ -389,13 +388,15 @@ const ProfileEdit = () => {
   const defaultValues: ProfileFormData = {
     display_name: profile.display_name,
     is_adult: true,
-    gender: profile.gender ?? undefined, // Handle null from DB gracefully
+    gender: profile.gender ?? undefined,
     city: profile.city,
     canton: profile.canton,
     postal_code: profile.postal_code || '',
     about_me: profile.about_me || '',
     languages: profile.languages || [],
     category_ids: profile.profile_categories?.map((pc) => pc.category_id) || [],
+    lat: (profile as any).lat || undefined,
+    lng: (profile as any).lng || undefined,
     phone: profile.phone || '',
     whatsapp: profile.whatsapp || '',
     email: profile.email || '',

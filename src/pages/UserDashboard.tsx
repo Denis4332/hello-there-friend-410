@@ -336,7 +336,7 @@ const UserDashboard = () => {
             </div>
 
             {/* Draft Status Warning - Photo required */}
-            {profile.status === 'draft' && (
+            {profile.status === 'draft' && photos.length === 0 && (
               <Card className="mb-6 border-orange-500/50 bg-orange-500/5">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3 flex-wrap">

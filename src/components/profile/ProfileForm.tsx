@@ -25,7 +25,7 @@ const profileSchema = z.object({
   ),
   city: z.string().optional().default(''),
   canton: z.string().min(1, 'Kanton ist erforderlich'),
-  postal_code: z.string().optional(),
+  postal_code: z.string().optional().default(''),
   about_me: z.string()
     .max(500, 'Maximale Länge: 500 Zeichen')
     .refine((val) => !val || !/<script|javascript:|onerror=/i.test(val), {
