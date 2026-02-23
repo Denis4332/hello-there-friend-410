@@ -1,36 +1,28 @@
 
-# Fix CI Deployment: Lockfile Out of Sync
+# Fix CI Deployment: npm ci to npm install
 
 ## Problem
-The GitHub Actions CI workflow uses `npm ci`, which requires `package-lock.json` to be perfectly in sync with `package.json`. After adding `@googlemaps/js-api-loader`, the lockfile was not updated, causing the build to fail.
+`npm ci` fails because `package-lock.json` is out of sync after adding `@googlemaps/js-api-loader`.
 
-## Solution
-Change the CI workflow from `npm ci` to `npm install`. This is more resilient because `npm install` will resolve any lockfile mismatches automatically.
+## Changes (3 lines across 2 files)
 
-## Changes
-
-### File: `.github/workflows/ci.yml` (Line 18)
-
+### 1. `.github/workflows/ci.yml` (Line 23)
 ```diff
 -        run: npm ci
 +        run: npm install
 ```
 
-### File: `.github/workflows/deploy.yml` (Lines 24 and 62)
-
-Staging job:
+### 2. `.github/workflows/deploy.yml` (Line 34, Staging)
 ```diff
 -        run: npm ci
 +        run: npm install
 ```
 
-Production job:
+### 3. `.github/workflows/deploy.yml` (Line 76, Production)
 ```diff
 -        run: npm ci
 +        run: npm install
 ```
 
-## Why `npm install` instead of `npm ci`
-- `npm ci` is stricter but fails whenever `package-lock.json` drifts even slightly
-- `npm install` still installs exact versions from the lockfile when it exists, but gracefully handles mismatches
-- This prevents future CI failures when dependencies are added/updated through Lovable
+## Why
+`npm install` gracefully handles lockfile mismatches while still using the lockfile for version resolution. This prevents future CI failures when dependencies change through Lovable.
