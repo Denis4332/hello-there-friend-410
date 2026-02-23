@@ -178,6 +178,9 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
         {errors.city && (
           <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
         )}
+        {(errors.lat || errors.lng) && (
+          <p className="text-sm text-destructive mt-1">Bitte eine Adresse aus den Vorschlägen wählen</p>
+        )}
       </div>
 
       <div>
