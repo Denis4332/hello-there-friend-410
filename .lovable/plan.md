@@ -1,23 +1,36 @@
 
-
-# Google Places API Key direkt einsetzen
+# Fix CI Deployment: Lockfile Out of Sync
 
 ## Problem
+The GitHub Actions CI workflow uses `npm ci`, which requires `package-lock.json` to be perfectly in sync with `package.json`. After adding `@googlemaps/js-api-loader`, the lockfile was not updated, causing the build to fail.
 
-Die Aenderung wurde bisher **nicht umgesetzt** -- der Planungsmodus hat keine Dateiaenderungen erlaubt. Der API Key muss jetzt tatsaechlich in den Code geschrieben werden.
+## Solution
+Change the CI workflow from `npm ci` to `npm install`. This is more resilient because `npm install` will resolve any lockfile mismatches automatically.
 
-## Aenderung
+## Changes
 
-Eine einzige Zeile in `src/components/profile/sections/LocationSection.tsx` (Zeile 67):
+### File: `.github/workflows/ci.yml` (Line 18)
 
 ```diff
-- const googleApiKey = import.meta.env.VITE_GOOGLE_PLACES_KEY;
-+ const googleApiKey = 'AIzaSyB2IiCDINcTgGPMnNLi8hvmEPcf_-rH3Gs';
+-        run: npm ci
++        run: npm install
 ```
 
-## Ergebnis
+### File: `.github/workflows/deploy.yml` (Lines 24 and 62)
 
-- Google Places Autocomplete zeigt Vorschlaege beim Tippen (Schweizer Adressen)
-- Kanton, Stadt, PLZ und GPS-Koordinaten werden automatisch ausgefuellt
-- Keine andere Logik wird beruehrt
+Staging job:
+```diff
+-        run: npm ci
++        run: npm install
+```
 
+Production job:
+```diff
+-        run: npm ci
++        run: npm install
+```
+
+## Why `npm install` instead of `npm ci`
+- `npm ci` is stricter but fails whenever `package-lock.json` drifts even slightly
+- `npm install` still installs exact versions from the lockfile when it exists, but gracefully handles mismatches
+- This prevents future CI failures when dependencies are added/updated through Lovable
