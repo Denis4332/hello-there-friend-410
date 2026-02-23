@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Upload, X, Image as ImageIcon, Star, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,43 +48,44 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
   // Check if there's already a primary in DB
   const hasDbPrimary = Boolean(currentPrimaryId);
 
-  // Lade existierende Fotos beim Mounten (für Tab-Wechsel Persistenz)
-  useEffect(() => {
-    const loadExistingPhotos = async () => {
-      if (!profileId) {
-        setIsLoadingExisting(false);
-        return;
-      }
-      
-      try {
-        const { data: photos } = await supabase
-          .from('photos')
-          .select('id, storage_path, is_primary, media_type')
-          .eq('profile_id', profileId)
-          .order('created_at', { ascending: true });
-        
-        if (photos && photos.length > 0) {
-          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-          const existingPreviews: MediaPreview[] = photos.map(photo => ({
-            id: photo.id,
-            url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${photo.storage_path}?v=${photo.id}`,
-            uploaded: true,
-            mediaType: (photo.media_type as 'image' | 'video') || 'image',
-          }));
-          
-          setPreviews(existingPreviews);
-          // Reset pending primary since we loaded from DB
-          setPendingPrimaryIndex(null);
-        }
-      } catch (error) {
-        console.error('Fehler beim Laden existierender Fotos:', error);
-      } finally {
-        setIsLoadingExisting(false);
-      }
-    };
+  const loadExistingPhotos = useCallback(async () => {
+    if (!profileId) {
+      setIsLoadingExisting(false);
+      return;
+    }
     
+    try {
+      const { data: photos } = await supabase
+        .from('photos')
+        .select('id, storage_path, is_primary, media_type')
+        .eq('profile_id', profileId)
+        .order('created_at', { ascending: true });
+      
+      if (photos && photos.length > 0) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const existingPreviews: MediaPreview[] = photos.map(photo => ({
+          id: photo.id,
+          url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${photo.storage_path}?v=${photo.id}`,
+          uploaded: true,
+          mediaType: (photo.media_type as 'image' | 'video') || 'image',
+        }));
+        
+        setPreviews(existingPreviews);
+        setPendingPrimaryIndex(null);
+      } else {
+        setPreviews([]);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden existierender Fotos:', error);
+    } finally {
+      setIsLoadingExisting(false);
+    }
+  }, [profileId]);
+
+  // Lade existierende Fotos beim Mounten
+  useEffect(() => {
     loadExistingPhotos();
-  }, [profileId, currentPrimaryId]); // Re-load when currentPrimaryId changes
+  }, [loadExistingPhotos, currentPrimaryId]);
 
   // Browser-Warnung beim Verlassen während Upload
   useEffect(() => {
@@ -313,6 +314,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       }
 
       showSuccess('toast_photo_uploaded');
+      await loadExistingPhotos();
       onUploadComplete?.();
     } catch (error: any) {
       showError('toast_photo_error', error.message || 'Fehler beim Hochladen');
@@ -321,16 +323,18 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     }
   };
 
-  const removePreview = (index: number) => {
+  const removePreview = async (index: number) => {
+    const preview = previews[index];
+    // Delete from DB if already uploaded
+    if (preview.uploaded && preview.id) {
+      await supabase.from('photos').delete().eq('id', preview.id);
+    }
     setPreviews(prev => {
       const newPreviews = prev.filter((_, i) => i !== index);
-      // Adjust pendingPrimaryIndex if needed (only for non-uploaded images)
       if (pendingPrimaryIndex !== null) {
         if (pendingPrimaryIndex === index) {
-          // Removed the pending primary, reset
           setPendingPrimaryIndex(null);
         } else if (index < pendingPrimaryIndex) {
-          // Adjust index since we removed before it
           setPendingPrimaryIndex(pendingPrimaryIndex - 1);
         }
       }

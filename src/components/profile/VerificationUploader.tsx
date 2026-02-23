@@ -145,9 +145,6 @@ export const VerificationUploader = ({ profileId, onComplete, onSkip }: Verifica
             storage_path: filePath,
             status: 'pending',
             submitted_at: new Date().toISOString(),
-            reviewed_at: null,
-            reviewed_by: null,
-            admin_note: null,
           },
           { onConflict: 'profile_id' }
         );
