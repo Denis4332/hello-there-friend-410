@@ -35,8 +35,8 @@ const profileSchema = z.object({
   languages: z.array(z.string()).min(1, 'Mindestens eine Sprache erforderlich'),
   category_ids: z.array(z.string()).min(1, 'Mindestens eine Kategorie erforderlich').max(3, 'Maximal 3 Kategorien erlaubt'),
   // GPS coordinates (automatically geocoded from PLZ)
-  lat: z.number().optional(),
-  lng: z.number().optional(),
+  lat: z.number({ required_error: 'Bitte Adresse auswählen' }),
+  lng: z.number({ required_error: 'Bitte Adresse auswählen' }),
   // Contact fields with enhanced validation
   phone: z.string()
     .regex(/^[\d\s\+\-\(\)]+$/, 'Ungültige Telefonnummer (nur Zahlen, Leerzeichen, +, -, ( ) erlaubt)')
