@@ -1,102 +1,69 @@
 
 
-# Fix Plan: Canton/Stadt-Verlust, lat/lng, und Foto-Upload Status
+# Fix: State-Merge überschreibt profile.id + Upsert-Fehler
 
-Alle 4 Fixes sind **lokal** und beeinflussen keine anderen Features (GPS-Filter, Kantone-Suche, etc.).
-
----
-
-## Fix 1: `src/pages/ProfileEdit.tsx` — lat/lng zum State-Typ (Zeile 55-57)
-
-Füge `lat?: number; lng?: number;` hinzu:
-
-```typescript
-    street_address?: string;
-    show_street?: boolean;
-    lat?: number;
-    lng?: number;
-  } | null>(null);
-```
-
-## Fix 2: `src/pages/ProfileEdit.tsx` — as any entfernen (Zeile 398-399)
-
-```typescript
-// Von:
-lat: (profile as any).lat || undefined,
-lng: (profile as any).lng || undefined,
-// Zu:
-lat: profile.lat ?? undefined,
-lng: profile.lng ?? undefined,
-```
-
-## Fix 3: `src/pages/ProfileEdit.tsx` — handleUploadComplete robust (Zeile 350-359)
-
-Ersetze `ensurePendingIfActive()` durch direktes DB-Update:
-
-```typescript
-  const handleUploadComplete = async () => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ status: 'pending' })
-        .eq('id', profile!.id)
-        .eq('status', 'active');
-      
-      if (!error) {
-        console.log('[ProfileEdit] Profile set to pending after upload');
-      }
-    } catch (error) {
-      console.error('[ProfileEdit] Failed to set pending after upload:', error);
-    }
-    await loadData();
-    setUploadSuccess(true);
-  };
-```
-
-## Fix 4: `src/components/profile/ProfileForm.tsx` — lat/lng optional (Zeile 37-39)
-
-```typescript
-// Von:
-lat: z.number({ required_error: 'Bitte Adresse auswählen' }),
-lng: z.number({ required_error: 'Bitte Adresse auswählen' }),
-// Zu:
-lat: z.number().optional(),
-lng: z.number().optional(),
-```
-
-## Fix 5: `src/components/profile/sections/LocationSection.tsx` — initializedRef (Zeile 59-61, 135-143)
-
-Neuer Ref nach Zeile 60:
-```typescript
-const initializedRef = useRef(false);
-```
-
-Canton onValueChange (Zeile 135-143):
-```typescript
-onValueChange={(value) => {
-  setValue('canton', value);
-  if (!initializedRef.current) {
-    initializedRef.current = true;
-    return;
-  }
-  if (selectedCanton !== value) {
-    setValue('city', '');
-    setValue('postal_code', '');
-    setValue('lat', undefined);
-    setValue('lng', undefined);
-  }
-}}
-```
+## Deine Sorge ist berechtigt — deshalb hier der exakte Beweis warum NUR 2 Zeilen geändert werden und NICHTS anderes betroffen ist.
 
 ---
 
-## Sicherheitscheck: Was wird NICHT beeinflusst
+## Problem 1: Zeile 118 — `contactData.id` überschreibt `profile.id`
 
-| Feature | Warum sicher |
-|---------|-------------|
-| GPS-basierte Suche/Filter | lat/lng werden nur **optional** im Formular-Schema, die DB-Spalte und Suche bleiben unverändert |
-| Kanton-Dropdown | initializedRef blockiert nur den **ersten** Mount-Aufruf, danach funktioniert alles normal |
-| Google Places Autocomplete | Keine Änderung an der Google Places Logik |
-| Profil-Erstellung | Neue Profile setzen lat/lng weiterhin über Google Places |
-| Admin-Bereich | Keine Änderung an Admin-Logik |
+Aktuell:
+```typescript
+setProfile({ ...profileRes.data, ...contactData });
+```
+
+`contactData` kommt aus `profile_contacts` und hat ein eigenes `id`-Feld (z.B. `e4b3ad18-...`). Durch den Spread überschreibt es die echte Profil-ID (`217fbd22-...`). Das bedeutet:
+- `profile.id` ist falsch → PhotoUploader bekommt falsche ID
+- `handleUploadComplete` macht `.eq('id', profile!.id)` mit der FALSCHEN ID → Status-Update findet kein Match
+- Canton/Stadt-Problem wird verschlimmert weil der ganze State inkonsistent ist
+
+**Fix:** Nur `id` und `profile_id` aus contactData entfernen:
+```typescript
+const { id: _contactId, profile_id: _pid, ...contactFields } = contactData || {};
+setProfile({ ...profileRes.data, ...contactFields });
+```
+
+**Was sich ändert:** NUR dass `profile.id` korrekt bleibt. Alle Contact-Felder (phone, email, whatsapp etc.) werden weiterhin gemerged. Kein anderer Code wird berührt.
+
+## Problem 2: Zeile 218 — Upsert ohne onConflict
+
+Aktuell:
+```typescript
+.upsert({ profile_id: profileId, email: data.email, ... });
+```
+
+`profile_contacts` hat eine unique constraint auf `profile_id`. Ohne `onConflict` kann es zu `duplicate key` Fehlern kommen.
+
+**Fix:** Eine Option hinzufügen:
+```typescript
+.upsert({ ... }, { onConflict: 'profile_id' })
+```
+
+**Was sich ändert:** NUR dass das Upsert zuverlässiger funktioniert. Es macht exakt das gleiche — findet den existierenden Eintrag und updated ihn.
+
+---
+
+## Was wird NICHT angefasst
+
+| Komponente | Änderung? |
+|-----------|-----------|
+| GPS-Suche/Filter | NEIN — lat/lng in DB und Suche bleiben identisch |
+| Kanton-Dropdown/Auswahl | NEIN — LocationSection wurde bereits gefixt mit initializedRef |
+| Google Places | NEIN — keine Änderung |
+| PhotoUploader-Logik | NEIN — nur die ID die er bekommt ist jetzt korrekt |
+| handleUploadComplete | NEIN — wurde bereits gefixt, funktioniert jetzt weil profile.id stimmt |
+| Profil-Erstellung | NEIN — nutzt einen anderen Code-Pfad (ProfileCreate.tsx) |
+| Admin-Bereich | NEIN — AdminProfile hat eigene Logik |
+| Rotations-Algorithmus | NEIN — komplett anderer Code |
+| RLS/Sicherheit | NEIN — keine DB-Änderungen |
+
+## Dateien
+
+| Datei | Zeile | Änderung |
+|-------|-------|----------|
+| `src/pages/ProfileEdit.tsx` | 118 | contactData destructuring (id/profile_id ausschliessen) |
+| `src/pages/ProfileEdit.tsx` | 218 | `onConflict: 'profile_id'` hinzufügen |
+
+**Nur 2 Zeilen in 1 Datei.** Kein neuer Code, keine neue Logik, keine Seiteneffekte.
 
