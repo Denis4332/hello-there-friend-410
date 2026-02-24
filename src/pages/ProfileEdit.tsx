@@ -54,6 +54,8 @@ const ProfileEdit = () => {
     website?: string;
     street_address?: string;
     show_street?: boolean;
+    lat?: number;
+    lng?: number;
   } | null>(null);
   const [photos, setPhotos] = useState<Array<{
     id: string;
@@ -350,11 +352,19 @@ const ProfileEdit = () => {
   // Handler for upload complete - also sets to pending if active
   const handleUploadComplete = async () => {
     try {
-      await ensurePendingIfActive();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: 'pending' })
+        .eq('id', profile!.id)
+        .eq('status', 'active');
+      
+      if (!error) {
+        console.log('[ProfileEdit] Profile set to pending after upload');
+      }
     } catch (error) {
       console.error('[ProfileEdit] Failed to set pending after upload:', error);
     }
-    loadData();
+    await loadData();
     setUploadSuccess(true);
   };
 
@@ -395,8 +405,8 @@ const ProfileEdit = () => {
     about_me: profile.about_me || '',
     languages: profile.languages || [],
     category_ids: profile.profile_categories?.map((pc) => pc.category_id) || [],
-    lat: (profile as any).lat || undefined,
-    lng: (profile as any).lng || undefined,
+    lat: profile.lat ?? undefined,
+    lng: profile.lng ?? undefined,
     phone: profile.phone || '',
     whatsapp: profile.whatsapp || '',
     email: profile.email || '',

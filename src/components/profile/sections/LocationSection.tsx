@@ -58,6 +58,7 @@ function findCantonAbbreviation(name: string, cantons: Array<{ name: string; abb
 export const LocationSection = ({ register, errors, setValue, watch, cantons }: LocationSectionProps) => {
   const addressInputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const initializedRef = useRef(false);
   const [googleLoaded, setGoogleLoaded] = useState(false);
 
   const selectedCanton = watch('canton') || '';
@@ -134,6 +135,10 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
         <Select
           onValueChange={(value) => {
             setValue('canton', value);
+            if (!initializedRef.current) {
+              initializedRef.current = true;
+              return;
+            }
             if (selectedCanton !== value) {
               setValue('city', '');
               setValue('postal_code', '');
