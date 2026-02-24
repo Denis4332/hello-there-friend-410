@@ -145,7 +145,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     setPreviews(prev => [...prev, ...newPreviews]);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     const filesToUpload = previews.filter(p => !p.uploaded && p.file);
     if (filesToUpload.length === 0) return;
 
@@ -321,7 +321,15 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     } finally {
       setUploading(false);
     }
-  };
+  }, [previews, profileId, userId, pendingPrimaryIndex, hasDbPrimary, loadExistingPhotos, onUploadComplete, showSuccess, showError, showCustomError]);
+
+  // Auto-upload when new files are added
+  useEffect(() => {
+    const hasNewFiles = previews.some(p => !p.uploaded && p.file);
+    if (hasNewFiles && !uploading) {
+      handleUpload();
+    }
+  }, [previews, uploading, handleUpload]);
 
   const removePreview = async (index: number) => {
     const preview = previews[index];
@@ -516,16 +524,6 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
         )}
       </div>
 
-      {/* Upload button */}
-      {hasUnuploadedFiles && (
-        <Button 
-          onClick={handleUpload} 
-          disabled={uploading}
-          className="w-full"
-        >
-          {uploading ? 'Wird hochgeladen...' : `${previews.filter(p => !p.uploaded).length} Datei(en) hochladen`}
-        </Button>
-      )}
 
       {previews.length === 0 && (
         <div className="flex items-center justify-center h-32 bg-muted/30 rounded-lg">
