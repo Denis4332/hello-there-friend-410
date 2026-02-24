@@ -12,6 +12,8 @@ interface PhotoUploaderProps {
   onUploadComplete?: () => void;
   onSetPrimary?: (photoId: string) => void; // Callback für DB-Update bei existierenden Fotos
   currentPrimaryId?: string; // ID des aktuellen Hauptfotos aus DB
+  persistDeletesOnRemove?: boolean;
+  onPendingDeletesChange?: (pendingDeletes: Array<{ id: string; storagePath: string }>) => void;
 }
 
 interface MediaPreview {
@@ -20,6 +22,7 @@ interface MediaPreview {
   file?: File;
   uploaded: boolean;
   mediaType: 'image' | 'video';
+  storagePath?: string;
 }
 
 // Tiered limits based on listing type
@@ -32,14 +35,14 @@ const MEDIA_LIMITS = {
 const MAX_PHOTO_SIZE_MB = 10;
 const ALLOWED_PHOTO_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
 
-export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUploadComplete, onSetPrimary, currentPrimaryId }: PhotoUploaderProps) => {
+export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUploadComplete, onSetPrimary, currentPrimaryId, persistDeletesOnRemove = true, onPendingDeletesChange }: PhotoUploaderProps) => {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   // For NEW (not yet uploaded) photos: which one should become primary after upload
   // This is a separate concept from currentPrimaryId (which is for DB photos)
   const [pendingPrimaryIndex, setPendingPrimaryIndex] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-  const [isLoadingExisting, setIsLoadingExisting] = useState(true);
+  const [pendingDeletedPhotos, setPendingDeletedPhotos] = useState<Array<{ id: string; storagePath: string }>>([]);
   const { showSuccess, showError, showCustomError } = useToastMessages();
   
   const limits = MEDIA_LIMITS[listingType];
@@ -50,7 +53,6 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
 
   const loadExistingPhotos = useCallback(async () => {
     if (!profileId) {
-      setIsLoadingExisting(false);
       return;
     }
     
@@ -63,12 +65,16 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       
       if (photos && photos.length > 0) {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const existingPreviews: MediaPreview[] = photos.map(photo => ({
-          id: photo.id,
-          url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${photo.storage_path}?v=${photo.id}`,
-          uploaded: true,
-          mediaType: (photo.media_type as 'image' | 'video') || 'image',
-        }));
+        const deletedIds = new Set(pendingDeletedPhotos.map((photo) => photo.id));
+        const existingPreviews: MediaPreview[] = photos
+          .filter((photo) => !deletedIds.has(photo.id))
+          .map(photo => ({
+            id: photo.id,
+            url: `${supabaseUrl}/storage/v1/object/public/profile-photos/${photo.storage_path}?v=${photo.id}`,
+            uploaded: true,
+            mediaType: (photo.media_type as 'image' | 'video') || 'image',
+            storagePath: photo.storage_path,
+          }));
         
         setPreviews(existingPreviews);
         setPendingPrimaryIndex(null);
@@ -77,10 +83,8 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       }
     } catch (error) {
       console.error('Fehler beim Laden existierender Fotos:', error);
-    } finally {
-      setIsLoadingExisting(false);
     }
-  }, [profileId]);
+  }, [profileId, pendingDeletedPhotos]);
 
   // Lade existierende Fotos beim Mounten
   useEffect(() => {
@@ -208,7 +212,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       // Set upload progress
       setUploadProgress({ current: 0, total: filesToUpload.length });
 
-      const results: { previewUrl: string; uploadedUrl: string; insertedId?: string }[] = [];
+      const results: { previewUrl: string; uploadedUrl: string; insertedId?: string; storagePath: string }[] = [];
 
       // PARALLELER Upload in 3er-Batches für bessere Performance
       const BATCH_SIZE = 3;
@@ -262,7 +266,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
 
         if (dbError) throw dbError;
 
-        return { previewUrl: preview.url, uploadedUrl: data.url, insertedId: insertedPhoto?.id };
+        return { previewUrl: preview.url, uploadedUrl: data.url, insertedId: insertedPhoto?.id, storagePath: data.path };
       };
 
       // Process files in batches of BATCH_SIZE for parallel upload
@@ -290,6 +294,7 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
           return { 
             ...p, 
             id: result.insertedId, // Store the real DB ID so primary check works
+            storagePath: result.storagePath,
             url: result.uploadedUrl, 
             uploaded: true, 
             file: undefined 
@@ -333,10 +338,19 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
 
   const removePreview = async (index: number) => {
     const preview = previews[index];
-    // Delete from DB if already uploaded
+
+    // Delete immediately OR defer until parent form save
     if (preview.uploaded && preview.id) {
-      await supabase.from('photos').delete().eq('id', preview.id);
+      if (persistDeletesOnRemove) {
+        await supabase.from('photos').delete().eq('id', preview.id);
+      } else if (preview.storagePath) {
+        setPendingDeletedPhotos((prev) => {
+          if (prev.some((item) => item.id === preview.id)) return prev;
+          return [...prev, { id: preview.id!, storagePath: preview.storagePath! }];
+        });
+      }
     }
+
     setPreviews(prev => {
       const newPreviews = prev.filter((_, i) => i !== index);
       if (pendingPrimaryIndex !== null) {
@@ -349,6 +363,10 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
       return newPreviews;
     });
   };
+
+  useEffect(() => {
+    onPendingDeletesChange?.(pendingDeletedPhotos);
+  }, [pendingDeletedPhotos, onPendingDeletesChange]);
 
   // Set a NEW (not yet uploaded) photo as pending primary
   const setPendingPrimary = (index: number) => {
@@ -384,7 +402,6 @@ export const PhotoUploader = ({ profileId, userId, listingType = 'basic', onUplo
     }
   };
 
-  const hasUnuploadedFiles = previews.some(p => !p.uploaded && p.file);
   const imagePreviews = previews.filter(p => p.mediaType === 'image');
 
   return (

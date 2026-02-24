@@ -97,8 +97,9 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
       let cantonName = '';
 
       for (const comp of place.address_components) {
-        if (comp.types.includes('locality') || comp.types.includes('political')) {
-          if (!city) city = comp.long_name;
+        const isCityComponent = comp.types.includes('locality') || comp.types.includes('postal_town');
+        if (isCityComponent && !city) {
+          city = comp.long_name;
         }
         if (comp.types.includes('postal_code')) {
           postalCode = comp.long_name;
@@ -171,7 +172,7 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
           <Input
             ref={addressInputRef}
             placeholder="Adresse eingeben..."
-            defaultValue={currentCity}
+            value={currentCity}
             onChange={(e) => setValue('city', e.target.value)}
           />
         ) : (

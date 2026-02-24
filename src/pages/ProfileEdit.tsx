@@ -9,15 +9,8 @@ import { PhotoUploader } from '@/components/profile/PhotoUploader';
 import { VerificationUploader } from '@/components/profile/VerificationUploader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Trash2, Star, CheckCircle, AlertTriangle } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-// Media limits per listing type
-const MEDIA_LIMITS = {
-  basic: { photos: 5 },
-  premium: { photos: 10 },
-  top: { photos: 15 },
-};
-
+import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -65,6 +58,7 @@ const ProfileEdit = () => {
     created_at: string;
     media_type?: string;
   }>>([]);
+  const [pendingPhotoDeletes, setPendingPhotoDeletes] = useState<Array<{ id: string; storagePath: string }>>([]);
   const [cantons, setCantons] = useState<Array<{
     id: string;
     name: string;
@@ -87,6 +81,26 @@ const ProfileEdit = () => {
     loadData();
   }, [user]);
 
+  const resolveCanonicalCity = async (city?: string | null, postalCode?: string | null, cantonAbbr?: string | null) => {
+    const fallbackCity = city?.trim() || '';
+    if (!fallbackCity || !postalCode || !cantonAbbr) return fallbackCity;
+
+    try {
+      const { data: canonicalCity, error } = await supabase
+        .from('cities')
+        .select('name, cantons!inner(abbreviation)')
+        .eq('postal_code', postalCode)
+        .eq('cantons.abbreviation', cantonAbbr)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) return fallbackCity;
+      return canonicalCity?.name || fallbackCity;
+    } catch {
+      return fallbackCity;
+    }
+  };
+
   const loadData = async () => {
     if (!user) return;
 
@@ -107,6 +121,12 @@ const ProfileEdit = () => {
         return;
       }
 
+      const canonicalCity = await resolveCanonicalCity(
+        profileRes.data.city,
+        profileRes.data.postal_code,
+        profileRes.data.canton
+      );
+
       // SECURITY: Load contact data from separate protected table
       const { data: contactData } = await supabase
         .from('profile_contacts')
@@ -116,7 +136,7 @@ const ProfileEdit = () => {
 
       // Merge profile and contact data (exclude id/profile_id to prevent overwriting profile.id)
       const { id: _contactId, profile_id: _pid, ...contactFields } = contactData || {};
-      setProfile({ ...profileRes.data, ...contactFields });
+      setProfile({ ...profileRes.data, city: canonicalCity, ...contactFields });
       if (cantonsRes.data) setCantons(cantonsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
 
@@ -142,22 +162,6 @@ const ProfileEdit = () => {
 
   const isActiveProfile = profile?.status === 'active';
 
-  // Helper: Set status to pending if profile was active (keeps payment_status!)
-  const ensurePendingIfActive = async () => {
-    if (!profile || profile.status !== 'active') return;
-    
-    console.log('[ProfileEdit] Setting active profile to pending...');
-    const { error } = await supabase
-      .from('profiles')
-      .update({ status: 'pending' })
-      .eq('id', profile.id);
-    
-    if (error) {
-      console.error('[ProfileEdit] Failed to set pending:', error);
-      throw error;
-    }
-    console.log('[ProfileEdit] Profile status set to pending');
-  };
 
   const handleFormSubmit = async (data: ProfileFormData) => {
     if (!user || !profile) return;
@@ -180,6 +184,7 @@ const ProfileEdit = () => {
       const profileId = freshProfile.id;
       const wasActive = freshProfile.status === 'active';
       const newStatus = wasActive ? 'pending' : freshProfile.status;
+      const canonicalCity = await resolveCanonicalCity(data.city, data.postal_code, data.canton);
       console.log('[ProfileEdit] Fresh profile ID:', profileId, 'status:', newStatus);
       
       // SECURITY: Update profile data (no contact info)
@@ -189,7 +194,7 @@ const ProfileEdit = () => {
           display_name: data.display_name,
           is_adult: data.is_adult,
           gender: data.gender,
-          city: data.city,
+          city: canonicalCity,
           canton: data.canton,
           postal_code: data.postal_code,
           about_me: data.about_me,
@@ -242,6 +247,38 @@ const ProfileEdit = () => {
         throw categoriesError;
       }
 
+      if (pendingPhotoDeletes.length > 0) {
+        const uniqueDeletes = pendingPhotoDeletes.filter(
+          (item, index, all) => all.findIndex((x) => x.id === item.id) === index
+        );
+
+        const storagePaths = uniqueDeletes
+          .map((item) => item.storagePath)
+          .filter((path): path is string => Boolean(path));
+
+        if (storagePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('profile-photos')
+            .remove(storagePaths);
+
+          if (storageError) {
+            console.error('[ProfileEdit] Storage delete error:', storageError);
+            throw storageError;
+          }
+        }
+
+        const photoIds = uniqueDeletes.map((item) => item.id);
+        const { error: photoDeleteError } = await supabase
+          .from('photos')
+          .delete()
+          .in('id', photoIds);
+
+        if (photoDeleteError) {
+          console.error('[ProfileEdit] Photo delete error:', photoDeleteError);
+          throw photoDeleteError;
+        }
+      }
+
       console.log('[ProfileEdit] Update successful!');
       toast({
         title: 'Profil aktualisiert',
@@ -264,36 +301,6 @@ const ProfileEdit = () => {
   };
 
 
-  const handleDeletePhoto = async (photoId: string, storagePath: string) => {
-    try {
-      await supabase.storage.from('profile-photos').remove([storagePath]);
-
-      const { error } = await supabase
-        .from('photos')
-        .delete()
-        .eq('id', photoId);
-
-      if (error) throw error;
-
-      // Set to pending if was active
-      await ensurePendingIfActive();
-
-      toast({
-        title: 'Foto gelöscht',
-        description: isActiveProfile 
-          ? 'Das Foto wurde entfernt. Dein Profil wird erneut geprüft.'
-          : 'Das Foto wurde entfernt',
-      });
-
-      loadData();
-    } catch (error) {
-      toast({
-        title: 'Fehler',
-        description: error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const handleSetPrimary = async (photoId: string) => {
     if (!profile || !photoId) return;
@@ -369,11 +376,6 @@ const ProfileEdit = () => {
     setUploadSuccess(true);
   };
 
-  const getPublicUrl = (storagePath: string, cacheKey?: string) => {
-    const { data } = supabase.storage.from('profile-photos').getPublicUrl(storagePath);
-    // Add cache buster to prevent stale images
-    return `${data.publicUrl}?v=${cacheKey || Date.now()}`;
-  };
 
   if (loading) {
     return (
@@ -391,10 +393,7 @@ const ProfileEdit = () => {
   }
 
 
-  // Calculate media limits based on listing type
   const listingType = (profile.listing_type as 'basic' | 'premium' | 'top') || 'basic';
-  const currentLimits = MEDIA_LIMITS[listingType];
-  const imagePhotos = photos.filter(p => !p.media_type || p.media_type === 'image');
 
   const defaultValues: ProfileFormData = {
     display_name: profile.display_name,
@@ -516,7 +515,8 @@ const ProfileEdit = () => {
                       onUploadComplete={handleUploadComplete}
                       onSetPrimary={handleSetPrimary}
                       currentPrimaryId={photos.find(p => p.is_primary)?.id}
-                      key={`${profile.id}-${photos.find(p => p.is_primary)?.id || 'no-primary'}-${photos.length}`}
+                      persistDeletesOnRemove={false}
+                      onPendingDeletesChange={setPendingPhotoDeletes}
                     />
                     
                     {uploadSuccess && (
@@ -524,82 +524,16 @@ const ProfileEdit = () => {
                         <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-green-700 dark:text-green-400">Medien erfolgreich hochgeladen!</p>
-                          <p className="text-sm text-muted-foreground">Deine Änderungen wurden automatisch gespeichert.</p>
+                          <p className="text-sm text-muted-foreground">Neue Uploads wurden gespeichert.</p>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">
-                      📷 Fotos ({imagePhotos.length}/{currentLimits.photos})
-                    </h3>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      {photos.map((photo) => {
-                        const cacheKey = photo.id + (photo.is_primary ? '-primary' : '');
-                        
-                        return (
-                          <div key={photo.id} className="relative group">
-                            <div className="aspect-square rounded-md overflow-hidden border">
-                              <img
-                                src={getPublicUrl(photo.storage_path, cacheKey)}
-                                alt="Profil Foto"
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            </div>
-                            {photo.is_primary && (
-                              <div className="absolute top-2 right-2">
-                                <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                              </div>
-                            )}
-                            <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {!photo.is_primary && (
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  className="flex-1"
-                                  onClick={() => handleSetPrimary(photo.id)}
-                                >
-                                  <Star className="h-3 w-3" />
-                                </Button>
-                              )}
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="destructive" className="flex-1">
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Foto löschen?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Dieses Foto wird dauerhaft entfernt.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeletePhoto(photo.id, photo.storage_path)}
-                                    >
-                                      Löschen
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {photos.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        Noch keine Medien hochgeladen
-                      </p>
-                    )}
+                  <div className="rounded-lg border border-border bg-muted/30 p-4">
+                    <p className="text-sm text-muted-foreground">
+                      Foto-Löschungen werden erst mit <span className="font-medium text-foreground">„Profil aktualisieren“</span> übernommen.
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -645,7 +579,7 @@ const ProfileEdit = () => {
               <div className="flex flex-col gap-4">
                 <div className="text-sm text-muted-foreground">
                   <p className="font-medium text-foreground">Hinweis:</p>
-                  <p>Foto-Uploads werden sofort gespeichert.</p>
+                  <p>Neue Uploads werden sofort gespeichert, Löschungen erst mit „Profil aktualisieren“.</p>
                   {isActiveProfile && (
                     <p className="text-orange-600 mt-1">
                       ⚠️ Nach dem Speichern muss dein Profil erneut geprüft werden.
