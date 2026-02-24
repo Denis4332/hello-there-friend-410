@@ -114,8 +114,9 @@ const ProfileEdit = () => {
         .eq('profile_id', profileRes.data.id)
         .maybeSingle();
 
-      // Merge profile and contact data
-      setProfile({ ...profileRes.data, ...contactData });
+      // Merge profile and contact data (exclude id/profile_id to prevent overwriting profile.id)
+      const { id: _contactId, profile_id: _pid, ...contactFields } = contactData || {};
+      setProfile({ ...profileRes.data, ...contactFields });
       if (cantonsRes.data) setCantons(cantonsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
 
@@ -215,7 +216,7 @@ const ProfileEdit = () => {
           telegram: data.telegram,
           instagram: data.instagram,
           website: data.website,
-        });
+        }, { onConflict: 'profile_id' });
 
       if (contactError) {
         console.error('[ProfileEdit] Contact update error:', contactError);
