@@ -81,25 +81,6 @@ const ProfileEdit = () => {
     loadData();
   }, [user]);
 
-  const resolveCanonicalCity = async (city?: string | null, postalCode?: string | null, cantonAbbr?: string | null) => {
-    const fallbackCity = city?.trim() || '';
-    if (!fallbackCity || !postalCode || !cantonAbbr) return fallbackCity;
-
-    try {
-      const { data: canonicalCity, error } = await supabase
-        .from('cities')
-        .select('name, cantons!inner(abbreviation)')
-        .eq('postal_code', postalCode)
-        .eq('cantons.abbreviation', cantonAbbr)
-        .limit(1)
-        .maybeSingle();
-
-      if (error) return fallbackCity;
-      return canonicalCity?.name || fallbackCity;
-    } catch {
-      return fallbackCity;
-    }
-  };
 
   const loadData = async () => {
     if (!user) return;
@@ -121,12 +102,6 @@ const ProfileEdit = () => {
         return;
       }
 
-      const canonicalCity = await resolveCanonicalCity(
-        profileRes.data.city,
-        profileRes.data.postal_code,
-        profileRes.data.canton
-      );
-
       // SECURITY: Load contact data from separate protected table
       const { data: contactData } = await supabase
         .from('profile_contacts')
@@ -136,7 +111,7 @@ const ProfileEdit = () => {
 
       // Merge profile and contact data (exclude id/profile_id to prevent overwriting profile.id)
       const { id: _contactId, profile_id: _pid, ...contactFields } = contactData || {};
-      setProfile({ ...profileRes.data, city: canonicalCity, ...contactFields });
+      setProfile({ ...profileRes.data, ...contactFields });
       if (cantonsRes.data) setCantons(cantonsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
 
@@ -184,7 +159,6 @@ const ProfileEdit = () => {
       const profileId = freshProfile.id;
       const wasActive = freshProfile.status === 'active';
       const newStatus = wasActive ? 'pending' : freshProfile.status;
-      const canonicalCity = await resolveCanonicalCity(data.city, data.postal_code, data.canton);
       console.log('[ProfileEdit] Fresh profile ID:', profileId, 'status:', newStatus);
       
       // SECURITY: Update profile data (no contact info)
@@ -194,7 +168,7 @@ const ProfileEdit = () => {
           display_name: data.display_name,
           is_adult: data.is_adult,
           gender: data.gender,
-          city: canonicalCity,
+          city: data.city,
           canton: data.canton,
           postal_code: data.postal_code,
           about_me: data.about_me,
