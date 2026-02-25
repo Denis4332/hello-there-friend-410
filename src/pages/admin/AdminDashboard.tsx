@@ -33,34 +33,38 @@ const AdminDashboard = () => {
         expiringPremiumRes,
         expiringTopAdRes
       ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('profiles').select('id').eq('status', 'pending'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'open'),
         supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('status', 'unread'),
-        supabase.from('verification_submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('verification_submissions').select('profile_id').eq('status', 'pending'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active').gt('premium_until', now).lt('premium_until', sevenDaysFromNow),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active').gt('top_ad_until', now).lt('top_ad_until', sevenDaysFromNow)
       ]);
       
-      const pendingCount = pendingProfilesRes.count || 0;
+      // Deduplicate: a profile pending + pending verification = 1, not 2
+      const pendingProfileIds = (pendingProfilesRes.data || []).map(p => p.id);
+      const verificationProfileIds = (verificationsRes.data || []).map(v => v.profile_id);
+      const uniqueProfileIds = new Set([...pendingProfileIds, ...verificationProfileIds]);
+      
       const activeCount = activeRes.count || 0;
       const reportsCount = reportsRes.count || 0;
       const unreadMessages = messagesRes.count || 0;
-      const pendingVerifications = verificationsRes.count || 0;
       const expiringCount = (expiringPremiumRes.count || 0) + (expiringTopAdRes.count || 0);
 
       return {
         toReview: {
-          total: pendingCount + pendingVerifications + reportsCount,
-          profiles: pendingCount,
-          verifications: pendingVerifications,
+          total: uniqueProfileIds.size + reportsCount,
+          profiles: uniqueProfileIds.size,
           reports: reportsCount
         },
         live: activeCount,
         messages: unreadMessages,
         expiringSoon: expiringCount
       };
-    }
+    },
+    staleTime: 0,
+    refetchOnMount: 'always' as const
   });
 
   return (
@@ -95,7 +99,7 @@ const AdminDashboard = () => {
                     to="/admin/profile?status=needs_review" 
                     className="block text-muted-foreground hover:text-orange-500 hover:underline transition-colors"
                   >
-                    → {(stats?.toReview.profiles || 0) + (stats?.toReview.verifications || 0)} Profile / Verifikationen
+                    → {stats?.toReview.profiles || 0} Profile / Verifikationen
                   </Link>
                   <Link 
                     to="/admin/reports" 
