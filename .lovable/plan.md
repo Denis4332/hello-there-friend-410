@@ -1,33 +1,32 @@
 
 
-## Plan: Veraltete Verifizierung bereinigen
+## Plan: Dashboard-Deduplizierung für "Zu prüfen"
 
 ### Problem
+Das Profil "Test" ist gleichzeitig `status='pending'` UND hat eine `pending` Verifizierung. Der aktuelle Code zählt beides separat und addiert: 1 + 1 = 2. In Wirklichkeit ist es aber nur 1 Profil mit Prüfbedarf.
 
-Profil "Test" zeigt ein Verifizierungs-Badge, obwohl nie ein Verifizierungsfoto eingereicht wurde. Das stammt vom alten System, wo Admins manuell eine Checkbox setzen konnten. `verified_at` ist auf `2026-02-02` gesetzt, aber in `verification_submissions` existiert kein Eintrag.
+### Änderung in `src/pages/admin/AdminDashboard.tsx`
 
-### Lösung
+**Queries anpassen** (Zeilen 36, 40): Statt `head: true` (nur Anzahl) werden IDs geladen:
+- `profiles` pending: `select('id')` statt `select('*', { count: 'exact', head: true })`
+- `verification_submissions` pending: `select('profile_id')` statt count
 
-**1. Daten bereinigen (SQL-Migration)**
-
-Alle Profile, die `verified_at` gesetzt haben aber KEINE genehmigte `verification_submissions` haben, werden zurückgesetzt:
-
-```sql
-UPDATE profiles
-SET verified_at = NULL
-WHERE verified_at IS NOT NULL
-AND id NOT IN (
-  SELECT profile_id FROM verification_submissions WHERE status = 'approved'
-);
+**Deduplizierung** (neue Logik nach den Queries):
+```typescript
+const pendingProfileIds = (pendingProfilesRes.data || []).map(p => p.id);
+const verificationProfileIds = (verificationsRes.data || []).map(v => v.profile_id);
+const uniqueProfileIds = new Set([...pendingProfileIds, ...verificationProfileIds]);
 ```
 
-Das betrifft aktuell nur das Profil "Test" (`a34fb911...`).
+**Zähler**:
+- `toReview.total` = `uniqueProfileIds.size + reportsCount`
+- `toReview.profiles` = `uniqueProfileIds.size` (dedupliziert)
 
-**2. Kein Code-Änderung nötig**
+**Query-Options** anpassen für frischere Daten:
+- `staleTime: 0` und `refetchOnMount: 'always'` für `admin-stats`
 
-Die bestehende Logik prüft bereits `verified_at` für das Badge. Sobald das Feld NULL ist, verschwindet das Badge. Der User kann dann über "Profil bearbeiten" die Verifizierung nachreichen.
-
-### Risiko
-
-Minimal. Nur Profile ohne echte Verifizierung verlieren das Badge. Profile mit genehmigter Submission behalten es.
+### Ergebnis
+- Profil "Test" wird als **1** gezählt, nicht 2
+- Kein Doppelzählen mehr möglich, egal wie viele pending-Flags ein Profil hat
+- Keine DB-Änderung, keine Seiteneffekte
 
