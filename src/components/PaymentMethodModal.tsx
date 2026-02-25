@@ -113,6 +113,11 @@ export const PaymentMethodModal = ({
             <div className="text-left">
               <div className="font-semibold">Mit SMS bezahlen</div>
               <div className="text-sm text-muted-foreground">Bezahlung per SMS-Code</div>
+              {amount && amount > 99 && (
+                <div className="text-xs text-destructive font-medium mt-0.5">
+                  ⚠ SMS-Zahlung nur bis CHF 99 möglich
+                </div>
+              )}
             </div>
           </Button>
         </div>
