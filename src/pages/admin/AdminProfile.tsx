@@ -92,6 +92,15 @@ const AdminProfile = () => {
   const { data: profiles, isLoading } = useQuery({
     queryKey: ['admin-profiles', statusFilter, verifiedFilter, paymentFilter],
     queryFn: async () => {
+      // Auto-fix: Abgelaufene Profile auf inactive setzen
+      const now = new Date().toISOString();
+      await Promise.all([
+        supabase.from('profiles').update({ status: 'inactive' })
+          .eq('status', 'active').in('listing_type', ['premium', 'basic']).lt('premium_until', now),
+        supabase.from('profiles').update({ status: 'inactive' })
+          .eq('status', 'active').eq('listing_type', 'top').lt('top_ad_until', now),
+      ]);
+
       // Erst Admin User IDs holen
       const { data: adminRoles } = await supabase
         .from('user_roles')
@@ -117,7 +126,10 @@ const AdminProfile = () => {
       }
       
       // For needs_review, we load all non-rejected profiles and post-filter
-      if (statusFilter && statusFilter !== 'needs_review') {
+      // For expired, we filter inactive profiles with past expiry dates
+      if (statusFilter === 'expired') {
+        query = query.eq('status', 'inactive');
+      } else if (statusFilter && statusFilter !== 'needs_review') {
         query = query.eq('status', statusFilter);
       }
       
@@ -162,6 +174,16 @@ const AdminProfile = () => {
         return profilesWithContacts.filter(
           (p) => p.status === 'pending' || p.pendingVerification?.status === 'pending'
         );
+      }
+      
+      // Post-filter for expired: inactive AND has a past expiry date
+      if (statusFilter === 'expired') {
+        const nowDate = new Date();
+        return profilesWithContacts.filter((p) => {
+          const premiumExpired = p.premium_until && new Date(p.premium_until) < nowDate;
+          const topExpired = p.top_ad_until && new Date(p.top_ad_until) < nowDate;
+          return premiumExpired || topExpired;
+        });
       }
       
       return profilesWithContacts;
@@ -827,6 +849,7 @@ const AdminProfile = () => {
                       <option value="pending">Pending</option>
                       <option value="active">Aktiv</option>
                       <option value="inactive">Inaktiv</option>
+                      <option value="expired">⏰ Abgelaufen</option>
                       <option value="draft">Entwurf</option>
                       <option value="rejected">Abgelehnt</option>
                     </select>
