@@ -110,7 +110,7 @@ const UserDashboard = () => {
     if (paymentStatus === 'success') {
       toast({
         title: 'Zahlung erfolgreich!',
-        description: 'Dein Inserat ist jetzt aktiv.',
+        description: 'Dein Inserat wird innerhalb von 24 Stunden geprüft und freigeschaltet.',
       });
       searchParams.delete('payment');
       setSearchParams(searchParams, { replace: true });
