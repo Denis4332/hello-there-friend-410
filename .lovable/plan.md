@@ -1,69 +1,49 @@
 
 
-# Fix: State-Merge überschreibt profile.id + Upsert-Fehler
+# Status: GPS läuft SCHON über Browser
 
-## Deine Sorge ist berechtigt — deshalb hier der exakte Beweis warum NUR 2 Zeilen geändert werden und NICHTS anderes betroffen ist.
+## Was aktuell passiert
 
----
+### GPS-Suche ("In meiner Nähe suchen") — `Suche.tsx`
+**Läuft bereits über Browser.** Zeile 160: `navigator.geolocation.getCurrentPosition` holt lat/lng direkt vom Browser. Diese Koordinaten gehen direkt an `useProfilesByRadius` → fertig. Funktioniert.
 
-## Problem 1: Zeile 118 — `contactData.id` überschreibt `profile.id`
+Die Funktion `detectLocation()` aus `geolocation.ts` wird nur aufgerufen um den **Anzeige-Namen** zu holen (z.B. "Stein AG" für den Toast). Die macht einen DB-Lookup — aber das beeinflusst die Suche nicht, nur den Text der angezeigt wird.
 
-Aktuell:
-```typescript
-setProfile({ ...profileRes.data, ...contactData });
-```
+### Profil-Bearbeitung — `LocationSection.tsx`  
+**Läuft bereits über Google Places Autocomplete im Browser.** lat/lng, city, canton, postal_code — alles kommt direkt von Google. Funktioniert.
 
-`contactData` kommt aus `profile_contacts` und hat ein eigenes `id`-Feld (z.B. `e4b3ad18-...`). Durch den Spread überschreibt es die echte Profil-ID (`217fbd22-...`). Das bedeutet:
-- `profile.id` ist falsch → PhotoUploader bekommt falsche ID
-- `handleUploadComplete` macht `.eq('id', profile!.id)` mit der FALSCHEN ID → Status-Update findet kein Match
-- Canton/Stadt-Problem wird verschlimmert weil der ganze State inkonsistent ist
+### Das einzige Problem
+`ProfileEdit.tsx` Zeile 84-101: `resolveCanonicalCity` macht nach dem Laden UND nach dem Speichern einen **unnötigen DB-Lookup** der den Stadtnamen überschreibt. Google sagt "Stein AG", die DB-Funktion macht daraus "Stein" wegen dem kaputten Canton-Join. Das ist der einzige Bug.
 
-**Fix:** Nur `id` und `profile_id` aus contactData entfernen:
-```typescript
-const { id: _contactId, profile_id: _pid, ...contactFields } = contactData || {};
-setProfile({ ...profileRes.data, ...contactFields });
-```
+## Was gemacht werden muss
 
-**Was sich ändert:** NUR dass `profile.id` korrekt bleibt. Alle Contact-Felder (phone, email, whatsapp etc.) werden weiterhin gemerged. Kein anderer Code wird berührt.
+### Änderung 1: `resolveCanonicalCity` löschen in `ProfileEdit.tsx`
+- Zeile 84-101: Funktion komplett löschen
+- Zeile 124-128: `canonicalCity` weg, `profileRes.data` enthält city schon
+- Zeile 139: `city: canonicalCity` → einfach weg (city ist schon in `...profileRes.data`)
+- Zeile 187: `resolveCanonicalCity` Aufruf löschen
+- Zeile 197: `city: canonicalCity` → `city: data.city`
 
-## Problem 2: Zeile 218 — Upsert ohne onConflict
+**Ergebnis:** Was Google Places liefert wird 1:1 gespeichert. Kein Nachschlagen.
 
-Aktuell:
-```typescript
-.upsert({ profile_id: profileId, email: data.email, ... });
-```
+### Änderung 2: Pending-Banner sichtbarer in `UserDashboard.tsx`
+- Zeile 386-394: Oranger Banner mit Clock-Icon statt dezenter Text
 
-`profile_contacts` hat eine unique constraint auf `profile_id`. Ohne `onConflict` kann es zu `duplicate key` Fehlern kommen.
+### Optional: `detectLocation()` in `geolocation.ts` vereinfachen
+Die DB-Abfrage dort ist nur für den Anzeige-Text im Toast. Könnte man durch Google Reverse Geocoding ersetzen, aber es beeinflusst die Suchfunktion nicht — rein kosmetisch.
 
-**Fix:** Eine Option hinzufügen:
-```typescript
-.upsert({ ... }, { onConflict: 'profile_id' })
-```
+## Was sich NICHT ändert
 
-**Was sich ändert:** NUR dass das Upsert zuverlässiger funktioniert. Es macht exakt das gleiche — findet den existierenden Eintrag und updated ihn.
+| Bereich | Status |
+|---------|--------|
+| Browser GPS für Suche | Schon über Browser — bleibt so |
+| Google Places Autocomplete | Schon über Browser — bleibt so |
+| Radius-Suche mit lat/lng | Unverändert |
+| Kanton-Filter | Unverändert |
+| Kategorien-Filter | Unverändert |
+| `search_profiles_by_radius_v2` | Unverändert |
 
----
+## Zusammenfassung
 
-## Was wird NICHT angefasst
-
-| Komponente | Änderung? |
-|-----------|-----------|
-| GPS-Suche/Filter | NEIN — lat/lng in DB und Suche bleiben identisch |
-| Kanton-Dropdown/Auswahl | NEIN — LocationSection wurde bereits gefixt mit initializedRef |
-| Google Places | NEIN — keine Änderung |
-| PhotoUploader-Logik | NEIN — nur die ID die er bekommt ist jetzt korrekt |
-| handleUploadComplete | NEIN — wurde bereits gefixt, funktioniert jetzt weil profile.id stimmt |
-| Profil-Erstellung | NEIN — nutzt einen anderen Code-Pfad (ProfileCreate.tsx) |
-| Admin-Bereich | NEIN — AdminProfile hat eigene Logik |
-| Rotations-Algorithmus | NEIN — komplett anderer Code |
-| RLS/Sicherheit | NEIN — keine DB-Änderungen |
-
-## Dateien
-
-| Datei | Zeile | Änderung |
-|-------|-------|----------|
-| `src/pages/ProfileEdit.tsx` | 118 | contactData destructuring (id/profile_id ausschliessen) |
-| `src/pages/ProfileEdit.tsx` | 218 | `onConflict: 'profile_id'` hinzufügen |
-
-**Nur 2 Zeilen in 1 Datei.** Kein neuer Code, keine neue Logik, keine Seiteneffekte.
+GPS geht schon über Browser. Der einzige Fix ist: `resolveCanonicalCity` löschen damit der Google-Stadtname nicht durch einen kaputten DB-Lookup überschrieben wird. 1 Funktion löschen, 4 Zeilen anpassen.
 
