@@ -190,7 +190,7 @@ export const LocationSection = ({ register, errors, setValue, watch, cantons }: 
       </div>
 
       <div>
-        <Label htmlFor="postal_code">PLZ</Label>
+        <Label htmlFor="postal_code">PLZ (optional)</Label>
         <Input
           id="postal_code"
           {...register('postal_code')}
