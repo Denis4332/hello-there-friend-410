@@ -20,12 +20,11 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    // Premium expired: Set to INACTIVE
+    // Premium expired: Set to INACTIVE (keep premium_until for history)
     const { data: expiredPremium, error: premiumError } = await supabase
       .from('profiles')
       .update({ 
-        status: 'inactive',
-        premium_until: null 
+        status: 'inactive'
       })
       .eq('listing_type', 'premium')
       .eq('status', 'active')
@@ -34,12 +33,11 @@ Deno.serve(async (req) => {
 
     if (premiumError) throw premiumError;
 
-    // TOP AD expired: Set to INACTIVE
+    // TOP AD expired: Set to INACTIVE (keep top_ad_until for history)
     const { data: expiredTop, error: topError } = await supabase
       .from('profiles')
       .update({ 
-        status: 'inactive',
-        top_ad_until: null 
+        status: 'inactive'
       })
       .eq('listing_type', 'top')
       .eq('status', 'active')
@@ -48,12 +46,11 @@ Deno.serve(async (req) => {
 
     if (topError) throw topError;
 
-    // Basic expired: Set to INACTIVE
+    // Basic expired: Set to INACTIVE (keep premium_until for history)
     const { data: expiredBasic, error: basicError } = await supabase
       .from('profiles')
       .update({ 
-        status: 'inactive',
-        premium_until: null 
+        status: 'inactive'
       })
       .eq('listing_type', 'basic')
       .eq('status', 'active')

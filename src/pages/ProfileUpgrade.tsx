@@ -117,15 +117,6 @@ const ProfileUpgrade = () => {
     if (!profile || !selectedListingType) return;
     
     try {
-      // Listing-Type aktualisieren (bei inaktiven Profilen kann sich das Paket ändern)
-      if (profile.listing_type !== selectedListingType) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ listing_type: selectedListingType })
-          .eq('id', profile.id);
-        if (updateError) throw updateError;
-      }
-
       const amountCents = getAmountForListingType(selectedListingType) * 100;
       
       const { data, error } = await supabase.functions.invoke('payport-checkout', {
@@ -133,7 +124,8 @@ const ProfileUpgrade = () => {
           orderId: profile.id,
           amountCents,
           returnUrl: window.location.origin + '/payport/return',
-          method
+          method,
+          listingType: selectedListingType
         }
       });
       
