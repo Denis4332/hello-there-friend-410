@@ -24,6 +24,14 @@ const AdminDashboard = () => {
       const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       const now = new Date().toISOString();
 
+      // Auto-fix: Abgelaufene Profile auf inactive setzen (gleiche Logik wie UserDashboard + Edge Function)
+      await Promise.all([
+        supabase.from('profiles').update({ status: 'inactive' })
+          .eq('status', 'active').in('listing_type', ['premium', 'basic']).lt('premium_until', now),
+        supabase.from('profiles').update({ status: 'inactive' })
+          .eq('status', 'active').eq('listing_type', 'top').lt('top_ad_until', now),
+      ]);
+
       const [
         pendingProfilesRes,
         activeRes,
