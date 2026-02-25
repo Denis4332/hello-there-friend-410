@@ -201,7 +201,7 @@ const ProfileCreate = () => {
           gender: data.gender,
           city: data.city,
           canton: data.canton,
-          postal_code: data.postal_code,
+          postal_code: data.postal_code || null,
           lat: data.lat,
           lng: data.lng,
           about_me: data.about_me,
