@@ -384,11 +384,19 @@ const UserDashboard = () => {
             )}
 
             {profile.status === 'pending' && (
-              <Card className="mb-6 border-yellow-500/50 bg-yellow-500/5">
+              <Card className="mb-6 border-orange-500 bg-orange-500/10">
                 <CardContent className="pt-6">
-                  <p className="text-sm">
-                    Dein Profil wird derzeit überprüft. Dies kann bis zu 24 Stunden dauern.
-                  </p>
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">⏳</span>
+                    <div>
+                      <p className="font-semibold text-orange-700 dark:text-orange-400">
+                        Dein Profil wird geprüft
+                      </p>
+                      <p className="text-sm text-orange-600 dark:text-orange-300 mt-1">
+                        Dies kann bis zu 24 Stunden dauern. Dein Profil ist in dieser Zeit nicht öffentlich sichtbar.
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
