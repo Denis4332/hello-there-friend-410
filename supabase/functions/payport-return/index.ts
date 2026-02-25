@@ -169,18 +169,25 @@ Deno.serve(async (req) => {
     // Load current profile to calculate expiry extension
     const { data: currentProfile } = await supabase
       .from('profiles')
-      .select('listing_type, premium_until, top_ad_until')
+      .select('listing_type, premium_until, top_ad_until, status')
       .eq('id', profileId)
       .single();
 
     const listingType = currentProfile?.listing_type || 'basic';
+    const previousStatus = currentProfile?.status || 'pending';
     const now = new Date().toISOString();
+
+    // Only auto-activate profiles that were active or inactive (renewal/reactivation)
+    // Profiles that are pending/rejected/draft must remain for admin review
+    const newStatus = (previousStatus === 'active' || previousStatus === 'inactive')
+      ? 'active'
+      : previousStatus;
 
     // Build update with proper expiry calculation
     const updates: Record<string, any> = {
       payment_status: 'paid',
       payment_reference: tk,
-      status: 'active',
+      status: newStatus,
       updated_at: now,
     };
 

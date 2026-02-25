@@ -39,7 +39,7 @@ serve(async (req) => {
     }
 
     // Parse input
-    const { orderId, amountCents, returnUrl, method } = await req.json();
+    const { orderId, amountCents, returnUrl, method, listingType } = await req.json();
 
     if (!orderId || !amountCents || !returnUrl) {
       return new Response(
@@ -116,11 +116,31 @@ serve(async (req) => {
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
       
+      // Server-side media validation (Exploit-Schutz)
+      if (listingType) {
+        const mediaLimits: Record<string, number> = { basic: 5, premium: 10, top: 15 };
+        const maxPhotos = mediaLimits[listingType];
+        if (maxPhotos) {
+          const { count, error: countError } = await supabase
+            .from('photos')
+            .select('*', { count: 'exact', head: true })
+            .eq('profile_id', orderId);
+          if (!countError && (count || 0) > maxPhotos) {
+            console.error('PAYPORT_CHECKOUT MEDIA_LIMIT_EXCEEDED', { profileId: orderId, listingType, count, maxPhotos });
+            return new Response(
+              JSON.stringify({ error: `Zu viele Medien für ${listingType}-Paket (${count}/${maxPhotos})` }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      }
+
       const { data: updateData, error: updateError } = await supabase
         .from('profiles')
         .update({
           payment_reference: id,
-          payment_status: 'pending'
+          payment_status: 'pending',
+          ...(listingType ? { listing_type: listingType } : {})
         })
         .eq('id', orderId)
         .select('id');
