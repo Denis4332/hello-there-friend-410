@@ -177,11 +177,11 @@ Deno.serve(async (req) => {
     const previousStatus = currentProfile?.status || 'pending';
     const now = new Date().toISOString();
 
-    // Only auto-activate profiles that were active or inactive (renewal/reactivation)
-    // Profiles that are pending/rejected/draft must remain for admin review
-    const newStatus = (previousStatus === 'active' || previousStatus === 'inactive')
+    // Only auto-activate profiles that were already active (renewal/extension)
+    // All other states (inactive, pending, draft, rejected) go to pending for admin review
+    const newStatus = previousStatus === 'active'
       ? 'active'
-      : previousStatus;
+      : 'pending';
 
     // Build update with proper expiry calculation
     const updates: Record<string, any> = {
