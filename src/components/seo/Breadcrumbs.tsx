@@ -1,3 +1,4 @@
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
@@ -58,20 +59,22 @@ export const Breadcrumbs = ({ items, showUI = true }: BreadcrumbsProps) => {
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             {allItems.map((item, index) => (
-              <BreadcrumbItem key={index}>
-                {index < allItems.length - 1 ? (
-                  <>
+              <React.Fragment key={index}>
+                <BreadcrumbItem>
+                  {index < allItems.length - 1 ? (
                     <BreadcrumbLink asChild>
                       <Link to={item.href || '/'}>{item.label}</Link>
                     </BreadcrumbLink>
-                    <BreadcrumbSeparator>
-                      <ChevronRight className="h-4 w-4" />
-                    </BreadcrumbSeparator>
-                  </>
-                ) : (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
+                {index < allItems.length - 1 && (
+                  <BreadcrumbSeparator>
+                    <ChevronRight className="h-4 w-4" />
+                  </BreadcrumbSeparator>
                 )}
-              </BreadcrumbItem>
+              </React.Fragment>
             ))}
           </BreadcrumbList>
         </Breadcrumb>
