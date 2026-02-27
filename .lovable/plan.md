@@ -1,42 +1,32 @@
 
 
-## Problem Analysis
+## Ergebnis der Analyse: PostGIS kann sicher entfernt werden
 
-**Two separate issues identified:**
+### Beweis
 
-### 1. Bildqualität ("Jimd quali") - Extrem schlechte Bildkompression
-Die Bilder werden aktuell **ultra-aggressiv** komprimiert:
-- **Max 500x650px** Auflösung
-- **55% Qualität** (WebP/JPEG)
+1. **Alte Migration** (`20251028`) hat PostGIS installiert und `ST_Distance`/`ST_DWithin` verwendet
+2. **Aktuelle Funktionen** (letzte Migration `20260215`) verwenden ausschliesslich die **Haversine-Formel** -- kein einziger `ST_*` Aufruf mehr:
+   ```sql
+   6371 * acos(cos(radians(user_lat)) * cos(radians(p.lat)) * ...)
+   ```
+3. **Kein Frontend-Code** ruft PostGIS-Funktionen auf -- nur `search_profiles_by_radius` und `search_profiles_by_radius_v2` via RPC, beide Haversine
+4. Die Tabellen `geography_columns`, `geometry_columns`, `spatial_ref_sys` sind reine PostGIS-Systemtabellen -- keine App-Daten drin
 
-Das ist viel zu aggressiv. Auf einem normalen Handy-Display (390px Breite) sehen die Bilder schon matschig aus, und auf Desktop/Lightbox erst recht. Die Memory sagt eigentlich: Lightbox = 1920px, Carousel = 800px, ProfileCard = 200x267px via Storage Transforms. Aber die Kompression zerstört die Quellbilder schon beim Upload.
+### Was blockiert die Migration
 
-### 2. Beschreibung nur 500 Zeichen
-Das `about_me` Feld hat im Zod-Schema ein `.max(500)` Limit. Die DB-Spalte selbst hat kein Limit (TEXT). 500 Zeichen ist zu wenig für eine ordentliche Beschreibung.
+Die alte Migration `20251028` enthalt `CREATE EXTENSION IF NOT EXISTS postgis;` -- wenn PostGIS auf dem Ziel-System nicht verfuegbar ist, schlaegt die gesamte Migration fehl.
 
----
+### Plan
 
-## Plan
+1. **Neue Migration erstellen** die PostGIS sauber entfernt:
+   ```sql
+   DROP EXTENSION IF EXISTS postgis CASCADE;
+   ```
+   `CASCADE` entfernt auch die System-Views (`geography_columns`, `geometry_columns`) automatisch.
 
-### Schritt 1: Bildkompression verbessern
-In `src/utils/imageCompression.ts`:
-- Max-Auflösung von 500x650 auf **1200x1600px** hochsetzen
-- Qualität von 55% auf **80%** hochsetzen
-- Sowohl `compressImage` als auch `compressImageBlob` anpassen
+2. **Alte Migration patchen** (Kommentar oder Entfernung von `CREATE EXTENSION IF NOT EXISTS postgis;`) -- damit bei einem frischen Setup PostGIS nicht mehr installiert wird. Da alte Migrationen nicht editiert werden koennen, reicht die neue DROP-Migration.
 
-Das sorgt dafür, dass Lightbox (1920px via Storage Transforms) und Carousel (800px) ordentlich aussehen, während die Dateigrösse trotzdem kontrolliert bleibt.
+### Risiko
 
-### Schritt 2: about_me Limit erhöhen
-In `src/components/profile/ProfileForm.tsx`:
-- Zod-Validierung von `.max(500)` auf `.max(1500)` ändern
-- Fehlermeldung entsprechend anpassen
-
-### Schritt 3: Zeichenzähler im Textfeld anzeigen
-In `src/components/profile/sections/AboutMeSection.tsx`:
-- Live-Zeichenzähler unter dem Textfeld hinzufügen (z.B. "234 / 1500")
-- `watch` aus dem ProfileForm durchreichen um den aktuellen Wert zu lesen
-
-### Schritt 4: BulkImageCompressor Beschreibung aktualisieren
-In `src/components/admin/BulkImageCompressor.tsx`:
-- Text von "500x650px, 55% WebP" auf die neuen Werte anpassen
+Null. Alle drei aktiven RPC-Funktionen (`search_profiles_by_radius`, `search_profiles_by_radius_v2`, `get_paginated_profiles`) nutzen ausschliesslich mathematische Standard-SQL-Funktionen (`acos`, `cos`, `sin`, `radians`) -- kein PostGIS noetig.
 
