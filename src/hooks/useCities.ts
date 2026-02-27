@@ -34,23 +34,3 @@ export const useCities = () => {
     },
   });
 };
-
-export const useCityBySlug = (slug: string) => {
-  return useQuery({
-    queryKey: ['city', slug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cities')
-        .select(`
-          *,
-          canton:cantons(id, name, abbreviation)
-        `)
-        .eq('slug', slug)
-        .single();
-
-      if (error) throw error;
-      return data as City;
-    },
-    enabled: !!slug,
-  });
-};

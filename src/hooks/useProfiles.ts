@@ -128,44 +128,6 @@ export const useProfileBySlug = (slug: string | undefined) => {
   });
 };
 
-/**
- * Paginierte Stadt-Profile mit Server-Side Rotation
- */
-export const useCityProfiles = (
-  cityName: string | undefined,
-  page: number = 1,
-  pageSize: number = 24,
-  rotationSeed: number = 0
-) => {
-  return useQuery<{ profiles: ProfileWithRelations[]; totalCount: number }>({
-    queryKey: ['city-profiles-paginated', cityName, page, rotationSeed],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      if (!cityName) return { profiles: [], totalCount: 0 };
-      
-      const { data, error } = await supabase.rpc('get_paginated_profiles', {
-        p_page: page,
-        p_page_size: pageSize,
-        p_rotation_seed: rotationSeed,
-        p_canton: null,
-        p_city: cityName,
-        p_category_id: null,
-        p_keyword: null,
-      });
-      
-      if (error) throw error;
-      
-      const result = data?.[0] || { profiles: [], total_count: 0 };
-      const profiles = validateProfilesResponse(result.profiles || []);
-      
-      return {
-        profiles,
-        totalCount: Number(result.total_count) || 0,
-      };
-    },
-    enabled: !!cityName,
-  });
-};
 
 /**
  * Paginierte Kategorie-Profile mit Server-Side Rotation
@@ -366,38 +328,3 @@ export const useTopCities = (limit: number = 4) => {
   });
 };
 
-/**
- * Fetches all unique cities with active profiles, sorted by profile count.
- */
-export const useAllCities = () => {
-  return useQuery({
-    queryKey: ['all-cities', 'v4'],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('public_profiles')
-        .select('city, canton');
-      
-      if (error) throw error;
-      if (!data) return [];
-      
-      const cityMap = new Map<string, { city: string; canton: string; count: number; slug: string }>();
-      data.forEach((p) => {
-        const key = `${p.city}-${p.canton}`;
-        if (!cityMap.has(key)) {
-          cityMap.set(key, {
-            city: p.city,
-            canton: p.canton,
-            count: 1,
-            slug: normalizeSlug(p.city),
-          });
-        } else {
-          cityMap.get(key)!.count++;
-        }
-      });
-      
-      return Array.from(cityMap.values())
-        .sort((a, b) => b.count - a.count);
-    },
-  });
-};
