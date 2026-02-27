@@ -27,8 +27,8 @@ export const AboutMeSection = ({ register, errors, watch }: AboutMeSectionProps)
         ) : (
           <span />
         )}
-        <span className={`text-sm ${aboutMe.length > 10000 ? 'text-destructive' : 'text-muted-foreground'}`}>
-          {aboutMe.length} / 10000
+        <span className={`text-sm ${aboutMe.length > 1500 ? 'text-destructive' : 'text-muted-foreground'}`}>
+          {aboutMe.length} / 1500
         </span>
       </div>
     </div>
