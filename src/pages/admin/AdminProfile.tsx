@@ -721,13 +721,8 @@ const AdminProfile = () => {
     setIsEditingProfile(false);
     setIsEditingContact(false);
     
-    // Set expiry date if exists
-    const expiryDate = profile.listing_type === 'premium' 
-      ? profile.premium_until 
-      : profile.listing_type === 'top' 
-        ? profile.top_ad_until 
-        : null;
-    
+    // Set expiry date if exists (check both fields regardless of listing_type)
+    const expiryDate = profile.top_ad_until || profile.premium_until || null;
     setDialogExpiryDate(expiryDate ? new Date(expiryDate).toISOString().split('T')[0] : '');
   };
 
@@ -1549,9 +1544,8 @@ const AdminProfile = () => {
                                       </select>
                                     </div>
 
-                                    {(dialogListingType === 'premium' || dialogListingType === 'top') && (
-                                      <div>
-                                        <label className="block text-sm font-medium mb-1">Gültig bis</label>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Gültig bis (Ablaufdatum)</label>
                                         <input 
                                           type="date"
                                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -1559,10 +1553,14 @@ const AdminProfile = () => {
                                           onChange={(e) => setDialogExpiryDate(e.target.value)}
                                         />
                                         <p className="text-xs text-muted-foreground mt-1">
-                                          Leer lassen für unbegrenzt gültig
+                                          Ablaufdatum setzen oder ändern. Leer = unbegrenzt. Bei Aktivierung ohne Datum werden automatisch 30 Tage gesetzt.
                                         </p>
+                                        {dialogExpiryDate && new Date(dialogExpiryDate) < new Date() && (
+                                          <p className="text-xs text-destructive mt-1 font-medium">
+                                            ⚠️ Dieses Datum liegt in der Vergangenheit – Profil wird als abgelaufen behandelt.
+                                          </p>
+                                        )}
                                       </div>
-                                    )}
                                    </div>
                                  </div>
                                  
