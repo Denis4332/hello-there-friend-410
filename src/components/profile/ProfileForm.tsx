@@ -2,7 +2,6 @@ import { useForm, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { geocodePlz } from '@/lib/geocoding';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useToastMessages } from '@/hooks/useToastMessages';
 import { toast } from 'sonner';
@@ -122,15 +121,6 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
     toast.loading('Speichern...', { id: 'profile-save' });
     
     try {
-      // Geocode PLZ to GPS coordinates if postal_code is provided
-      if (data.postal_code && data.city && !data.lat && !data.lng) {
-        const coords = await geocodePlz(data.postal_code, data.city);
-        if (coords) {
-          data.lat = coords.lat;
-          data.lng = coords.lng;
-        }
-      }
-      
       await onSubmit(data);
       toast.dismiss('profile-save');
     } catch (error) {

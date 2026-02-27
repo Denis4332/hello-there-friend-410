@@ -7,7 +7,7 @@ import { useSearchProfiles, useProfilesByRadius } from '@/hooks/useProfiles';
 import { useCategories } from '@/hooks/useCategories';
 import { useSiteSettingsContext } from '@/contexts/SiteSettingsContext';
 import { useCantons } from '@/hooks/useCantons';
-import { detectLocation } from '@/lib/geolocation';
+
 import { toast } from 'sonner';
 import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchResults } from '@/components/search/SearchResults';
@@ -158,7 +158,7 @@ const Suche = () => {
     try {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
-          async (position) => {
+          (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             const accuracy = position.coords.accuracy;
@@ -178,20 +178,8 @@ const Suche = () => {
               refetchGpsProfiles();
             }, 100);
 
-            const result = await detectLocation();
-            
-            const matchingCanton = cantons.find(
-              (c) => c.name.toLowerCase() === result.canton.toLowerCase() ||
-                     c.abbreviation.toLowerCase() === result.canton.toLowerCase()
-            );
-            
-            if (matchingCanton) {
-              setDetectedLocation(`${result.city}, ${matchingCanton.abbreviation}`);
-              toast.success(`GPS-Suche aktiviert: ${result.city}, ${matchingCanton.abbreviation} (±${Math.round(accuracy)}m)`);
-            } else {
-              setDetectedLocation(result.city);
-              toast.success(`GPS-Suche aktiviert: ${result.city} (±${Math.round(accuracy)}m)`);
-            }
+            setDetectedLocation(`GPS aktiv (±${Math.round(accuracy)}m)`);
+            toast.success(`GPS-Suche aktiviert (±${Math.round(accuracy)}m)`);
             
             setIsDetectingLocation(false);
           },

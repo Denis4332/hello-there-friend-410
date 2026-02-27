@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { MapPin, Tag, Search, X } from 'lucide-react';
 import { FilterPopover } from '@/components/search/FilterPopover';
-import { detectLocation } from '@/lib/geolocation';
+
 import { getOptimizedImageUrl } from '@/utils/imageOptimization';
 import { toast } from 'sonner';
 import { Canton } from '@/types/common';
@@ -106,17 +106,29 @@ export const HeroSection = ({
   const handleDetectLocation = async () => {
     setIsDetectingLocation(true);
     try {
-      const result = await detectLocation();
-      const matchingCanton = cantons.find(c => c.name.toLowerCase() === result.canton.toLowerCase() || c.abbreviation.toLowerCase() === result.canton.toLowerCase());
+      if (!('geolocation' in navigator)) {
+        throw new Error('Geolocation wird von deinem Browser nicht unterstützt');
+      }
       
-      const params = new URLSearchParams();
-      params.set('lat', result.lat.toString());
-      params.set('lng', result.lng.toString());
-      params.set('radius', radius.toString());
-      params.set('location', `${result.city}, ${matchingCanton?.abbreviation || result.canton}`);
-      if (category) params.set('kategorie', category);
-      
-      navigate(`/suche?${params.toString()}`);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const params = new URLSearchParams();
+          params.set('lat', position.coords.latitude.toString());
+          params.set('lng', position.coords.longitude.toString());
+          params.set('radius', radius.toString());
+          params.set('location', `GPS aktiv (±${Math.round(position.coords.accuracy)}m)`);
+          if (category) params.set('kategorie', category);
+          
+          navigate(`/suche?${params.toString()}`);
+        },
+        (error) => {
+          let message = 'Standort konnte nicht ermittelt werden';
+          if (error.code === error.PERMISSION_DENIED) message = 'Standort-Zugriff wurde verweigert';
+          toast.error(message);
+          setIsDetectingLocation(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Standort konnte nicht ermittelt werden');
       setIsDetectingLocation(false);
