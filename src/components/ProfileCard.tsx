@@ -124,7 +124,7 @@ const ProfileCardComponent = ({
       <div className="p-4 bg-card flex flex-col gap-3 h-[200px] overflow-hidden flex-shrink-0">
         <div className="flex flex-col gap-2">
         {profile.profile_categories && profile.profile_categories.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-blue-500">
               <Tag className="h-3.5 w-3.5" />
               <span>
                 {profile.profile_categories
@@ -135,7 +135,7 @@ const ProfileCardComponent = ({
               </span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-blue-500">
             <MapPin className="h-3.5 w-3.5" />
             <span>
               {profile.show_street && profile.street_address 
