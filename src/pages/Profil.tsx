@@ -277,6 +277,7 @@ const Profil = () => {
                 telegram={contacts?.telegram}
                 instagram={contacts?.instagram}
                 profileId={profile.id}
+                displayName={profile.display_name}
               />
 
               {/* Report Button */}
