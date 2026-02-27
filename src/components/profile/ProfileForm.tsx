@@ -26,7 +26,7 @@ const profileSchema = z.object({
   canton: z.string().min(1, 'Kanton ist erforderlich'),
   postal_code: z.string().optional().default(''),
   about_me: z.string()
-    .max(1500, 'Maximale Länge: 1500 Zeichen')
+    .max(10000, 'Maximale Länge: 10000 Zeichen')
     .refine((val) => !val || !/<script|javascript:|onerror=/i.test(val), {
       message: 'Ungültige Zeichen im Text'
     })
