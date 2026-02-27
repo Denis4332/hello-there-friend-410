@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,30 +11,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCategories } from '@/hooks/useCategories';
 import { useDropdownOptions } from '@/hooks/useDropdownOptions';
 import { useCantons } from '@/hooks/useCantons';
-import { useCitiesByCantonSlim } from '@/hooks/useCitiesByCantonSlim';
 import { recordAgbAcceptance } from '@/hooks/useAgbAcceptances';
-import { Plus, ChevronsUpDown, Check, MapPin, Upload, X, Star, Image as ImageIcon } from 'lucide-react';
+import { Plus, MapPin, Upload, X, Star, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { compressImage } from '@/utils/imageCompression';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 interface AdminProfileCreateDialogProps {
   onSuccess?: () => void;
@@ -47,13 +34,14 @@ interface PhotoPreview {
 
 export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   // Form state
   const [displayName, setDisplayName] = useState('');
-  const [cityId, setCityId] = useState('');
   const [city, setCity] = useState('');
   const [canton, setCanton] = useState('');
   const [postalCode, setPostalCode] = useState('');
@@ -86,11 +74,81 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
   const { data: categories } = useCategories();
   const { data: languages } = useDropdownOptions('languages');
   const { data: cantons } = useCantons();
-  const { data: cities, isLoading: citiesLoading } = useCitiesByCantonSlim(canton);
+
+  const googleApiKey = 'AIzaSyB2IiCDINcTgGPMnNLi8hvmEPcf_-rH3Gs';
+
+  // Canton name -> abbreviation mapping for Google Places
+  const CANTON_MAP: Record<string, string> = {
+    'zürich': 'ZH', 'zurich': 'ZH', 'bern': 'BE', 'berne': 'BE',
+    'luzern': 'LU', 'lucerne': 'LU', 'uri': 'UR', 'schwyz': 'SZ',
+    'obwalden': 'OW', 'nidwalden': 'NW', 'glarus': 'GL', 'zug': 'ZG',
+    'freiburg': 'FR', 'fribourg': 'FR', 'solothurn': 'SO',
+    'basel-stadt': 'BS', 'basel': 'BS', 'basel-landschaft': 'BL',
+    'schaffhausen': 'SH', 'appenzell ausserrhoden': 'AR',
+    'appenzell innerrhoden': 'AI', 'st. gallen': 'SG', 'saint gallen': 'SG',
+    'graubünden': 'GR', 'grisons': 'GR', 'aargau': 'AG', 'thurgau': 'TG',
+    'tessin': 'TI', 'ticino': 'TI', 'waadt': 'VD', 'vaud': 'VD',
+    'wallis': 'VS', 'valais': 'VS', 'neuenburg': 'NE', 'neuchâtel': 'NE',
+    'genf': 'GE', 'genève': 'GE', 'geneva': 'GE', 'jura': 'JU',
+  };
+
+  // Initialize Google Places
+  useEffect(() => {
+    if (!open || googleLoaded) return;
+    setOptions({ key: googleApiKey, v: 'weekly' });
+    importLibrary('places').then(() => setGoogleLoaded(true)).catch(console.warn);
+  }, [open, googleLoaded]);
+
+  // Attach autocomplete when Google loaded and dialog open
+  useEffect(() => {
+    if (!googleLoaded || !addressInputRef.current || autocompleteRef.current) return;
+
+    const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
+      componentRestrictions: { country: 'ch' },
+      fields: ['address_components', 'geometry', 'name'],
+      types: ['geocode', 'establishment'],
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (!place.address_components) return;
+
+      let selectedCity = '';
+      let selectedPostalCode = '';
+      let cantonName = '';
+
+      for (const comp of place.address_components) {
+        if ((comp.types.includes('locality') || comp.types.includes('postal_town')) && !selectedCity) {
+          selectedCity = comp.long_name;
+        }
+        if (comp.types.includes('postal_code')) {
+          selectedPostalCode = comp.long_name;
+        }
+        if (comp.types.includes('administrative_area_level_1')) {
+          cantonName = comp.long_name;
+        }
+      }
+
+      if (selectedCity) setCity(selectedCity);
+      if (selectedPostalCode) setPostalCode(selectedPostalCode);
+
+      if (cantonName) {
+        const lower = cantonName.toLowerCase().trim();
+        const abbr = CANTON_MAP[lower] || cantons?.find(c => c.name.toLowerCase() === lower)?.abbreviation;
+        if (abbr) setCanton(abbr);
+      }
+
+      if (place.geometry?.location) {
+        setLat(place.geometry.location.lat());
+        setLng(place.geometry.location.lng());
+      }
+    });
+
+    autocompleteRef.current = autocomplete;
+  }, [googleLoaded, cantons]);
 
   const resetForm = () => {
     setDisplayName('');
-    setCityId('');
     setCity('');
     setCanton('');
     setPostalCode('');
@@ -112,28 +170,7 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
     setPrimaryPhotoIndex(0);
     setAgbAccepted(false);
     setCustomerEmail('');
-  };
-
-  // Handle canton change - reset city when canton changes
-  const handleCantonChange = (newCanton: string) => {
-    setCanton(newCanton);
-    setCityId('');
-    setCity('');
-    setPostalCode('');
-    setLat(null);
-    setLng(null);
-  };
-
-  // Handle city selection - set all location fields
-  const handleCitySelect = (selectedCity: typeof cities extends (infer T)[] ? T : never) => {
-    if (!selectedCity) return;
-    
-    setCityId(selectedCity.id);
-    setCity(selectedCity.name);
-    setPostalCode(selectedCity.postal_code || '');
-    setLat(selectedCity.lat);
-    setLng(selectedCity.lng);
-    setCityPopoverOpen(false);
+    autocompleteRef.current = null;
   };
 
   // Photo handling with compression
@@ -443,82 +480,33 @@ export const AdminProfileCreateDialog = ({ onSuccess }: AdminProfileCreateDialog
               </div>
             </div>
             
-            {/* Location Section with Combobox */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Location Section with Google Autocomplete */}
+            <div className="space-y-4">
               <div>
-                <Label>Kanton *</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={canton}
-                  onChange={(e) => handleCantonChange(e.target.value)}
-                >
-                  <option value="">-- Wählen --</option>
-                  {cantons?.map((c) => (
-                    <option key={c.id} value={c.abbreviation}>
-                      {c.name} ({c.abbreviation})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <Label>Stadt *</Label>
-                <Popover open={cityPopoverOpen} onOpenChange={setCityPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={cityPopoverOpen}
-                      className="w-full justify-between h-10 font-normal"
-                      disabled={!canton}
-                    >
-                      {city || (canton ? "Stadt wählen..." : "Erst Kanton wählen")}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Stadt suchen..." />
-                      <CommandList>
-                        <CommandEmpty>
-                          {citiesLoading ? 'Laden...' : 'Keine Stadt gefunden.'}
-                        </CommandEmpty>
-                        <CommandGroup className="max-h-[200px] overflow-auto">
-                          {cities?.map((c) => (
-                            <CommandItem
-                              key={c.id}
-                              value={`${c.name} ${c.postal_code || ''}`}
-                              onSelect={() => handleCitySelect(c)}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  cityId === c.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <span>{c.name}</span>
-                              {c.postal_code && (
-                                <span className="ml-auto text-xs text-muted-foreground">
-                                  {c.postal_code}
-                                </span>
-                              )}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              
-              <div>
-                <Label>PLZ</Label>
+                <Label>Stadt / Adresse * (Google Autocomplete)</Label>
                 <Input
-                  value={postalCode}
-                  readOnly
-                  placeholder="Auto"
-                  className="bg-muted"
+                  ref={addressInputRef}
+                  placeholder="Adresse eingeben..."
+                  defaultValue={city}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Adresse aus Vorschlägen wählen – Kanton, PLZ & GPS werden automatisch gesetzt
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Kanton</Label>
+                  <Input value={canton} readOnly placeholder="Auto" className="bg-muted" />
+                </div>
+                <div>
+                  <Label>Stadt</Label>
+                  <Input value={city} readOnly placeholder="Auto" className="bg-muted" />
+                </div>
+                <div>
+                  <Label>PLZ</Label>
+                  <Input value={postalCode} readOnly placeholder="Auto" className="bg-muted" />
+                </div>
               </div>
             </div>
 
