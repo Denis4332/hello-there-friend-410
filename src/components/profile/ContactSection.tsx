@@ -11,6 +11,7 @@ interface ContactSectionProps {
   telegram?: string;
   instagram?: string;
   profileId?: string;
+  displayName?: string;
 }
 
 export const ContactSection = ({
@@ -21,6 +22,7 @@ export const ContactSection = ({
   telegram,
   instagram,
   profileId,
+  displayName,
 }: ContactSectionProps) => {
   const { trackContactClick } = useAnalytics();
   
@@ -56,7 +58,7 @@ export const ContactSection = ({
     return `tel:${cleaned}`;
   };
 
-  const formatWhatsAppUrl = (number: string) => {
+  const formatWhatsAppUrl = (number: string, displayName?: string) => {
     // Remove all non-digit characters except +
     let cleaned = number.replace(/[^\d+]/g, "");
     
@@ -75,7 +77,11 @@ export const ContactSection = ({
     }
     // If starts with 41 already or some other number, keep as-is
     
-    return `https://wa.me/${cleaned}`;
+    const message = displayName
+      ? `Hallo ${displayName} 👋, ich habe dein Inserat auf escoria.ch gesehen.`
+      : `Hallo 👋, ich habe dein Inserat auf escoria.ch gesehen.`;
+    
+    return `https://wa.me/${cleaned}?text=${encodeURIComponent(message)}`;
   };
 
   const formatTelegramUrl = (username: string) => {
@@ -112,7 +118,7 @@ export const ContactSection = ({
             asChild
           >
             <a 
-              href={formatWhatsAppUrl(whatsapp)} 
+              href={formatWhatsAppUrl(whatsapp, displayName)} 
               target="_blank" 
               rel="noopener noreferrer"
               onClick={() => profileId && trackContactClick(profileId, 'whatsapp')}
