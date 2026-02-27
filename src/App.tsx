@@ -22,9 +22,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Suche = lazy(() => import("./pages/Suche"));
 const Profil = lazy(() => import("./pages/Profil"));
-const Stadt = lazy(() => import("./pages/Stadt"));
 const Kategorie = lazy(() => import("./pages/Kategorie"));
-const Cities = lazy(() => import("./pages/Cities"));
 const Kantone = lazy(() => import("./pages/Kantone"));
 const Categories = lazy(() => import("./pages/Categories"));
 const Kontakt = lazy(() => import("./pages/Kontakt"));
@@ -94,7 +92,7 @@ const App = () => {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/suche" element={<Suche />} />
                 <Route path="/profil/:slug" element={<Profil />} />
-                <Route path="/stadt/:slug" element={<Stadt />} />
+                <Route path="/stadt/:slug" element={<Navigate to="/suche" replace />} />
                 <Route path="/kategorie/:slug" element={<Kategorie />} />
                 <Route path="/staedte" element={<Navigate to="/kantone" replace />} />
                 <Route path="/kantone" element={<Kantone />} />
