@@ -183,7 +183,7 @@ export const BulkImageCompressor = () => {
             Bulk Bilder-Komprimierung
           </h3>
           <p className="text-sm text-muted-foreground">
-            Komprimiert alle bestehenden Profilbilder (&gt;500KB) auf max. 500x650px, 55% WebP
+            Komprimiert alle bestehenden Profilbilder (&gt;500KB) auf max. 1200x1600px, 80% WebP
           </p>
         </div>
         <Button 

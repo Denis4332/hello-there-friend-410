@@ -26,7 +26,7 @@ const profileSchema = z.object({
   canton: z.string().min(1, 'Kanton ist erforderlich'),
   postal_code: z.string().optional().default(''),
   about_me: z.string()
-    .max(500, 'Maximale Länge: 500 Zeichen')
+    .max(1500, 'Maximale Länge: 1500 Zeichen')
     .refine((val) => !val || !/<script|javascript:|onerror=/i.test(val), {
       message: 'Ungültige Zeichen im Text'
     })
@@ -172,7 +172,7 @@ export const ProfileForm = ({ onSubmit, cantons, categories, isSubmitting, defau
         cantons={cantons}
       />
 
-      <AboutMeSection register={register} errors={errors} />
+      <AboutMeSection register={register} errors={errors} watch={watch} />
 
       <LanguagesSection
         languages={languages}
