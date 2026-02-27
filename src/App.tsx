@@ -38,7 +38,7 @@ const ProfileUpgrade = lazy(() => import("./pages/ProfileUpgrade"));
 const ZahlungErfolg = lazy(() => import("./pages/ZahlungErfolg"));
 const ZahlungAbgebrochen = lazy(() => import("./pages/ZahlungAbgebrochen"));
 const PayportReturn = lazy(() => import("./pages/PayportReturn"));
-const DebugIcons = lazy(() => import("./pages/DebugIcons"));
+
 
 // Lazy load admin pages
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
@@ -106,7 +106,7 @@ const App = () => {
                 <Route path="/zahlung/abgebrochen" element={<ZahlungAbgebrochen />} />
                 <Route path="/payport/return" element={<PayportReturn />} />
                 <Route path="/500" element={<ServerError />} />
-                <Route path="/debug/icons" element={<DebugIcons />} />
+                
                 <Route
                   path="/profil/erstellen"
                   element={
